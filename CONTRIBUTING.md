@@ -20,7 +20,7 @@ This project and everyone participating in it is governed by the [Code of Conduc
 
 ### Pull Requests
 
-1. Fork the repo and follow the [Gitflow](GITFLOW.md).
+1. Fork the repo and follow the [Gitflow](docs/GITFLOW.md).
 2. **Application Focus**: Respect Clean Architecture layers (Domain, Application, Infrastructure, Interface).
 3. **Domain Sovereignty**: Protect the Domain from infrastructure or framework concerns.
 4. **Testing**: Add integration and feature tests for use cases.

@@ -3,7 +3,7 @@
 Orchestration project that consumes
 [agent-watcher](https://github.com/phprise-foundation/agent-watcher) and provides
 a self-hosted kanban board with authentication, built following
-**The OTAKU Manifesto** (Clean Architecture + DDD).
+[The OTAKU Manifesto](docs/PHILOSOPHY.md) (Clean Architecture + DDD).
 
 ## Components
 

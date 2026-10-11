@@ -9,7 +9,10 @@
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.
 - Docker image + docker-compose.
-- Unit and integration tests (PHPUnit).
+- Unit and integration tests (PHPUnit), Psalm at errorLevel 1 (0 errors).
+- Docs consolidated under `docs/` (`PHILOSOPHY.md`, `GUIDE.md`, `GITFLOW.md`,
+  `ARCHITECTURE.md`, `STATE.md`, `ROADMAP.md`); `AGENTS.md` created at the root.
+- Published to GitHub.
 
 ## Next
 
