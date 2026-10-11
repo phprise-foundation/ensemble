@@ -9,16 +9,33 @@ a self-hosted kanban board with authentication, built following
 
 - **board** — the PHP application in this repository: a REST API plus a static,
   Jira-like board UI, protected by a single admin password.
-- **docker-compose.yml** — brings up the board (and, later, the agent containers).
+- **docker-compose.yml** — brings up the board and, under the `agents` profile,
+  the [agent-watcher](https://github.com/phprise-foundation/agent-watcher)
+  containers (one per role, `--backend local`).
 
 ## Run
 
 ```bash
-cp .env.example .env   # set BOARD_PASSWORD
+cp .env.example .env   # set BOARD_PASSWORD (and DEEPSEEK_API_KEY for agents)
 docker compose up -d --build
 ```
 
 Open <http://localhost:8080> and sign in with `BOARD_PASSWORD`.
+
+### Agents
+
+Agents are opt-in via the `agents` profile (the default `up` only starts the
+board):
+
+```bash
+docker compose --profile agents up -d --build
+```
+
+Each service maps to a role (`product-owner`, the architects, `tech-lead`,
+`quality-assurance`, `coder`) and points at the board through
+`AW_KANBAN_URL=http://board` with `AW_KANBAN_TOKEN=$BOARD_PASSWORD`. The agents
+edit the project mounted at `AW_WORKSPACE` (default `./workspace`). Configure
+`DEEPSEEK_API_KEY`, `AW_MODEL` and `AW_FALLBACK_MODEL` in `.env`.
 
 ## API
 
@@ -54,5 +71,6 @@ vendor/bin/phpunit
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md). The next milestone is the `local` backend
-in agent-watcher so the agents read/write this board instead of GitHub Projects.
+See [docs/ROADMAP.md](docs/ROADMAP.md). The `local` backend in agent-watcher is
+done and the agents are wired into `docker-compose.yml`; the next milestone is
+the embedded always-on chat agent.

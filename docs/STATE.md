@@ -15,10 +15,13 @@
 - Gitflow convention aligned with `phprise/koenma-id`: `main` branch, `feat/*`/`fix/*`,
   Conventional Commits, semver tags; `bin/publish.sh` added.
 - Published to GitHub.
+- `agent-watcher` `local` backend: board access abstracted under
+  `src/backends/` (`github` + `local`); agents consume this board via REST
+  (`--backend local --kanban-url --kanban-token`) using the board password as
+  bearer; unit tests + end-to-end smoke test.
+- Agents wired into `docker-compose.yml` under the `agents` profile (one service
+  per role, `--backend local`, board at `http://board`).
 
 ## Next
 
-- `local` backend in `agent-watcher` (`--backend local --kanban-url --kanban-token`)
-  so agents read/write this board.
-- Wire the tested agents into `docker-compose.yml`.
 - Embedded always-on chat agent.
