@@ -12,6 +12,8 @@
 - Unit and integration tests (PHPUnit), Psalm at errorLevel 1 (0 errors).
 - Docs consolidated under `docs/` (`PHILOSOPHY.md`, `GUIDE.md`, `GITFLOW.md`,
   `ARCHITECTURE.md`, `STATE.md`, `ROADMAP.md`); `AGENTS.md` created at the root.
+- Gitflow convention aligned with `phprise/koenma-id`: `main` branch, `feat/*`/`fix/*`,
+  Conventional Commits, semver tags; `bin/publish.sh` added.
 - Published to GitHub.
 
 ## Next
