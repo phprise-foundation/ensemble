@@ -1,12 +1,56 @@
+x-agent: &agent
+  image: esdrasschonevald/agent-watcher:latest
+  build:
+    context: ../agent-watcher
+  restart: unless-stopped
+  depends_on:
+    - board
+  profiles: ["agents"]
+  environment:
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    AW_BACKEND: local
+    AW_KANBAN_URL: http://board
+    AW_KANBAN_TOKEN: ${BOARD_PASSWORD:-admin}
+  volumes:
+    - ${AW_WORKSPACE:-./workspace}:/workspace
+
 services:
   board:
     build: .
     ports:
-      - "8080:80"
+      - "${BOARD_PORT:-8080}:80"
     environment:
       BOARD_PASSWORD: ${BOARD_PASSWORD:-admin}
     volumes:
       - board-data:/var/www/html/var
+
+  product-owner:
+    <<: *agent
+    command: ["--name", "product-owner", "--rule", "product-owner", "--profile", "socratic", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  solutions-architect:
+    <<: *agent
+    command: ["--name", "solutions-architect", "--rule", "solutions-architect", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  systems-architect:
+    <<: *agent
+    command: ["--name", "systems-architect", "--rule", "systems-architect", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  framework-architect:
+    <<: *agent
+    command: ["--name", "framework-architect", "--rule", "framework-architect", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  tech-lead:
+    <<: *agent
+    command: ["--name", "tech-lead", "--rule", "tech-lead", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  quality-assurance:
+    <<: *agent
+    command: ["--name", "quality-assurance", "--rule", "quality-assurance", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  coder:
+    <<: *agent
+    command: ["--name", "coder", "--rule", "coder", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
 
 volumes:
   board-data:
