@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-Agent Board</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <section id="login" class="login">
+    <form id="login-form" class="login-card">
+      <h1>Multi-Agent Board</h1>
+      <input id="password" type="password" placeholder="Admin password" required autofocus />
+      <button type="submit">Sign in</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </section>
+
+  <main id="board" class="board hidden">
+    <header class="board-header">
+      <h1>Board</h1>
+      <div class="actions">
+        <button id="new-task">New task</button>
+        <button id="logout" class="ghost">Logout</button>
+      </div>
+    </header>
+    <div id="columns" class="columns"></div>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <button id="modal-close" class="close">&times;</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

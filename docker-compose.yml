@@ -1,0 +1,12 @@
+services:
+  board:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      BOARD_PASSWORD: ${BOARD_PASSWORD:-admin}
+    volumes:
+      - board-data:/var/www/html/var
+
+volumes:
+  board-data:
