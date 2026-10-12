@@ -7,6 +7,7 @@ namespace App\Interface\Http;
 use App\Application\ReadConversation;
 use App\Application\SendChatMessage;
 use App\Domain\Contract\Authenticator;
+use App\Domain\Exception\ChatUnavailableException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -27,7 +28,16 @@ final readonly class ChatController
             return $this->responder->error('unauthorized', 401);
         }
 
-        return $request->getMethod() === 'POST' ? $this->send($request) : $this->history();
+        return $this->guard($request);
+    }
+
+    private function guard(ServerRequestInterface $request): ResponseInterface
+    {
+        try {
+            return $request->getMethod() === 'POST' ? $this->send($request) : $this->history();
+        } catch (ChatUnavailableException $exception) {
+            return $this->responder->error($exception->getMessage(), 502);
+        }
     }
 
     private function authorized(ServerRequestInterface $request): bool
