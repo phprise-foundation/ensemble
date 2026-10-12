@@ -21,11 +21,24 @@
       <h1>Board</h1>
       <div class="actions">
         <button id="new-task">New task</button>
+        <button id="copilot-toggle" class="ghost">Copilot</button>
         <button id="logout" class="ghost">Logout</button>
       </div>
     </header>
     <div id="columns" class="columns"></div>
   </main>
+
+  <aside id="copilot" class="copilot hidden">
+    <header class="copilot-header">
+      <h2>Copilot</h2>
+      <button id="copilot-close" class="close">&times;</button>
+    </header>
+    <div id="copilot-messages" class="copilot-messages"></div>
+    <form id="copilot-form" class="copilot-form">
+      <textarea id="copilot-input" placeholder="Ask the copilot…" required></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </aside>
 
   <div id="modal" class="modal hidden">
     <div class="modal-card">

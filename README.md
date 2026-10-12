@@ -45,12 +45,21 @@ Auth is a single shared secret: send `Authorization: Bearer <BOARD_PASSWORD>`.
 |---|---|---|---|
 | `POST` | `/api/login` | no | `{ "password": "..." }` → `{ "token": "..." }` |
 | `GET` | `/api/health` | no | liveness |
+| `GET` | `/api/chat` | yes | copilot conversation |
+| `POST` | `/api/chat` | yes | send `{ message }` → updated conversation |
 | `GET` | `/api/items` | yes | list items |
 | `POST` | `/api/items` | yes | create item `{ title, body, role }` |
 | `GET` | `/api/items/{id}` | yes | show item |
 | `PATCH` | `/api/items/{id}` | yes | update fields (status, role, worker, blocked, blocked_by, title, body) |
 | `POST` | `/api/items/{id}/comments` | yes | add comment `{ author, body }` |
 | `POST` | `/api/items/{id}/close` | yes | close item `{ comment? }` |
+
+## Copilot
+
+The board ships a **Copilot** panel (right-hand drawer) backed by
+`GET`/`POST /api/chat`. In this first phase the agent is an offline stub
+(`EchoChatAgent`) that echoes the message; the always-on chat service (opencode)
+is wired in the next phase.
 
 ## Structure
 
