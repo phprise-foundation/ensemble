@@ -23,9 +23,14 @@
   per role, `--backend local`, board at `http://board`).
 - Chat copilot (phase 1): conversation domain (`Message`, `Conversation`),
   `GET`/`POST /api/chat`, board UI drawer, `EchoChatAgent` stub; unit + HTTP tests.
+- Chat copilot (phase 2): `HttpChatAgent` + `CurlHttpTransport` (board) and the
+  `chat` service (`bin/chat-server`, opencode) in agent-watcher; verified
+  end-to-end (board -> chat service -> opencode -> answer). Selected by `CHAT_URL`;
+  the offline stub remains the default. Protocol/decisions in `docs/CHAT.md`.
 
 ## Next
 
-- Chat copilot (phase 2): real `HttpChatAgent` + always-on chat service (opencode)
-  in `docker-compose.yml`.
-- Hardening: SSE, dedicated token.
+- Chat copilot (phase 3): write actions (create/move/comment) with a confirmation
+  flow. See `docs/CHAT.md` ("Pending") — needs a product decision.
+- Hardening: SSE/streaming for the copilot, dedicated token instead of the raw
+  board password.

@@ -11,7 +11,9 @@ use App\Application\ReadConversation;
 use App\Application\SendChatMessage;
 use App\Application\UpdateItem;
 use App\Infrastructure\Authentication\PasswordAuthenticator;
+use App\Infrastructure\Chat\CurlHttpTransport;
 use App\Infrastructure\Chat\EchoChatAgent;
+use App\Infrastructure\Chat\HttpChatAgent;
 use App\Infrastructure\Persistence\ItemMapper;
 use App\Infrastructure\Persistence\JsonBoardRepository;
 use App\Infrastructure\Persistence\JsonChatRepository;
@@ -27,6 +29,8 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
 
 require __DIR__ . '/../vendor/autoload.php';
+
+set_time_limit(120);
 
 $password = getenv('BOARD_PASSWORD');
 $password = $password === false ? 'admin' : $password;
@@ -54,10 +58,18 @@ $authController = new AuthController($authenticator, $responder);
 $chatFile = getenv('BOARD_CHAT_FILE');
 $chatFile = $chatFile === false ? __DIR__ . '/../var/chat.json' : $chatFile;
 $chatRepository = new JsonChatRepository(new JsonFile($chatFile), new MessageMapper());
+
+$chatUrl = getenv('CHAT_URL');
+$chatToken = getenv('CHAT_TOKEN');
+$chatTimeout = getenv('CHAT_TIMEOUT');
+$chatAgent = is_string($chatUrl) && $chatUrl !== ''
+    ? new HttpChatAgent(new CurlHttpTransport(), $chatUrl, $chatToken === false ? '' : $chatToken, $chatTimeout === false ? 120 : (int) $chatTimeout)
+    : new EchoChatAgent();
+
 $chatController = new ChatController(
     $authenticator,
     new ReadConversation($chatRepository),
-    new SendChatMessage($chatRepository, new EchoChatAgent()),
+    new SendChatMessage($chatRepository, $chatAgent),
     new ChatMessagePresenter(),
     $responder,
 );

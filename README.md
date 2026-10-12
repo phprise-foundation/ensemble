@@ -57,9 +57,23 @@ Auth is a single shared secret: send `Authorization: Bearer <BOARD_PASSWORD>`.
 ## Copilot
 
 The board ships a **Copilot** panel (right-hand drawer) backed by
-`GET`/`POST /api/chat`. In this first phase the agent is an offline stub
-(`EchoChatAgent`) that echoes the message; the always-on chat service (opencode)
-is wired in the next phase.
+`GET`/`POST /api/chat`. It answers questions about the board, read-only.
+
+By default the agent is an offline stub (`EchoChatAgent`). To use the real
+always-on chat service (opencode), set `CHAT_URL`/`CHAT_TOKEN` and start the
+`chat` profile:
+
+```bash
+# .env
+CHAT_URL=http://chat:8080
+CHAT_TOKEN=change-me
+
+docker compose --profile chat up -d --build
+```
+
+The board forwards the conversation to the chat service, which reads the board
+(through the agent-watcher `kanban` helper) and replies. See
+[docs/CHAT.md](docs/CHAT.md) for the protocol.
 
 ## Structure
 

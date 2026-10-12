@@ -21,6 +21,9 @@ services:
       - "${BOARD_PORT:-8080}:80"
     environment:
       BOARD_PASSWORD: ${BOARD_PASSWORD:-admin}
+      CHAT_URL: ${CHAT_URL:-}
+      CHAT_TOKEN: ${CHAT_TOKEN:-}
+      CHAT_TIMEOUT: ${CHAT_TIMEOUT:-120}
     volumes:
       - board-data:/var/www/html/var
 
@@ -51,6 +54,26 @@ services:
   coder:
     <<: *agent
     command: ["--name", "coder", "--rule", "coder", "--backend", "local", "--model", "${AW_MODEL:-deepseek/deepseek-v4-pro}", "--fallback-model", "${AW_FALLBACK_MODEL:-deepseek/deepseek-v4-flash}", "--workdir", "/workspace"]
+
+  chat:
+    image: esdrasschonevald/agent-watcher:latest
+    build:
+      context: ../agent-watcher
+    restart: unless-stopped
+    depends_on:
+      - board
+    profiles: ["chat"]
+    entrypoint: ["chat-server"]
+    environment:
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      AW_BACKEND: local
+      AW_KANBAN_URL: http://board
+      AW_KANBAN_TOKEN: ${BOARD_PASSWORD:-admin}
+      AW_CHAT_TOKEN: ${CHAT_TOKEN:-changeme}
+      AW_MODEL: ${AW_MODEL:-deepseek/deepseek-v4-pro}
+      AW_WORKDIR: /workspace
+    volumes:
+      - ${AW_WORKSPACE:-./workspace}:/workspace
 
 volumes:
   board-data:
