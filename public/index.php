@@ -7,13 +7,20 @@ use App\Application\CloseItem;
 use App\Application\CreateItem;
 use App\Application\FindItem;
 use App\Application\ListBoardItems;
+use App\Application\ReadConversation;
+use App\Application\SendChatMessage;
 use App\Application\UpdateItem;
 use App\Infrastructure\Authentication\PasswordAuthenticator;
+use App\Infrastructure\Chat\EchoChatAgent;
 use App\Infrastructure\Persistence\ItemMapper;
 use App\Infrastructure\Persistence\JsonBoardRepository;
+use App\Infrastructure\Persistence\JsonChatRepository;
 use App\Infrastructure\Persistence\JsonFile;
+use App\Infrastructure\Persistence\MessageMapper;
 use App\Interface\Http\AuthController;
 use App\Interface\Http\BoardController;
+use App\Interface\Http\ChatController;
+use App\Interface\Http\ChatMessagePresenter;
 use App\Interface\Http\ItemArrayPresenter;
 use App\Interface\Http\JsonResponder;
 use GuzzleHttp\Psr7\Response;
@@ -44,11 +51,23 @@ $boardController = new BoardController(
 );
 $authController = new AuthController($authenticator, $responder);
 
+$chatFile = getenv('BOARD_CHAT_FILE');
+$chatFile = $chatFile === false ? __DIR__ . '/../var/chat.json' : $chatFile;
+$chatRepository = new JsonChatRepository(new JsonFile($chatFile), new MessageMapper());
+$chatController = new ChatController(
+    $authenticator,
+    new ReadConversation($chatRepository),
+    new SendChatMessage($chatRepository, new EchoChatAgent()),
+    new ChatMessagePresenter(),
+    $responder,
+);
+
 $request = ServerRequest::fromGlobals();
 
 $response = match (true) {
     $request->getUri()->getPath() === '/api/health' => $responder->respond(['ok' => true]),
     $request->getUri()->getPath() === '/api/login' => $authController->login($request),
+    $request->getUri()->getPath() === '/api/chat' => $chatController->handle($request),
     str_starts_with($request->getUri()->getPath(), '/api/items') => $boardController->handle($request),
     default => new Response(404, [], 'not found'),
 };

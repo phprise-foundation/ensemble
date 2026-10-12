@@ -21,7 +21,11 @@
   bearer; unit tests + end-to-end smoke test.
 - Agents wired into `docker-compose.yml` under the `agents` profile (one service
   per role, `--backend local`, board at `http://board`).
+- Chat copilot (phase 1): conversation domain (`Message`, `Conversation`),
+  `GET`/`POST /api/chat`, board UI drawer, `EchoChatAgent` stub; unit + HTTP tests.
 
 ## Next
 
-- Embedded always-on chat agent.
+- Chat copilot (phase 2): real `HttpChatAgent` + always-on chat service (opencode)
+  in `docker-compose.yml`.
+- Hardening: SSE, dedicated token.

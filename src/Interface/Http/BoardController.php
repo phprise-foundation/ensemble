@@ -45,17 +45,7 @@ final readonly class BoardController
 
     private function authorized(ServerRequestInterface $request): bool
     {
-        return $this->authenticator->isValid($this->bearer($request));
-    }
-
-    private function bearer(ServerRequestInterface $request): ?string
-    {
-        $header = $request->getHeaderLine('Authorization');
-        if (!preg_match('/^Bearer\s+(.+)$/i', $header, $matches)) {
-            return null;
-        }
-
-        return trim($matches[1]);
+        return $this->authenticator->isValid(BearerToken::fromRequest($request));
     }
 
     private function guard(ServerRequestInterface $request): ResponseInterface

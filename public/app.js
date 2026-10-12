@@ -27,11 +27,16 @@ const board = document.getElementById('board');
 const columns = document.getElementById('columns');
 const modal = document.getElementById('modal');
 const modalBody = document.getElementById('modal-body');
+const copilot = document.getElementById('copilot');
+const copilotMessages = document.getElementById('copilot-messages');
 
 document.getElementById('login-form').addEventListener('submit', signIn);
 document.getElementById('logout').addEventListener('click', signOut);
 document.getElementById('new-task').addEventListener('click', openNewTask);
 document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('copilot-toggle').addEventListener('click', toggleCopilot);
+document.getElementById('copilot-close').addEventListener('click', closeCopilot);
+document.getElementById('copilot-form').addEventListener('submit', sendChat);
 
 function token() {
   return localStorage.getItem(TOKEN_KEY);
@@ -70,6 +75,7 @@ function signOut() {
   localStorage.removeItem(TOKEN_KEY);
   login.classList.remove('hidden');
   board.classList.add('hidden');
+  copilot.classList.add('hidden');
 }
 
 function showBoard() {
@@ -224,6 +230,44 @@ function closeModal() {
   modal.classList.add('hidden');
 }
 
+function toggleCopilot() {
+  copilot.classList.toggle('hidden');
+  if (!copilot.classList.contains('hidden')) {
+    loadChat().catch(() => {});
+  }
+}
+
+function closeCopilot() {
+  copilot.classList.add('hidden');
+}
+
+async function loadChat() {
+  const data = await api('GET', '/api/chat');
+  renderChat(data.messages);
+}
+
+function renderChat(messages) {
+  copilotMessages.innerHTML =
+    messages.map(renderMessage).join('') || '<p class="muted">No messages yet</p>';
+  copilotMessages.scrollTop = copilotMessages.scrollHeight;
+}
+
+function renderMessage(message) {
+  return `<div class="chat-message ${message.role}"><span class="chat-role">${message.role}</span><p>${escapeHtml(message.body)}</p></div>`;
+}
+
+async function sendChat(event) {
+  event.preventDefault();
+  const input = document.getElementById('copilot-input');
+  const message = input.value.trim();
+  if (!message) {
+    return;
+  }
+  input.value = '';
+  await api('POST', '/api/chat', { message });
+  await loadChat();
+}
+
 function escapeHtml(value) {
   const div = document.createElement('div');
   div.textContent = value;
@@ -237,5 +281,11 @@ if (token()) {
 setInterval(() => {
   if (token() && !board.classList.contains('hidden')) {
     refresh().catch(() => {});
+  }
+}, 5000);
+
+setInterval(() => {
+  if (token() && !copilot.classList.contains('hidden')) {
+    loadChat().catch(() => {});
   }
 }, 5000);
