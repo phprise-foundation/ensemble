@@ -16,7 +16,7 @@ board's threshold — the first step towards bottleneck and failure detection.
   Jira-like board UI, protected by a single admin password. Data lives in SQLite.
 - **docker-compose.yml** — brings up the board and, under the `agents` profile,
   the [agent-watcher](https://github.com/phprise-foundation/agent-watcher)
-  containers (one per role, `--backend local`).
+  `agent-runner`, which materializes the agents defined on the board.
 
 ## Run
 
@@ -33,18 +33,21 @@ agent registry.
 
 ### Agents
 
-Agents are opt-in via the `agents` profile (the default `up` only starts the
-board):
+Agents are defined on the board (the `Agents` view: rule, profile, model,
+fallback model, interval, workspace). They are opt-in via the `agents` profile
+(the default `up` only starts the board):
 
 ```bash
 docker compose --profile agents up -d --build
 ```
 
-Each service maps to a role (`product-owner`, the architects, `tech-lead`,
-`quality-assurance`, `coder`) and points at the board through
-`AW_KANBAN_URL=http://board` with `AW_KANBAN_TOKEN=$BOARD_PASSWORD`. The agents
-edit the project mounted at `AW_WORKSPACE` (default `./workspace`). Configure
-`DEEPSEEK_API_KEY`, `AW_MODEL` and `AW_FALLBACK_MODEL` in `.env`.
+The `runner` service reads the registry from `http://board`
+(`AW_KANBAN_URL`, `AW_KANBAN_TOKEN=$BOARD_PASSWORD`) and keeps one
+`agent-watcher` subprocess per active agent, in parallel. Each agent polls the
+columns whose role it owns and advances items along the configured transitions.
+The agents edit the project mounted at `AW_WORKSPACE` (default `./workspace`).
+Provide the provider keys (e.g. `DEEPSEEK_API_KEY`, `SILICONFLOW_API_KEY`,
+`GOOGLE_API_KEY`) in `.env`.
 
 ## API
 

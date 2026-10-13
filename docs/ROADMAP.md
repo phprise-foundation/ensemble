@@ -39,7 +39,7 @@ Decisions taken:
   opencode binary is musl-linked, so a Debian base cannot run it) and serves the
   board with the **PHP built-in server**. `docker-compose.yml` stays for dev.
 
-### Phase A — Board (`multi-agent`), backward compatible — **in progress**
+### Phase A — Board (`multi-agent`), backward compatible — **Done.**
 
 - `Column` gains `role` + explicit `transitions` (first-class `Transitions`).
 - `Agent` gains its runtime spec (`rule`, `profile`, `model`, `fallback_model`,
@@ -50,7 +50,7 @@ Decisions taken:
   assigns the destination column's role.
 - Board/Agents UI edits roles, transitions and the agent spec.
 
-### Phase B — agent-watcher (dynamic workflow + runner)
+### Phase B — agent-watcher (dynamic workflow + runner) — **Done.**
 
 - `local` backend exposes `workflow()` and `advance()`; `kanban` gains `workflow`
   and `advance` commands; the loop derives its columns from the board

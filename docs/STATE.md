@@ -55,14 +55,18 @@
   - `vendor/bin/phpunit` (29 tests) and `vendor/bin/psalm` are green; verified
     end-to-end over HTTP (login -> create -> advance -> board payload).
 - **Roadmap documented** in `docs/ROADMAP.md` (active plan: Phases A/B/C).
+- **Board-driven runtime (Phase B, agent-watcher):** the `local` backend now
+  exposes `workflow()`, `advance()` and `agents()`; `kanban workflow`/`advance`
+  and the `--role` flag were added. The loop derives the columns it polls from
+  the board (`column.role == my role`) and the prompt injects the live workflow;
+  rules advance with `kanban advance` instead of hardcoding targets.
+  `agent-runner` reads `GET /api/agents` and keeps exactly one `agent-watcher`
+  subprocess per active agent (restart on spec change, stop on removal). The
+  `docker-compose.yml` `agents` profile now runs this single runner. Verified
+  end-to-end against the real board (workflow, advance, spawn) and unit-tested.
 
 ## Next
 
-- **Phase B — agent-watcher (dynamic workflow + runner):** `local` backend exposes
-  `workflow()`/`advance()`; `kanban workflow`/`advance`; the loop derives its
-  columns from the board (`column.role == my role`) and the prompt injects the
-  live workflow; rules stop hardcoding statuses/targets; `agent-runner` keeps one
-  subprocess per active agent from the board registry.
 - **Phase C — standalone single-container image:** Alpine image
   (`agent-watcher` base + PHP 8.4) with `bin/entrypoint` starting the board and
   the runner, so the whole system runs with a single `docker run`.
