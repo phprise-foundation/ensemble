@@ -1,12 +1,17 @@
 <script setup>
+import { useRoute } from 'vue-router'
 import CrudPage from '../components/CrudPage.vue'
 import { boardStore } from '../store/board.js'
+
+const route = useRoute()
 
 const schema = {
   collection: 'statuses',
   singular: 'status',
   title: 'Statuses',
   feature: 'statuses',
+  items: () => boardStore.statusesOf(route.params.workflowId),
+  inject: () => ({ workflowId: route.params.workflowId }),
   columns: [
     { key: 'name', label: 'Name' },
     { key: 'type', label: 'Type' },

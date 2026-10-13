@@ -1,10 +1,12 @@
 <script setup>
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { boardStore } from '../store/board.js'
 import AppIcon from './../components/AppIcon.vue'
 import { isSimulated } from '../api/index.js'
 
-const types = computed(() => boardStore.state.issueTypes)
+const route = useRoute()
+const types = computed(() => boardStore.issueTypesOf(route.params.workflowId))
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
@@ -19,6 +21,7 @@ const slugify = (text) =>
 
 function openCreate() {
   draft.value = {
+    workflowId: route.params.workflowId,
     name: '',
     level: 1,
     fields: [

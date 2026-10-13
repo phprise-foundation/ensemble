@@ -1,7 +1,9 @@
 <script setup>
+import { useRoute } from 'vue-router'
 import CrudPage from '../components/CrudPage.vue'
 import { boardStore } from '../store/board.js'
 
+const route = useRoute()
 const statusName = (id) => (id === '*' ? 'Any status' : boardStore.status(id)?.name || id)
 
 const schema = {
@@ -9,6 +11,8 @@ const schema = {
   singular: 'transition',
   title: 'Transitions',
   feature: 'transitions',
+  items: () => boardStore.transitionsOf(route.params.workflowId),
+  inject: () => ({ workflowId: route.params.workflowId }),
   columns: [
     { key: 'from', label: 'From', format: (row) => statusName(row.from) },
     { key: 'to', label: 'To', format: (row) => statusName(row.to) },
@@ -22,7 +26,7 @@ const schema = {
       required: true,
       options: () => [
         { value: '*', label: 'Any status' },
-        ...boardStore.state.statuses.map((status) => ({ value: status.id, label: status.name })),
+        ...boardStore.statusesOf(route.params.workflowId).map((status) => ({ value: status.id, label: status.name })),
       ],
     },
     {
@@ -30,7 +34,7 @@ const schema = {
       label: 'To',
       type: 'select',
       required: true,
-      options: () => boardStore.state.statuses.map((status) => ({ value: status.id, label: status.name })),
+      options: () => boardStore.statusesOf(route.params.workflowId).map((status) => ({ value: status.id, label: status.name })),
     },
     {
       key: 'type',

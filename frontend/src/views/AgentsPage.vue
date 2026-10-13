@@ -6,16 +6,16 @@ import AppIcon from './../components/AppIcon.vue'
 import { isSimulated } from '../api/index.js'
 
 const route = useRoute()
-const agents = computed(() => boardStore.state.agents)
-const roles = computed(() => boardStore.state.roles)
-const profiles = computed(() => boardStore.state.profiles)
+const agents = computed(() => boardStore.agentsOf(route.params.teamId))
+const roles = computed(() => boardStore.rolesOf(route.params.teamId))
+const profiles = computed(() => boardStore.profilesOf(route.params.teamId))
 
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff' }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff' }
   error.value = ''
   editing.value = true
 }

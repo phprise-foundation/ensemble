@@ -1,9 +1,12 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { boardStore } from '../store/board.js'
 import BoardColumn from '../components/BoardColumn.vue'
 import IssuePanel from '../components/IssuePanel.vue'
 import AppIcon from '../components/AppIcon.vue'
+
+const route = useRoute()
 
 const dragIssueId = ref(null)
 const dragOverColumn = ref(null)
@@ -12,17 +15,30 @@ const editing = ref(false)
 const draft = ref({})
 const error = ref('')
 
-const columns = computed(() => boardStore.state.columns)
+const board = computed(() => boardStore.board.value)
+const columns = computed(() => boardStore.boardColumns.value)
+const statuses = computed(() => boardStore.boardStatuses.value)
+const issueTypes = computed(() => boardStore.boardIssueTypes.value)
 const dragIssue = computed(
   () => boardStore.state.issues.find((issue) => issue.id === dragIssueId.value) || null,
 )
 
+watch(
+  () => [route.params.boardId, boardStore.state.boards.length],
+  () => {
+    const id = typeof route.params.boardId === 'string' ? route.params.boardId : null
+    boardStore.setBoard(id)
+  },
+  { immediate: true },
+)
+
 function openCreate() {
-  const initial = boardStore.state.statuses.find((status) => status.type === 'initial')
+  const initial = statuses.value.find((status) => status.type === 'initial')
   draft.value = {
+    boardId: board.value?.id,
     summary: '',
     description: '',
-    typeId: boardStore.state.issueTypes[0]?.id || 'task',
+    typeId: issueTypes.value[0]?.id || 'task',
     statusId: initial?.id || '',
     assigneeId: boardStore.state.agents[0]?.id || null,
   }
@@ -80,7 +96,7 @@ async function drop(columnId, beforeId) {
   if (!issue || !boardStore.canEnterColumn(issue.statusId, columnId)) {
     return endDrag()
   }
-  const column = boardStore.column(columnId)
+  const column = columns.value.find((candidate) => candidate.id === columnId)
   let statusId = issue.statusId
   if (!column.statusIds.includes(statusId)) {
     statusId = column.statusIds.find((candidate) => boardStore.canUserMove(issue.statusId, candidate))
@@ -102,6 +118,7 @@ async function drop(columnId, beforeId) {
   <div class="board-layout">
     <div class="board-main">
       <div class="board-toolbar">
+        <strong>{{ board?.name || 'Board' }}</strong>
         <span class="badge sim" v-if="boardStore.simulated('board')"><span class="sim-dot sm"></span> Prototype</span>
         <span class="spacer"></span>
         <button class="button" @click="openCreate">
@@ -145,13 +162,13 @@ async function drop(columnId, beforeId) {
           <label class="field">
             <span>Type</span>
             <select v-model="draft.typeId">
-              <option v-for="type in boardStore.state.issueTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+              <option v-for="type in issueTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
             </select>
           </label>
           <label class="field">
             <span>Status</span>
             <select v-model="draft.statusId">
-              <option v-for="status in boardStore.state.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+              <option v-for="status in statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
             </select>
           </label>
           <label class="field">

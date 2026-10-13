@@ -110,11 +110,9 @@ textarea {
   letter-spacing: 0.2px;
 }
 
-.brand .logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, var(--accent), var(--sim));
+.brand-icon {
+  display: inline-flex;
+  color: var(--accent);
 }
 
 .nav {
@@ -135,6 +133,49 @@ textarea {
   padding: 9px 10px;
   border-radius: var(--radius-sm);
   color: var(--text);
+  overflow: hidden;
+}
+
+.nav-entry .leaf {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.nav-entry .leaf span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge-id {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--surface-3);
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex: 0 0 auto;
+}
+
+.column-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.column-editor .wip {
+  width: 110px;
 }
 
 .nav-entry:hover {

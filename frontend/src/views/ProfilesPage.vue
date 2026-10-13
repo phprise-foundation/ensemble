@@ -1,11 +1,17 @@
 <script setup>
+import { useRoute } from 'vue-router'
 import CrudPage from '../components/CrudPage.vue'
+import { boardStore } from '../store/board.js'
+
+const route = useRoute()
 
 const schema = {
   collection: 'profiles',
   singular: 'profile',
   title: 'Profiles',
   feature: 'profiles',
+  items: () => boardStore.profilesOf(route.params.teamId),
+  inject: () => ({ teamId: route.params.teamId }),
   columns: [
     { key: 'name', label: 'Name' },
     { key: 'style', label: 'Style' },

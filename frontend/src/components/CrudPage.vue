@@ -6,7 +6,10 @@ import { isSimulated } from '../api/index.js'
 
 const props = defineProps({ schema: { type: Object, required: true } })
 
-const items = computed(() => boardStore.state[props.schema.collection] || [])
+const items = computed(() => {
+  const base = props.schema.items ? props.schema.items() : boardStore.state[props.schema.collection] || []
+  return props.schema.filter ? base.filter(props.schema.filter) : base
+})
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
@@ -16,7 +19,7 @@ function optionsFor(field) {
 }
 
 function openCreate() {
-  draft.value = { ...props.schema.defaults() }
+  draft.value = { ...props.schema.defaults(), ...(props.schema.inject ? props.schema.inject() : {}) }
   error.value = ''
   editing.value = true
 }

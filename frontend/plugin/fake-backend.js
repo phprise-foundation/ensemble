@@ -8,7 +8,10 @@ const here = dirname(fileURLToPath(import.meta.url))
 const dataDirectory = join(here, '..', '.data')
 const dataFile = join(dataDirectory, 'db.json')
 
-const COLLECTIONS = ['boards', 'columns', 'statuses', 'transitions', 'issueTypes', 'roles', 'profiles', 'experiences', 'agents']
+const COLLECTIONS = [
+  'workspaces', 'workflows', 'statuses', 'transitions', 'issueTypes',
+  'boards', 'teams', 'roles', 'profiles', 'agents', 'experiences', 'sources',
+]
 
 function load() {
   if (!existsSync(dataFile)) {
@@ -22,13 +25,14 @@ function save(db) {
   writeFileSync(dataFile, JSON.stringify(db, null, 2))
 }
 
-function slugify(text) {
-  return String(text || '')
+function slugify(text, fallback) {
+  const slug = String(text || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || `item-${Date.now()}`
+    .replace(/^-+|-+$/g, '')
+  return slug || fallback || `item-${Date.now()}`
 }
 
 function allowedFor(db, from, to, actor) {
@@ -39,35 +43,44 @@ function allowedFor(db, from, to, actor) {
   })
 }
 
-function issuesInColumn(db, columnId) {
-  const column = db.columns.find((candidate) => candidate.id === columnId)
-  if (!column) return []
-  return db.issues.filter((issue) => column.statusIds.includes(issue.statusId)).sort((a, b) => a.order - b.order)
+function boardOf(db, boardId) {
+  return db.boards.find((board) => board.id === boardId)
 }
 
-function nextIssueId(db) {
+function issuesInColumn(db, boardId, columnId) {
+  const board = boardOf(db, boardId)
+  const column = board?.columns.find((candidate) => candidate.id === columnId)
+  if (!column) return []
+  return db.issues
+    .filter((issue) => issue.boardId === boardId && column.statusIds.includes(issue.statusId))
+    .sort((a, b) => a.order - b.order)
+}
+
+function nextIssueId(db, boardId) {
   const highest = db.issues.reduce((max, issue) => {
+    if (issue.boardId !== boardId) return max
     const match = /-(\d+)$/.exec(issue.id)
     return match ? Math.max(max, Number(match[1])) : max
   }, 0)
-  return `KAN-${highest + 1}`
+  return `${boardId}-${highest + 1}`
 }
 
 function moveIssue(db, id, { columnId, statusId, order }) {
   const issue = db.issues.find((candidate) => candidate.id === id)
-  const column = db.columns.find((candidate) => candidate.id === columnId)
-  if (!issue || !column) return { error: 'issue or column not found', status: 404 }
+  const board = issue ? boardOf(db, issue.boardId) : null
+  const column = board?.columns.find((candidate) => candidate.id === columnId)
+  if (!issue || !board || !column) return { error: 'issue or column not found', status: 404 }
   const previousStatusId = issue.statusId
   const target = statusId ?? column.statusIds.find((candidate) => allowedFor(db, issue.statusId, candidate, 'user'))
   if (!target || !column.statusIds.includes(target)) return { error: 'no allowed transition into this column', status: 409 }
   if (target !== issue.statusId && !allowedFor(db, issue.statusId, target, 'user')) return { error: 'transition not allowed', status: 409 }
-  const origin = db.columns.find((candidate) => candidate.statusIds.includes(previousStatusId))
+  const origin = board.columns.find((candidate) => candidate.statusIds.includes(previousStatusId))
   issue.statusId = target
   issue.updatedAt = new Date().toISOString()
   if (origin && origin.id !== columnId) {
-    issuesInColumn(db, origin.id).forEach((candidate, index) => { candidate.order = index })
+    issuesInColumn(db, board.id, origin.id).forEach((candidate, index) => { candidate.order = index })
   }
-  const list = issuesInColumn(db, columnId).filter((candidate) => candidate.id !== issue.id)
+  const list = issuesInColumn(db, board.id, columnId).filter((candidate) => candidate.id !== issue.id)
   const index = Math.max(0, Math.min(order ?? list.length, list.length))
   list.splice(index, 0, issue)
   list.forEach((candidate, position) => { candidate.order = position })
@@ -78,20 +91,26 @@ function handle(db, method, segments, body) {
   const [head, id, sub] = segments
 
   if (head === 'workspace' && method === 'GET') {
-    return { data: {
-      boards: db.boards, columns: db.columns, statuses: db.statuses, transitions: db.transitions,
-      issueTypes: db.issueTypes, roles: db.roles, profiles: db.profiles, experiences: db.experiences, agents: db.agents,
-    } }
+    return {
+      data: {
+        workspaces: db.workspaces, workflows: db.workflows, statuses: db.statuses,
+        transitions: db.transitions, issueTypes: db.issueTypes, boards: db.boards,
+        teams: db.teams, roles: db.roles, profiles: db.profiles, agents: db.agents,
+        experiences: db.experiences, sources: db.sources,
+      },
+    }
   }
 
   if (head === 'issues') {
     if (method === 'GET' && id === undefined) return { data: db.issues.slice().sort((a, b) => a.order - b.order) }
     if (method === 'GET' && id) return { data: db.issues.find((issue) => issue.id === id) ?? null }
     if (method === 'POST' && id === undefined) {
-      const initial = db.statuses.find((status) => status.type === 'initial')
+      const board = boardOf(db, body.boardId) ?? db.boards[0]
+      const workflowStatuses = db.statuses.filter((status) => status.workflowId === board.workflowId)
+      const initial = workflowStatuses.find((status) => status.type === 'initial') ?? workflowStatuses[0]
       const issue = {
-        id: nextIssueId(db),
-        boardId: body.boardId ?? 'kanban',
+        id: nextIssueId(db, board.id),
+        boardId: board.id,
         typeId: body.typeId ?? 'task',
         summary: body.summary ?? '',
         description: body.description ?? '',
@@ -106,8 +125,8 @@ function handle(db, method, segments, body) {
         updatedAt: new Date().toISOString(),
       }
       db.issues.push(issue)
-      const columnId = body.columnId ?? db.columns.find((column) => column.statusIds.includes(issue.statusId))?.id
-      issuesInColumn(db, columnId).forEach((candidate, index) => { candidate.order = index })
+      const columnId = body.columnId ?? board.columns.find((column) => column.statusIds.includes(issue.statusId))?.id
+      issuesInColumn(db, board.id, columnId).forEach((candidate, index) => { candidate.order = index })
       return { data: issue, status: 201 }
     }
     if (method === 'PATCH' && id) {
@@ -135,7 +154,9 @@ function handle(db, method, segments, body) {
     if (method === 'GET' && id === undefined) return { data: list }
     if (method === 'POST' && id === undefined) {
       const entity = { ...body }
-      if (!entity.id) entity.id = head === 'transitions' ? `t${Date.now()}` : slugify(body.name)
+      if (!entity.id) {
+        entity.id = entity.name ? slugify(entity.name) : `item-${Date.now()}`
+      }
       if (list.some((item) => item.id === entity.id)) return { error: `${head} id already exists`, status: 409 }
       list.push(entity)
       return { data: entity, status: 201 }
