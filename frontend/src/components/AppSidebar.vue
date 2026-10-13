@@ -16,8 +16,6 @@ const openBoards = ref(true)
 const openWorkflows = ref(true)
 const openTeams = ref(true)
 const openSources = ref(true)
-const openWorkflow = ref(null)
-const openTeam = ref(null)
 const editor = ref(null)
 
 const workspace = computed(() => boardStore.workspace.value)
@@ -41,10 +39,6 @@ function open(kind, draft, title, fields) {
 
 function close() {
   editor.value = null
-}
-
-function toggleNode(target, id) {
-  target.value = target.value === id ? null : id
 }
 
 /* Editors */
@@ -263,14 +257,14 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openWorkflows" class="submenu">
             <div v-for="workflow in workflows" :key="workflow.id">
-              <div class="nav-entry" @click="toggleNode(openWorkflow, workflow.id)">
+              <div class="nav-entry">
                 <AppIcon name="layers" size="14" />
                 <span>{{ workflow.name }}</span>
                 <span class="entry-actions">
                   <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(workflow)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
-              <div v-show="openWorkflow === workflow.id" class="submenu">
+              <div class="submenu">
                 <RouterLink class="leaf" :to="`/workflows/${workflow.id}/statuses`"><AppIcon name="statuses" size="14" /><span class="label">Statuses</span><span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
                 <RouterLink class="leaf" :to="`/workflows/${workflow.id}/transitions`"><AppIcon name="transitions" size="14" /><span class="label">Transitions</span><span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
                 <RouterLink class="leaf" :to="`/workflows/${workflow.id}/issue-types`"><AppIcon name="issues" size="14" /><span class="label">Issue types</span><span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
@@ -289,14 +283,14 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openTeams" class="submenu">
             <div v-for="team in teams" :key="team.id">
-              <div class="nav-entry" @click="toggleNode(openTeam, team.id)">
+              <div class="nav-entry">
                 <AppIcon name="agents" size="14" />
                 <span>{{ team.name }}</span>
                 <span class="entry-actions">
                   <button class="icon-btn" title="Edit team" @click.stop="editTeam(team)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
-              <div v-show="openTeam === team.id" class="submenu">
+              <div class="submenu">
                 <RouterLink class="leaf" :to="`/teams/${team.id}/agents`"><AppIcon name="agents" size="14" /><span class="label">Agents</span><span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
                 <RouterLink class="leaf" :to="`/teams/${team.id}/roles`"><AppIcon name="roles" size="14" /><span class="label">Roles</span><span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
                 <RouterLink class="leaf" :to="`/teams/${team.id}/profiles`"><AppIcon name="profiles" size="14" /><span class="label">Profiles</span><span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
