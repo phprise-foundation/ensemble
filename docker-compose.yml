@@ -21,6 +21,7 @@ services:
       - "${BOARD_PORT:-8080}:80"
     environment:
       BOARD_PASSWORD: ${BOARD_PASSWORD:-admin}
+      BOARD_DB_FILE: /var/www/html/var/board.sqlite
       CHAT_URL: ${CHAT_URL:-}
       CHAT_TOKEN: ${CHAT_TOKEN:-}
       CHAT_TIMEOUT: ${CHAT_TIMEOUT:-120}

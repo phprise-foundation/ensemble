@@ -6,17 +6,17 @@ namespace App\Application;
 
 use App\Domain\Board\Item;
 use App\Domain\Board\ItemId;
-use App\Domain\Contract\BoardRepository;
+use App\Domain\Contract\ItemRepository;
 use App\Domain\Exception\ItemNotFoundException;
 
 final readonly class FindItem
 {
-    public function __construct(private BoardRepository $repository)
+    public function __construct(private ItemRepository $items)
     {
     }
 
     public function execute(ItemId $id): Item
     {
-        return $this->repository->find($id) ?? throw ItemNotFoundException::forId($id);
+        return $this->items->find($id) ?? throw ItemNotFoundException::forId($id);
     }
 }

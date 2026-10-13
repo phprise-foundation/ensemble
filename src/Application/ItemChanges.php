@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Application;
 
+use App\Domain\Agent\AgentId;
 use App\Domain\Board\Item;
-use App\Domain\Board\Role;
-use App\Domain\Board\Status;
+use App\Domain\Workflow\ColumnId;
+use DateTimeImmutable;
 
 final class ItemChanges
 {
     public function __construct(
-        private ?Status $status = null,
-        private ?Role $role = null,
-        private bool $roleChanged = false,
+        private ?ColumnId $column = null,
+        private ?AgentId $agent = null,
+        private bool $agentChanged = false,
         private ?string $worker = null,
         private bool $workerChanged = false,
         private ?bool $blocked = null,
@@ -24,71 +25,71 @@ final class ItemChanges
     ) {
     }
 
-    public function applyTo(Item $item): void
+    public function applyTo(Item $item, DateTimeImmutable $at): void
     {
-        $this->applyStatus($item);
-        $this->applyRole($item);
-        $this->applyWorker($item);
-        $this->applyBlocked($item);
-        $this->applyTitle($item);
-        $this->applyBody($item);
+        $this->applyColumn($item, $at);
+        $this->applyAgent($item, $at);
+        $this->applyWorker($item, $at);
+        $this->applyBlocked($item, $at);
+        $this->applyTitle($item, $at);
+        $this->applyBody($item, $at);
     }
 
-    private function applyStatus(Item $item): void
+    private function applyColumn(Item $item, DateTimeImmutable $at): void
     {
-        if ($this->status !== null) {
-            $item->moveTo($this->status);
+        if ($this->column !== null) {
+            $item->moveTo($this->column, $at);
         }
     }
 
-    private function applyRole(Item $item): void
+    private function applyAgent(Item $item, DateTimeImmutable $at): void
     {
-        if ($this->roleChanged) {
-            $item->assignRole($this->role);
+        if ($this->agentChanged) {
+            $item->assignAgent($this->agent, $at);
         }
     }
 
-    private function applyWorker(Item $item): void
+    private function applyWorker(Item $item, DateTimeImmutable $at): void
     {
         if (!$this->workerChanged) {
             return;
         }
         if ($this->worker === null || $this->worker === '') {
-            $item->clearWorker();
+            $item->clearWorker($at);
 
             return;
         }
-        $item->assignWorker($this->worker);
+        $item->assignWorker($this->worker, $at);
     }
 
-    private function applyBlocked(Item $item): void
+    private function applyBlocked(Item $item, DateTimeImmutable $at): void
     {
         if ($this->blocked === true) {
-            $item->block($this->blockedBy ?? '');
+            $item->block($this->blockedBy ?? '', $at);
 
             return;
         }
         if ($this->blocked === false) {
-            $item->unblock();
+            $item->unblock($at);
 
             return;
         }
         if ($this->blockedByChanged && $this->blockedBy !== null && $this->blockedBy !== '') {
-            $item->block($this->blockedBy);
+            $item->block($this->blockedBy, $at);
         }
     }
 
-    private function applyTitle(Item $item): void
+    private function applyTitle(Item $item, DateTimeImmutable $at): void
     {
         if ($this->title !== null) {
-            $item->rename($this->title);
+            $item->rename($this->title, $at);
         }
     }
 
-    private function applyBody(Item $item): void
+    private function applyBody(Item $item, DateTimeImmutable $at): void
     {
         if ($this->body !== null) {
-            $item->describe($this->body);
+            $item->describe($this->body, $at);
         }
     }
 }

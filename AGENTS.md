@@ -38,7 +38,8 @@ Infrastructure  ──────────────┘
 - `Domain/` — the heart. Entities, value objects, contracts (interfaces) and
   exceptions. Does **not** know about HTTP, JSON or files.
 - `Application/` — use cases. Orchestrates the domain. Depends only on `Domain` contracts.
-- `Infrastructure/` — adapters. Implements the `Domain` contracts (JSON persistence, password auth).
+- `Infrastructure/` — adapters. Implements the `Domain` contracts (SQLite
+  persistence, password auth, HTTP chat client).
 - `Interface/` — entry points. Controllers.
 
 Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

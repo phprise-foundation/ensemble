@@ -6,8 +6,9 @@ namespace App\Domain\Contract;
 
 use App\Domain\Board\Item;
 use App\Domain\Board\ItemId;
+use App\Domain\Workflow\ColumnId;
 
-interface BoardRepository
+interface ItemRepository
 {
     /** @return Item[] */
     public function all(): array;
@@ -15,6 +16,8 @@ interface BoardRepository
     public function find(ItemId $id): ?Item;
 
     public function nextId(): ItemId;
+
+    public function countInColumn(ColumnId $column): int;
 
     public function add(Item $item): void;
 

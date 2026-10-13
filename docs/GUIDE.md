@@ -35,7 +35,8 @@ from `phprise/common`).
 
 ## Rule 4 — First-class collections
 
-`CommentCollection` owns a list of comments and its iteration.
+`CommentCollection` owns a list of comments and its iteration; `Transitions`
+owns the allowed target columns of a stage (`allows()`, `sole()`).
 
 ## Rule 7 — Small entities
 
@@ -50,7 +51,7 @@ Strict for value objects; entities/aggregates may hold the state they own.
 
 - `Domain` never knows about HTTP, JSON or files.
 - `Application` (use cases) orchestrate the domain and its repositories.
-- `Infrastructure` implements the contracts (JSON persistence, password auth).
+- `Infrastructure` implements the contracts (SQLite persistence, password auth).
 - `Interface` translates HTTP into use cases and back into JSON.
 
 The composition root (`public/index.php`) wires everything together.
