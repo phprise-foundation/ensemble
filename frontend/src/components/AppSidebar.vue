@@ -207,119 +207,120 @@ async function removeEntity(kind, id, label) {
 <template>
   <aside class="sidebar" :class="{ open }">
     <div class="brand">
-      <span class="brand-icon"><AppIcon name="smartboard" size="20" /></span>
+      <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>
     </div>
 
     <nav class="nav">
-      <div class="nav-group">
-        <div class="nav-entry">
-          <AppIcon name="workspace" />
-          <span>Workspaces</span>
+      <div class="nav-entry" title="Workspaces">
+        <AppIcon name="workspace" size="15" />
+        <span>Workspaces</span>
+        <span class="entry-actions">
+          <button class="icon-btn" title="New workspace (coming soon)" disabled><AppIcon name="plus" size="14" /></button>
+        </span>
+      </div>
+
+      <div class="submenu">
+        <div class="nav-entry" v-if="workspace">
+          <AppIcon name="workspace" size="15" />
+          <span>{{ workspace.name }}</span>
           <span class="entry-actions">
-            <button class="icon-btn" title="New workspace (coming soon)" disabled><AppIcon name="plus" size="16" /></button>
+            <button class="icon-btn" title="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
           </span>
         </div>
 
         <div class="submenu">
-          <div class="nav-entry" v-if="workspace">
-            <span class="sim-dot sm" v-if="isSimulated('board')"></span>
-            <span>{{ workspace.name }}</span>
+          <!-- Boards -->
+          <div class="nav-entry" :class="{ open: openBoards }" @click="openBoards = !openBoards">
+            <AppIcon name="board" size="15" />
+            <span>Boards</span>
+            <AppIcon class="chevron" name="chevron" size="13" />
             <span class="entry-actions">
-              <button class="icon-btn" title="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="15" /></button>
+              <button class="icon-btn" title="New board" @click.stop="addBoard"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
-
-          <div class="submenu">
-            <!-- Boards -->
-            <div class="nav-entry" :class="{ open: openBoards }" @click="openBoards = !openBoards">
-              <AppIcon name="board" size="16" />
-              <span>Boards</span>
-              <AppIcon class="chevron" name="chevron" size="14" />
+          <div v-show="openBoards" class="submenu">
+            <div v-for="board in boards" :key="board.id" class="nav-entry">
+              <RouterLink class="leaf" :to="`/boards/${board.id}`">
+                <AppIcon name="board" size="14" />
+                <span class="label">{{ board.name }}</span>
+                <span class="badge-id">{{ board.id }}</span>
+              </RouterLink>
               <span class="entry-actions">
-                <button class="icon-btn" title="New board" @click.stop="addBoard"><AppIcon name="plus" size="16" /></button>
+                <button class="icon-btn" title="Edit board" @click.stop="editBoard(board)"><AppIcon name="edit" size="14" /></button>
               </span>
             </div>
-            <div v-show="openBoards" class="submenu">
-              <div v-for="board in boards" :key="board.id" class="nav-entry">
-                <RouterLink class="leaf" :to="`/boards/${board.id}`">
-                  <span class="badge-id">{{ board.id }}</span>
-                  <span>{{ board.name }}</span>
-                </RouterLink>
+          </div>
+
+          <!-- Workflows -->
+          <div class="nav-entry" :class="{ open: openWorkflows }" @click="openWorkflows = !openWorkflows">
+            <AppIcon name="layers" size="15" />
+            <span>Workflows</span>
+            <AppIcon class="chevron" name="chevron" size="13" />
+            <span class="entry-actions">
+              <button class="icon-btn" title="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="14" /></button>
+            </span>
+          </div>
+          <div v-show="openWorkflows" class="submenu">
+            <div v-for="workflow in workflows" :key="workflow.id">
+              <div class="nav-entry" @click="toggleNode(openWorkflow, workflow.id)">
+                <AppIcon name="layers" size="14" />
+                <span>{{ workflow.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit board" @click.stop="editBoard(board)"><AppIcon name="edit" size="15" /></button>
+                  <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(workflow)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
-            </div>
-
-            <!-- Workflows -->
-            <div class="nav-entry" :class="{ open: openWorkflows }" @click="openWorkflows = !openWorkflows">
-              <AppIcon name="transitions" size="16" />
-              <span>Workflows</span>
-              <AppIcon class="chevron" name="chevron" size="14" />
-              <span class="entry-actions">
-                <button class="icon-btn" title="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="16" /></button>
-              </span>
-            </div>
-            <div v-show="openWorkflows" class="submenu">
-              <div v-for="workflow in workflows" :key="workflow.id">
-                <div class="nav-entry" @click="toggleNode(openWorkflow, workflow.id)">
-                  <span>{{ workflow.name }}</span>
-                  <span class="entry-actions">
-                    <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(workflow)"><AppIcon name="edit" size="15" /></button>
-                  </span>
-                </div>
-                <div v-show="openWorkflow === workflow.id" class="submenu">
-                  <RouterLink class="submenu-item" :to="`/workflows/${workflow.id}/statuses`">Statuses <span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
-                  <RouterLink class="submenu-item" :to="`/workflows/${workflow.id}/transitions`">Transitions <span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
-                  <RouterLink class="submenu-item" :to="`/workflows/${workflow.id}/issue-types`">Issue types <span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
-                </div>
+              <div v-show="openWorkflow === workflow.id" class="submenu">
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/statuses`"><AppIcon name="statuses" size="14" /><span class="label">Statuses</span><span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/transitions`"><AppIcon name="transitions" size="14" /><span class="label">Transitions</span><span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/issue-types`"><AppIcon name="issues" size="14" /><span class="label">Issue types</span><span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
               </div>
             </div>
+          </div>
 
-            <!-- Teams -->
-            <div class="nav-entry" :class="{ open: openTeams }" @click="openTeams = !openTeams">
-              <AppIcon name="agents" size="16" />
-              <span>Teams</span>
-              <AppIcon class="chevron" name="chevron" size="14" />
-              <span class="entry-actions">
-                <button class="icon-btn" title="New team" @click.stop="addTeam"><AppIcon name="plus" size="16" /></button>
-              </span>
-            </div>
-            <div v-show="openTeams" class="submenu">
-              <div v-for="team in teams" :key="team.id">
-                <div class="nav-entry" @click="toggleNode(openTeam, team.id)">
-                  <span>{{ team.name }}</span>
-                  <span class="entry-actions">
-                    <button class="icon-btn" title="Edit team" @click.stop="editTeam(team)"><AppIcon name="edit" size="15" /></button>
-                  </span>
-                </div>
-                <div v-show="openTeam === team.id" class="submenu">
-                  <RouterLink class="submenu-item" :to="`/teams/${team.id}/agents`">Agents <span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
-                  <RouterLink class="submenu-item" :to="`/teams/${team.id}/roles`">Roles <span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
-                  <RouterLink class="submenu-item" :to="`/teams/${team.id}/profiles`">Profiles <span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
-                </div>
-              </div>
-            </div>
-
-            <!-- Sources -->
-            <div class="nav-entry" :class="{ open: openSources }" @click="openSources = !openSources">
-              <AppIcon name="workspace" size="16" />
-              <span>Sources</span>
-              <AppIcon class="chevron" name="chevron" size="14" />
-              <span class="entry-actions">
-                <button class="icon-btn" title="New source" @click.stop="addSource"><AppIcon name="plus" size="16" /></button>
-              </span>
-            </div>
-            <div v-show="openSources" class="submenu">
-              <div v-for="source in sources" :key="source.id" class="nav-entry">
-                <span>{{ source.name }}</span>
-                <span class="muted small">{{ source.path }}</span>
+          <!-- Teams -->
+          <div class="nav-entry" :class="{ open: openTeams }" @click="openTeams = !openTeams">
+            <AppIcon name="agents" size="15" />
+            <span>Teams</span>
+            <AppIcon class="chevron" name="chevron" size="13" />
+            <span class="entry-actions">
+              <button class="icon-btn" title="New team" @click.stop="addTeam"><AppIcon name="plus" size="14" /></button>
+            </span>
+          </div>
+          <div v-show="openTeams" class="submenu">
+            <div v-for="team in teams" :key="team.id">
+              <div class="nav-entry" @click="toggleNode(openTeam, team.id)">
+                <AppIcon name="agents" size="14" />
+                <span>{{ team.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="15" /></button>
-                  <button class="icon-btn" title="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="close" size="15" /></button>
+                  <button class="icon-btn" title="Edit team" @click.stop="editTeam(team)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
+              <div v-show="openTeam === team.id" class="submenu">
+                <RouterLink class="leaf" :to="`/teams/${team.id}/agents`"><AppIcon name="agents" size="14" /><span class="label">Agents</span><span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/teams/${team.id}/roles`"><AppIcon name="roles" size="14" /><span class="label">Roles</span><span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/teams/${team.id}/profiles`"><AppIcon name="profiles" size="14" /><span class="label">Profiles</span><span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sources -->
+          <div class="nav-entry" :class="{ open: openSources }" @click="openSources = !openSources">
+            <AppIcon name="folder" size="15" />
+            <span>Sources</span>
+            <AppIcon class="chevron" name="chevron" size="13" />
+            <span class="entry-actions">
+              <button class="icon-btn" title="New source" @click.stop="addSource"><AppIcon name="plus" size="14" /></button>
+            </span>
+          </div>
+          <div v-show="openSources" class="submenu">
+            <div v-for="source in sources" :key="source.id" class="nav-entry">
+              <AppIcon name="folder" size="14" />
+              <span class="label" :title="source.path">{{ source.name }}</span>
+              <span class="entry-actions">
+                <button class="icon-btn" title="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="close" size="14" /></button>
+              </span>
             </div>
           </div>
         </div>
