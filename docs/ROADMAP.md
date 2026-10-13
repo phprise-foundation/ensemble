@@ -64,24 +64,29 @@ Decisions taken:
 - `Dockerfile.standalone` (Alpine + PHP 8.4) and `bin/entrypoint` start the board
   and the runner together, so the whole system runs with a single `docker run`.
 
-## UX track — reactive frontend, simulated first
+## UX track — reactive frontend, prototype backend
 
 New reactive SPA under `frontend/` (Vue 3 + Vite), independent from the backend
-and backed by a simulated API until each screen's real endpoints exist. Features
-are flagged individually, with an orange banner/dots marking what is simulated.
+and backed by a **fake JSON backend** (a Vite middleware) until each screen's real
+endpoints exist. Features are flagged individually, with an orange banner/dots
+marking what is still a prototype.
 
-1. ~~**App shell + board** — sidebar with dropdowns, dark/light theme, responsive
-   columns, cards (status colour, aging flag, avatar), right-hand issue panel and
-   drag & drop that respects the configured transitions.~~ **Done (prototype).**
-2. ~~**Boards admin** — Columns (with WIP), Statuses (type, colour, roles),
-   Transitions (user/agent/both) and Issue types (custom fields, levels).~~
+1. ~~**App shell + board** — sidebar, dark/light theme, responsive columns, cards
+   (status colour, aging flag, avatar), right-hand issue panel and drag & drop
+   that respects the configured transitions.~~ **Done (prototype).**
+2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
+   teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
+   (prototype).**
+3. ~~**Workflow admin** — statuses (type, colour, roles), transitions
+   (user/agent/both) and issue types (custom fields, levels), scoped to a
+   workflow.~~ **Done (prototype).**
+4. ~~**Team admin** — agents (name, who am I, age, marital status, roles, profile,
+   3x4 portrait), roles and profiles, scoped to a team.~~ **Done (prototype).**
+5. ~~**Sources** — local project directories the worker will use as `workdir`.~~
    **Done (prototype).**
-3. ~~**Agents admin** — Roles, Profiles and Experiences; agent creation (name,
-   who am I, age, marital status, roles, profile, 3x4 portrait).~~
-   **Done (prototype).**
-4. **Board polish** — open an issue on its own page, column/priority refinement,
-   WIP hints, aging.
-5. **i18n** — the UI starts in English; localisation comes after the flow is set.
-6. **Wire the real backend** — replace the fake JSON backend with the PHP REST
-   API feature by feature, flipping the per-feature prototype flags.
+6. **Board polish** — open an issue on its own page; make board filters affect the
+   cards; surface Experiences in the new menu; WIP hints.
+7. **i18n** — the UI starts in English; localisation comes after the flow is set.
+8. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
+   feature by feature, flipping the per-feature prototype flags.
 

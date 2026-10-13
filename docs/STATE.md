@@ -76,19 +76,30 @@
   `frontend/.data/db.json`, so the experience is functional while agents are not
   triggered. Features carry per-feature prototype flags (orange banner/badges in
   `src/api/simulation.js`) to be flipped when the real endpoint lands.
-  Implemented: app shell (sidebar with dropdowns, dark/light theme), the board
-  (responsive columns, cards, right-hand issue panel, drag & drop respecting
-  transitions) and full CRUD for Columns, Statuses, Transitions, Issue types,
-  Roles, Profiles and Experiences, plus agent creation (name, who am I, age,
-  marital status, roles, profile, 3x4 portrait). Verified headless: render, panel
-  open, valid/rejected drops and API persistence.
+  - **Model:** `workspaces -> boards / workflows / teams / sources`. A workflow
+    owns statuses, transitions and issue types; a team owns agents, roles and
+    profiles; a board references a workflow and owns its columns and filters;
+    **sources are local directories** (host paths) that will become the agents'
+    `workdir`.
+  - **Sidebar:** compact tree with an SVG icon on every entry, tight rows and
+    small indentation; Board / Workflow / Team / Workspace / Source editors open
+    from the menu (board editor: ID, name, workflow, columns, filters; workflow
+    creation can copy a template). Statuses/transitions/issue-types and
+    agents/roles/profiles are always listed under their workflow/team.
+  - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
+    right-hand issue panel (status + assignee + comments) and drag & drop that
+    respects the transitions. Dark default theme with a light option.
+  - **Admin:** full CRUD for statuses, transitions, issue types, agents (name,
+    who am I, age, marital status, roles, profile, 3x4 portrait), roles and
+    profiles; the board is created/edited from the menu.
+  - Verified headless (render, panel open, valid/rejected drops, persisted CRUD).
 
 ## Next
 
-- **UX track (frontend):** Boards admin (Columns, Statuses, Transitions, Issue
-  types) and Agents admin (Roles, Profiles, Experiences), then the item
-  full-page view and i18n; flip each feature from `mockApi` to `realApi` as the
-  endpoints land.
+- **UX track (frontend):** open an issue on its own page; surface Experiences in
+  the new menu; make board filters affect the cards; i18n. Then replace the fake
+  JSON backend with the real PHP API feature by feature, flipping the prototype
+  flags.
 - **Workflow transitions polish** — WIP limits and a transition editor beyond the
   multi-select (e.g. drag between columns).
 - **Process visibility** — cycle time per column, rework (backward moves) and
