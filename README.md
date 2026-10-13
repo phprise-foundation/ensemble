@@ -49,6 +49,73 @@ The agents edit the project mounted at `AW_WORKSPACE` (default `./workspace`).
 Provide the provider keys (e.g. `DEEPSEEK_API_KEY`, `SILICONFLOW_API_KEY`,
 `GOOGLE_API_KEY`) in `.env`.
 
+## Single container (standalone image)
+
+The board **and** the agent runner can run in one container, so you only need a
+single `docker run`. The image is built on the Alpine `agent-watcher` image (the
+bundled opencode binary is musl-linked, so a glibc base cannot run it) and serves
+the board with PHP's built-in server. See `Dockerfile.standalone` and
+`bin/entrypoint`.
+
+Build the agent-watcher image first (it carries `agent-runner`), then the
+standalone image:
+
+```bash
+docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
+docker build -f Dockerfile.standalone -t esdrasschonevald/multi-agent:standalone .
+```
+
+Run it:
+
+```bash
+docker run -d --name multi-agent \
+  -p 8080:80 \
+  -v "$PWD/workspace:/workspace" \
+  -v multi-agent-var:/var/www/html/var \
+  -e BOARD_PASSWORD=change-me \
+  -e DEEPSEEK_API_KEY=... \
+  -e SILICONFLOW_API_KEY=... \
+  -e GOOGLE_API_KEY=... \
+  esdrasschonevald/multi-agent:standalone
+```
+
+Open <http://localhost:8080>. Agents, roles and transitions are configured in the
+UI; the embedded runner starts one `agent-watcher` process per **active** agent
+that has a `model` set (the seeded agents ship with an empty model, so nothing
+runs until you fill it in on the `Agents` screen).
+
+Environment: `BOARD_PASSWORD` (board login and runner token), `BOARD_DB_FILE`
+(default `/var/www/html/var/board.sqlite`), `BOARD_PORT` (default `80`),
+`AW_RUNNER_POLL` (default `30`) and the provider keys the agents need.
+
+### Local test checklist (before pushing to Docker Hub)
+
+```bash
+docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
+docker build -f Dockerfile.standalone -t esdrasschonevald/multi-agent:standalone .
+
+docker run -d --name multi-agent -p 8080:80 \
+  -v "$PWD/workspace:/workspace" -v multi-agent-var:/var/www/html/var \
+  -e BOARD_PASSWORD=change-me esdrasschonevald/multi-agent:standalone
+
+curl -s localhost:8080/api/health            # {"ok":true}
+curl -s -o /dev/null -w '%{http_code}\n' localhost:8080/   # 200 (board UI)
+docker logs -f multi-agent                   # board + runner logs
+```
+
+Then, in the UI: set a `model` on an agent (`Agents`), pick its role on a column
+(`Boards`), create a task in that column and watch the runner pick it up
+(`docker logs -f multi-agent`).
+
+Publish to Docker Hub once it looks good:
+
+```bash
+docker tag esdrasschonevald/agent-watcher:latest esdrasschonevald/agent-watcher:<tag>
+docker push esdrasschonevald/agent-watcher:<tag>
+docker tag esdrasschonevald/multi-agent:standalone esdrasschonevald/multi-agent:<tag>
+docker push esdrasschonevald/multi-agent:<tag>
+```
+
 ## API
 
 Auth is a single shared secret: send `Authorization: Bearer <BOARD_PASSWORD>`.

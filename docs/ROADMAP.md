@@ -59,7 +59,7 @@ Decisions taken:
 - `agent-runner` keeps one `agent-watcher` subprocess per active agent from the
   board registry.
 
-### Phase C — Standalone single-container image
+### Phase C — Standalone single-container image — **Done.**
 
 - `Dockerfile.standalone` (Alpine + PHP 8.4) and `bin/entrypoint` start the board
   and the runner together, so the whole system runs with a single `docker run`.

@@ -64,12 +64,15 @@
   subprocess per active agent (restart on spec change, stop on removal). The
   `docker-compose.yml` `agents` profile now runs this single runner. Verified
   end-to-end against the real board (workflow, advance, spawn) and unit-tested.
+- **Standalone single-container image (Phase C):** `Dockerfile.standalone`
+  (Alpine `agent-watcher` base + PHP 8.4, since opencode is musl-linked),
+  `public/router.php` and `bin/entrypoint` bring up the board (PHP built-in
+  server) and the runner in one container, so the whole system runs with a single
+  `docker run`. Built and smoke-tested locally (UI, health, create, advance).
+  README documents a local test checklist and the Docker Hub publishing steps.
 
 ## Next
 
-- **Phase C — standalone single-container image:** Alpine image
-  (`agent-watcher` base + PHP 8.4) with `bin/entrypoint` starting the board and
-  the runner, so the whole system runs with a single `docker run`.
 - **Drag & drop / reordering polish** — move cards between configured columns in
   the UI and reorder columns by dragging.
 - **Workflow transitions polish** — WIP limits and a transition editor beyond the

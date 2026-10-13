@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+
+export BOARD_PASSWORD="${BOARD_PASSWORD:-admin}"
+export BOARD_DB_FILE="${BOARD_DB_FILE:-/var/www/html/var/board.sqlite}"
+export BOARD_PORT="${BOARD_PORT:-80}"
+export PHP_CLI_SERVER_WORKERS="${PHP_CLI_SERVER_WORKERS:-4}"
+
+export AW_BACKEND="${AW_BACKEND:-local}"
+export AW_KANBAN_URL="${AW_KANBAN_URL:-http://localhost}"
+export AW_KANBAN_TOKEN="${AW_KANBAN_TOKEN:-$BOARD_PASSWORD}"
+export AW_RUNNER_POLL="${AW_RUNNER_POLL:-30}"
+
+mkdir -p "$(dirname "$BOARD_DB_FILE")"
+
+php -S "0.0.0.0:${BOARD_PORT}" -t /var/www/html/public /var/www/html/public/router.php &
+board=$!
+
+for _ in $(seq 1 60); do
+    if wget -q -O /dev/null "http://127.0.0.1:${BOARD_PORT}/api/health" 2>/dev/null; then
+        break
+    fi
+    sleep 0.5
+done
+
+agent-runner &
+runner=$!
+
+terminate() {
+    kill "$board" "$runner" 2>/dev/null || true
+}
+trap terminate TERM INT
+
+status=0
+wait -n "$board" "$runner" || status=$?
+terminate
+exit "$status"

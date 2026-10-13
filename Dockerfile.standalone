@@ -1,0 +1,30 @@
+# Standalone single-container image: the board (PHP) + the agent runner + opencode.
+#
+# The opencode binary in the agent-watcher image is musl-linked, so the base must
+# be that Alpine image (a glibc base such as php:*-apache cannot run it). PHP is
+# installed on top and the board is served by the built-in server.
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --optimize-autoloader
+
+FROM esdrasschonevald/agent-watcher:latest
+
+RUN apk add --no-cache php84 php84-pdo_sqlite php84-curl php84-ctype php84-mbstring \
+    && ln -sf "$(command -v php84)" /usr/local/bin/php
+
+WORKDIR /var/www/html
+COPY public/ /var/www/html/public/
+COPY src/ /var/www/html/src/
+COPY --from=vendor /app/vendor/ /var/www/html/vendor/
+COPY bin/entrypoint /usr/local/bin/entrypoint
+
+RUN chmod +x /usr/local/bin/entrypoint && mkdir -p /var/www/html/var
+
+ENV BOARD_DB_FILE=/var/www/html/var/board.sqlite
+ENV AW_KANBAN_URL=http://localhost
+ENV PHP_CLI_SERVER_WORKERS=4
+
+VOLUME ["/var/www/html/var", "/workspace"]
+EXPOSE 80
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
