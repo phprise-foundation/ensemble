@@ -70,14 +70,18 @@
   server) and the runner in one container, so the whole system runs with a single
   `docker run`. Built and smoke-tested locally (UI, health, create, advance).
   README documents a local test checklist and the Docker Hub publishing steps.
-- **Reactive frontend (UX track, increment 1):** new `frontend/` SPA (Vue 3 +
-  Vite) with a per-feature simulated data layer (`mockApi` / `realApi`), an orange
-  banner and dots marking simulated screens, the app shell (sidebar with
-  dropdowns, dark default theme with a light option) and the board (responsive
-  columns, cards with status colour / aging flag / avatar, the right-hand issue
-  panel and drag & drop that respects the configured transitions). Admin screens
-  are wired in the router as placeholders. Verified headless: render, panel open,
-  a valid drop and a rejected drop. Run with `npm run dev` (simulated by default).
+- **Reactive frontend (UX prototype):** new `frontend/` SPA (Vue 3 + Vite) served
+  with a single `npm run dev`. A **fake backend** (Vite middleware,
+  `plugin/fake-backend.js`) draws the whole `/api` and persists to
+  `frontend/.data/db.json`, so the experience is functional while agents are not
+  triggered. Features carry per-feature prototype flags (orange banner/badges in
+  `src/api/simulation.js`) to be flipped when the real endpoint lands.
+  Implemented: app shell (sidebar with dropdowns, dark/light theme), the board
+  (responsive columns, cards, right-hand issue panel, drag & drop respecting
+  transitions) and full CRUD for Columns, Statuses, Transitions, Issue types,
+  Roles, Profiles and Experiences, plus agent creation (name, who am I, age,
+  marital status, roles, profile, 3x4 portrait). Verified headless: render, panel
+  open, valid/rejected drops and API persistence.
 
 ## Next
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
@@ -8,6 +8,7 @@ import { isSimulated } from '../api/index.js'
 defineProps({ open: { type: Boolean, default: false } })
 
 const route = useRoute()
+const router = useRouter()
 const boardsOpen = ref(true)
 const agentsOpen = ref(true)
 const openBoard = ref('kanban')
@@ -20,6 +21,7 @@ const boardItems = [
 ]
 
 const agentItems = [
+  { to: '/agents', label: 'Agents', feature: 'agents' },
   { to: '/agents/roles', label: 'Roles', feature: 'roles' },
   { to: '/agents/profiles', label: 'Profiles', feature: 'profiles' },
   { to: '/agents/experiences', label: 'Experiences', feature: 'experiences' },
@@ -27,6 +29,18 @@ const agentItems = [
 
 function toggleBoard(id) {
   openBoard.value = openBoard.value === id ? null : id
+}
+
+async function addBoard() {
+  const name = window.prompt('New board name')
+  if (!name) {
+    return
+  }
+  await boardStore.saveEntity('boards', { name, level: 1 })
+}
+
+function addAgent() {
+  router.push({ path: '/agents', query: { new: '1' } })
 }
 </script>
 
@@ -48,7 +62,7 @@ function toggleBoard(id) {
           <span>Boards</span>
           <AppIcon class="chevron" name="chevron" size="16" />
           <span class="entry-actions">
-            <button class="icon-btn" title="New board" @click.stop>
+            <button class="icon-btn" title="New board" @click.stop="addBoard">
               <AppIcon name="plus" size="16" />
             </button>
           </span>
@@ -81,7 +95,7 @@ function toggleBoard(id) {
           <span>Agents</span>
           <AppIcon class="chevron" name="chevron" size="16" />
           <span class="entry-actions">
-            <button class="icon-btn" title="New agent" @click.stop>
+            <button class="icon-btn" title="New agent" @click.stop="addAgent">
               <AppIcon name="plus" size="16" />
             </button>
           </span>

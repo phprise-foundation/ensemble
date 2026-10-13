@@ -17,6 +17,10 @@ async function changeStatus(event) {
   await boardStore.moveIssue(issue.value.id, { columnId: boardStore.columnOf(statusId), statusId })
 }
 
+async function changeAssignee(event) {
+  await boardStore.updateIssue(issue.value.id, { assigneeId: event.target.value || null })
+}
+
 async function submitComment() {
   if (!comment.value.trim()) {
     return
@@ -56,6 +60,14 @@ function format(value) {
       <span>Status</span>
       <select :value="issue.statusId" @change="changeStatus">
         <option v-for="option in targets" :key="option.id" :value="option.id">{{ option.name }}</option>
+      </select>
+    </label>
+
+    <label class="field">
+      <span>Assignee</span>
+      <select :value="issue.assigneeId" @change="changeAssignee">
+        <option :value="null">Unassigned</option>
+        <option v-for="member in boardStore.state.agents" :key="member.id" :value="member.id">{{ member.name }}</option>
       </select>
     </label>
 

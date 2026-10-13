@@ -72,15 +72,16 @@ are flagged individually, with an orange banner/dots marking what is simulated.
 
 1. ~~**App shell + board** — sidebar with dropdowns, dark/light theme, responsive
    columns, cards (status colour, aging flag, avatar), right-hand issue panel and
-   drag & drop that respects the configured transitions.~~ **Done (simulated).**
-2. **Boards admin** — Columns (with WIP), Statuses (type, colour, roles),
-   Transitions (user/agent/both) and Issue types (custom fields, levels).
-3. **Agents admin** — Roles (from the agent-watcher frontmatter), Profiles and
-   Experiences; agent creation (name, who am I, age, marital status, roles,
-   profile, 3x4 portrait).
+   drag & drop that respects the configured transitions.~~ **Done (prototype).**
+2. ~~**Boards admin** — Columns (with WIP), Statuses (type, colour, roles),
+   Transitions (user/agent/both) and Issue types (custom fields, levels).~~
+   **Done (prototype).**
+3. ~~**Agents admin** — Roles, Profiles and Experiences; agent creation (name,
+   who am I, age, marital status, roles, profile, 3x4 portrait).~~
+   **Done (prototype).**
 4. **Board polish** — open an issue on its own page, column/priority refinement,
    WIP hints, aging.
 5. **i18n** — the UI starts in English; localisation comes after the flow is set.
-6. **Wire the real backend** — flip each feature from `mockApi` to `realApi` as
-   the PHP endpoints land, keeping the per-feature simulation flags.
+6. **Wire the real backend** — replace the fake JSON backend with the PHP REST
+   API feature by feature, flipping the per-feature prototype flags.
 

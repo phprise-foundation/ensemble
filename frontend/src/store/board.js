@@ -119,6 +119,34 @@ export const boardStore = {
     return created
   },
 
+  async updateIssue(id, patch) {
+    const updated = await api.updateIssue(id, patch)
+    const index = state.issues.findIndex((issue) => issue.id === id)
+    if (index >= 0) {
+      state.issues.splice(index, 1, updated)
+    }
+    return updated
+  },
+
+  async saveEntity(collection, data) {
+    const saved = data.id
+      ? await api.updateEntity(collection, data.id, data)
+      : await api.createEntity(collection, data)
+    const list = state[collection]
+    const index = list.findIndex((item) => item.id === saved.id)
+    if (index >= 0) {
+      list.splice(index, 1, saved)
+    } else {
+      list.push(saved)
+    }
+    return saved
+  },
+
+  async removeEntity(collection, id) {
+    await api.deleteEntity(collection, id)
+    state[collection] = state[collection].filter((item) => item.id !== id)
+  },
+
   async addComment(issueId, body) {
     const updated = await api.addComment(issueId, { author: 'user', body })
     const index = state.issues.findIndex((issue) => issue.id === issueId)

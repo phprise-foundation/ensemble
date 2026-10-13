@@ -1,20 +1,19 @@
-import { isSimulated } from './simulation.js'
-import { mockApi } from './mock.js'
-import { realApi } from './real.js'
+import { request } from './client.js'
 
-function pick(feature) {
-  return isSimulated(feature) ? mockApi : realApi
-}
+export { FEATURES, simulation, isSimulated, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
 
 export const api = {
-  fetchWorkspace: () => pick('board').fetchWorkspace(),
-  fetchIssues: () => pick('issues').fetchIssues(),
-  fetchIssue: (id) => pick('issues').fetchIssue(id),
-  createIssue: (payload) => pick('issues').createIssue(payload),
-  updateIssue: (id, patch) => pick('issues').updateIssue(id, patch),
-  moveIssue: (id, target) => pick('issues').moveIssue(id, target),
-  addComment: (id, comment) => pick('issues').addComment(id, comment),
-  deleteIssue: (id) => pick('issues').deleteIssue(id),
-}
+  fetchWorkspace: () => request('GET', '/api/workspace'),
 
-export { isSimulated, FEATURES, simulation, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
+  fetchIssues: () => request('GET', '/api/issues'),
+  fetchIssue: (id) => request('GET', `/api/issues/${id}`),
+  createIssue: (payload) => request('POST', '/api/issues', payload),
+  updateIssue: (id, patch) => request('PATCH', `/api/issues/${id}`, patch),
+  moveIssue: (id, target) => request('POST', `/api/issues/${id}/move`, target),
+  addComment: (id, comment) => request('POST', `/api/issues/${id}/comments`, comment),
+  deleteIssue: (id) => request('DELETE', `/api/issues/${id}`),
+
+  createEntity: (collection, data) => request('POST', `/api/${collection}`, data),
+  updateEntity: (collection, id, data) => request('PATCH', `/api/${collection}/${id}`, data),
+  deleteEntity: (collection, id) => request('DELETE', `/api/${collection}/${id}`),
+}

@@ -8,13 +8,38 @@ import AppIcon from '../components/AppIcon.vue'
 const dragIssueId = ref(null)
 const dragOverColumn = ref(null)
 const dropBefore = ref(null)
-const composing = ref(false)
-const newSummary = ref('')
+const editing = ref(false)
+const draft = ref({})
+const error = ref('')
 
 const columns = computed(() => boardStore.state.columns)
 const dragIssue = computed(
   () => boardStore.state.issues.find((issue) => issue.id === dragIssueId.value) || null,
 )
+
+function openCreate() {
+  const initial = boardStore.state.statuses.find((status) => status.type === 'initial')
+  draft.value = {
+    summary: '',
+    description: '',
+    typeId: boardStore.state.issueTypes[0]?.id || 'task',
+    statusId: initial?.id || '',
+    assigneeId: boardStore.state.agents[0]?.id || null,
+  }
+  error.value = ''
+  editing.value = true
+}
+
+async function save() {
+  error.value = ''
+  if (!draft.value.summary) {
+    error.value = 'Summary is required'
+    return
+  }
+  draft.value.columnId = boardStore.columnOf(draft.value.statusId)
+  await boardStore.createIssue(draft.value)
+  editing.value = false
+}
 
 function startDrag(issue) {
   dragIssueId.value = issue.id
@@ -71,34 +96,15 @@ async function drop(columnId, beforeId) {
   await boardStore.moveIssue(id, { columnId, statusId, order: index })
   endDrag()
 }
-
-async function create() {
-  if (!newSummary.value.trim()) {
-    return
-  }
-  const initial = boardStore.state.statuses.find((status) => status.type === 'initial')
-  await boardStore.createIssue({
-    summary: newSummary.value.trim(),
-    statusId: initial.id,
-    columnId: boardStore.columnOf(initial.id),
-  })
-  newSummary.value = ''
-  composing.value = false
-}
 </script>
 
 <template>
   <div class="board-layout">
     <div class="board-main">
       <div class="board-toolbar">
-        <span class="badge sim" v-if="boardStore.simulated('board')"><span class="sim-dot sm"></span> Simulated</span>
+        <span class="badge sim" v-if="boardStore.simulated('board')"><span class="sim-dot sm"></span> Prototype</span>
         <span class="spacer"></span>
-        <form v-if="composing" class="composer" @submit.prevent="create">
-          <input v-model="newSummary" placeholder="Task summary" autofocus />
-          <button class="button" type="submit">Add</button>
-          <button class="button ghost" type="button" @click="composing = false">Cancel</button>
-        </form>
-        <button v-else class="button" @click="composing = true">
+        <button class="button" @click="openCreate">
           <AppIcon name="plus" size="16" /> New task
         </button>
       </div>
@@ -126,5 +132,42 @@ async function create() {
     </div>
 
     <IssuePanel />
+
+    <div v-if="editing" class="modal" @click.self="editing = false">
+      <div class="modal-card">
+        <header class="modal-header">
+          <h3>New task</h3>
+          <button class="icon-btn" @click="editing = false"><AppIcon name="close" /></button>
+        </header>
+        <div class="modal-body">
+          <label class="field"><span>Summary</span><input type="text" v-model="draft.summary" /></label>
+          <label class="field"><span>Description</span><textarea rows="4" v-model="draft.description"></textarea></label>
+          <label class="field">
+            <span>Type</span>
+            <select v-model="draft.typeId">
+              <option v-for="type in boardStore.state.issueTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select v-model="draft.statusId">
+              <option v-for="status in boardStore.state.statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Assignee</span>
+            <select v-model="draft.assigneeId">
+              <option :value="null">Unassigned</option>
+              <option v-for="agent in boardStore.state.agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
+            </select>
+          </label>
+          <p v-if="error" class="error">{{ error }}</p>
+        </div>
+        <footer class="modal-footer">
+          <button class="button ghost" @click="editing = false">Cancel</button>
+          <button class="button" @click="save">Create</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>

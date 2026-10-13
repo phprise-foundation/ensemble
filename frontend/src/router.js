@@ -1,18 +1,26 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import BoardPage from './views/BoardPage.vue'
-import PlaceholderPage from './views/PlaceholderPage.vue'
+import ColumnsPage from './views/ColumnsPage.vue'
+import StatusesPage from './views/StatusesPage.vue'
+import TransitionsPage from './views/TransitionsPage.vue'
+import IssueTypesPage from './views/IssueTypesPage.vue'
+import AgentsPage from './views/AgentsPage.vue'
+import RolesPage from './views/RolesPage.vue'
+import ProfilesPage from './views/ProfilesPage.vue'
+import ExperiencesPage from './views/ExperiencesPage.vue'
 
 export const boardRoutes = [
-  { path: '/boards/columns', name: 'columns', component: PlaceholderPage, meta: { title: 'Columns', feature: 'columns' } },
-  { path: '/boards/statuses', name: 'statuses', component: PlaceholderPage, meta: { title: 'Statuses', feature: 'statuses' } },
-  { path: '/boards/transitions', name: 'transitions', component: PlaceholderPage, meta: { title: 'Transitions', feature: 'transitions' } },
-  { path: '/boards/issues', name: 'issues', component: PlaceholderPage, meta: { title: 'Issue types', feature: 'issueTypes' } },
+  { path: '/boards/columns', name: 'columns', component: ColumnsPage, meta: { title: 'Columns', feature: 'columns' } },
+  { path: '/boards/statuses', name: 'statuses', component: StatusesPage, meta: { title: 'Statuses', feature: 'statuses' } },
+  { path: '/boards/transitions', name: 'transitions', component: TransitionsPage, meta: { title: 'Transitions', feature: 'transitions' } },
+  { path: '/boards/issues', name: 'issues', component: IssueTypesPage, meta: { title: 'Issue types', feature: 'issueTypes' } },
 ]
 
 export const agentRoutes = [
-  { path: '/agents/roles', name: 'roles', component: PlaceholderPage, meta: { title: 'Roles', feature: 'roles' } },
-  { path: '/agents/profiles', name: 'profiles', component: PlaceholderPage, meta: { title: 'Profiles', feature: 'profiles' } },
-  { path: '/agents/experiences', name: 'experiences', component: PlaceholderPage, meta: { title: 'Experiences', feature: 'experiences' } },
+  { path: '/agents', name: 'agents', component: AgentsPage, meta: { title: 'Agents', feature: 'agents' } },
+  { path: '/agents/roles', name: 'roles', component: RolesPage, meta: { title: 'Roles', feature: 'roles' } },
+  { path: '/agents/profiles', name: 'profiles', component: ProfilesPage, meta: { title: 'Profiles', feature: 'profiles' } },
+  { path: '/agents/experiences', name: 'experiences', component: ExperiencesPage, meta: { title: 'Experiences', feature: 'experiences' } },
 ]
 
 export const router = createRouter({
