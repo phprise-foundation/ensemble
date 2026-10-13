@@ -251,6 +251,33 @@ textarea {
   padding-left: 8px;
 }
 
+.nav-empty {
+  margin: 2px 0;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+.nav-entry > .label {
+  flex: 0 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.source-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;

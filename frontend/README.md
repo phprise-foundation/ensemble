@@ -30,17 +30,25 @@ Everything is backed by the fake backend for now, so an **orange banner** shows
 The per-feature flags in `src/api/simulation.js` control those markers: flip a
 feature to `false` when its real endpoint lands.
 
+## Navigation
+
+The sidebar mirrors the workspace: **Workspaces → Boards / Workflows / Teams /
+Sources**. A **workflow** owns its statuses, transitions and issue types; a
+**team** owns its agents, roles and profiles; a **board** references a workflow
+and owns its columns and filters. **Sources** are **local directories** on your
+machine (e.g. `/home/you/src/my-project`); the worker will use one as the
+agents' `workdir`. Editors for each node live in the menu (the pencil button).
+
 ## Screens
 
 - **Board** — responsive columns, cards (status colour, aging flag, avatar), the
   right-hand issue panel (status + assignee + comments) and drag & drop that
   respects the configured transitions.
-- **Boards → Columns / Statuses / Transitions / Issues** — full CRUD. Columns
-  pick their statuses and WIP; statuses have a type, colour and roles;
-  transitions are user/agent/both; issue types carry custom fields by level.
-- **Agents → Agents / Roles / Profiles / Experiences** — agent creation (name,
-  who am I, age, marital status, roles, profile, 3x4 portrait) and CRUD for
-  roles, profiles and experiences.
+- **Workflow → Statuses / Transitions / Issue types** — full CRUD: statuses have
+  a type, colour and roles; transitions are user/agent/both; issue types carry
+  custom fields by level.
+- **Team → Agents / Roles / Profiles** — agent creation (name, who am I, age,
+  marital status, roles, profile, 3x4 portrait) and CRUD for roles and profiles.
 
 ## Layout
 

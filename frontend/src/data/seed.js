@@ -85,7 +85,7 @@ export function createSeed() {
       { id: 'vivy-origin', agentId: 'vivy', title: 'First boot', body: 'Woke up to a board full of unanswered intents and decided to help.', at: new Date(now - hours(30)).toISOString() },
     ],
 
-    sources: [{ id: 'workspace', name: 'Workspace', path: '/workspace', workspaceId: 'default' }],
+    sources: [],
 
     issues: [
       {

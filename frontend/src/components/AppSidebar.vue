@@ -91,16 +91,16 @@ function editTeam(team) {
 }
 
 function addSource() {
-  open('source', { id: '', name: '', path: '/workspace', workspaceId: workspaceId.value }, 'New source', [
-    { key: 'name', label: 'Name' },
-    { key: 'path', label: 'Directory', hint: 'where the agents can work' },
+  open('source', { id: '', name: '', path: '', workspaceId: workspaceId.value }, 'New source', [
+    { key: 'path', label: 'Directory (local path)', hint: 'e.g. /home/you/src/my-project — the worker uses it as workdir' },
+    { key: 'name', label: 'Name', hint: 'optional, defaults to the folder name' },
   ])
 }
 
 function editSource(source) {
   open('source', { ...source, __existing: true }, 'Edit source', [
+    { key: 'path', label: 'Directory (local path)' },
     { key: 'name', label: 'Name' },
-    { key: 'path', label: 'Directory' },
   ])
 }
 
@@ -165,8 +165,13 @@ async function saveEditor() {
     if (current.kind === 'team' && !current.draft.id && current.draft.name) {
       current.draft.id = slugify(current.draft.name)
     }
-    if (current.kind === 'source' && !current.draft.id && current.draft.name) {
-      current.draft.id = slugify(current.draft.name)
+    if (current.kind === 'source') {
+      if (!current.draft.name && current.draft.path) {
+        current.draft.name = current.draft.path.split('/').filter(Boolean).pop() || 'source'
+      }
+      if (!current.draft.id) {
+        current.draft.id = slugify(current.draft.name)
+      }
     }
     delete current.draft.__existing
     await boardStore.saveEntity(collectionOf(current.kind), current.draft)
@@ -308,9 +313,11 @@ async function removeEntity(kind, id, label) {
             </span>
           </div>
           <div v-show="openSources" class="submenu">
+            <p v-if="!sources.length" class="nav-empty">Add a local project directory</p>
             <div v-for="source in sources" :key="source.id" class="nav-entry">
               <AppIcon name="folder" size="14" />
-              <span class="label" :title="source.path">{{ source.name }}</span>
+              <span class="label">{{ source.name }}</span>
+              <span class="source-path" :title="source.path">{{ source.path }}</span>
               <span class="entry-actions">
                 <button class="icon-btn" title="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
                 <button class="icon-btn" title="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="close" size="14" /></button>
