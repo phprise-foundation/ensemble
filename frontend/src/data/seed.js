@@ -1,0 +1,114 @@
+const now = Date.now()
+const hours = (count) => count * 60 * 60 * 1000
+
+export function createSeed() {
+  return {
+    boards: [
+      { id: 'kanban', name: 'Kanban', level: 1 },
+    ],
+    statuses: [
+      { id: 'to-develop', name: 'To Develop', type: 'initial', color: '#4c9aff', roleIds: ['product-owner'] },
+      { id: 'in-development', name: 'In Development', type: 'transitional', color: '#ff991f', roleIds: ['coder'] },
+      { id: 'in-review', name: 'In Review', type: 'transitional', color: '#8777d9', roleIds: ['tech-lead'] },
+      { id: 'in-test', name: 'In Test', type: 'transitional', color: '#00b8d9', roleIds: ['quality-assurance'] },
+      { id: 'done', name: 'Done', type: 'final', color: '#57d9a3', roleIds: [] },
+      { id: 'canceled', name: 'Canceled', type: 'final', color: '#97a0af', roleIds: [] },
+    ],
+    columns: [
+      { id: 'todo', name: 'Todo', wip: null, statusIds: ['to-develop'] },
+      { id: 'doing', name: 'Doing', wip: 6, statusIds: ['in-development', 'in-review', 'in-test'] },
+      { id: 'done', name: 'Done', wip: null, statusIds: ['done', 'canceled'] },
+    ],
+    transitions: [
+      { id: 't1', from: 'to-develop', to: 'in-development', type: 'both' },
+      { id: 't2', from: 'in-development', to: 'in-review', type: 'both' },
+      { id: 't3', from: 'in-review', to: 'in-test', type: 'both' },
+      { id: 't4', from: 'in-test', to: 'done', type: 'both' },
+      { id: 't5', from: '*', to: 'canceled', type: 'user' },
+    ],
+    issueTypes: [
+      {
+        id: 'task',
+        name: 'Task',
+        level: 1,
+        fields: [
+          { key: 'summary', label: 'Summary', type: 'text', required: true, system: true },
+          { key: 'description', label: 'Description', type: 'textarea', required: true, system: true },
+          { key: 'priority', label: 'Priority', type: 'select', required: false, options: ['Low', 'Medium', 'High'] },
+        ],
+      },
+    ],
+    roles: [
+      { id: 'product-owner', name: 'Product Owner', description: 'Turns intent into a framed problem.', unblock: false, interactive: true },
+      { id: 'tech-lead', name: 'Tech Lead', description: 'Reviews changes and unblocks impediments.', unblock: true, interactive: false },
+      { id: 'coder', name: 'Coder', description: 'Implements the planned work.', unblock: false, interactive: false },
+      { id: 'quality-assurance', name: 'Quality Assurance', description: 'Refines acceptance and verifies outcomes.', unblock: false, interactive: false },
+    ],
+    profiles: [
+      { id: 'socratic', name: 'Socratic', style: 'Deconstructs certainties and hunts the root cause.', tone: 'Inquisitive', emojiUsage: 'Never' },
+      { id: 'nerd', name: 'Nerd', style: 'Deep reasoning, lists and a rigorous process.', tone: 'Precise', emojiUsage: 'Moderate' },
+      { id: 'professor', name: 'Professor', style: 'A demanding master who reviews and teaches.', tone: 'Didactic', emojiUsage: 'Never' },
+      { id: 'firebrand', name: 'Firebrand', style: 'Energy, urgency and intuition-driven decisions.', tone: 'Intense', emojiUsage: 'Frequent' },
+      { id: 'gallant', name: 'Gallant', style: 'Warmth, courtesy and care for people.', tone: 'Warm', emojiUsage: 'Moderate' },
+      { id: 'skeptic', name: 'Skeptic', style: 'Constant doubt and honest investigation.', tone: 'Cautious', emojiUsage: 'Never' },
+      { id: 'goth', name: 'Goth', style: 'Mystery, dark charm and geek culture.', tone: 'Deadpan', emojiUsage: 'Never' },
+      { id: 'pacifist', name: 'Pacifist', style: 'Harmony, consensus and active listening.', tone: 'Calm', emojiUsage: 'Moderate' },
+      { id: 'activist', name: 'Activist', style: 'Contagious joy and fervor for causes.', tone: 'Energetic', emojiUsage: 'Frequent' },
+    ],
+    agents: [
+      { id: 'vivy', name: 'Vivy', whoAmI: 'The first autonomous agent, curious about people.', age: 20, maritalStatus: 'Single', roleIds: ['product-owner'], profileId: 'socratic', avatarColor: '#4c9aff', experiences: ['vivy-origin'] },
+      { id: 'kaio', name: 'Kaio', whoAmI: 'A pragmatic builder.', age: 27, maritalStatus: 'Single', roleIds: ['coder'], profileId: 'skeptic', avatarColor: '#ff991f', experiences: [] },
+      { id: 'alan', name: 'Alan', whoAmI: 'A patient reviewer and teacher.', age: 41, maritalStatus: 'Married', roleIds: ['tech-lead'], profileId: 'professor', avatarColor: '#8777d9', experiences: [] },
+      { id: 'mai', name: 'Mai', whoAmI: 'Distrusts the happy path.', age: 33, maritalStatus: 'Single', roleIds: ['quality-assurance'], profileId: 'activist', avatarColor: '#00b8d9', experiences: [] },
+    ],
+    experiences: [
+      { id: 'vivy-origin', agentId: 'vivy', title: 'First boot', body: 'Woke up to a board full of unanswered intents and decided to help.', at: new Date(now - hours(30)).toISOString() },
+    ],
+    issues: [
+      {
+        id: 'KAN-1', boardId: 'kanban', typeId: 'task', summary: 'Frame the onboarding intent',
+        description: 'The client wants a smoother onboarding. Clarify value, risks and open questions.',
+        statusId: 'to-develop', assigneeId: 'vivy', reporter: 'user', worker: '', order: 0,
+        flags: [], comments: [
+          { id: 'c1', author: 'user', body: 'We lose users in the first step.', at: new Date(now - hours(26)).toISOString() },
+        ],
+        createdAt: new Date(now - hours(26)).toISOString(), updatedAt: new Date(now - hours(26)).toISOString(),
+      },
+      {
+        id: 'KAN-2', boardId: 'kanban', typeId: 'task', summary: 'Fix the login redirect loop',
+        description: 'After a successful login the app bounces back to the sign-in screen on slow networks.',
+        statusId: 'in-development', assigneeId: 'kaio', reporter: 'user', worker: 'Kaio', order: 0,
+        flags: [], comments: [],
+        createdAt: new Date(now - hours(10)).toISOString(), updatedAt: new Date(now - hours(2)).toISOString(),
+      },
+      {
+        id: 'KAN-3', boardId: 'kanban', typeId: 'task', summary: 'Add dark theme to the board',
+        description: 'Dark theme by default with a light option.',
+        statusId: 'in-review', assigneeId: 'alan', reporter: 'user', worker: 'Alan', order: 0,
+        flags: [], comments: [],
+        createdAt: new Date(now - hours(8)).toISOString(), updatedAt: new Date(now - hours(1)).toISOString(),
+      },
+      {
+        id: 'KAN-4', boardId: 'kanban', typeId: 'task', summary: 'Card shows aging flag',
+        description: 'Flag cards with more than 24h without activity.',
+        statusId: 'in-test', assigneeId: 'mai', reporter: 'user', worker: '', order: 0,
+        flags: [], comments: [],
+        createdAt: new Date(now - hours(40)).toISOString(), updatedAt: new Date(now - hours(30)).toISOString(),
+      },
+      {
+        id: 'KAN-5', boardId: 'kanban', typeId: 'task', summary: 'Set up the CI pipeline',
+        description: 'Run tests on every pull request.',
+        statusId: 'done', assigneeId: 'kaio', reporter: 'user', worker: '', order: 0,
+        flags: [], comments: [],
+        createdAt: new Date(now - hours(80)).toISOString(), updatedAt: new Date(now - hours(50)).toISOString(),
+      },
+      {
+        id: 'KAN-6', boardId: 'kanban', typeId: 'task', summary: 'Retire the legacy exporter',
+        description: 'No longer needed.',
+        statusId: 'canceled', assigneeId: null, reporter: 'user', worker: '', order: 0,
+        flags: [], comments: [],
+        createdAt: new Date(now - hours(120)).toISOString(), updatedAt: new Date(now - hours(100)).toISOString(),
+      },
+    ],
+  }
+}

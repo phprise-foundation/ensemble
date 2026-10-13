@@ -63,3 +63,24 @@ Decisions taken:
 
 - `Dockerfile.standalone` (Alpine + PHP 8.4) and `bin/entrypoint` start the board
   and the runner together, so the whole system runs with a single `docker run`.
+
+## UX track — reactive frontend, simulated first
+
+New reactive SPA under `frontend/` (Vue 3 + Vite), independent from the backend
+and backed by a simulated API until each screen's real endpoints exist. Features
+are flagged individually, with an orange banner/dots marking what is simulated.
+
+1. ~~**App shell + board** — sidebar with dropdowns, dark/light theme, responsive
+   columns, cards (status colour, aging flag, avatar), right-hand issue panel and
+   drag & drop that respects the configured transitions.~~ **Done (simulated).**
+2. **Boards admin** — Columns (with WIP), Statuses (type, colour, roles),
+   Transitions (user/agent/both) and Issue types (custom fields, levels).
+3. **Agents admin** — Roles (from the agent-watcher frontmatter), Profiles and
+   Experiences; agent creation (name, who am I, age, marital status, roles,
+   profile, 3x4 portrait).
+4. **Board polish** — open an issue on its own page, column/priority refinement,
+   WIP hints, aging.
+5. **i18n** — the UI starts in English; localisation comes after the flow is set.
+6. **Wire the real backend** — flip each feature from `mockApi` to `realApi` as
+   the PHP endpoints land, keeping the per-feature simulation flags.
+

@@ -70,11 +70,21 @@
   server) and the runner in one container, so the whole system runs with a single
   `docker run`. Built and smoke-tested locally (UI, health, create, advance).
   README documents a local test checklist and the Docker Hub publishing steps.
+- **Reactive frontend (UX track, increment 1):** new `frontend/` SPA (Vue 3 +
+  Vite) with a per-feature simulated data layer (`mockApi` / `realApi`), an orange
+  banner and dots marking simulated screens, the app shell (sidebar with
+  dropdowns, dark default theme with a light option) and the board (responsive
+  columns, cards with status colour / aging flag / avatar, the right-hand issue
+  panel and drag & drop that respects the configured transitions). Admin screens
+  are wired in the router as placeholders. Verified headless: render, panel open,
+  a valid drop and a rejected drop. Run with `npm run dev` (simulated by default).
 
 ## Next
 
-- **Drag & drop / reordering polish** — move cards between configured columns in
-  the UI and reorder columns by dragging.
+- **UX track (frontend):** Boards admin (Columns, Statuses, Transitions, Issue
+  types) and Agents admin (Roles, Profiles, Experiences), then the item
+  full-page view and i18n; flip each feature from `mockApi` to `realApi` as the
+  endpoints land.
 - **Workflow transitions polish** — WIP limits and a transition editor beyond the
   multi-select (e.g. drag between columns).
 - **Process visibility** — cycle time per column, rework (backward moves) and
