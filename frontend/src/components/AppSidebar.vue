@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
@@ -7,10 +7,90 @@ import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
 
-defineProps({ open: { type: Boolean, default: false } })
+const props = defineProps({ open: { type: Boolean, default: false } })
+const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
+const sidebar = ref(null)
+
+router.afterEach(() => {
+  if (props.open) {
+    emit('close')
+  }
+})
+
+function focusableElements() {
+  if (!sidebar.value) {
+    return []
+  }
+  return Array.from(
+    sidebar.value.querySelectorAll(
+      'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => element.offsetParent !== null)
+}
+
+function focusTrap(event) {
+  if (event.key !== 'Tab') {
+    return
+  }
+  const elements = focusableElements()
+  if (elements.length === 0) {
+    return
+  }
+  const first = elements[0]
+  const last = elements[elements.length - 1]
+  const movingBack = event.shiftKey
+  const atStart = document.activeElement === first
+  const atEnd = document.activeElement === last
+  if (movingBack && atStart) {
+    event.preventDefault()
+    last.focus()
+    return
+  }
+  if (!movingBack && atEnd) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Escape') {
+    emit('close')
+    return
+  }
+  focusTrap(event)
+}
+
+function attachKeydown() {
+  document.addEventListener('keydown', handleKeydown)
+}
+
+function detachKeydown() {
+  document.removeEventListener('keydown', handleKeydown)
+}
+
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      attachKeydown()
+      return
+    }
+    detachKeydown()
+  }
+)
+
+onMounted(() => {
+  if (props.open) {
+    attachKeydown()
+  }
+})
+
+onUnmounted(() => {
+  detachKeydown()
+})
 
 const openBoards = ref(true)
 const openWorkflows = ref(true)
@@ -204,7 +284,7 @@ async function removeEntity(kind, id, label) {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ open }">
+  <aside id="app-sidebar" ref="sidebar" class="sidebar" :class="{ open }" role="dialog" aria-modal="true" :aria-hidden="!open" :aria-label="'Menu'">
     <div class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>

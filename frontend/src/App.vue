@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import SimBanner from './components/SimBanner.vue'
@@ -10,9 +10,18 @@ import { hasSimulation, setAll } from './api/index.js'
 
 const route = useRoute()
 const sidebarOpen = ref(false)
+const menuToggle = ref(null)
 
 onMounted(() => {
   boardStore.load()
+})
+
+watch(sidebarOpen, (isOpen, wasOpen) => {
+  if (wasOpen && !isOpen) {
+    nextTick(() => {
+      menuToggle.value?.focus()
+    })
+  }
 })
 
 function toggleSimulation() {
@@ -22,13 +31,21 @@ function toggleSimulation() {
 
 <template>
   <div class="app">
-    <AppSidebar :open="sidebarOpen" />
+    <AppSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
     <div v-if="sidebarOpen" class="scrim" @click="sidebarOpen = false"></div>
 
     <div class="content">
       <SimBanner />
       <header class="topbar">
-        <button class="icon-btn menu-toggle" title="Menu" @click="sidebarOpen = true">
+        <button
+          ref="menuToggle"
+          class="icon-btn menu-toggle"
+          title="Menu"
+          aria-label="Menu"
+          :aria-expanded="sidebarOpen"
+          aria-controls="app-sidebar"
+          @click="sidebarOpen = true"
+        >
           <AppIcon name="menu" />
         </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
