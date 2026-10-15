@@ -10,6 +10,7 @@ import { isSimulated } from '../api/index.js'
 const props = defineProps({
   open: { type: Boolean, default: false },
   isMobile: { type: Boolean, default: false },
+  collapsed: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
 
@@ -325,7 +326,7 @@ async function removeEntity(kind, id, label) {
     id="app-sidebar"
     ref="sidebar"
     class="sidebar"
-    :class="{ open }"
+    :class="{ open, collapsed }"
     :role="isModal ? 'dialog' : undefined"
     :aria-modal="isModal ? 'true' : undefined"
     :aria-hidden="props.isMobile ? !open : undefined"
@@ -346,7 +347,7 @@ async function removeEntity(kind, id, label) {
       </div>
 
       <div class="submenu">
-        <div class="nav-entry" v-if="workspace">
+        <div class="nav-entry" v-if="workspace" :title="workspace?.name">
           <AppIcon name="workspace" size="15" />
           <span>{{ workspace.name }}</span>
           <span class="entry-actions">
@@ -356,7 +357,7 @@ async function removeEntity(kind, id, label) {
 
         <div class="submenu">
           <!-- Boards -->
-          <div class="nav-entry" :class="{ open: openBoards }" @click="openBoards = !openBoards">
+          <div class="nav-entry" :class="{ open: openBoards }" title="Boards" @click="openBoards = !openBoards">
             <AppIcon name="board" size="15" />
             <span>Boards</span>
             <AppIcon class="chevron" name="chevron" size="13" />
@@ -366,7 +367,7 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openBoards" class="submenu">
             <div v-for="board in boards" :key="board.id" class="nav-entry">
-              <RouterLink class="leaf" :to="`/boards/${board.id}`">
+              <RouterLink class="leaf" :to="`/boards/${board.id}`" :title="board.name">
                 <AppIcon name="board" size="14" />
                 <span class="label">{{ board.name }}</span>
                 <span class="badge-id">{{ board.id }}</span>
@@ -378,7 +379,7 @@ async function removeEntity(kind, id, label) {
           </div>
 
           <!-- Workflows -->
-          <div class="nav-entry" :class="{ open: openWorkflows }" @click="openWorkflows = !openWorkflows">
+          <div class="nav-entry" :class="{ open: openWorkflows }" title="Workflows" @click="openWorkflows = !openWorkflows">
             <AppIcon name="layers" size="15" />
             <span>Workflows</span>
             <AppIcon class="chevron" name="chevron" size="13" />
@@ -388,7 +389,7 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openWorkflows" class="submenu">
             <div v-for="workflow in workflows" :key="workflow.id">
-              <div class="nav-entry">
+              <div class="nav-entry" :title="workflow.name">
                 <AppIcon name="layers" size="14" />
                 <span>{{ workflow.name }}</span>
                 <span class="entry-actions">
@@ -396,15 +397,15 @@ async function removeEntity(kind, id, label) {
                 </span>
               </div>
               <div class="submenu">
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/statuses`"><AppIcon name="statuses" size="14" /><span class="label">Statuses</span><span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/transitions`"><AppIcon name="transitions" size="14" /><span class="label">Transitions</span><span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/issue-types`"><AppIcon name="issues" size="14" /><span class="label">Issue types</span><span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/statuses`" title="Statuses"><AppIcon name="statuses" size="14" /><span class="label">Statuses</span><span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/transitions`" title="Transitions"><AppIcon name="transitions" size="14" /><span class="label">Transitions</span><span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/issue-types`" title="Issue types"><AppIcon name="issues" size="14" /><span class="label">Issue types</span><span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
               </div>
             </div>
           </div>
 
           <!-- Teams -->
-          <div class="nav-entry" :class="{ open: openTeams }" @click="openTeams = !openTeams">
+          <div class="nav-entry" :class="{ open: openTeams }" title="Teams" @click="openTeams = !openTeams">
             <AppIcon name="agents" size="15" />
             <span>Teams</span>
             <AppIcon class="chevron" name="chevron" size="13" />
@@ -414,7 +415,7 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openTeams" class="submenu">
             <div v-for="team in teams" :key="team.id">
-              <div class="nav-entry">
+              <div class="nav-entry" :title="team.name">
                 <AppIcon name="agents" size="14" />
                 <span>{{ team.name }}</span>
                 <span class="entry-actions">
@@ -422,15 +423,15 @@ async function removeEntity(kind, id, label) {
                 </span>
               </div>
               <div class="submenu">
-                <RouterLink class="leaf" :to="`/teams/${team.id}/agents`"><AppIcon name="agents" size="14" /><span class="label">Agents</span><span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/teams/${team.id}/roles`"><AppIcon name="roles" size="14" /><span class="label">Roles</span><span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/teams/${team.id}/profiles`"><AppIcon name="profiles" size="14" /><span class="label">Profiles</span><span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/teams/${team.id}/agents`" title="Agents"><AppIcon name="agents" size="14" /><span class="label">Agents</span><span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/teams/${team.id}/roles`" title="Roles"><AppIcon name="roles" size="14" /><span class="label">Roles</span><span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
+                <RouterLink class="leaf" :to="`/teams/${team.id}/profiles`" title="Profiles"><AppIcon name="profiles" size="14" /><span class="label">Profiles</span><span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
               </div>
             </div>
           </div>
 
           <!-- Sources -->
-          <div class="nav-entry" :class="{ open: openSources }" @click="openSources = !openSources">
+          <div class="nav-entry" :class="{ open: openSources }" title="Sources" @click="openSources = !openSources">
             <AppIcon name="folder" size="15" />
             <span>Sources</span>
             <AppIcon class="chevron" name="chevron" size="13" />
@@ -440,7 +441,7 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openSources" class="submenu">
             <p v-if="!sources.length" class="nav-empty">Add a local project directory</p>
-            <div v-for="source in sources" :key="source.id" class="nav-entry">
+            <div v-for="source in sources" :key="source.id" class="nav-entry" :title="source.name">
               <AppIcon name="folder" size="14" />
               <span class="label">{{ source.name }}</span>
               <span class="source-path" :title="source.path">{{ source.path }}</span>
