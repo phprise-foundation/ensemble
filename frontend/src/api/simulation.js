@@ -14,6 +14,9 @@ export const FEATURES = [
 ]
 
 function persisted(key, fallback) {
+  if (typeof localStorage === 'undefined') {
+    return fallback
+  }
   const value = localStorage.getItem(key)
   if (value === null) {
     return fallback
@@ -47,6 +50,9 @@ export const simulatedFeatures = computed(() =>
 export const hasSimulation = computed(() => simulatedFeatures.value.length > 0)
 
 function applyQueryOverride() {
+  if (typeof window === 'undefined') {
+    return
+  }
   const value = new URLSearchParams(window.location.search).get('sim')
   if (value === '1' || value === '0') {
     setAll(value === '1')

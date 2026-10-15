@@ -4,7 +4,9 @@ import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
+import ProfileMenu from './components/ProfileMenu.vue'
 import { boardStore } from './store/board.js'
+import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
 
@@ -28,6 +30,7 @@ function updateIsMobile(event) {
 
 onMounted(() => {
   boardStore.load()
+  session.load()
   mediaQuery = sidebarMediaQuery()
   if (mediaQuery) {
     isMobile.value = mediaQuery.matches
@@ -54,41 +57,50 @@ function toggleSimulation() {
 
 <template>
   <div class="app">
-    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" @close="sidebarOpen = false" />
-    <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
+    <template v-if="session.signedIn">
+      <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" @close="sidebarOpen = false" />
+      <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
-    <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
-      <SimBanner />
-      <header class="topbar">
-        <button
-          ref="menuToggle"
-          class="icon-btn menu-toggle"
-          title="Menu"
-          aria-label="Menu"
-          :aria-expanded="sidebarOpen"
-          aria-controls="app-sidebar"
-          @click="sidebarOpen = true"
-        >
-          <AppIcon name="menu" />
-        </button>
-        <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
-        <div class="spacer"></div>
-        <button
-          class="button ghost"
-          :title="hasSimulation ? 'Disable simulated data' : 'Enable simulated data'"
-          @click="toggleSimulation"
-        >
-          <span class="sim-dot sm"></span>
-          Sim
-        </button>
-        <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
-          <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
-        </button>
-      </header>
+      <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
+        <SimBanner />
+        <header class="topbar">
+          <button
+            ref="menuToggle"
+            class="icon-btn menu-toggle"
+            title="Menu"
+            aria-label="Menu"
+            :aria-expanded="sidebarOpen"
+            aria-controls="app-sidebar"
+            @click="sidebarOpen = true"
+          >
+            <AppIcon name="menu" />
+          </button>
+          <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
+          <div class="spacer"></div>
+          <button
+            class="button ghost"
+            :title="hasSimulation ? 'Disable simulated data' : 'Enable simulated data'"
+            @click="toggleSimulation"
+          >
+            <span class="sim-dot sm"></span>
+            Sim
+          </button>
+          <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
+            <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
+          </button>
+          <ProfileMenu />
+        </header>
 
-      <main class="main">
-        <RouterView />
-      </main>
-    </div>
+        <main class="main">
+          <RouterView />
+        </main>
+      </div>
+    </template>
+
+    <section v-else class="session-ended">
+      <h1>Multi-Agent</h1>
+      <p class="muted">Session ended</p>
+      <button class="button" @click="session.signIn()">Sign in again</button>
+    </section>
   </div>
 </template>

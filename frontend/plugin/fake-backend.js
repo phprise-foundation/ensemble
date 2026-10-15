@@ -187,6 +187,16 @@ export function handle(db, method, segments, body) {
     }
   }
 
+  if (head === 'user') {
+    if (method === 'GET') return { data: { login: db.user.login, displayName: db.user.displayName } }
+    if (method === 'PATCH') {
+      const displayName = String(body.displayName ?? '').trim()
+      if (displayName.length > 40) return { error: 'display name must be at most 40 characters', status: 422 }
+      db.user.displayName = displayName
+      return { data: { login: db.user.login, displayName: db.user.displayName } }
+    }
+  }
+
   if (COLLECTIONS.includes(head)) {
     const list = db[head]
     if (method === 'GET' && id === undefined) return { data: list }

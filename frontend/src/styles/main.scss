@@ -415,6 +415,10 @@ textarea {
 .topbar h1 {
   font-size: 17px;
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar .spacer {
@@ -440,6 +444,148 @@ textarea {
   min-height: 0;
   overflow: hidden;
   position: relative;
+}
+
+/* Profile menu */
+.profile-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.profile-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.profile-trigger:hover {
+  background: var(--surface-3);
+}
+
+.profile-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.profile-avatar.lg {
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+}
+
+.profile-name {
+  display: block;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  z-index: 50;
+}
+
+.profile-item {
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: left;
+}
+
+.profile-item:hover {
+  background: var(--surface-2);
+}
+
+@media (max-width: $sidebar-breakpoint) {
+  .profile-name {
+    max-width: 11ch;
+  }
+}
+
+.session-ended {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+}
+
+.session-ended h1 {
+  margin: 0;
+}
+
+.profile-page {
+  padding: 32px;
+  max-width: 520px;
+}
+
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.profile-head h2 {
+  margin: 0;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.profile-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.profile-form .field input {
+  width: 100%;
+}
+
+.profile-form .error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.profile-form .ok {
+  margin: 0;
+  color: var(--ok);
 }
 
 /* Button */

@@ -21,6 +21,10 @@ vi.mock('../src/store/board.js', () => ({
 }))
 
 vi.mock('../src/api/index.js', () => ({
+  api: {
+    fetchUser: async () => ({ login: 'admin', displayName: '' }),
+    updateUser: async (data) => ({ login: 'admin', displayName: data.displayName }),
+  },
   isSimulated: () => false,
   setFeature: () => {},
   setAll: () => {},

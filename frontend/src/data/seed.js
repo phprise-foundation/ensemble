@@ -87,6 +87,8 @@ export function createSeed() {
 
     sources: [],
 
+    user: { login: 'admin', displayName: '' },
+
     issues: [
       {
         id: 'KANB-1', boardId: 'KANB', typeId: 'task', summary: 'Frame the onboarding intent',

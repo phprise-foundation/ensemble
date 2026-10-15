@@ -3,6 +3,9 @@ import { request } from './client.js'
 export { FEATURES, simulation, isSimulated, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
 
 export const api = {
+  fetchUser: () => request('GET', '/api/user'),
+  updateUser: (data) => request('PATCH', '/api/user', data),
+
   fetchWorkspace: () => request('GET', '/api/workspace'),
 
   fetchIssues: () => request('GET', '/api/issues'),
