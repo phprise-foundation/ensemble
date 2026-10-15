@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
@@ -7,12 +7,17 @@ import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
 
-const props = defineProps({ open: { type: Boolean, default: false } })
+const props = defineProps({
+  open: { type: Boolean, default: false },
+  isMobile: { type: Boolean, default: false },
+})
 const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
+
+const isModal = computed(() => props.isMobile && props.open)
 
 router.afterEach(() => {
   if (props.open) {
@@ -28,7 +33,13 @@ function focusableElements() {
     sidebar.value.querySelectorAll(
       'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ).filter((element) => element.offsetParent !== null)
+  ).filter((element) => {
+    if (element.hidden || !element.isConnected) {
+      return false
+    }
+    const style = window.getComputedStyle(element)
+    return style.display !== 'none' && style.visibility !== 'hidden'
+  })
 }
 
 function focusTrap(event) {
@@ -71,20 +82,45 @@ function detachKeydown() {
   document.removeEventListener('keydown', handleKeydown)
 }
 
+function focusFirst() {
+  const first = focusableElements()[0]
+  first?.focus()
+}
+
+function activateTrap() {
+  attachKeydown()
+  nextTick(focusFirst)
+}
+
 watch(
   () => props.open,
-  (isOpen) => {
-    if (isOpen) {
-      attachKeydown()
+  (isOpen, wasOpen) => {
+    if (props.isMobile && isOpen) {
+      activateTrap()
       return
     }
-    detachKeydown()
+    if (wasOpen) {
+      detachKeydown()
+    }
+  }
+)
+
+watch(
+  () => props.isMobile,
+  (mobile) => {
+    if (!mobile) {
+      detachKeydown()
+      return
+    }
+    if (props.open) {
+      activateTrap()
+    }
   }
 )
 
 onMounted(() => {
-  if (props.open) {
-    attachKeydown()
+  if (props.isMobile && props.open) {
+    activateTrap()
   }
 })
 
@@ -285,7 +321,16 @@ async function removeEntity(kind, id, label) {
 </script>
 
 <template>
-  <aside id="app-sidebar" ref="sidebar" class="sidebar" :class="{ open }" role="dialog" aria-modal="true" :aria-hidden="!open" :aria-label="'Menu'">
+  <aside
+    id="app-sidebar"
+    ref="sidebar"
+    class="sidebar"
+    :class="{ open }"
+    :role="isModal ? 'dialog' : undefined"
+    :aria-modal="isModal ? 'true' : undefined"
+    :aria-hidden="props.isMobile ? !open : undefined"
+    aria-label="Menu"
+  >
     <div class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>

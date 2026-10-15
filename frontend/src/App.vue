@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import SimBanner from './components/SimBanner.vue'
@@ -11,9 +11,32 @@ import { hasSimulation, setAll } from './api/index.js'
 const route = useRoute()
 const sidebarOpen = ref(false)
 const menuToggle = ref(null)
+const isMobile = ref(false)
+let mediaQuery = null
+
+function sidebarMediaQuery() {
+  if (typeof document === 'undefined') {
+    return null
+  }
+  const value = getComputedStyle(document.documentElement).getPropertyValue('--breakpoint-sidebar').trim()
+  return window.matchMedia(`(max-width: ${value || '0px'})`)
+}
+
+function updateIsMobile(event) {
+  isMobile.value = event.matches
+}
 
 onMounted(() => {
   boardStore.load()
+  mediaQuery = sidebarMediaQuery()
+  if (mediaQuery) {
+    isMobile.value = mediaQuery.matches
+    mediaQuery.addEventListener('change', updateIsMobile)
+  }
+})
+
+onUnmounted(() => {
+  mediaQuery?.removeEventListener('change', updateIsMobile)
 })
 
 watch(sidebarOpen, (isOpen, wasOpen) => {
@@ -31,10 +54,10 @@ function toggleSimulation() {
 
 <template>
   <div class="app">
-    <AppSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
-    <div v-if="sidebarOpen" class="scrim" @click="sidebarOpen = false"></div>
+    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" @close="sidebarOpen = false" />
+    <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
-    <div class="content">
+    <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
       <SimBanner />
       <header class="topbar">
         <button
