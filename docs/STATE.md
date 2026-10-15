@@ -102,8 +102,16 @@
     badges, source paths, brand text and entry actions hidden; icons centred;
     submenu/leaf indentation zeroed); `width` added to the sidebar transition;
     and `.sidebar-toggle` hidden by default, desktop-only via
-    `@media (min-width: $sidebar-breakpoint + 1)`. The toggle behaviour and the
-    `collapsed` prop are wired in the follow-up subtasks (KAN-23/KAN-24).
+    `@media (min-width: $sidebar-breakpoint + 1)`. The toggle state/button and
+    the `Ctrl+B` shortcut are wired in the follow-up subtask (KAN-24).
+  - **Collapsed sidebar (activity bar) — component layer (KAN-23):**
+    `AppSidebar.vue` accepts `collapsed: { type: Boolean, default: false }` and
+    binds `:class="{ open, collapsed }"` on the `<aside>`; every leaf
+    (`RouterLink.leaf`) and the group/entry rows carry a `title`/`:title`
+    (static for fixed labels, bound for dynamic names) so the native hover
+    tooltip shows the readable label when collapsed. The component only
+    receives `collapsed` — the state, toggle button and `Ctrl+B` shortcut stay
+    in KAN-24.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
