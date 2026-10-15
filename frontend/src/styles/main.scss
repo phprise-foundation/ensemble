@@ -6,6 +6,7 @@ $sidebar-breakpoint: 1024px;
   --radius: 8px;
   --radius-sm: 6px;
   --sidebar-width: 200px;
+  --activity-width: 48px;
   --panel-width: min(400px, 33vw);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -100,7 +101,7 @@ textarea {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, width 0.2s ease;
   z-index: 40;
 }
 
@@ -326,6 +327,40 @@ textarea {
   border-top: 1px solid var(--border);
 }
 
+.sidebar.collapsed {
+  width: var(--activity-width);
+  flex: 0 0 var(--activity-width);
+}
+
+.sidebar.collapsed .nav-entry > span:not(.entry-actions),
+.sidebar.collapsed .nav-entry .chevron,
+.sidebar.collapsed .badge-id,
+.sidebar.collapsed .source-path,
+.sidebar.collapsed .brand > span:not(.brand-icon),
+.sidebar.collapsed .nav-empty,
+.sidebar.collapsed .entry-actions,
+.sidebar.collapsed .leaf span {
+  display: none;
+}
+
+.sidebar.collapsed .nav-entry {
+  justify-content: center;
+  padding: 6px 4px;
+}
+
+.sidebar.collapsed .nav-entry > svg {
+  margin: 0;
+}
+
+.sidebar.collapsed .submenu {
+  padding-left: 0;
+}
+
+.sidebar.collapsed .leaf {
+  justify-content: center;
+  gap: 0;
+}
+
 /* Sim dot */
 .sim-dot {
   width: 8px;
@@ -388,6 +423,16 @@ textarea {
 
 .menu-toggle {
   display: none;
+}
+
+.sidebar-toggle {
+  display: none;
+}
+
+@media (min-width: $sidebar-breakpoint + 1) {
+  .sidebar-toggle {
+    display: inline-flex;
+  }
 }
 
 .main {
