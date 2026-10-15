@@ -85,7 +85,10 @@
     small indentation; Board / Workflow / Team / Workspace / Source editors open
     from the menu (board editor: ID, name, workflow, columns, filters; workflow
     creation can copy a template). Statuses/transitions/issue-types and
-    agents/roles/profiles are always listed under their workflow/team.
+    agents/roles/profiles are always listed under their workflow/team. On small
+    screens (`max-width: 1024px`) the sidebar becomes a drawer that closes on
+    route navigation, on Escape, on the scrim and when opening an editor (the
+    editors are teleported to `body` so they stay visible).
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
