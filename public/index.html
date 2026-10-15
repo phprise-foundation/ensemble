@@ -16,16 +16,28 @@
     </form>
   </section>
 
-  <main id="board" class="board hidden">
-    <header class="board-header">
-      <h1>Board</h1>
-      <div class="actions">
-        <button id="new-task">New task</button>
+  <main id="app" class="app hidden">
+    <nav class="sidebar">
+      <div class="brand">Multi-Agent</div>
+      <button class="nav" data-view="board">Board</button>
+      <button class="nav" data-view="boards">Boards</button>
+      <button class="nav" data-view="agents">Agents</button>
+      <div class="sidebar-footer">
         <button id="copilot-toggle" class="ghost">Copilot</button>
         <button id="logout" class="ghost">Logout</button>
       </div>
-    </header>
-    <div id="columns" class="columns"></div>
+    </nav>
+    <section class="content">
+      <header class="topbar">
+        <h1 id="view-title">Board</h1>
+        <div class="actions" id="view-actions"></div>
+      </header>
+      <div id="view-board" class="view">
+        <div id="columns" class="columns"></div>
+      </div>
+      <div id="view-boards" class="view hidden"></div>
+      <div id="view-agents" class="view hidden"></div>
+    </section>
   </main>
 
   <aside id="copilot" class="copilot hidden">

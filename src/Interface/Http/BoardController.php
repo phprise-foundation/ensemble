@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interface\Http;
 
+use App\Application\AdvanceItem;
 use App\Application\AddComment;
 use App\Application\CloseItem;
 use App\Application\CreateItem;
@@ -11,11 +12,14 @@ use App\Application\FindItem;
 use App\Application\ItemChanges;
 use App\Application\ListBoardItems;
 use App\Application\UpdateItem;
+use App\Domain\Agent\AgentId;
 use App\Domain\Board\ItemId;
-use App\Domain\Board\Role;
-use App\Domain\Board\Status;
 use App\Domain\Contract\Authenticator;
+use App\Domain\Contract\ItemEventLog;
+use App\Domain\Exception\ColumnNotFoundException;
+use App\Domain\Exception\InvalidTransitionException;
 use App\Domain\Exception\ItemNotFoundException;
+use App\Domain\Workflow\ColumnId;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -27,8 +31,10 @@ final readonly class BoardController
         private FindItem $findItem,
         private CreateItem $createItem,
         private UpdateItem $updateItem,
+        private AdvanceItem $advanceItem,
         private AddComment $addComment,
         private CloseItem $closeItem,
+        private ItemEventLog $events,
         private ItemArrayPresenter $presenter,
         private JsonResponder $responder,
     ) {
@@ -36,24 +42,16 @@ final readonly class BoardController
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        if (!$this->authorized($request)) {
+        if (!$this->authenticator->isValid(BearerToken::fromRequest($request))) {
             return $this->responder->error('unauthorized', 401);
         }
 
-        return $this->guard($request);
-    }
-
-    private function authorized(ServerRequestInterface $request): bool
-    {
-        return $this->authenticator->isValid(BearerToken::fromRequest($request));
-    }
-
-    private function guard(ServerRequestInterface $request): ResponseInterface
-    {
         try {
             return $this->dispatch($request);
-        } catch (ItemNotFoundException $exception) {
+        } catch (ItemNotFoundException | ColumnNotFoundException $exception) {
             return $this->responder->error($exception->getMessage(), 404);
+        } catch (InvalidTransitionException $exception) {
+            return $this->responder->error($exception->getMessage(), 409);
         }
     }
 
@@ -70,6 +68,7 @@ final readonly class BoardController
             $request->getMethod() === 'PATCH' && $id !== null && $subresource === '' => $this->update($id, $request),
             $request->getMethod() === 'POST' && $id !== null && $subresource === 'comments' => $this->comment($id, $request),
             $request->getMethod() === 'POST' && $id !== null && $subresource === 'close' => $this->close($id, $request),
+            $request->getMethod() === 'POST' && $id !== null && $subresource === 'advance' => $this->advance($id, $request),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -82,9 +81,10 @@ final readonly class BoardController
         return array_values(array_filter(explode('/', $path)));
     }
 
+    /** @param list<string> $segments */
     private function idFrom(array $segments): ?ItemId
     {
-        $raw = (string) ($segments[2] ?? '');
+        $raw = $segments[2] ?? '';
 
         return ctype_digit($raw) ? new ItemId((int) $raw) : null;
     }
@@ -96,7 +96,9 @@ final readonly class BoardController
 
     private function show(ItemId $id): ResponseInterface
     {
-        return $this->responder->respond(['item' => $this->presenter->present($this->findItem->execute($id))]);
+        $item = $this->findItem->execute($id);
+
+        return $this->responder->respond(['item' => $this->presenter->presentWithHistory($item, $this->events->history($id))]);
     }
 
     private function create(ServerRequestInterface $request): ResponseInterface
@@ -105,8 +107,9 @@ final readonly class BoardController
         $item = $this->createItem->execute(
             (string) ($body['title'] ?? ''),
             (string) ($body['body'] ?? ''),
-            $this->statusFrom($body['status'] ?? null),
-            $this->roleFrom($body['role'] ?? null),
+            $this->columnFrom($body['status'] ?? null),
+            $this->agentFrom($body['role'] ?? null),
+            $this->actorFrom($body),
         );
 
         return $this->responder->respond(['item' => $this->presenter->present($item)], 201);
@@ -114,7 +117,8 @@ final readonly class BoardController
 
     private function update(ItemId $id, ServerRequestInterface $request): ResponseInterface
     {
-        $item = $this->updateItem->execute($id, $this->changesFrom($this->body($request)));
+        $body = $this->body($request);
+        $item = $this->updateItem->execute($id, $this->changesFrom($body), $this->actorFrom($body));
 
         return $this->responder->respond(['item' => $this->presenter->present($item)]);
     }
@@ -134,11 +138,20 @@ final readonly class BoardController
     private function close(ItemId $id, ServerRequestInterface $request): ResponseInterface
     {
         $body = $this->body($request);
-        $item = $this->closeItem->execute($id, $this->stringFrom($body['comment'] ?? null));
+        $item = $this->closeItem->execute($id, $this->stringFrom($body['comment'] ?? null), $this->actorFrom($body));
 
         return $this->responder->respond(['item' => $this->presenter->present($item)]);
     }
 
+    private function advance(ItemId $id, ServerRequestInterface $request): ResponseInterface
+    {
+        $body = $this->body($request);
+        $item = $this->advanceItem->execute($id, $this->columnFrom($body['to'] ?? null), $this->actorFrom($body));
+
+        return $this->responder->respond(['item' => $this->presenter->present($item)]);
+    }
+
+    /** @return array<array-key, mixed> */
     private function body(ServerRequestInterface $request): array
     {
         /** @var mixed $data */
@@ -147,12 +160,13 @@ final readonly class BoardController
         return is_array($data) ? $data : [];
     }
 
+    /** @param array<array-key, mixed> $body */
     private function changesFrom(array $body): ItemChanges
     {
         return new ItemChanges(
-            status: $this->statusFrom($body['status'] ?? null),
-            role: $this->roleFrom($body['role'] ?? null),
-            roleChanged: array_key_exists('role', $body),
+            column: $this->columnFrom($body['status'] ?? null),
+            agent: $this->agentFrom($body['role'] ?? null),
+            agentChanged: array_key_exists('role', $body),
             worker: $this->stringFrom($body['worker'] ?? null),
             workerChanged: array_key_exists('worker', $body),
             blocked: $this->boolFrom($body['blocked'] ?? null),
@@ -163,14 +177,20 @@ final readonly class BoardController
         );
     }
 
-    private function statusFrom(mixed $value): ?Status
+    /** @param array<array-key, mixed> $body */
+    private function actorFrom(array $body): string
     {
-        return is_string($value) ? Status::tryFrom($value) : null;
+        return $this->stringFrom($body['actor'] ?? null) ?? 'user';
     }
 
-    private function roleFrom(mixed $value): ?Role
+    private function columnFrom(mixed $value): ?ColumnId
     {
-        return is_string($value) ? Role::tryFrom($value) : null;
+        return is_string($value) && $value !== '' ? new ColumnId($value) : null;
+    }
+
+    private function agentFrom(mixed $value): ?AgentId
+    {
+        return is_string($value) && $value !== '' ? new AgentId($value) : null;
     }
 
     private function stringFrom(mixed $value): ?string

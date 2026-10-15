@@ -1,0 +1,19 @@
+import { request } from './client.js'
+
+export { FEATURES, simulation, isSimulated, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
+
+export const api = {
+  fetchWorkspace: () => request('GET', '/api/workspace'),
+
+  fetchIssues: () => request('GET', '/api/issues'),
+  fetchIssue: (id) => request('GET', `/api/issues/${id}`),
+  createIssue: (payload) => request('POST', '/api/issues', payload),
+  updateIssue: (id, patch) => request('PATCH', `/api/issues/${id}`, patch),
+  moveIssue: (id, target) => request('POST', `/api/issues/${id}/move`, target),
+  addComment: (id, comment) => request('POST', `/api/issues/${id}/comments`, comment),
+  deleteIssue: (id) => request('DELETE', `/api/issues/${id}`),
+
+  createEntity: (collection, data) => request('POST', `/api/${collection}`, data),
+  updateEntity: (collection, id, data) => request('PATCH', `/api/${collection}/${id}`, data),
+  deleteEntity: (collection, id) => request('DELETE', `/api/${collection}/${id}`),
+}

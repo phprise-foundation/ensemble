@@ -7,30 +7,32 @@ namespace App\Tests\Unit\Domain\Board;
 use App\Domain\Board\Comment;
 use App\Domain\Board\Item;
 use App\Domain\Board\ItemId;
-use App\Domain\Board\Role;
-use App\Domain\Board\Status;
+use App\Domain\Workflow\ColumnId;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 final class ItemTest extends TestCase
 {
-    public function testMovesThroughStatuses(): void
+    public function testMovesBetweenColumnsAndTracksEntry(): void
     {
         $item = $this->item();
+        $at = new DateTimeImmutable('2026-01-02 03:04:05');
 
-        $item->moveTo(Status::Design);
+        $item->moveTo(new ColumnId('design'), $at);
 
-        self::assertSame(Status::Design, $item->status());
+        self::assertSame('design', $item->column()->value());
+        self::assertSame($at, $item->enteredAt());
+        self::assertSame($at, $item->updatedAt());
     }
 
     public function testAssignsAndClearsWorker(): void
     {
         $item = $this->item();
 
-        $item->assignWorker('Vivy');
+        $item->assignWorker('Vivy', $this->at());
         self::assertSame('Vivy', $item->worker());
 
-        $item->clearWorker();
+        $item->clearWorker($this->at());
         self::assertSame('', $item->worker());
     }
 
@@ -38,11 +40,11 @@ final class ItemTest extends TestCase
     {
         $item = $this->item();
 
-        $item->block('RFC-2');
+        $item->block('RFC-2', $this->at());
         self::assertTrue($item->blocked());
         self::assertSame('RFC-2', $item->blockedBy());
 
-        $item->unblock();
+        $item->unblock($this->at());
         self::assertFalse($item->blocked());
         self::assertSame('', $item->blockedBy());
     }
@@ -51,16 +53,20 @@ final class ItemTest extends TestCase
     {
         $item = $this->item();
 
-        $item->addComment(new Comment('user', 'hello', new DateTimeImmutable()));
+        $item->addComment(new Comment('user', 'hello', $this->at()), $this->at());
         self::assertCount(1, $item->comments());
 
-        $item->close();
+        $item->close($this->at());
         self::assertTrue($item->closed());
-        self::assertSame(Status::Done, $item->status());
     }
 
     private function item(): Item
     {
-        return new Item(new ItemId(1), 'Title', 'Body', Status::Intent, Role::ProductOwner, new DateTimeImmutable());
+        return new Item(new ItemId(1), new ColumnId('intent'), 'Title', 'Body', null, $this->at());
+    }
+
+    private function at(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('2026-01-01 00:00:00');
     }
 }
