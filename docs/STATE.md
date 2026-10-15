@@ -97,6 +97,13 @@
     single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
     `--breakpoint-sidebar` custom property for the drawer and the future icon
     bar.
+  - **Collapsed sidebar (activity bar) — CSS layer:** `--activity-width: 48px`
+    token in `:root`; `.sidebar.collapsed` rules (icon-only — labels, chevrons,
+    badges, source paths, brand text and entry actions hidden; icons centred;
+    submenu/leaf indentation zeroed); `width` added to the sidebar transition;
+    and `.sidebar-toggle` hidden by default, desktop-only via
+    `@media (min-width: $sidebar-breakpoint + 1)`. The toggle behaviour and the
+    `collapsed` prop are wired in the follow-up subtasks (KAN-23/KAN-24).
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
