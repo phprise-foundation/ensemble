@@ -7,9 +7,11 @@ import AppIcon from './components/AppIcon.vue'
 import { boardStore } from './store/board.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
+import { useMobileSidebar } from './breakpoints.js'
 
 const route = useRoute()
 const sidebarOpen = ref(false)
+const mobile = useMobileSidebar()
 const menuToggle = ref(null)
 
 onMounted(() => {
@@ -31,10 +33,10 @@ function toggleSimulation() {
 
 <template>
   <div class="app">
-    <AppSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
+    <AppSidebar :open="sidebarOpen" :overlay="mobile" @close="sidebarOpen = false" />
     <div v-if="sidebarOpen" class="scrim" @click="sidebarOpen = false"></div>
 
-    <div class="content">
+    <div class="content" :inert="sidebarOpen && mobile ? true : null">
       <SimBanner />
       <header class="topbar">
         <button

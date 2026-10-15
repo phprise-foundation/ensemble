@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
@@ -7,12 +7,13 @@ import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
 
-const props = defineProps({ open: { type: Boolean, default: false } })
+const props = defineProps({ open: { type: Boolean, default: false }, overlay: { type: Boolean, default: false } })
 const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
+const isModal = computed(() => props.overlay && props.open)
 
 router.afterEach(() => {
   if (props.open) {
@@ -55,6 +56,13 @@ function focusTrap(event) {
   }
 }
 
+function focusFirst() {
+  const elements = focusableElements()
+  if (elements.length > 0) {
+    elements[0].focus()
+  }
+}
+
 function handleKeydown(event) {
   if (event.key === 'Escape') {
     emit('close')
@@ -76,6 +84,9 @@ watch(
   (isOpen) => {
     if (isOpen) {
       attachKeydown()
+      if (props.overlay) {
+        nextTick(focusFirst)
+      }
       return
     }
     detachKeydown()
@@ -285,7 +296,7 @@ async function removeEntity(kind, id, label) {
 </script>
 
 <template>
-  <aside id="app-sidebar" ref="sidebar" class="sidebar" :class="{ open }" role="dialog" aria-modal="true" :aria-hidden="!open" :aria-label="'Menu'">
+  <aside id="app-sidebar" ref="sidebar" class="sidebar" :class="{ open }" :role="isModal ? 'dialog' : undefined" :aria-modal="isModal ? 'true' : undefined" :aria-hidden="overlay ? !open : undefined" :aria-label="'Menu'">
     <div class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>
