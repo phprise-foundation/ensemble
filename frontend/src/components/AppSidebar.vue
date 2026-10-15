@@ -249,7 +249,7 @@ async function saveEditor() {
       if (!current.draft.name && current.draft.path) {
         current.draft.name = current.draft.path.split('/').filter(Boolean).pop() || 'source'
       }
-      if (!current.draft.id) {
+      if (current.draft.__existing && !current.draft.id) {
         current.draft.id = slugify(current.draft.name)
       }
     }
