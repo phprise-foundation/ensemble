@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
@@ -13,6 +13,16 @@ const emit = defineEmits(['close'])
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
+
+const OVERLAY_QUERY = '(max-width: 1024px)'
+const isOverlay = ref(false)
+let overlayMediaQuery = null
+
+const isModal = computed(() => isOverlay.value && props.open)
+
+function updateOverlay(event) {
+  isOverlay.value = event.matches
+}
 
 router.afterEach(() => {
   if (props.open) {
@@ -28,7 +38,13 @@ function focusableElements() {
     sidebar.value.querySelectorAll(
       'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ).filter((element) => element.offsetParent !== null)
+  ).filter((element) => {
+    if (element.hidden || !element.isConnected) {
+      return false
+    }
+    const style = window.getComputedStyle(element)
+    return style.display !== 'none' && style.visibility !== 'hidden'
+  })
 }
 
 function focusTrap(event) {
@@ -71,24 +87,46 @@ function detachKeydown() {
   document.removeEventListener('keydown', handleKeydown)
 }
 
+function focusFirst() {
+  const first = focusableElements()[0]
+  first?.focus()
+}
+
 watch(
   () => props.open,
-  (isOpen) => {
-    if (isOpen) {
+  (isOpen, wasOpen) => {
+    if (isOverlay.value && isOpen) {
       attachKeydown()
+      nextTick(focusFirst)
       return
     }
-    detachKeydown()
+    if (wasOpen) {
+      detachKeydown()
+    }
   }
 )
 
-onMounted(() => {
-  if (props.open) {
+watch(isOverlay, (overlay) => {
+  if (!overlay) {
+    detachKeydown()
+  } else if (props.open) {
     attachKeydown()
+    nextTick(focusFirst)
+  }
+})
+
+onMounted(() => {
+  overlayMediaQuery = window.matchMedia(OVERLAY_QUERY)
+  isOverlay.value = overlayMediaQuery.matches
+  overlayMediaQuery.addEventListener('change', updateOverlay)
+  if (isOverlay.value && props.open) {
+    attachKeydown()
+    nextTick(focusFirst)
   }
 })
 
 onUnmounted(() => {
+  overlayMediaQuery?.removeEventListener('change', updateOverlay)
   detachKeydown()
 })
 
@@ -285,7 +323,16 @@ async function removeEntity(kind, id, label) {
 </script>
 
 <template>
-  <aside id="app-sidebar" ref="sidebar" class="sidebar" :class="{ open }" role="dialog" aria-modal="true" :aria-hidden="!open" :aria-label="'Menu'">
+  <aside
+    id="app-sidebar"
+    ref="sidebar"
+    class="sidebar"
+    :class="{ open }"
+    :role="isModal ? 'dialog' : undefined"
+    :aria-modal="isModal ? 'true' : undefined"
+    :aria-hidden="isOverlay ? !open : undefined"
+    aria-label="Menu"
+  >
     <div class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>

@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import SimBanner from './components/SimBanner.vue'
@@ -8,12 +8,27 @@ import { boardStore } from './store/board.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
 
+const MOBILE_QUERY = '(max-width: 1024px)'
+
 const route = useRoute()
 const sidebarOpen = ref(false)
 const menuToggle = ref(null)
+const isMobile = ref(false)
+let mediaQuery = null
+
+function updateMobile(event) {
+  isMobile.value = event.matches
+}
 
 onMounted(() => {
   boardStore.load()
+  mediaQuery = window.matchMedia(MOBILE_QUERY)
+  isMobile.value = mediaQuery.matches
+  mediaQuery.addEventListener('change', updateMobile)
+})
+
+onUnmounted(() => {
+  mediaQuery?.removeEventListener('change', updateMobile)
 })
 
 watch(sidebarOpen, (isOpen, wasOpen) => {
@@ -32,9 +47,9 @@ function toggleSimulation() {
 <template>
   <div class="app">
     <AppSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
-    <div v-if="sidebarOpen" class="scrim" @click="sidebarOpen = false"></div>
+    <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
-    <div class="content">
+    <div class="content" :inert="sidebarOpen && isMobile">
       <SimBanner />
       <header class="topbar">
         <button

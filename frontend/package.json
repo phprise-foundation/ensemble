@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "vitest run",
+    "test:drawer-a11y": "node --test tests/mobile-drawer.test.mjs && vitest run tests/mobile-drawer.spec.js"
   },
   "dependencies": {
     "vue": "^3.5.13",
@@ -14,6 +16,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
-    "vite": "^6.0.7"
+    "@vue/test-utils": "^2.5.1",
+    "jsdom": "^30.1.3",
+    "vite": "^6.0.7",
+    "vitest": "^5.0.5"
   }
 }

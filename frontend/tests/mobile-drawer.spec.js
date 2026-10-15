@@ -1,0 +1,129 @@
+import { describe, it, expect, vi } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import AppSidebar from '../src/components/AppSidebar.vue'
+
+vi.mock('../src/store/board.js', () => ({
+  boardStore: {
+    workspace: { value: { id: 'ws', name: 'Workspace' } },
+    boardsOf: () => [],
+    workflowsOf: () => [],
+    teamsOf: () => [],
+    sourcesOf: () => [],
+    statusesOf: () => [],
+    transitionsOf: () => [],
+    issueTypesOf: () => [],
+    agentsOf: () => [],
+    rolesOf: () => [],
+    profilesOf: () => [],
+  },
+}))
+
+vi.mock('../src/api/index.js', () => ({
+  isSimulated: () => false,
+  setFeature: () => {},
+  setAll: () => {},
+  hasSimulation: { value: false },
+  simulatedFeatures: { value: [] },
+  simulation: { features: {} },
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({}),
+  useRouter: () => ({ afterEach: () => {} }),
+}))
+
+function setMatchMedia(matches) {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+}
+
+function focusableInside(container) {
+  const selector =
+    'button:not([disabled]), [href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  return Array.from(container.querySelectorAll(selector)).filter((element) => !element.hidden && element.isConnected)
+}
+
+function dispatchKeyboard(key, shiftKey = false) {
+  document.dispatchEvent(new window.KeyboardEvent('keydown', { key, shiftKey, bubbles: true }))
+}
+
+function mountSidebar(props) {
+  return mount(AppSidebar, {
+    props,
+    global: { stubs: { RouterLink: 'a' } },
+    attachTo: document.body,
+  })
+}
+
+describe('AppSidebar drawer accessibility', () => {
+  it('moves focus to the first focusable element when opened in mobile overlay mode', async () => {
+    setMatchMedia(true)
+    const wrapper = mountSidebar({ open: false })
+    await wrapper.setProps({ open: true })
+    await nextTick()
+    expect(document.activeElement?.closest('#app-sidebar')).toBeTruthy()
+  })
+
+  it('emits close and removes the keydown listener when Escape is pressed', async () => {
+    setMatchMedia(true)
+    const wrapper = mountSidebar({ open: true })
+    await nextTick()
+    dispatchKeyboard('Escape')
+    await nextTick()
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+
+  it('cycles Tab forward from the last element to the first inside the drawer', async () => {
+    setMatchMedia(true)
+    const wrapper = mountSidebar({ open: true })
+    await nextTick()
+    const focusable = focusableInside(wrapper.find('#app-sidebar').element)
+    expect(focusable.length).toBeGreaterThan(1)
+    focusable[focusable.length - 1].focus()
+    await nextTick()
+    dispatchKeyboard('Tab')
+    await nextTick()
+    expect(document.activeElement).toBe(focusable[0])
+  })
+
+  it('cycles Shift+Tab backward from the first element to the last inside the drawer', async () => {
+    setMatchMedia(true)
+    const wrapper = mountSidebar({ open: true })
+    await nextTick()
+    const focusable = focusableInside(wrapper.find('#app-sidebar').element)
+    expect(focusable.length).toBeGreaterThan(1)
+    focusable[0].focus()
+    await nextTick()
+    dispatchKeyboard('Tab', true)
+    await nextTick()
+    expect(document.activeElement).toBe(focusable[focusable.length - 1])
+  })
+
+  it('announces the drawer as a modal dialog only when open in overlay mode', async () => {
+    setMatchMedia(true)
+    const wrapper = mountSidebar({ open: true })
+    await nextTick()
+    const aside = wrapper.find('#app-sidebar')
+    expect(aside.attributes('role')).toBe('dialog')
+    expect(aside.attributes('aria-modal')).toBe('true')
+    expect(aside.attributes('aria-hidden')).toBe('false')
+  })
+
+  it('keeps plain navigation semantics when used as a desktop sidebar', async () => {
+    setMatchMedia(false)
+    const wrapper = mountSidebar({ open: false })
+    await nextTick()
+    const aside = wrapper.find('#app-sidebar')
+    expect(aside.attributes('role')).toBeUndefined()
+    expect(aside.attributes('aria-modal')).toBeUndefined()
+    expect(aside.attributes('aria-hidden')).toBeUndefined()
+  })
+})
