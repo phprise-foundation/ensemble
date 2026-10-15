@@ -29,7 +29,7 @@ test('base drawer UI and interaction logic', () => {
   assert.doesNotMatch(desktopSidebarRule, /position:\s*fixed/, 'sidebar desktop não deve ser fixed')
 })
 
-test('drawer closing on route navigation and accessibility (Red Phase)', () => {
+test('drawer closing on route navigation and accessibility', () => {
   assert.match(
     sidebarVue,
     /router\.afterEach|watch\(.*route/i,
@@ -37,8 +37,18 @@ test('drawer closing on route navigation and accessibility (Red Phase)', () => {
   )
   assert.match(
     sidebarVue,
-    /keydown.*escape|focus\s*trap/i,
-    'o drawer deve implementar acessibilidade (tecla ESC e foco preso)'
+    /handleKeydown|keydown.*escape/i,
+    'o drawer deve escutar a tecla ESC'
+  )
+  assert.match(
+    sidebarVue,
+    /focusTrap|focus\s*trap/i,
+    'o drawer deve conter o foco com focus trap'
+  )
+  assert.match(
+    appVue,
+    /:is-mobile="isMobile"/,
+    'AppSidebar deve receber a flag de overlay a partir de App.vue'
   )
 })
 
