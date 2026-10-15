@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -33,6 +33,17 @@ function slugify(text, fallback) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
   return slug || fallback || `item-${Date.now()}`
+}
+
+function sourcePathProblem(path) {
+  if (!String(path ?? '').trim()) return { error: 'informe o caminho do diretório', status: 422 }
+  if (!existsSync(path) || !statSync(path).isDirectory()) return { error: 'diretório não encontrado', status: 422 }
+  return null
+}
+
+function sourceName(body) {
+  if (String(body.name ?? '').trim()) return body.name
+  return String(body.path ?? '').split('/').filter(Boolean).pop() ?? ''
 }
 
 function allowedFor(db, from, to, actor) {
@@ -87,7 +98,7 @@ function moveIssue(db, id, { columnId, statusId, order }) {
   return { issue }
 }
 
-function handle(db, method, segments, body) {
+export function handle(db, method, segments, body) {
   const [head, id, sub] = segments
 
   if (head === 'workspace' && method === 'GET') {
@@ -145,6 +156,33 @@ function handle(db, method, segments, body) {
     }
     if (method === 'DELETE' && id) {
       db.issues = db.issues.filter((issue) => issue.id !== id)
+      return { data: { deleted: id } }
+    }
+  }
+
+  if (head === 'sources') {
+    if (method === 'GET' && id === undefined) return { data: db.sources }
+    if (method === 'POST' && id === undefined) {
+      const problem = sourcePathProblem(body.path)
+      if (problem) return problem
+      const entity = { ...body, name: sourceName(body) }
+      if (!entity.id) entity.id = slugify(entity.name)
+      if (db.sources.some((item) => item.id === entity.id)) return { error: 'source id já existe', status: 409 }
+      db.sources.push(entity)
+      return { data: entity, status: 201 }
+    }
+    if (method === 'PATCH' && id) {
+      const entity = db.sources.find((item) => item.id === id)
+      if (!entity) return { error: 'source não encontrada', status: 404 }
+      if (body.path !== undefined) {
+        const problem = sourcePathProblem(body.path)
+        if (problem) return problem
+      }
+      Object.assign(entity, body, { id })
+      return { data: entity }
+    }
+    if (method === 'DELETE' && id) {
+      db.sources = db.sources.filter((item) => item.id !== id)
       return { data: { deleted: id } }
     }
   }
