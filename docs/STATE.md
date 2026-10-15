@@ -88,7 +88,12 @@
     agents/roles/profiles are always listed under their workflow/team. On small
     screens the sidebar becomes a drawer that closes on route navigation, on
     Escape, on the scrim and when opening an editor (the editors are teleported
-    to `body` so they stay visible). The mobile breakpoint is centralized in a
+    to `body` so they stay visible). While open in overlay mode the drawer traps
+    keyboard focus (Tab/Shift+Tab cycle inside, the background content is
+    `inert`, and focus returns to the toggle on close) and announces itself as a
+    modal dialog through conditional ARIA (`aria-expanded`/`aria-controls` on the
+    toggle; `role="dialog"`/`aria-modal`/`aria-hidden` only in the mobile
+    overlay). The mobile breakpoint is centralized in a
     single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
     `--breakpoint-sidebar` custom property for the drawer and the future icon
     bar.

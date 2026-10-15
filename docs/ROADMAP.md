@@ -85,7 +85,9 @@ marking what is still a prototype.
 5. ~~**Sources** — local project directories the worker will use as `workdir`.~~
    **Done (prototype).**
 6. **Board polish** — open an issue on its own page; make board filters affect the
-   cards; surface Experiences in the new menu; WIP hints.
+   cards; surface Experiences in the new menu; WIP hints; remove the off-canvas
+   drawer from the Tab order when closed on mobile (`inert` on the `<aside>`
+   while `aria-hidden`).
 7. **i18n** — the UI starts in English; localisation comes after the flow is set.
 8. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
