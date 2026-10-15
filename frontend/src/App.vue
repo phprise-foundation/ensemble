@@ -10,9 +10,17 @@ import { hasSimulation, setAll } from './api/index.js'
 
 const route = useRoute()
 const sidebarOpen = ref(false)
+const sidebarCollapsed = ref(false)
 const menuToggle = ref(null)
 const isMobile = ref(false)
 let mediaQuery = null
+
+function handleKeyboardShortcut(event) {
+  if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+}
 
 function sidebarMediaQuery() {
   if (typeof document === 'undefined') {
@@ -28,6 +36,7 @@ function updateIsMobile(event) {
 
 onMounted(() => {
   boardStore.load()
+  window.addEventListener('keydown', handleKeyboardShortcut)
   mediaQuery = sidebarMediaQuery()
   if (mediaQuery) {
     isMobile.value = mediaQuery.matches
@@ -36,6 +45,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyboardShortcut)
   mediaQuery?.removeEventListener('change', updateIsMobile)
 })
 
@@ -54,7 +64,7 @@ function toggleSimulation() {
 
 <template>
   <div class="app">
-    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" @close="sidebarOpen = false" />
+    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" :collapsed="sidebarCollapsed" @close="sidebarOpen = false" />
     <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
     <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
@@ -70,6 +80,15 @@ function toggleSimulation() {
           @click="sidebarOpen = true"
         >
           <AppIcon name="menu" />
+        </button>
+        <button
+          class="icon-btn sidebar-toggle"
+          title="Toggle sidebar"
+          aria-label="Toggle sidebar"
+          :aria-expanded="!sidebarCollapsed"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >
+          <AppIcon name="sidebar" />
         </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>

@@ -103,3 +103,81 @@ describe('App drawer overlay', () => {
     expect(isInert(wrapper.find('.content').element)).toBe(false)
   })
 })
+
+const SidebarStub = {
+  name: 'AppSidebar',
+  props: { open: Boolean, isMobile: Boolean, collapsed: Boolean },
+  template: '<div class="sidebar-stub"></div>',
+}
+
+function mountAppWithSidebarStub() {
+  setupMatchMedia(false)
+  return mount(App, {
+    global: {
+      stubs: {
+        RouterView: true,
+        RouterLink: 'a',
+        AppIcon: 'span',
+        AppSidebar: SidebarStub,
+      },
+    },
+    attachTo: document.body,
+  })
+}
+
+function pressShortcut(modifier) {
+  const event = new window.KeyboardEvent('keydown', { key: 'b', cancelable: true, bubbles: true, ...modifier })
+  window.dispatchEvent(event)
+  return event
+}
+
+describe('App sidebar collapse toggle', () => {
+  beforeEach(() => {
+    document.documentElement.style.setProperty('--breakpoint-sidebar', '100px')
+  })
+
+  it('toggles the collapsed prop of the sidebar from the top button', async () => {
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    const toggle = wrapper.find('.sidebar-toggle')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.attributes('aria-label')).toBe('Toggle sidebar')
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+
+    await toggle.trigger('click')
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+
+    await toggle.trigger('click')
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('toggles with Ctrl+B and Cmd+B without the browser default', async () => {
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    const control = pressShortcut({ ctrlKey: true })
+    await nextTick()
+    expect(control.defaultPrevented).toBe(true)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
+
+    pressShortcut({ metaKey: true })
+    await nextTick()
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('removes the shortcut listener on unmount', async () => {
+    const removeListener = vi.spyOn(window, 'removeEventListener')
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    wrapper.unmount()
+
+    expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function))
+    removeListener.mockRestore()
+  })
+})
