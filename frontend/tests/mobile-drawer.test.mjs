@@ -28,7 +28,6 @@ test('base drawer UI and interaction logic', () => {
 })
 
 test('drawer closing on route navigation and accessibility (Red Phase)', () => {
-  // These checks assert behaviors required by the RFC/design that are pending implementation in the Red phase.
   assert.match(
     sidebarVue,
     /router\.afterEach|watch\(.*route/i,
@@ -38,5 +37,18 @@ test('drawer closing on route navigation and accessibility (Red Phase)', () => {
     sidebarVue,
     /keydown.*escape|focus\s*trap/i,
     'o drawer deve implementar acessibilidade (tecla ESC e foco preso)'
+  )
+})
+
+test('drawer closes when opening the editor on mobile', () => {
+  assert.match(
+    sidebarVue,
+    /function open\([^)]*\)\s*\{[\s\S]*?emit\('close'\)/,
+    'abrir o editor deve emitir close para recolher o drawer'
+  )
+  assert.match(
+    sidebarVue,
+    /<Teleport\s+to="body">[\s\S]*?(<EntityModal[\s\S]*?\/>|<BoardEditor[\s\S]*?\/>)/,
+    'os editores devem ser teleportados para fora do aside sidebar'
   )
 })

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
@@ -114,6 +114,7 @@ const slugify = (text) =>
     .replace(/^-+|-+$/g, '')
 
 function open(kind, draft, title, fields) {
+  emit('close')
   editor.value = { kind, draft, title, fields, error: '' }
 }
 
@@ -408,6 +409,8 @@ async function removeEntity(kind, id, label) {
       </div>
     </nav>
 
+  </aside>
+  <Teleport to="body">
     <EntityModal
       v-if="editor && editor.kind !== 'board'"
       :title="editor.title"
@@ -424,5 +427,5 @@ async function removeEntity(kind, id, label) {
       @save="saveEditor"
       @close="close"
     />
-  </aside>
+  </Teleport>
 </template>
