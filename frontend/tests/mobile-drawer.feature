@@ -3,7 +3,7 @@ Funcionalidade: Menu lateral esquerdo com comportamento de drawer em telas peque
   Origem: KAN-9.
 
   Cenário: Menu lateral recolhido por padrão em telas pequenas
-    Dado que a largura da tela é inferior ao breakpoint móvel (≤ 1024px)
+    Dado que a largura da tela é inferior ao breakpoint móvel
     Quando a aplicação é carregada
     Então o menu lateral esquerdo fica oculto por padrão
     E um botão acionador visível é exibido no topo esquerdo
