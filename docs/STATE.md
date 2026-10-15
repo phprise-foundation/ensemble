@@ -86,9 +86,12 @@
     from the menu (board editor: ID, name, workflow, columns, filters; workflow
     creation can copy a template). Statuses/transitions/issue-types and
     agents/roles/profiles are always listed under their workflow/team. On small
-    screens (`max-width: 1024px`) the sidebar becomes a drawer that closes on
-    route navigation, on Escape, on the scrim and when opening an editor (the
-    editors are teleported to `body` so they stay visible).
+    screens the sidebar becomes a drawer that closes on route navigation, on
+    Escape, on the scrim and when opening an editor (the editors are teleported
+    to `body` so they stay visible). The mobile breakpoint is centralized in a
+    single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
+    `--breakpoint-sidebar` custom property for the drawer and the future icon
+    bar.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
