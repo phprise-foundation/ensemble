@@ -142,7 +142,7 @@ Ordem de dependência (imports reais entre módulos):
 2. **KAN-34** (ProfileMenu) e **KAN-36** (ProfilePage) dependem de
    **KAN-33** (importam `store/session.js`).
 3. **KAN-35** (App.vue) depende de **KAN-34** (importa o componente).
-4. **KAN-37** (testes) é vermelho-fase enquanto KAN-32/KAN-33 não chegarem.
+4. **KAN-37** (testes) é vermelho-fase enquanto 1/2 não chegarem.
 
 Aqueles que dependem de um módulo ainda não mesclado em `main` devem ser
 bloqueados pelo próprio codador ao assumi-los
@@ -185,30 +185,3 @@ por último; 6 quando o restante estiver em `main`.
   `/profile` distinta de `/teams/:teamId/profiles`.
 - Idiomas de largura distinta podem exigir revisão da truncagem — o caso volta
   ao registro de KAN-3, não a uma nova discussão.
-
-## 11. Barra de aceite completa (fonte única fecha os nove itens)
-
-O green da KAN-37 prova o checklist da PO (Vivy 20:05) **por inteiro**, não só
-os itens literais da seção 9. Três grãos não estavam na fonte única; entram aqui
-como asserções obrigatórias, na forma operacionalizada pela QA (Alexya 00:32):
-
-1. **38px medidos no navegador (E2E).** `getBoundingClientRect()` do
-   `.profile-avatar`: largura e altura arredondadas = **38** (tolerância ±1px de
-   subpixel). A integração já afirma o `38px` no CSS de origem; o grão é a
-   medição no navegador, não a asserção em si.
-2. **Caso de tela pequena (E2E).** `cy.viewport` logo abaixo do ponto de corte
-   **lido da variável CSS `--breakpoint-sidebar` da KAN-12** — nunca o literal
-   `1024` — provando: formulário de profile interagível, nome em linha única,
-   topo sem estourar e sem overflow ao lado do acionador do drawer (KAN-9).
-3. **Login imutável na tela (E2E).** Após salvar o nome composto, re-afirmar que
-   o `input[readonly]` do login mantém o valor de antes do save.
-
-Correção da fonte única (ponto 4 do coder Kaio, 20:20 — decisão do Framework
-Architect): a asserção `#app-sidebar` `be.visible` após "Sign in again" acopla o
-aceite ao estado do drawer, que é dependente de viewport. No viewport padrão do
-Cypress (`1000px`, abaixo de `$sidebar-breakpoint: 1024px`), o drawer correto
-nasce fechado e fora da tela (`position: fixed; transform: translateX(-100%)`) —
-Cypress o considera `hidden`. A restauração da sessão deve ser provada por um
-observável independente de viewport: `.topbar` (ou `.profile-trigger`) **visível**
-e `#app-sidebar` **existente** (`should('exist')`), não visível. O KAN-37 aplica
-esta correção à spec ao ajustar os seletores.
