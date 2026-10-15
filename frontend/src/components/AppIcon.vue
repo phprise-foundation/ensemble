@@ -12,6 +12,7 @@ const paths = {
   issues: ['M4 5h16v14H4z', 'M8 9h8', 'M8 13h5'],
   agents: ['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6'],
   roles: ['M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z'],
+  sidebar: ['M3 3h4v18H3z', 'M10 3h11v18H10z'],
   profiles: ['M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z'],
   experiences: ['M7 4h10v16l-5-3-5 3z'],
   plus: ['M12 5v14', 'M5 12h14'],
