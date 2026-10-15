@@ -3,7 +3,7 @@ Funcionalidade: Colapso do menu lateral esquerdo
   Origem: KAN-10.
 
   Cenário: Sidebar expandido por padrão no desktop
-    Dado que a largura da tela é superior ao breakpoint móvel (> 1024px)
+    Dado que a largura da tela é superior ao breakpoint móvel
     Quando a aplicação é carregada
     Então o menu lateral tem largura completa (200px ou mais)
 
@@ -44,5 +44,5 @@ Funcionalidade: Colapso do menu lateral esquerdo
     E tem o atributo `aria-expanded`
 
   Cenário: Comportamento mobile inalterado
-    Dado que a largura da tela é inferior ou igual ao breakpoint móvel (≤ 1024px)
+    Dado que a largura da tela é inferior ou igual ao breakpoint móvel
     Então o botão `.sidebar-toggle` não está visível

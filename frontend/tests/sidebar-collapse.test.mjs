@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const css = readFileSync(join(here, '..', 'src', 'styles', 'main.css'), 'utf8')
+const css = readFileSync(join(here, '..', 'src', 'styles', 'main.scss'), 'utf8')
 const appVue = readFileSync(join(here, '..', 'src', 'App.vue'), 'utf8')
 const sidebarVue = readFileSync(join(here, '..', 'src', 'components', 'AppSidebar.vue'), 'utf8')
 
@@ -30,6 +30,6 @@ test('sidebar collapse functionality in AppSidebar.vue (Red Phase)', () => {
 })
 
 test('mobile behavior preserved (Red Phase)', () => {
-  assert.match(css, /@media\s*\(\s*max-width\s*:\s*1024px\s*\)/, 'deve existir media query para max-width 1024px')
+  assert.match(css, /@media\s*\(\s*max-width\s*:\s*\$sidebar-breakpoint\s*\)/, 'a media query deve consumir a variavel SCSS do breakpoint')
   assert.match(css, /\.sidebar-toggle\s*\{[\s\S]*?display:\s*none/, 'botao toggle nao deve ser visivel por padrao em telas menores')
 })
