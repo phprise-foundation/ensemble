@@ -103,6 +103,11 @@
   - **Admin:** full CRUD for statuses, transitions, issue types, agents (name,
     who am I, age, marital status, roles, profile, 3x4 portrait), roles and
     profiles; the board is created/edited from the menu.
+  - **Sources:** registering a source validates the directory in the host
+    process (the simulated middleware today; the real backend later) and returns
+    the true cause on failure — `422` empty or nonexistent path, `404` editing a
+    nonexistent source, `409` duplicate id — instead of the generic
+    "sources not found".
   - Verified headless (render, panel open, valid/rejected drops, persisted CRUD).
 
 ## Next
