@@ -21,7 +21,7 @@ test('base drawer UI and interaction logic', () => {
   const desktopSidebarRule = css.match(/\.sidebar\s*\{[^}]*\}/s)?.[0] || ''
 
   assert.match(appVue, /const sidebarOpen = ref\(false\)/, 'o drawer deve começar recolhido')
-  assert.match(appVue, /sidebarOpen = true/, 'o botão toggle deve abrir o drawer')
+  assert.match(appVue, /@click="sidebarOpen = true"/, 'o botão toggle deve abrir o drawer')
   assert.match(appVue, /@click="sidebarOpen = false"/, 'clique no scrim deve fechar o drawer')
   assert.match(appVue, /:open="sidebarOpen"/, 'AppSidebar deve receber o estado aberto/fechado')
   assert.match(appVue, /@close="sidebarOpen = false"/, 'AppSidebar deve emitir evento para fechar')
