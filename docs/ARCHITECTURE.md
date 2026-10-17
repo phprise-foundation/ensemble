@@ -38,8 +38,8 @@ Dependencies point inward: `Interface → Application → Domain`, and
   `Transitions`. The workflow is data, not an enum. The `role` binds a stage to
   the agent responsible for it; `Transitions` is a first-class collection of the
   allowed target columns.
-- `Domain/Agent` — `Agent` (registry entry: identity + runtime spec `rule`,
-  `profile`, `model`, `fallback_model`, `interval`, `workspace`) and `AgentId`.
+- `Domain/Agent` — `Agent` (registry entry: identity + runtime spec `profile`,
+  `model`, `fallback_model`, `interval`, `workspace`) and `AgentId`.
 - `Domain/Board` — `Item` (aggregate: column, agent, worker, blocked, comments,
   timestamps), `ItemEvent` (a stage transition) and `ItemId`. `item.role` is a
   manual override; the stage's role lives on the column.

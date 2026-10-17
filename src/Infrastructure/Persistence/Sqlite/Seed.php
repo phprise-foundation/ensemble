@@ -24,11 +24,11 @@ final class Seed
     private function seedAgents(PDO $pdo): void
     {
         $statement = $pdo->prepare(
-            'INSERT OR IGNORE INTO agents (id, name, description, active, rule, profile, model, fallback_model, interval, workspace)
-             VALUES (?, ?, ?, 1, ?, \'\', \'\', \'\', 300, \'/workspace\')',
+            'INSERT OR IGNORE INTO agents (id, name, description, active, profile, model, fallback_model, interval, workspace)
+             VALUES (?, ?, ?, 1, \'\', \'\', \'\', 300, \'/workspace\')',
         );
         foreach ($this->agents() as [$id, $name, $description]) {
-            $statement->execute([$id, $name, $description, $id]);
+            $statement->execute([$id, $name, $description]);
         }
     }
 

@@ -17,7 +17,6 @@ final class AgentMapper
             (string) $row['name'],
             (string) $row['description'],
             (bool) $row['active'],
-            (string) ($row['rule'] ?? ''),
             (string) ($row['profile'] ?? ''),
             (string) ($row['model'] ?? ''),
             (string) ($row['fallback_model'] ?? ''),

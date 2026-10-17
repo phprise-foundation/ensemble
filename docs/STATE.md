@@ -125,6 +125,11 @@
     "sources not found".
   - Verified headless (render, panel open, valid/rejected drops, persisted CRUD).
 
+- **Rule → role unification:** the redundant `rule` field was removed from the
+  agent registry (agent-watcher uses `--role` + `roles/`; the board's `agents`
+  no longer carry `rule`). `role` = identity + instructions; `profile` stays
+  separate.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in

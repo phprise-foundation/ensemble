@@ -10,7 +10,6 @@ final class Agent
 {
     private StringObject $name;
     private StringObject $description;
-    private StringObject $rule;
     private StringObject $profile;
     private StringObject $model;
     private StringObject $fallbackModel;
@@ -21,7 +20,6 @@ final class Agent
         string $name,
         string $description = '',
         private bool $active = true,
-        string $rule = '',
         string $profile = '',
         string $model = '',
         string $fallbackModel = '',
@@ -30,7 +28,6 @@ final class Agent
     ) {
         $this->name = new StringObject($name);
         $this->description = new StringObject($description);
-        $this->rule = new StringObject($rule);
         $this->profile = new StringObject($profile);
         $this->model = new StringObject($model);
         $this->fallbackModel = new StringObject($fallbackModel);
@@ -55,11 +52,6 @@ final class Agent
     public function isActive(): bool
     {
         return $this->active;
-    }
-
-    public function rule(): string
-    {
-        return $this->rule->getValue();
     }
 
     public function profile(): string
@@ -102,9 +94,8 @@ final class Agent
         $this->active = $active;
     }
 
-    public function configure(string $rule, string $profile, string $model, string $fallbackModel, int $interval, string $workspace): void
+    public function configure(string $profile, string $model, string $fallbackModel, int $interval, string $workspace): void
     {
-        $this->rule = new StringObject($rule);
         $this->profile = new StringObject($profile);
         $this->model = new StringObject($model);
         $this->fallbackModel = new StringObject($fallbackModel);
