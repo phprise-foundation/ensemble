@@ -17,6 +17,7 @@ use App\Application\ListAgents;
 use App\Application\ListBoardItems;
 use App\Application\ListItemChildren;
 use App\Application\ListColumns;
+use App\Application\TriggerEngine;
 use App\Application\ReadBoard;
 use App\Application\UpdateAgent;
 use App\Application\UpdateBoard;
@@ -32,6 +33,8 @@ use App\Infrastructure\Persistence\Sqlite\SqliteColumnRepository;
 use App\Infrastructure\Persistence\Sqlite\SqliteDatabase;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemEventLog;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemRepository;
+use App\Infrastructure\Persistence\Sqlite\SqliteTriggerRepository;
+use App\Infrastructure\Persistence\Sqlite\TriggerMapper;
 use App\Interface\Http\AgentArrayPresenter;
 use App\Interface\Http\AgentController;
 use App\Interface\Http\BoardController;
@@ -219,6 +222,17 @@ final class BoardApiTest extends TestCase
         self::assertSame([2], $detail['children']);
     }
 
+    public function testTriggerAutoClosesOnDone(): void
+    {
+        $this->board->handle($this->request('POST', '/api/items', ['title' => 'Do it']));
+        $this->board->handle($this->request('PATCH', '/api/items/1', ['status' => 'testing']));
+
+        $advanced = $this->json($this->board->handle($this->request('POST', '/api/items/1/advance', [])));
+
+        self::assertSame('done', $advanced['item']['status']);
+        self::assertTrue($advanced['item']['closed']);
+    }
+
     public function testRejectsMissingToken(): void
     {
         $response = $this->board->handle(new ServerRequest('GET', '/api/items'));
@@ -234,6 +248,7 @@ final class BoardApiTest extends TestCase
         $registry = new SqliteAgentRegistry($pdo, new AgentMapper());
         $events = new SqliteItemEventLog($pdo);
         $settings = new SqliteBoardSettings($pdo);
+        $triggers = new SqliteTriggerRepository($pdo, new TriggerMapper());
         $auth = new PasswordAuthenticator('secret');
         $responder = new JsonResponder();
 
@@ -243,7 +258,7 @@ final class BoardApiTest extends TestCase
             new FindItem($items),
             new CreateItem($items, $columns, $events),
             new UpdateItem($items, $columns, $events),
-            new AdvanceItem($items, $columns, $events),
+            new AdvanceItem($items, $columns, $events, new TriggerEngine($triggers)),
             new AddComment($items),
             new CloseItem($items, $columns, $events),
             $events,

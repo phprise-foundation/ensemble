@@ -21,6 +21,7 @@ use App\Application\ListItemInfractions;
 use App\Application\ReadBoard;
 use App\Application\ReadConversation;
 use App\Application\SendChatMessage;
+use App\Application\TriggerEngine;
 use App\Application\UpdateAgent;
 use App\Application\UpdateBoard;
 use App\Application\UpdateColumn;
@@ -41,6 +42,8 @@ use App\Infrastructure\Persistence\Sqlite\SqliteColumnRepository;
 use App\Infrastructure\Persistence\Sqlite\SqliteDatabase;
 use App\Infrastructure\Persistence\Sqlite\SqliteInfractionRepository;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemEventLog;
+use App\Infrastructure\Persistence\Sqlite\SqliteTriggerRepository;
+use App\Infrastructure\Persistence\Sqlite\TriggerMapper;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemRepository;
 use App\Interface\Http\AgentArrayPresenter;
 use App\Interface\Http\AgentController;
@@ -76,6 +79,7 @@ $agents = new SqliteAgentRegistry($pdo, new AgentMapper());
 $events = new SqliteItemEventLog($pdo);
 $settings = new SqliteBoardSettings($pdo);
 $infractions = new SqliteInfractionRepository($pdo);
+$triggers = new SqliteTriggerRepository($pdo, new TriggerMapper());
 
 $boardController = new BoardController(
     $authenticator,
@@ -83,7 +87,7 @@ $boardController = new BoardController(
     new FindItem($items),
     new CreateItem($items, $columns, $events),
     new UpdateItem($items, $columns, $events),
-    new AdvanceItem($items, $columns, $events),
+    new AdvanceItem($items, $columns, $events, new TriggerEngine($triggers)),
     new AddComment($items),
     new CloseItem($items, $columns, $events),
     $events,

@@ -14,6 +14,7 @@ final class Seed
         $this->seedAgents($pdo);
         $this->seedColumns($pdo);
         $this->seedTransitions($pdo);
+        $this->seedTriggers($pdo);
     }
 
     private function seedBoard(PDO $pdo): void
@@ -66,6 +67,16 @@ final class Seed
             ['testing', 'Testing', false, 'qa'],
             ['done', 'Done', true, null],
         ];
+    }
+
+    private function seedTriggers(PDO $pdo): void
+    {
+        $pdo->exec(
+            "INSERT OR IGNORE INTO triggers (id, name, event_type, enabled, priority, when_json, then_json) VALUES "
+            . "('trg-close-on-done', 'close when done', 'item_transitioned', 1, 0, "
+            . "'[{\"field\":\"status\",\"op\":\"eq\",\"value\":\"done\"}]', "
+            . "'[{\"field\":\"closed\",\"value\":true}]')",
+        );
     }
 
     /** @return list<array{string, string}> */
