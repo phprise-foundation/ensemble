@@ -29,6 +29,8 @@ final class Item
         string $body,
         ?AgentId $agent,
         private readonly DateTimeImmutable $createdAt,
+        private readonly IssueType $type = IssueType::Task,
+        private readonly ?ItemId $parent = null,
     ) {
         $this->title = new StringObject($title);
         $this->body = new StringObject($body);
@@ -90,6 +92,16 @@ final class Item
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function type(): IssueType
+    {
+        return $this->type;
+    }
+
+    public function parent(): ?ItemId
+    {
+        return $this->parent;
     }
 
     public function updatedAt(): DateTimeImmutable

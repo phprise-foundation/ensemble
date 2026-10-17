@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence\Sqlite;
 
 use App\Domain\Agent\AgentId;
 use App\Domain\Board\Comment;
+use App\Domain\Board\IssueType;
 use App\Domain\Board\Item;
 use App\Domain\Board\ItemId;
 use App\Domain\Workflow\ColumnId;
@@ -27,6 +28,8 @@ final class ItemMapper
             (string) $row['body'],
             $this->agentFrom($row['agent_id'] ?? null),
             $createdAt,
+            IssueType::from((string) ($row['issue_type'] ?? 'task')),
+            $this->itemIdFrom($row['parent_id'] ?? null),
         );
         $this->hydrateWorker($item, $row, $createdAt);
         $this->hydrateBlocked($item, $row, $createdAt);
@@ -43,6 +46,11 @@ final class ItemMapper
     private function agentFrom(mixed $id): ?AgentId
     {
         return $id === null || $id === '' ? null : new AgentId((string) $id);
+    }
+
+    private function itemIdFrom(mixed $id): ?ItemId
+    {
+        return $id === null || $id === '' ? null : new ItemId((int) $id);
     }
 
     /** @param array<array-key, mixed> $row */

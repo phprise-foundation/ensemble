@@ -8,6 +8,7 @@ use App\Domain\Board\Comment;
 use App\Domain\Board\CommentCollection;
 use App\Domain\Board\Item;
 use App\Domain\Board\ItemEvent;
+use App\Domain\Board\ItemId;
 
 final class ItemArrayPresenter
 {
@@ -17,6 +18,8 @@ final class ItemArrayPresenter
             'id' => $item->id()->toInt(),
             'title' => $item->title(),
             'body' => $item->body(),
+            'type' => $item->type()->value,
+            'parent_id' => $item->parent()?->toInt(),
             'status' => $item->column()->value(),
             'role' => $item->agent()?->value(),
             'worker' => $item->worker(),
@@ -70,5 +73,14 @@ final class ItemArrayPresenter
     private function presentComments(CommentCollection $comments): array
     {
         return array_values(array_map(fn(Comment $comment): array => $this->presentComment($comment), $comments->all()));
+    }
+
+    /**
+     * @param ItemId[] $ids
+     * @return list<int>
+     */
+    public function presentIds(array $ids): array
+    {
+        return array_values(array_map(fn(ItemId $id): int => $id->toInt(), $ids));
     }
 }

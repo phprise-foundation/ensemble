@@ -14,6 +14,7 @@ final class Schema
             $pdo->exec($statement);
         }
         $this->ensureColumnRole($pdo);
+        $this->ensureItemLineage($pdo);
     }
 
     /** @return list<string> */
@@ -62,7 +63,9 @@ final class Schema
                 closed INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                entered_at TEXT NOT NULL
+                entered_at TEXT NOT NULL,
+                issue_type TEXT NOT NULL DEFAULT \'task\',
+                parent_id INTEGER NULL REFERENCES items(id)
             )',
             'CREATE TABLE IF NOT EXISTS item_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,5 +114,23 @@ final class Schema
             }
         }
         $pdo->exec('ALTER TABLE columns ADD COLUMN role_id TEXT REFERENCES agents(id)');
+    }
+
+    private function ensureItemLineage(PDO $pdo): void
+    {
+        /** @var list<array<string, mixed>> $columns */
+        $columns = $pdo->query('PRAGMA table_info(items)')->fetchAll();
+        $hasType = false;
+        $hasParent = false;
+        foreach ($columns as $column) {
+            $hasType = $hasType || ($column['name'] ?? '') === 'issue_type';
+            $hasParent = $hasParent || ($column['name'] ?? '') === 'parent_id';
+        }
+        if (!$hasType) {
+            $pdo->exec("ALTER TABLE items ADD COLUMN issue_type TEXT NOT NULL DEFAULT 'task'");
+        }
+        if (!$hasParent) {
+            $pdo->exec('ALTER TABLE items ADD COLUMN parent_id INTEGER REFERENCES items(id)');
+        }
     }
 }

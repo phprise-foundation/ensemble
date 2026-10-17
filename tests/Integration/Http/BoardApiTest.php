@@ -15,6 +15,7 @@ use App\Application\DeleteColumn;
 use App\Application\FindItem;
 use App\Application\ListAgents;
 use App\Application\ListBoardItems;
+use App\Application\ListItemChildren;
 use App\Application\ListColumns;
 use App\Application\ReadBoard;
 use App\Application\UpdateAgent;
@@ -202,6 +203,24 @@ final class BoardApiTest extends TestCase
         self::assertFalse($updated['agent']['active']);
     }
 
+    public function testSpawnsChildWithLineage(): void
+    {
+        $this->board->handle($this->request('POST', '/api/items', ['title' => 'RFC', 'type' => 'rfc']));
+
+        $child = $this->json($this->board->handle($this->request('POST', '/api/items', [
+            'title' => 'Subtask',
+            'type' => 'subtask',
+            'parent_id' => 1,
+        ])), 201);
+
+        self::assertSame('subtask', $child['item']['type']);
+        self::assertSame(1, $child['item']['parent_id']);
+
+        $detail = $this->json($this->board->handle($this->request('GET', '/api/items/1')));
+        self::assertSame('rfc', $detail['item']['type']);
+        self::assertSame([2], $detail['children']);
+    }
+
     public function testRejectsMissingToken(): void
     {
         $response = $this->board->handle(new ServerRequest('GET', '/api/items'));
@@ -230,6 +249,7 @@ final class BoardApiTest extends TestCase
             new AddComment($items),
             new CloseItem($items, $columns, $events),
             $events,
+            new ListItemChildren($items),
             new ItemArrayPresenter(),
             $responder,
         );
