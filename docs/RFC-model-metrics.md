@@ -457,7 +457,7 @@ lands.
 
 ## 11. Next steps
 
-**Next task: step 4 (lineage / spawn)** — steps 5–6 depend on it.
+**Next task: step 5 (triggers)** — steps 5–6 remain.
 
 1. Formalise this as an **RFC** issue on the board.
 2. ~~Instrument the runs ledger~~ **Done** (agent-watcher `watcher.run_agent` →
@@ -466,7 +466,8 @@ lands.
    adjudicate / list + governance invariants). Deferred polish: weight +
    policy version, no-reciprocal, infractor resolved from the ledger,
    root-cause `upstream` redirect.
-4. Normalise **lineage / spawn** (RFC → tasks → subtasks).
+4. ~~Normalise lineage / spawn~~ **Done** (multi-agent PR #32: `IssueType` +
+   `parent_id` + `childrenOf`; `POST /api/items` reads `type`/`parent_id`).
 5. Implement the **triggers**, including the automatic voting and
    `subtasks-done` transitions.
 6. Build the **semantic layer + metrics read model** (per-task and per-model
