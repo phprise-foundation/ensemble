@@ -170,8 +170,9 @@ git push origin v0.1.1
 
 ## 4. Publication (GitHub + Docker Hub)
 
-The Docker image is published through the GitHub Actions workflow (on `v*` tags)
-and, locally, via `docker build` / `docker push`.
+The Docker image is published **locally** via `docker build` / `docker push`
+(the repository has no GitHub Actions workflow as of `v0.10.1` — this was
+verified; the tag only feeds the semver release below).
 
 ```bash
 # local image
