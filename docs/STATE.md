@@ -153,7 +153,11 @@
     evidence required, adjudicator ∉ {infractor, detector}, single verdict).
     Deferred: weight/policy version, no-reciprocal, infractor from ledger,
     root-cause redirect.
-  - **Next task (step 4):** normalise **lineage / spawn** (RFC → tasks → subtasks).
+  - **Done (step 4):** item lineage (multi-agent PR #32): `IssueType`
+    (idea/rfc/task/subtask) + `parent_id` + `childrenOf`; `POST /api/items`
+    reads `type`/`parent_id`; item detail exposes `children`.
+  - **Next task (step 5):** implement the **triggers** (spawn, voting,
+    `subtasks-done`).
 - **UX track (frontend):** open an issue on its own page; surface Experiences in
   the new menu; make board filters affect the cards; i18n. Then replace the fake
   JSON backend with the real PHP API feature by feature, flipping the prototype
