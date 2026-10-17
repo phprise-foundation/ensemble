@@ -146,7 +146,14 @@
     `opencode run --format json`, captures the `sessionID`, writes one JSON line
     per run to `<workdir>/.agent-watcher/runs.jsonl`; `--runs-file` flag).
     Merged: agent-watcher PRs #3 (runner) and #4 (runs ledger).
-  - **Next task (step 3):** implement **infractions + adjudication**.
+  - **Done (step 3, core):** infractions + adjudication (multi-agent PR #30):
+    `Infraction` entity + `Severity`/`Cause`/`InfractionStatus`; endpoints
+    `POST /api/items/{id}/infractions`, `GET /api/items/{id}/infractions`,
+    `POST /api/infractions/{id}/adjudicate`; governance invariants (no self,
+    evidence required, adjudicator ∉ {infractor, detector}, single verdict).
+    Deferred: weight/policy version, no-reciprocal, infractor from ledger,
+    root-cause redirect.
+  - **Next task (step 4):** normalise **lineage / spawn** (RFC → tasks → subtasks).
 - **UX track (frontend):** open an issue on its own page; surface Experiences in
   the new menu; make board filters affect the cards; i18n. Then replace the fake
   JSON backend with the real PHP API feature by feature, flipping the prototype
