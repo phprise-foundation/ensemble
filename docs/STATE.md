@@ -142,8 +142,11 @@
     minimum sample; monitor stays at `var/kanban.local/bin/monitor` (CLI only).
   - Infractions: first-class entity, only `upheld` count, no self/reciprocal,
     evidence required, `infractor` resolved from the runs ledger.
-  - **Next task:** instrument the **runs ledger** in agent-watcher
-    (`runtime.run` → session id, time, tokens, cost) — RFC §11 step 2.
+  - **Done (step 2):** runs ledger in agent-watcher (`watcher.run_agent` runs
+    `opencode run --format json`, captures the `sessionID`, writes one JSON line
+    per run to `<workdir>/.agent-watcher/runs.jsonl`; `--runs-file` flag).
+    Merged: agent-watcher PRs #3 (runner) and #4 (runs ledger).
+  - **Next task (step 3):** implement **infractions + adjudication**.
 - **UX track (frontend):** open an issue on its own page; surface Experiences in
   the new menu; make board filters affect the cards; i18n. Then replace the fake
   JSON backend with the real PHP API feature by feature, flipping the prototype

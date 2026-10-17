@@ -417,9 +417,11 @@ model_configured, model_used, variant, fallback_used, started_at, ended_at,
 duration_s, tokens_input/output/reasoning/cache_read/cache_write, cost_usd,
 retries, error, workdir, commit_before/after`.
 
-Today `runtime.run()` returns only `RunResult(ok, output, error)` — no session id,
-time, tokens or cost. The session id must be captured (`opencode run --session` /
-`--format json` / `--title`) and joined to `opencode.db`.
+Implemented (agent-watcher, board-driven `watcher.run_agent`): the run uses
+`opencode run --format json`, captures the `sessionID`, and writes one JSON line
+per invocation to the runs ledger (`<workdir>/.agent-watcher/runs.jsonl`, or
+`--runs-file`). Tokens and cost are still joined from `opencode.db` on
+`session_id` (not stored in the row).
 
 ### 9.2 Semantic layer
 
@@ -455,12 +457,11 @@ lands.
 
 ## 11. Next steps
 
-**Next task: step 2 (runs ledger)** — the enabler that unblocks M2 and infraction
-attribution; steps 3–6 depend on it.
+**Next task: step 3 (infractions + adjudication)** — steps 4–6 depend on it.
 
 1. Formalise this as an **RFC** issue on the board.
-2. **Instrument the runs ledger** (agent-watcher `runtime.run` → session id,
-   time, tokens, cost).
+2. ~~Instrument the runs ledger~~ **Done** (agent-watcher `watcher.run_agent` →
+   `opencode run --format json` + `sessionID`; agent-watcher PRs #3 and #4).
 3. Implement **infractions + adjudication**.
 4. Normalise **lineage / spawn** (RFC → tasks → subtasks).
 5. Implement the **triggers**, including the automatic voting and
