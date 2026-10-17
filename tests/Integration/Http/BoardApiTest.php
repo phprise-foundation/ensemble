@@ -188,11 +188,9 @@ final class BoardApiTest extends TestCase
     {
         $created = $this->json($this->agents->handle($this->request('POST', '/api/agents', [
             'name' => 'Runner',
-            'rule' => 'coder',
             'model' => 'deepseek/deepseek-flash',
             'interval' => 120,
         ])), 201);
-        self::assertSame('coder', $created['agent']['rule']);
         self::assertSame(120, $created['agent']['interval']);
 
         $updated = $this->json($this->agents->handle($this->request('PATCH', '/api/agents/runner', [

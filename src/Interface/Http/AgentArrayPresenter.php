@@ -15,7 +15,6 @@ final class AgentArrayPresenter
             'name' => $agent->name(),
             'description' => $agent->description(),
             'active' => $agent->isActive(),
-            'rule' => $agent->rule(),
             'profile' => $agent->profile(),
             'model' => $agent->model(),
             'fallback_model' => $agent->fallbackModel(),

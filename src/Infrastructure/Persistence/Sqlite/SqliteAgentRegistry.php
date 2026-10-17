@@ -42,10 +42,10 @@ final class SqliteAgentRegistry implements AgentRegistry
     public function save(Agent $agent): void
     {
         $statement = $this->pdo->prepare(
-            'INSERT INTO agents (id, name, description, active, rule, profile, model, fallback_model, interval, workspace)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            'INSERT INTO agents (id, name, description, active, profile, model, fallback_model, interval, workspace)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET name = excluded.name, description = excluded.description,
-                 active = excluded.active, rule = excluded.rule, profile = excluded.profile,
+                 active = excluded.active, profile = excluded.profile,
                  model = excluded.model, fallback_model = excluded.fallback_model,
                  interval = excluded.interval, workspace = excluded.workspace',
         );
@@ -54,7 +54,6 @@ final class SqliteAgentRegistry implements AgentRegistry
             $agent->name(),
             $agent->description(),
             $agent->isActive() ? 1 : 0,
-            $agent->rule(),
             $agent->profile(),
             $agent->model(),
             $agent->fallbackModel(),

@@ -31,7 +31,6 @@ final class Schema
                 name TEXT NOT NULL,
                 description TEXT NOT NULL DEFAULT \'\',
                 active INTEGER NOT NULL DEFAULT 1,
-                rule TEXT NOT NULL DEFAULT \'\',
                 profile TEXT NOT NULL DEFAULT \'\',
                 model TEXT NOT NULL DEFAULT \'\',
                 fallback_model TEXT NOT NULL DEFAULT \'\',

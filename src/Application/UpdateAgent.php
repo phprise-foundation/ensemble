@@ -20,7 +20,6 @@ final readonly class UpdateAgent
         ?string $name = null,
         ?string $description = null,
         ?bool $active = null,
-        ?string $rule = null,
         ?string $profile = null,
         ?string $model = null,
         ?string $fallbackModel = null,
@@ -31,7 +30,7 @@ final readonly class UpdateAgent
         $this->applyName($agent, $name);
         $this->applyDescription($agent, $description);
         $this->applyActive($agent, $active);
-        $this->applySpec($agent, $rule, $profile, $model, $fallbackModel, $interval, $workspace);
+        $this->applySpec($agent, $profile, $model, $fallbackModel, $interval, $workspace);
         $this->agents->save($agent);
 
         return $agent;
@@ -60,7 +59,6 @@ final readonly class UpdateAgent
 
     private function applySpec(
         Agent $agent,
-        ?string $rule,
         ?string $profile,
         ?string $model,
         ?string $fallbackModel,
@@ -68,7 +66,6 @@ final readonly class UpdateAgent
         ?string $workspace,
     ): void {
         $agent->configure(
-            $rule ?? $agent->rule(),
             $profile ?? $agent->profile(),
             $model ?? $agent->model(),
             $fallbackModel ?? $agent->fallbackModel(),

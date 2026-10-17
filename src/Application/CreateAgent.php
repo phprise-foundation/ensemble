@@ -20,7 +20,6 @@ final readonly class CreateAgent
         string $name,
         string $slug,
         string $description,
-        string $rule = '',
         string $profile = '',
         string $model = '',
         string $fallbackModel = '',
@@ -31,7 +30,7 @@ final readonly class CreateAgent
         if ($this->agents->find($id) !== null) {
             throw AgentAlreadyExistsException::forId($id);
         }
-        $agent = new Agent($id, $name, $description, true, $rule, $profile, $model, $fallbackModel, $interval, $workspace);
+        $agent = new Agent($id, $name, $description, true, $profile, $model, $fallbackModel, $interval, $workspace);
         $this->agents->save($agent);
 
         return $agent;

@@ -33,7 +33,7 @@ agent registry.
 
 ### Agents
 
-Agents are defined on the board (the `Agents` view: rule, profile, model,
+Agents are defined on the board (the `Agents` view: profile, model,
 fallback model, interval, workspace). They are opt-in via the `agents` profile
 (the default `up` only starts the board):
 
@@ -130,8 +130,8 @@ Auth is a single shared secret: send `Authorization: Bearer <BOARD_PASSWORD>`.
 | `PATCH` | `/api/board/columns/{id}` | yes | update `{ name?, position?, final?, role?, transitions? }` |
 | `DELETE` | `/api/board/columns/{id}` | yes | delete an empty, non-final column |
 | `GET` | `/api/agents` | yes | list agents |
-| `POST` | `/api/agents` | yes | create agent `{ name, slug?, description?, rule?, profile?, model?, fallback_model?, interval?, workspace? }` |
-| `PATCH` | `/api/agents/{id}` | yes | update `{ name?, description?, active?, rule?, profile?, model?, fallback_model?, interval?, workspace? }` |
+| `POST` | `/api/agents` | yes | create agent `{ name, slug?, description?, profile?, model?, fallback_model?, interval?, workspace? }` |
+| `PATCH` | `/api/agents/{id}` | yes | update `{ name?, description?, active?, profile?, model?, fallback_model?, interval?, workspace? }` |
 | `DELETE` | `/api/agents/{id}` | yes | delete agent (unassigns its items) |
 | `GET` | `/api/chat` | yes | copilot conversation |
 | `POST` | `/api/chat` | yes | send `{ message }` → updated conversation |
@@ -153,8 +153,8 @@ configured workflow with `POST /api/items/{id}/advance`.
 - **Board** — the kanban; columns and cards come from the configured workflow.
 - **Boards** — board settings (name, aging threshold), column CRUD, and each
   column's role and allowed transitions.
-- **Agents** — the agent registry, including each agent's runtime spec (rule,
-  profile, model, fallback model, interval, workspace).
+- **Agents** — the agent registry, including each agent's runtime spec (profile,
+  model, fallback model, interval, workspace).
 - **Copilot** — a right-hand drawer backed by `GET`/`POST /api/chat`,
   read-only. By default the agent is an offline stub (`EchoChatAgent`). To use the
   real always-on chat service (opencode), set `CHAT_URL`/`CHAT_TOKEN` and start
