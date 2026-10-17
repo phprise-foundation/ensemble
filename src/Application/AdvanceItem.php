@@ -23,6 +23,7 @@ final readonly class AdvanceItem
         private ItemRepository $items,
         private ColumnRepository $columns,
         private ItemEventLog $events,
+        private TriggerEngine $engine,
     ) {
     }
 
@@ -34,8 +35,9 @@ final readonly class AdvanceItem
         $at = new DateTimeImmutable();
         $item->moveTo($target->id(), $at);
         $item->assignAgent($target->role(), $at);
-        $this->items->save($item);
         $this->events->record($id, new ItemEvent($current->id(), $target->id(), $actor, $at));
+        $this->engine->run('item_transitioned', $item);
+        $this->items->save($item);
 
         return $item;
     }

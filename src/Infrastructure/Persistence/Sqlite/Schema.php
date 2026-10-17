@@ -100,6 +100,15 @@ final class Schema
                 resolved_at TEXT NULL
             )',
             'CREATE INDEX IF NOT EXISTS idx_infractions_item ON infractions(item_id, id)',
+            'CREATE TABLE IF NOT EXISTS triggers (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                priority INTEGER NOT NULL DEFAULT 0,
+                when_json TEXT NOT NULL DEFAULT \'[]\',
+                then_json TEXT NOT NULL DEFAULT \'[]\'
+            )',
         ];
     }
 
