@@ -270,7 +270,7 @@ async function saveEditor() {
       const templateId = current.draft.templateId
       delete current.draft.__existing
       delete current.draft.templateId
-      if (!current.draft.id && current.draft.name) {
+      if (!isNew && !current.draft.id && current.draft.name) {
         current.draft.id = slugify(current.draft.name)
       }
       const workflow = await boardStore.saveEntity('workflows', current.draft)
@@ -280,7 +280,7 @@ async function saveEditor() {
       editor.value = null
       return
     }
-    if (current.kind === 'team' && !current.draft.id && current.draft.name) {
+    if (current.kind === 'team' && current.draft.__existing && !current.draft.id && current.draft.name) {
       current.draft.id = slugify(current.draft.name)
     }
     if (current.kind === 'source') {
