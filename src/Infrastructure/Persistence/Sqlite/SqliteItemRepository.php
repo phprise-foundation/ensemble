@@ -58,11 +58,22 @@ final class SqliteItemRepository implements ItemRepository
     }
 
     #[Override]
+    public function childrenOf(ItemId $parent): array
+    {
+        $statement = $this->pdo->prepare('SELECT id FROM items WHERE parent_id = ? ORDER BY id');
+        $statement->execute([$parent->toInt()]);
+        /** @var list<mixed> $ids */
+        $ids = $statement->fetchAll(PDO::FETCH_COLUMN);
+
+        return array_map(fn(mixed $id): ItemId => new ItemId((int) $id), $ids);
+    }
+
+    #[Override]
     public function add(Item $item): void
     {
         $this->pdo->prepare(
-            'INSERT INTO items (id, column_id, agent_id, title, body, worker, blocked, blocked_by, closed, created_at, updated_at, entered_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO items (id, column_id, agent_id, title, body, worker, blocked, blocked_by, closed, created_at, updated_at, entered_at, issue_type, parent_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         )->execute($this->values($item));
         $this->saveComments($item);
     }
@@ -105,6 +116,8 @@ final class SqliteItemRepository implements ItemRepository
             $item->createdAt()->format(DATE_ATOM),
             $item->updatedAt()->format(DATE_ATOM),
             $item->enteredAt()->format(DATE_ATOM),
+            $item->type()->value,
+            $item->parent()?->toInt(),
         ];
     }
 

@@ -15,6 +15,7 @@ use App\Application\DeleteColumn;
 use App\Application\FindItem;
 use App\Application\ListAgents;
 use App\Application\ListBoardItems;
+use App\Application\ListItemChildren;
 use App\Application\ListColumns;
 use App\Application\ListItemInfractions;
 use App\Application\ReadBoard;
@@ -86,6 +87,7 @@ $boardController = new BoardController(
     new AddComment($items),
     new CloseItem($items, $columns, $events),
     $events,
+    new ListItemChildren($items),
     new ItemArrayPresenter(),
     $responder,
 );

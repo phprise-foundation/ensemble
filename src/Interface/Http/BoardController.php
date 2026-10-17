@@ -11,8 +11,10 @@ use App\Application\CreateItem;
 use App\Application\FindItem;
 use App\Application\ItemChanges;
 use App\Application\ListBoardItems;
+use App\Application\ListItemChildren;
 use App\Application\UpdateItem;
 use App\Domain\Agent\AgentId;
+use App\Domain\Board\IssueType;
 use App\Domain\Board\ItemId;
 use App\Domain\Contract\Authenticator;
 use App\Domain\Contract\ItemEventLog;
@@ -35,6 +37,7 @@ final readonly class BoardController
         private AddComment $addComment,
         private CloseItem $closeItem,
         private ItemEventLog $events,
+        private ListItemChildren $children,
         private ItemArrayPresenter $presenter,
         private JsonResponder $responder,
     ) {
@@ -98,7 +101,10 @@ final readonly class BoardController
     {
         $item = $this->findItem->execute($id);
 
-        return $this->responder->respond(['item' => $this->presenter->presentWithHistory($item, $this->events->history($id))]);
+        return $this->responder->respond([
+            'item' => $this->presenter->presentWithHistory($item, $this->events->history($id)),
+            'children' => $this->presenter->presentIds($this->children->execute($id)),
+        ]);
     }
 
     private function create(ServerRequestInterface $request): ResponseInterface
@@ -110,6 +116,8 @@ final readonly class BoardController
             $this->columnFrom($body['status'] ?? null),
             $this->agentFrom($body['role'] ?? null),
             $this->actorFrom($body),
+            $this->typeFrom($body['type'] ?? null),
+            $this->itemIdFrom($body['parent_id'] ?? null),
         );
 
         return $this->responder->respond(['item' => $this->presenter->present($item)], 201);
@@ -191,6 +199,16 @@ final readonly class BoardController
     private function agentFrom(mixed $value): ?AgentId
     {
         return is_string($value) && $value !== '' ? new AgentId($value) : null;
+    }
+
+    private function typeFrom(mixed $value): IssueType
+    {
+        return IssueType::tryFrom((string) $value) ?? IssueType::Task;
+    }
+
+    private function itemIdFrom(mixed $value): ?ItemId
+    {
+        return ctype_digit((string) $value) ? new ItemId((int) $value) : null;
     }
 
     private function stringFrom(mixed $value): ?string

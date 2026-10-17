@@ -19,6 +19,9 @@ interface ItemRepository
 
     public function countInColumn(ColumnId $column): int;
 
+    /** @return ItemId[] */
+    public function childrenOf(ItemId $parent): array;
+
     public function add(Item $item): void;
 
     public function save(Item $item): void;
