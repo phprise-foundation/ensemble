@@ -112,6 +112,15 @@
     tooltip shows the readable label when collapsed. The component only
     receives `collapsed` — the state, toggle button and `Ctrl+B` shortcut stay
     in KAN-24.
+  - **Sidebar id-derivation fix (KAN-29):** the `team` and `workflow` editors no
+    longer derive the id slug at creation — the derivation now requires the
+    guard `current.draft.__existing` (the same pattern `source` received in
+    KAN-20), so new drafts reach `saveEntity` with an empty id and the store
+    POSTs on creation and PATCHes on edit. Covered 1:1 by
+    `frontend/tests/entity-creation-verb.{feature,spec.js}` (vitest, 4 cases:
+    create → POST and edit → PATCH for both entities). The review validated the
+    merge artifact (15/15 vitest, 23/23 `node:test`, PHPUnit 42/122,
+    Psalm 0). PR #23, release `v0.10.1`.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
