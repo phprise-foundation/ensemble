@@ -121,6 +121,13 @@
     create → POST and edit → PATCH for both entities). The review validated the
     merge artifact (15/15 vitest, 23/23 `node:test`, PHPUnit 42/122,
     Psalm 0). PR #23, release `v0.10.1`.
+  - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
+    `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
+    handler `@click="sidebarOpen = true"`, aligned with the scrim assert's
+    specificity; the obsolete `(Red Phase)` label was verified as already
+    removed by KAN-14 (the debt was born obsolete). One-line diff, single
+    atomic commit, no production changes; suite green (4/4 node tests).
+    PR #26, release `v0.10.2`.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.

@@ -7,6 +7,16 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.10.2 — 2026-10-18
+
+### Changed
+
+- **KAN-30** — test-artifact hardening: the drawer toggle assert in
+  `frontend/tests/mobile-drawer.test.mjs` now matches the specific handler
+  `@click="sidebarOpen = true"`, aligned with the scrim assert's specificity;
+  the obsolete `(Red Phase)` label was verified as already removed (KAN-14).
+  Test-only change, no production code touched.
+
 ## v0.10.1 — 2026-10-18
 
 ### Fixed
