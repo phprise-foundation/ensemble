@@ -3,17 +3,20 @@
 declare(strict_types=1);
 
 use App\Application\AddComment;
+use App\Application\AdjudicateInfraction;
 use App\Application\AdvanceItem;
 use App\Application\CloseItem;
 use App\Application\CreateAgent;
 use App\Application\CreateColumn;
 use App\Application\CreateItem;
+use App\Application\DeclareInfraction;
 use App\Application\DeleteAgent;
 use App\Application\DeleteColumn;
 use App\Application\FindItem;
 use App\Application\ListAgents;
 use App\Application\ListBoardItems;
 use App\Application\ListColumns;
+use App\Application\ListItemInfractions;
 use App\Application\ReadBoard;
 use App\Application\ReadConversation;
 use App\Application\SendChatMessage;
@@ -35,6 +38,7 @@ use App\Infrastructure\Persistence\Sqlite\SqliteAgentRegistry;
 use App\Infrastructure\Persistence\Sqlite\SqliteBoardSettings;
 use App\Infrastructure\Persistence\Sqlite\SqliteColumnRepository;
 use App\Infrastructure\Persistence\Sqlite\SqliteDatabase;
+use App\Infrastructure\Persistence\Sqlite\SqliteInfractionRepository;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemEventLog;
 use App\Infrastructure\Persistence\Sqlite\SqliteItemRepository;
 use App\Interface\Http\AgentArrayPresenter;
@@ -44,6 +48,8 @@ use App\Interface\Http\BoardController;
 use App\Interface\Http\BoardPresenter;
 use App\Interface\Http\ChatController;
 use App\Interface\Http\ChatMessagePresenter;
+use App\Interface\Http\InfractionController;
+use App\Interface\Http\InfractionPresenter;
 use App\Interface\Http\ItemArrayPresenter;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\WorkflowController;
@@ -68,6 +74,7 @@ $columns = new SqliteColumnRepository($pdo, new ColumnMapper());
 $agents = new SqliteAgentRegistry($pdo, new AgentMapper());
 $events = new SqliteItemEventLog($pdo);
 $settings = new SqliteBoardSettings($pdo);
+$infractions = new SqliteInfractionRepository($pdo);
 
 $boardController = new BoardController(
     $authenticator,
@@ -105,6 +112,15 @@ $agentController = new AgentController(
     $responder,
 );
 
+$infractionController = new InfractionController(
+    $authenticator,
+    new DeclareInfraction($items, $infractions),
+    new AdjudicateInfraction($infractions),
+    new ListItemInfractions($infractions),
+    new InfractionPresenter(),
+    $responder,
+);
+
 $authController = new AuthController($authenticator, $responder);
 
 $chatFile = getenv('BOARD_CHAT_FILE');
@@ -133,6 +149,8 @@ $response = match (true) {
     $path === '/api/health' => $responder->respond(['ok' => true]),
     $path === '/api/login' => $authController->login($request),
     $path === '/api/chat' => $chatController->handle($request),
+    str_starts_with($path, '/api/infractions') => $infractionController->handle($request),
+    str_starts_with($path, '/api/items') && str_ends_with($path, '/infractions') => $infractionController->handle($request),
     $path === '/api/board' || str_starts_with($path, '/api/board/') => $workflowController->handle($request),
     str_starts_with($path, '/api/agents') => $agentController->handle($request),
     str_starts_with($path, '/api/items') => $boardController->handle($request),
