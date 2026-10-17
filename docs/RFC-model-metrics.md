@@ -457,12 +457,15 @@ lands.
 
 ## 11. Next steps
 
-**Next task: step 3 (infractions + adjudication)** — steps 4–6 depend on it.
+**Next task: step 4 (lineage / spawn)** — steps 5–6 depend on it.
 
 1. Formalise this as an **RFC** issue on the board.
 2. ~~Instrument the runs ledger~~ **Done** (agent-watcher `watcher.run_agent` →
    `opencode run --format json` + `sessionID`; agent-watcher PRs #3 and #4).
-3. Implement **infractions + adjudication**.
+3. ~~Infractions + adjudication~~ **Done (core)** (multi-agent PR #30: declare /
+   adjudicate / list + governance invariants). Deferred polish: weight +
+   policy version, no-reciprocal, infractor resolved from the ledger,
+   root-cause `upstream` redirect.
 4. Normalise **lineage / spawn** (RFC → tasks → subtasks).
 5. Implement the **triggers**, including the automatic voting and
    `subtasks-done` transitions.

@@ -101,7 +101,7 @@ triggers** (not agents). Design and decisions are **formalised** in
 1. ~~Decisions formalised~~ **Done.**
 2. ~~Runs ledger~~ **Done** (agent-watcher `watcher.run_agent` → `opencode run
    --format json` + `sessionID`; PRs #3/#4).
-3. Infractions + adjudication — **next**.
-4. Normalise lineage / spawn (RFC → tasks → subtasks).
+3. ~~Infractions + adjudication~~ **Done (core)** (multi-agent PR #30).
+4. Normalise lineage / spawn (RFC → tasks → subtasks) — **next**.
 5. Implement the triggers (spawn, voting, `subtasks-done`).
 6. Semantic layer + metrics read model; update `var/kanban.local/bin/monitor`.
