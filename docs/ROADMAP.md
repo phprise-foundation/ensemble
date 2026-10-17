@@ -92,3 +92,16 @@ marking what is still a prototype.
 8. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
 
+## Active plan — model performance & pipeline triggers (RFC)
+
+Goal: measure per-model quality and cost; transitions become **pipeline
+triggers** (not agents). Design and decisions are **formalised** in
+`docs/RFC-model-metrics.md`. Implementation order (RFC §11):
+
+1. ~~Decisions formalised~~ **Done.**
+2. **Runs ledger** — instrument agent-watcher `runtime.run` (session id, time,
+   tokens, cost) — **next**.
+3. Infractions + adjudication.
+4. Normalise lineage / spawn (RFC → tasks → subtasks).
+5. Implement the triggers (spawn, voting, `subtasks-done`).
+6. Semantic layer + metrics read model; update `var/kanban.local/bin/monitor`.

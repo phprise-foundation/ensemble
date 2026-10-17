@@ -127,6 +127,23 @@
 
 ## Next
 
+- **Model-performance measurement — decisions formalised** in
+  `docs/RFC-model-metrics.md` (status: Formalised; not implemented).
+  - Transitions become **pipeline triggers** (board rules, not agents) with
+    `ready`/`steps` flags; `assignee` = attribution, `worker` = lock.
+  - Status sets: `task` `Refining → Refined → Testing → Done` (Testing only
+    after all subtasks `Done`, automatic); `subtask` `Coding → Reviewing → Done`.
+  - RFC spawned by trigger: **Solutions sets `ready`** on the discovered idea
+    (go/no-go); the PO authors only the RFC description; Solutions/Systems/
+    Framework author proposal/feasibility/plan; all 4 (PO + 3 architects) vote,
+    **no abstention**, majority = 3 approvals, 2 rejects is terminal.
+  - Metrics: **M1** defect-attribution rate; **M2** cost per accepted task with a
+    **per-model breakdown** (equal-split allocation); no maturation window /
+    minimum sample; monitor stays at `var/kanban.local/bin/monitor` (CLI only).
+  - Infractions: first-class entity, only `upheld` count, no self/reciprocal,
+    evidence required, `infractor` resolved from the runs ledger.
+  - **Next task:** instrument the **runs ledger** in agent-watcher
+    (`runtime.run` → session id, time, tokens, cost) — RFC §11 step 2.
 - **UX track (frontend):** open an issue on its own page; surface Experiences in
   the new menu; make board filters affect the cards; i18n. Then replace the fake
   JSON backend with the real PHP API feature by feature, flipping the prototype
