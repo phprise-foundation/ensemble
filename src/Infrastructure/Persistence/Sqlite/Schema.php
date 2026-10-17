@@ -81,6 +81,23 @@ final class Schema
             )',
             'CREATE INDEX IF NOT EXISTS idx_item_events_item ON item_events(item_id, id)',
             'CREATE INDEX IF NOT EXISTS idx_comments_item ON comments(item_id, id)',
+            'CREATE TABLE IF NOT EXISTS infractions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id INTEGER NOT NULL REFERENCES items(id),
+                infractor_agent TEXT NOT NULL,
+                infractor_role TEXT NOT NULL DEFAULT \'\',
+                infractor_model TEXT NOT NULL DEFAULT \'\',
+                detected_by TEXT NOT NULL,
+                cause TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                evidence TEXT NOT NULL,
+                blocked INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT \'declared\',
+                adjudicated_by TEXT NOT NULL DEFAULT \'\',
+                created_at TEXT NOT NULL,
+                resolved_at TEXT NULL
+            )',
+            'CREATE INDEX IF NOT EXISTS idx_infractions_item ON infractions(item_id, id)',
         ];
     }
 
