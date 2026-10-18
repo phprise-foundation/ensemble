@@ -84,12 +84,16 @@ marking what is still a prototype.
    3x4 portrait), roles and profiles, scoped to a team.~~ **Done (prototype).**
 5. ~~**Sources** — local project directories the worker will use as `workdir`.~~
    **Done (prototype).**
-6. **Board polish** — open an issue on its own page; make board filters affect the
+6. ~~**Profile menu + session (KAN-15, MVE)** — user avatar/name in the top bar
+   with a `profile`/`logout` dropdown, a profile page that edits only the display
+   name, and a session gate (logout → neutral "Session ended" view).~~ **Done
+   (prototype).**
+7. **Board polish** — open an issue on its own page; make board filters affect the
    cards; surface Experiences in the new menu; WIP hints; remove the off-canvas
    drawer from the Tab order when closed on mobile (`inert` on the `<aside>`
    while `aria-hidden`).
-7. **i18n** — the UI starts in English; localisation comes after the flow is set.
-8. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
+8. **i18n** — the UI starts in English; localisation comes after the flow is set.
+9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
 
 ## Active plan — model performance & pipeline triggers (RFC)
