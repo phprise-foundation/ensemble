@@ -7,6 +7,22 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.3 — 2026-10-18
+
+### Changed
+
+- **KAN-37** — suíte de aceite do menu de perfil fechada por inteiro contra a
+  seção 11 de `docs/KAN-15-guide.md`, num diff só de teste (três arquivos, sem
+  código de produção): o par `frontend/tests/profile-menu.{feature,test.mjs}`
+  ganha os cenários de recarga de `#/profile` com o nome persistido e de
+  limitação de 40 caracteres na entrada; o E2E
+  (`frontend/cypress/e2e/profile-menu.cy.js`) passa a operacionalizar os
+  grãos — avatar de 38px medido com `getBoundingClientRect`, viewport derivado
+  de `--breakpoint-sidebar` (nunca o literal `1024`), credencial de login
+  imutável reafirmada antes/depois do save e após o recarregamento, e sucesso
+  afirmado pela região viva `[role="status"]`, não por string. PR #58,
+  release `v0.11.3`.
+
 ## v0.11.2 — 2026-10-18
 
 ### Changed

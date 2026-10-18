@@ -170,6 +170,17 @@
   ellipsis; …`) and the `.topbar` anchors never shrink. Covered by vitest
   (`App session gate`) and the smoke E2E (§11 selector fix). PRs #52/#53/#54,
   release `v0.11.0`.
+- **BDD + integração + E2E do menu de perfil (KAN-37):** a fonte única do
+  aceite fecha por inteiro a seção 11 do guia `docs/KAN-15-guide.md` — diff só
+  de teste (PR #58). A integração (`profile-menu.test.mjs`) reafirma
+  `GET/PATCH /api/user` (teto de 40 com `422`, `login` sempre ignorado) e
+  guarda o contrato na origem (`watch` da hidratação, `readonly` do login); o
+  E2E (`profile-menu.cy.js`) mede os cinco grãos no navegador: 38px via
+  `getBoundingClientRect`, viewport lido de `--breakpoint-sidebar` sem o
+  literal `1024`, login imutável reafirmado antes/depois do save e após o
+  reload, recarga hidratando o campo e sucesso pela região viva
+  `[role="status"]`. Barra refeita em worktree limpo no merge: node 40/40,
+  vitest 32/32, build limpo, E2E 8/8 sem erro de runtime. Release `v0.11.3`.
 
 ## Next
 
