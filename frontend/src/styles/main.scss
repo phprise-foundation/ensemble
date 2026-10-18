@@ -332,38 +332,40 @@ textarea {
   border-top: 1px solid var(--border);
 }
 
-.sidebar.collapsed {
-  width: var(--activity-width);
-  flex: 0 0 var(--activity-width);
-}
+@media (min-width: $sidebar-breakpoint + 1) {
+  .sidebar.collapsed {
+    width: var(--activity-width);
+    flex: 0 0 var(--activity-width);
+  }
 
-.sidebar.collapsed .nav-entry > span:not(.entry-actions),
-.sidebar.collapsed .nav-entry .chevron,
-.sidebar.collapsed .badge-id,
-.sidebar.collapsed .source-path,
-.sidebar.collapsed .brand > span:not(.brand-icon),
-.sidebar.collapsed .nav-empty,
-.sidebar.collapsed .entry-actions,
-.sidebar.collapsed .leaf span {
-  display: none;
-}
+  .sidebar.collapsed .nav-entry > span:not(.entry-actions),
+  .sidebar.collapsed .nav-entry .chevron,
+  .sidebar.collapsed .badge-id,
+  .sidebar.collapsed .source-path,
+  .sidebar.collapsed .brand > span:not(.brand-icon),
+  .sidebar.collapsed .nav-empty,
+  .sidebar.collapsed .entry-actions,
+  .sidebar.collapsed .leaf span {
+    display: none;
+  }
 
-.sidebar.collapsed .nav-entry {
-  justify-content: center;
-  padding: 6px 4px;
-}
+  .sidebar.collapsed .nav-entry {
+    justify-content: center;
+    padding: 6px 4px;
+  }
 
-.sidebar.collapsed .nav-entry > svg {
-  margin: 0;
-}
+  .sidebar.collapsed .nav-entry > svg {
+    margin: 0;
+  }
 
-.sidebar.collapsed .submenu {
-  padding-left: 0;
-}
+  .sidebar.collapsed .submenu {
+    padding-left: 0;
+  }
 
-.sidebar.collapsed .leaf {
-  justify-content: center;
-  gap: 0;
+  .sidebar.collapsed .leaf {
+    justify-content: center;
+    gap: 0;
+  }
 }
 
 /* Sim dot */

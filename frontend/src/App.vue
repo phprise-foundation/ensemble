@@ -18,6 +18,9 @@ const isMobile = ref(false)
 let mediaQuery = null
 
 function handleKeyboardShortcut(event) {
+  if (isMobile.value) {
+    return
+  }
   if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     sidebarCollapsed.value = !sidebarCollapsed.value
