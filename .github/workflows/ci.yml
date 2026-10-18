@@ -1,0 +1,25 @@
+name: CI
+on:
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: frontend
+      - name: Contracts (node:test)
+        run: node --test frontend/tests/*.test.mjs
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+      - name: Browser E2E
+        run: xvfb-run --auto-servernum npm run test:e2e
+        working-directory: frontend
