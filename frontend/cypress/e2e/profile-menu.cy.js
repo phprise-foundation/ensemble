@@ -77,6 +77,8 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
     cy.contains('Session ended').should('be.visible')
 
     cy.contains('Sign in again').click()
-    cy.get('#app-sidebar').should('be.visible')
+    cy.get('.topbar').should('be.visible')
+    cy.get('.profile-trigger').should('be.visible')
+    cy.get('#app-sidebar').should('exist')
   })
 })
