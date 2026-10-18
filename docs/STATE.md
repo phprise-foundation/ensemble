@@ -145,6 +145,18 @@
   agent registry (agent-watcher uses `--role` + `roles/`; the board's `agents`
   no longer carry `rule`). `role` = identity + instructions; `profile` stays
   separate.
+- **User profile menu + session gate (KAN-15, MVE Phase 1):** the top bar carries
+  a `ProfileMenu` (38px initial avatar + single-line truncated display name,
+  dropdown `profile`/`logout`) as the last `.topbar` child, backed by the
+  `session` store (`load`/`rename`/`signOut`/`signIn`) and the fake backend's
+  `GET/PATCH /api/user` (login immutable; display name ≤40 chars). The `/profile`
+  route edits only the display name. `App.vue` gates the whole shell on
+  `session.signedIn`: logout renders a neutral `.session-ended` view, "Sign in
+  again" restores it. `session.load()` is added to `onMounted` without disturbing
+  the KAN-24 shortcuts; the central `h1` yields (`min-width: 0; text-overflow:
+  ellipsis; …`) and the `.topbar` anchors never shrink. Covered by vitest
+  (`App session gate`) and the smoke E2E (§11 selector fix). PRs #52/#53/#54,
+  release `v0.11.0`.
 
 ## Next
 
