@@ -150,7 +150,7 @@ const slugify = (text) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
 
-function open(kind, draft, title, fields) {
+function openEditor(kind, draft, title, fields) {
   emit('close')
   editor.value = { kind, draft, title, fields, error: '' }
 }
@@ -161,19 +161,19 @@ function close() {
 
 /* Editors */
 function editWorkspace() {
-  open('workspace', { ...workspace.value }, 'Edit workspace', [{ key: 'name', label: 'Name' }])
+  openEditor('workspace', { ...workspace.value }, 'Edit workspace', [{ key: 'name', label: 'Name' }])
 }
 
 function addBoard() {
-  open('board', { id: '', name: '', workflowId: workflows.value[0]?.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
+  openEditor('board', { id: '', name: '', workflowId: workflows.value[0]?.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
 }
 
 function editBoard(board) {
-  open('board', JSON.parse(JSON.stringify({ ...board, __existing: true })), 'Edit board', [])
+  openEditor('board', JSON.parse(JSON.stringify({ ...board, __existing: true })), 'Edit board', [])
 }
 
 function addWorkflow() {
-  open(
+  openEditor(
     'workflow',
     { id: '', name: '', workspaceId: workspaceId.value, templateId: '' },
     'New workflow',
@@ -191,32 +191,32 @@ function addWorkflow() {
 }
 
 function editWorkflow(workflow) {
-  open('workflow', { ...workflow, __existing: true }, 'Edit workflow', [
+  openEditor('workflow', { ...workflow, __existing: true }, 'Edit workflow', [
     { key: 'name', label: 'Name' },
     { key: 'id', label: 'ID' },
   ])
 }
 
 function addTeam() {
-  open('team', { id: '', name: '', workspaceId: workspaceId.value }, 'New team', [
+  openEditor('team', { id: '', name: '', workspaceId: workspaceId.value }, 'New team', [
     { key: 'name', label: 'Name' },
     { key: 'id', label: 'ID (optional)' },
   ])
 }
 
 function editTeam(team) {
-  open('team', { ...team, __existing: true }, 'Edit team', [{ key: 'name', label: 'Name' }])
+  openEditor('team', { ...team, __existing: true }, 'Edit team', [{ key: 'name', label: 'Name' }])
 }
 
 function addSource() {
-  open('source', { id: '', name: '', path: '', workspaceId: workspaceId.value }, 'New source', [
+  openEditor('source', { id: '', name: '', path: '', workspaceId: workspaceId.value }, 'New source', [
     { key: 'path', label: 'Directory (local path)', hint: 'e.g. /home/you/src/my-project — the worker uses it as workdir' },
     { key: 'name', label: 'Name', hint: 'optional, defaults to the folder name' },
   ])
 }
 
 function editSource(source) {
-  open('source', { ...source, __existing: true }, 'Edit source', [
+  openEditor('source', { ...source, __existing: true }, 'Edit source', [
     { key: 'path', label: 'Directory (local path)' },
     { key: 'name', label: 'Name' },
   ])

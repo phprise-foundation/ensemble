@@ -55,7 +55,7 @@ test('drawer closing on route navigation and accessibility', () => {
 test('drawer closes when opening the editor on mobile', () => {
   assert.match(
     sidebarVue,
-    /function open\([^)]*\)\s*\{[\s\S]*?emit\('close'\)/,
+    /function openEditor\([^)]*\)\s*\{[\s\S]*?emit\('close'\)/,
     'abrir o editor deve emitir close para recolher o drawer'
   )
   assert.match(
