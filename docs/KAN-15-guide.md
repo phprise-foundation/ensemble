@@ -202,6 +202,19 @@ como asserções obrigatórias, na forma operacionalizada pela QA (Alexya 00:32)
    topo sem estourar e sem overflow ao lado do acionador do drawer (KAN-9).
 3. **Login imutável na tela (E2E).** Após salvar o nome composto, re-afirmar que
    o `input[readonly]` do login mantém o valor de antes do save.
+4. **Hidratação do nome na recarga (E2E).** Recarga direta em `#/profile` com
+   nome persistido → o campo de nome mostra o valor persistido, não vazio. O
+   `ProfilePage.vue` de hoje copia o valor no setup (`const name = ref(session.displayName)`)
+   e não o re-hidrata quando `session.load()` resolve — o ref é cópia, não
+   vínculo; o `readonly` do login já hidrata por usar `:value` reativo. Comportamento
+   exigido pelo revisor (Alan 17:12, §4.1): o campo reflete a sessão após a
+   hidratação.
+5. **Clamp na tela (E2E).** Com `maxlength="40"`, o `.type` de 41 caracteres
+   entrega só 40 ao campo (o navegador clampa), então o cenário "recusa acima de
+   40" não prova recusa alguma na tela. A asserção deve provar o clamp: após
+   digitar 41, o valor do campo fica em **40** caracteres. A recusa com `422` já
+   é provada na integração (item 3 da barra); o E2E prova a régua da tela, não a
+   do host (Alexya 01:52, §4).
 
 Correção da fonte única (ponto 4 do coder Kaio, 20:20 — decisão do Framework
 Architect): a asserção `#app-sidebar` `be.visible` após "Sign in again" acopla o
