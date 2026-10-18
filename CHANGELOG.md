@@ -7,6 +7,18 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.1 — 2026-10-18
+
+### Changed
+
+- **Contrato de aceite estendido (KAN-10)** — o par
+  `frontend/tests/sidebar-collapse.feature` e `frontend/tests/sidebar-collapse.test.mjs`
+  passou de 9 para 11 cenários e de 4 para 8 testes (foco visível, rótulos das
+  folhas ocultos no estado colapsado, estado determinístico sem `localStorage` e
+  breakpoint desktop consumindo `$sidebar-breakpoint + 1`); o guia
+  `docs/KAN-10-guide.md` passou a ter endereço único. Mudança só de teste e
+  documentação — nenhum código de produção.
+
 ## v0.11.0 — 2026-10-18
 
 ### Added

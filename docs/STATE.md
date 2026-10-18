@@ -112,6 +112,13 @@
     tooltip shows the readable label when collapsed. The component only
     receives `collapsed` — the state, toggle button and `Ctrl+B` shortcut stay
     in KAN-24.
+  - **Contrato de aceite estendido (KAN-10):** o par
+    `frontend/tests/sidebar-collapse.feature` e `frontend/tests/sidebar-collapse.test.mjs`
+    foi estendido de 9 para 11 cenários e de 4 para 8 testes (foco visível,
+    rótulos das folhas ocultos no colapsado, estado determinístico sem
+    `localStorage` e breakpoint desktop consumindo `$sidebar-breakpoint + 1`);
+    o guia `docs/KAN-10-guide.md` ganhou endereço único. Mudança só de teste e
+    documentação, sem código de produção. PR #11, release `v0.11.1`.
   - **Sidebar id-derivation fix (KAN-29):** the `team` and `workflow` editors no
     longer derive the id slug at creation — the derivation now requires the
     guard `current.draft.__existing` (the same pattern `source` received in
