@@ -158,6 +158,25 @@
     cabeçalho do artefato ("— KAN-30"; o spec nasceu na linhagem do critério 4
     da KAN-9) registrada como não bloqueante, com correção de uma linha
     sugerida.
+  - **Backfill das chaves novas do seed no backend fake (KAN-56):** o `load()`
+    de `frontend/plugin/fake-backend.js` passou a mesclar **somente chaves
+    ausentes** do seed na leitura (`db[key] ??= seed[key]`; exportado como
+    `load(filePath = dataFile)`): um `frontend/.data/db.json` criado antes da
+    KAN-32 (sem a chave `user`) recebe o backfill e `GET/PATCH /api/user` voltam
+    ao normal — `GET` → 200 `{ login: "admin", displayName: "" }` e `PATCH`
+    persiste o nome sem mexer no login; chave presente nunca é sobrescrita
+    (arrays vazios e `displayName` definido sobrevivem) e o caminho "arquivo não
+    existe" continua criando o seed completo. Antes, o boot sobre o banco antigo
+    estourava `500` em `/api/user` e `unhandledrejection` no carregamento da
+    sessão. O contrato de teste da QA entrou commitado
+    (`frontend/tests/seed-backfill.{feature,test.mjs}` — BDD em português +
+    integração `node:test`, 4 testes — e
+    `frontend/cypress/e2e/legacy-db-boot.cy.js`, que sobe a interface sobre o db
+    legado); o harness `run-e2e.sh` agora semeia o db legado (com backup/restore
+    do banco do dev) e `cypress.config.js` ganhou `screenshotOnRunFailure:
+    false`; guia em `docs/KAN-56-guide.md`. Evidência: node --test 4/4 no item e
+    44/44 na suíte, vitest 32/32 e `npm run test:e2e` 10/10 (`app`, o spec novo
+    e `profile-menu`) com o db legado do harness. PR #61.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.

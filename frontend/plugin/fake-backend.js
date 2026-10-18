@@ -13,12 +13,17 @@ const COLLECTIONS = [
   'boards', 'teams', 'roles', 'profiles', 'agents', 'experiences', 'sources',
 ]
 
-function load() {
-  if (!existsSync(dataFile)) {
-    mkdirSync(dataDirectory, { recursive: true })
-    writeFileSync(dataFile, JSON.stringify(createSeed(), null, 2))
+export function load(filePath = dataFile) {
+  if (!existsSync(filePath)) {
+    mkdirSync(dirname(filePath), { recursive: true })
+    writeFileSync(filePath, JSON.stringify(createSeed(), null, 2))
   }
-  return JSON.parse(readFileSync(dataFile, 'utf-8'))
+  const database = JSON.parse(readFileSync(filePath, 'utf-8'))
+  const seed = createSeed()
+  for (const key of Object.keys(seed)) {
+    database[key] ??= seed[key]
+  }
+  return database
 }
 
 function save(db) {
