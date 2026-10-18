@@ -147,7 +147,8 @@
     `cypress/harness/{failing,passing}.cy.js`, fora de `cypress/e2e/` e portanto
     invisíveis à rodada padrão; os `*.test.mjs` seguem fora do vitest via
     `test.exclude`). Evidência da barra de qualidade: `node --test` 3/3, vitest
-    32/32 e `npm run test:e2e` verde, sem erro de runtime/console. PR #60.
+    32/32 e `npm run test:e2e` verde, sem erro de runtime/console. PR #60, release
+    `v0.11.7`.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's

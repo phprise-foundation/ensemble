@@ -7,6 +7,24 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.7 — 2026-10-18
+
+### Fixed
+
+- **KAN-57** — o harness de E2E (`frontend/run-e2e.sh`, exposto como
+  `npm run test:e2e`) devolvia código de saída **0 mesmo com a suíte reprovada**:
+  o status do `wait` era descartado e a última atribuição (`CYPRESS_PID=""`)
+  virava o último comando. O script agora captura o status do Cypress e o repassa
+  com `exit` **depois** do cleanup (`trap cleanup EXIT` continua derrubando dev
+  server e runner): suíte vermelha sai ≠ 0, timeout sai ≠ 0 e a rodada verde
+  segue com `0` (sem `exit 1` fixo). O contrato de teste escrito pela QA no
+  Refinamento entrou commitado — `frontend/tests/run-e2e-exit-code.{feature,test.mjs}`
+  (BDD em pt-BR + integração `node:test`, 3/3) e as fixtures
+  `frontend/cypress/harness/{failing,passing}.cy.js`, fora de `cypress/e2e/` e
+  invisíveis à rodada padrão — para não morrer no próximo `git clean` (lição da
+  KAN-54). Barra de qualidade: `node --test` 3/3, vitest 32/32, E2E padrão 8/8.
+  PR #60, release `v0.11.7`.
+
 ## v0.11.6 — 2026-10-18
 
 ### Fixed
