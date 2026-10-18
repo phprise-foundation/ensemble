@@ -122,6 +122,12 @@ test('tela de profile edita o nome sem tocar no login', () => {
   assert.match(route, /ProfilePage/, 'a rota /profile deve apontar para o ProfilePage')
   assert.match(page, /session\.rename/, 'a tela deve chamar session.rename(name)')
   assert.match(page, /maxlength="?40"?/, 'o formulário limita o nome a 40 caracteres')
+  assert.match(
+    page,
+    /watch\(\s*\(\)\s*=>\s*session\.displayName/,
+    'o campo do nome acompanha a sessão quando ela hidrata depois da montagem',
+  )
+  assert.match(page, /readonly/, 'o login fica somente leitura na tela')
 })
 
 test('especificação E2E de navegador para o menu de perfil', () => {
@@ -130,4 +136,8 @@ test('especificação E2E de navegador para o menu de perfil', () => {
   assert.match(spec, /profile-trigger/, 'o E2E abre o menu de perfil na interface')
   assert.match(spec, /Session ended/, 'o E2E cobre o fim de sessão no navegador')
   assert.match(spec, /vite-error-overlay/, 'o E2E falha em erro de runtime/overlay do Vite')
+  assert.match(spec, /getBoundingClientRect/, 'o E2E mede o avatar de 38px no navegador (grão 1 da seção 11)')
+  assert.match(spec, /--breakpoint-sidebar/, 'o E2E lê o corte da variável CSS da KAN-12, sem literal (grão 2 da seção 11)')
+  assert.doesNotMatch(spec, /\b1024\b/, 'o E2E não repete o literal do corte do sidebar')
+  assert.match(spec, /role="status"/, 'o E2E confirma o sucesso pela região viva, não pela string')
 })
