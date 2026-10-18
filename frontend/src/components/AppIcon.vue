@@ -29,6 +29,7 @@ const paths = {
   workspace: ['M3 5h18v14H3z', 'M3 10h18'],
   folder: ['M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],
   layers: ['M12 3l9 5-9 5-9-5z', 'M3 13l9 5 9-5'],
+  sidebar: ['M3 3h4v18H3z', 'M10 3h11v18H10z'],
 }
 </script>
 
