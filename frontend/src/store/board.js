@@ -161,7 +161,9 @@ export const boardStore = {
   },
 
   async saveEntity(collection, data) {
-    const saved = data.id
+    const exists = Boolean(data.__existing)
+    delete data.__existing
+    const saved = exists
       ? await api.updateEntity(collection, data.id, data)
       : await api.createEntity(collection, data)
     const list = state[collection]

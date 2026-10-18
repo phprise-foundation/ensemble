@@ -22,6 +22,7 @@ function openCreate() {
 
 function openEdit(agent) {
   draft.value = JSON.parse(JSON.stringify(agent))
+  draft.value.__existing = true
   error.value = ''
   editing.value = true
 }

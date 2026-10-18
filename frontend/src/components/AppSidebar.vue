@@ -193,7 +193,6 @@ function addWorkflow() {
 function editWorkflow(workflow) {
   openEditor('workflow', { ...workflow, __existing: true }, 'Edit workflow', [
     { key: 'name', label: 'Name' },
-    { key: 'id', label: 'ID' },
   ])
 }
 
@@ -268,7 +267,6 @@ async function saveEditor() {
     if (current.kind === 'workflow') {
       const isNew = !current.draft.__existing
       const templateId = current.draft.templateId
-      delete current.draft.__existing
       delete current.draft.templateId
       if (!isNew && !current.draft.id && current.draft.name) {
         current.draft.id = slugify(current.draft.name)
@@ -291,7 +289,6 @@ async function saveEditor() {
         current.draft.id = slugify(current.draft.name)
       }
     }
-    delete current.draft.__existing
     await boardStore.saveEntity(collectionOf(current.kind), current.draft)
     editor.value = null
   } catch (problem) {
