@@ -165,6 +165,16 @@
     `test.exclude`). Evidência da barra de qualidade: `node --test` 3/3, vitest
     32/32 e `npm run test:e2e` verde, sem erro de runtime/console. PR #60, release
     `v0.11.7`.
+  - **Portão "no spec files found" no harness de E2E (KAN-59):** defesa em
+    profundidade no `frontend/run-e2e.sh` — a saída do `cypress run` é teada num
+    `CYPRESS_LOG` temporário (removido no `cleanup`) sem engolir o diagnóstico;
+    com `pipefail`, o `wait` repassa o status real e só o caso "status 0 **e** a
+    saída casar `no spec files found`" vira `1`. Verde real segue `0`, vermelho e
+    timeout seguem ≠ 0; sem `exit 1` fixo. Contrato de teste da QA
+    (`frontend/tests/run-e2e-nospec.{feature,test.mjs}`, 3 testes) com o caminho
+    do script ancorado via `import.meta`, de modo que roda de qualquer diretório;
+    guia em `docs/KAN-59-guide.md`. Evidência: node --test 3/3, vitest 32/32 e
+    `npm run test:e2e` verde.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's
