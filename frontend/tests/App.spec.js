@@ -27,6 +27,10 @@ vi.mock('../src/api/index.js', () => ({
   hasSimulation: { value: false },
   simulatedFeatures: { value: [] },
   simulation: { features: {} },
+  api: {
+    fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+    updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+  },
 }))
 
 vi.mock('vue-router', () => ({

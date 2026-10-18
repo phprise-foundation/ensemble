@@ -2,9 +2,11 @@
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
+import ProfileMenu from './components/ProfileMenu.vue'
 import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
 import { boardStore } from './store/board.js'
+import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
 
@@ -36,6 +38,7 @@ function updateIsMobile(event) {
 
 onMounted(() => {
   boardStore.load()
+  session.load()
   window.addEventListener('keydown', handleKeyboardShortcut)
   mediaQuery = sidebarMediaQuery()
   if (mediaQuery) {
@@ -63,7 +66,7 @@ function toggleSimulation() {
 </script>
 
 <template>
-  <div class="app">
+  <div class="app" v-if="session.signedIn">
     <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" :collapsed="sidebarCollapsed" @close="sidebarOpen = false" />
     <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
@@ -103,11 +106,19 @@ function toggleSimulation() {
         <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
           <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
         </button>
+        <ProfileMenu />
       </header>
 
       <main class="main">
         <RouterView />
       </main>
+    </div>
+  </div>
+  <div class="session-ended" v-else>
+    <div class="session-ended-box">
+      <h1 class="session-ended-title">Multi-Agent</h1>
+      <p class="session-ended-message">Session ended</p>
+      <button class="button ghost" @click="session.signIn()">Sign in again</button>
     </div>
   </div>
 </template>
