@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../store/session.js'
 
@@ -7,6 +7,14 @@ const router = useRouter()
 const name = ref(session.displayName)
 const saved = ref(false)
 const error = ref('')
+
+watch(
+  () => session.displayName,
+  (value) => {
+    name.value = value
+  },
+  { immediate: true },
+)
 
 async function save() {
   error.value = ''
@@ -42,7 +50,7 @@ function back() {
       </div>
       <div class="field-row">
         <label for="profile-login">Login</label>
-        <input id="profile-login" type="text" :value="session.login" disabled />
+        <input id="profile-login" type="text" :value="session.login" readonly />
       </div>
       <div class="profile-actions">
         <button type="button" @click="back">back</button>
