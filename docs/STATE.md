@@ -119,6 +119,14 @@
     `localStorage` e breakpoint desktop consumindo `$sidebar-breakpoint + 1`);
     o guia `docs/KAN-10-guide.md` ganhou endereço único. Mudança só de teste e
     documentação, sem código de produção. PR #11, release `v0.11.1`.
+  - **Conserto do vazamento do colapso no breakpoint (KAN-10):** as regras
+    `.sidebar.collapsed` passam a viver dentro de
+    `@media (min-width: $sidebar-breakpoint + 1)` e o atalho `Ctrl+B`/`Cmd+B`
+    fica inerte em origem mobile (`App.vue` retorna cedo quando `isMobile.value`),
+    fiel à decisão E1 — o estado colapsado é suspenso no mobile (drawer do
+    KAN-9 em largura plena, rótulos visíveis) e restaurado ao voltar ao
+    desktop, sem `localStorage`. Duas cercas de regressão de fonte em
+    `frontend/tests/sidebar-collapse.test.mjs`. PR #59, release `v0.11.4`.
   - **Sidebar id-derivation fix (KAN-29):** the `team` and `workflow` editors no
     longer derive the id slug at creation — the derivation now requires the
     guard `current.draft.__existing` (the same pattern `source` received in

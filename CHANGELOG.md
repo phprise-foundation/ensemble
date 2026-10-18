@@ -7,6 +7,21 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.4 — 2026-10-18
+
+### Fixed
+
+- **KAN-10** — o colapso do menu lateral deixou de vazar para o drawer mobile:
+  as regras `.sidebar.collapsed` passaram a viver dentro de
+  `@media (min-width: $sidebar-breakpoint + 1)` e o atalho `Ctrl+B`/`Cmd+B`
+  ficou inerte em origem mobile (guarda `isMobile.value` em `App.vue`), fiel à
+  decisão E1 — o estado colapsado é suspenso no mobile (drawer em largura
+  plena, rótulos visíveis) e restaurado ao voltar ao desktop, sem
+  `localStorage` (recarregar continua expandido). Duas cercas de regressão de
+  fonte novas em `frontend/tests/sidebar-collapse.test.mjs` (escopo do CSS no
+  bloco desktop; guarda do atalho consultando o viewport). PR #59,
+  release `v0.11.4`.
+
 ## v0.11.3 — 2026-10-18
 
 ### Changed
