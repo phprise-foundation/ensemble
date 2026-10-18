@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, ref } from 'vue'
 import App from '../src/App.vue'
+import { session } from '../src/store/session.js'
 
 vi.mock('../src/store/board.js', () => ({
   boardStore: {
@@ -183,5 +184,45 @@ describe('App sidebar collapse toggle', () => {
 
     expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function))
     removeListener.mockRestore()
+  })
+})
+
+describe('App session gate', () => {
+  beforeEach(() => {
+    session.signIn()
+  })
+
+  afterEach(() => {
+    session.signIn()
+  })
+
+  it('hides every protected region and offers a neutral view after logout', async () => {
+    const wrapper = await mountApp(false)
+
+    expect(wrapper.find('.topbar').exists()).toBe(true)
+    expect(wrapper.find('.profile-menu').exists()).toBe(true)
+
+    session.signOut()
+    await nextTick()
+
+    expect(wrapper.find('.app').exists()).toBe(false)
+    expect(wrapper.find('.topbar').exists()).toBe(false)
+    expect(wrapper.find('.content').exists()).toBe(false)
+    expect(wrapper.find('.session-ended').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Session ended')
+    wrapper.unmount()
+  })
+
+  it('restores the shell when sign in again is activated', async () => {
+    session.signOut()
+    const wrapper = await mountApp(false)
+
+    await wrapper.find('.session-ended .button').trigger('click')
+    await nextTick()
+
+    expect(session.signedIn).toBe(true)
+    expect(wrapper.find('.app').exists()).toBe(true)
+    expect(wrapper.find('.topbar').exists()).toBe(true)
+    wrapper.unmount()
   })
 })
