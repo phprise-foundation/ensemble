@@ -135,6 +135,12 @@
     removed by KAN-14 (the debt was born obsolete). One-line diff, single
     atomic commit, no production changes; suite green (4/4 node tests).
     PR #26, release `v0.10.2`.
+  - **Terceira dívida de robustez do teste do drawer (KAN-53):** a guarda em
+    `frontend/tests/mobile-drawer.test.mjs:13` deixou de casar o valor literal
+    `1024px` e passou a afirmar o contrato — existe uma declaração
+    `$sidebar-breakpoint: <valor>;` — sem conhecer o valor; `:14` e `:15`
+    permanecem inalterados. Diff de uma linha, commit atômico, sem alteração em
+    produção; suíte verde (4/4 node tests). PR #55, release `v0.11.2`.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.

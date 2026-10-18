@@ -7,6 +7,16 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.2 — 2026-10-18
+
+### Changed
+
+- **KAN-53** — endurecimento do artefato de teste do drawer: a guarda em
+  `frontend/tests/mobile-drawer.test.mjs:13` deixou de casar o valor literal
+  `1024px` e passou a afirmar o contrato — existe uma declaração
+  `$sidebar-breakpoint: <valor>;` no SCSS. `:14` e `:15` permanecem inalterados.
+  Mudança só de teste, sem código de produção.
+
 ## v0.11.1 — 2026-10-18
 
 ### Changed
