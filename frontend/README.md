@@ -20,6 +20,20 @@ npm run build        # static bundle in dist/
 npm run preview      # serve the build (also with the fake API, for a local check)
 ```
 
+## Tests
+
+```bash
+node --test          # static checks: read the source and assert its contracts
+npm run test:e2e     # browser E2E (Cypress): boots the app and drives the UI
+```
+
+`npm run test:e2e` starts the dev server on `127.0.0.1:5173` (override with
+`E2E_PORT`), waits for it, runs the suite in `cypress/e2e/`, and stops the
+server. It fails on any runtime/console error or Vite error overlay — so it is
+the check that proves the interface actually comes up, which the static
+`node --test` suite cannot. Use `npm run test:e2e:open` for the interactive
+runner. When `package.json` changes, run `npm install` first.
+
 To point the app at the real PHP API later, build/serve with
 `VITE_API_URL=https://backend` — the fake backend is then bypassed.
 
