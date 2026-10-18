@@ -127,6 +127,22 @@
     KAN-9 em largura plena, rótulos visíveis) e restaurado ao voltar ao
     desktop, sem `localStorage`. Duas cercas de regressão de fonte em
     `frontend/tests/sidebar-collapse.test.mjs`. PR #59, release `v0.11.4`.
+  - **Prova em navegador do colapso da sidebar (KAN-31):** a dívida de
+    cobertura nomeada na KAN-10 fechou no nível certo: o spec
+    `frontend/cypress/e2e/sidebar-collapse.cy.js` mede o critério 2 no
+    navegador real, não no source — submenu de Boards asserido aberto
+    (`.open`; `openBoards` nasce `true`), coleção `.leaf .label` garantida
+    (`length > 0`) com o primeiro rótulo visível; colapso via UI real
+    (`button.sidebar-toggle`, `.collapsed` e `aria-expanded="false"`
+    asseridos); cada rótulo `not.be.visible` **com o submenu aberto**;
+    `.leaf svg` visíveis e `title` não vazio em cada folha; clique na própria
+    `.leaf` prova a navegação por `cy.location('hash')` = `#/boards/KANB` (o
+    roteador usa `createWebHashHistory()`; KANB é o primeiro board do seed).
+    Commit atômico, só o spec (56 linhas), cerca de erros fiel ao smoke. Na
+    revisão, controle negativo do revisor: com `.sidebar.collapsed .leaf span`
+    trocada para `display: block`, o spec falha em
+    `expected '<span.label>' not to be 'visible'`; com a regra, verde 1/1 e o
+    CI do PR roda E2E em navegador real. PR #62, release `v0.11.8`.
   - **Sidebar id-derivation fix (KAN-29):** the `team` and `workflow` editors no
     longer derive the id slug at creation — the derivation now requires the
     guard `current.draft.__existing` (the same pattern `source` received in

@@ -7,6 +7,27 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.8 — 2026-10-18
+
+### Changed
+
+- **KAN-31** — a dívida de cobertura da suíte `sidebar-collapse` fechou no
+  endereço certo: o spec novo `frontend/cypress/e2e/sidebar-collapse.cy.js`
+  prova no navegador (Cypress, viewport 1280×800) que, colapsada via UI real
+  (`button.sidebar-toggle`, com `.collapsed` e `aria-expanded="false"`
+  asseridos), cada `.leaf .label` deixa de ser visível **com o submenu de
+  Boards aberto** — pré-condição asserida, não clicada: `.open` verificado e
+  coleção garantida (`length > 0`), primeiro rótulo visível antes do colapso.
+  Ícones `.leaf svg` e o `title` das folhas sobrevivem, e a navegação segue
+  viva: clique na folha → `#/boards/KANB`, medido por `cy.location('hash')`
+  (o roteador usa hash history). Mudança só de teste (56 linhas, commit
+  atômico) — nenhum comportamento de produção. Na revisão do Tech Lead o
+  verde foi reproduzido e o efeito **falsificado**: com
+  `.sidebar.collapsed .leaf span { display: block }` o spec falha em
+  `expected '<span.label>' not to be 'visible'`; com a regra de produção,
+  verde de novo — assere efeito de navegador, não `assert.match` sobre o
+  source. PR #62, release `v0.11.8`.
+
 ## v0.11.7 — 2026-10-18
 
 ### Fixed
