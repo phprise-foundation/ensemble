@@ -183,7 +183,9 @@
     `0`. Evidência da barra de qualidade: `node --test` 3/3, vitest 32/32 e
     `npm run test:e2e` verde (14/14), sem erro de runtime/console — nota: nas
     provas com múltiplos worktrees usou-se `E2E_PORT` exclusiva, pois o dev
-    server é `--strictPort` e colide na 5173.
+    server é `--strictPort` e colide na 5173. Na revisão do Tech Lead o verde
+    foi reproduzido a partir de dentro de `frontend/`: `node --test` 3/3,
+    vitest 32/32 e E2E 14/14. PR #64, release `v0.11.9`.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's

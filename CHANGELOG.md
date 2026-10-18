@@ -7,6 +7,30 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.9 — 2026-10-19
+
+### Fixed
+
+- **KAN-60** — o harness de E2E pune a própria cegueira: o
+  `frontend/run-e2e.sh` desvia toda a saída do `cypress run` para um log
+  (`CYPRESS_LOG`, via `mktemp`, limpo no `cleanup`) mantendo-a visível no
+  `tee`; se a rodada sai com `0` **e** o log casa com
+  `no spec files( were)? found`, o harness sai com `1`. Defesa em profundidade
+  do contrato KAN-59 — não depender do humor da versão do Cypress: rodar com
+  `--spec` que não casa com `specPattern` nunca mais devolve sucesso, mesmo
+  que uma versão futura saia com `0`. Verde segue `0` (cenário 3) e timeout
+  segue `≠ 0`, como no KAN-57; sem `exit 1` fixo e sem engolir o diagnóstico.
+  O contrato de teste da QA entrou commitado
+  (`frontend/tests/run-e2e-nospec.{feature,test.mjs}` — 3 cenários BDD em
+  português + integração `node:test`), com o caminho do script ancorado por
+  `import.meta` e invocado por `bash`. O ajuste documentado do cenário 2
+  (`--spec` vazio → `0`, com o `specPattern` default do Cypress 16.2.0
+  aplicado) está fundamentado no STATE.md. Mudança só de harness — nenhum
+  arquivo de produção do backend. Na revisão do Tech Lead a barra de
+  qualidade foi reproduzida a partir de dentro de `frontend/`: `node --test`
+  3/3, vitest 32/32, `npm run test:e2e` 14/14 sem erro de runtime/console.
+  PR #64, release `v0.11.9`.
+
 ## v0.11.8 — 2026-10-18
 
 ### Changed
