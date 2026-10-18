@@ -420,6 +420,10 @@ textarea {
 .topbar h1 {
   font-size: 17px;
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar .spacer {
@@ -496,6 +500,38 @@ textarea {
 .badge.sim {
   background: color-mix(in srgb, var(--sim) 22%, transparent);
   color: color-mix(in srgb, var(--sim) 75%, var(--text));
+}
+
+/* Session ended */
+.session-ended {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--bg);
+}
+
+.session-ended .session-ended-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.session-ended .session-ended-title {
+  margin: 0;
+  font-size: 22px;
+}
+
+.session-ended .session-ended-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.session-ended .session-ended-box .button {
+  margin-top: 8px;
 }
 
 @media (max-width: $sidebar-breakpoint) {
