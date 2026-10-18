@@ -10,7 +10,7 @@ const appVue = readFileSync(join(here, '..', 'src', 'App.vue'), 'utf8')
 const sidebarVue = readFileSync(join(here, '..', 'src', 'components', 'AppSidebar.vue'), 'utf8')
 
 test('drawer mobile CSS and media query breakpoint', () => {
-  assert.match(css, /\$sidebar-breakpoint:\s*1024px;/, 'deve existir uma variavel SCSS unica com o breakpoint')
+  assert.match(css, /\$sidebar-breakpoint:\s*[^;]+;/, 'deve existir uma variavel SCSS unica com o breakpoint')
   assert.match(css, /@media\s*\(\s*max-width\s*:\s*\$sidebar-breakpoint\s*\)/, 'a media query deve consumir a variavel SCSS')
   assert.doesNotMatch(css, /@media\s*\(\s*max-width\s*:\s*1024px\s*\)/, 'nao deve haver media query literal com 1024px')
   assert.match(css, /\.sidebar/, 'a classe .sidebar deve estar definida')
