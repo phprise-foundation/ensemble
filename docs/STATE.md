@@ -165,6 +165,25 @@
     `test.exclude`). Evidência da barra de qualidade: `node --test` 3/3, vitest
     32/32 e `npm run test:e2e` verde, sem erro de runtime/console. PR #60, release
     `v0.11.7`.
+  - **Portão "no spec files found" no harness de E2E (KAN-60):** `frontend/run-e2e.sh`
+    agora desvia toda a saída do `cypress run` para um log (`CYPRESS_LOG`,
+    limpo no `cleanup`) enquanto a mantém visível no `tee`; se a rodada sai
+    com `0` **e** o log casa com `no spec files( were)? found`, o harness sai
+    com `1`. Defesa em profundidade do contrato KAN-59: não depender do humor
+    da versão do Cypress — `--spec` sem match nunca mais devolve sucesso. Verde
+    e timeout seguem `0`/`≠ 0` como em KAN-57; sem `exit 1` fixo. O contrato de
+    teste da QA entrou commitado (`frontend/tests/run-e2e-nospec.{feature,test.mjs}`
+    — BDD em português + integração `node:test`, 3 testes — com o caminho do
+    script ancorado por `import.meta` e invocado por `bash`, pois o script é
+    `100644`). Ajuste honesto sobre o rascunho da QA: com `--spec` vazio o
+    Cypress 16.2.0 aplica o `specPattern` default e sai `0` (evidência: 5 specs
+    rodados), de modo que o cenário "vazio → 1" era contraditório com o próprio
+    contrato de saída do item (o portão só converte `0` em `1` quando o log casa
+    com "no spec files found"). O cenário 2 do BDD e do teste passou a esperar
+    `0`. Evidência da barra de qualidade: `node --test` 3/3, vitest 32/32 e
+    `npm run test:e2e` verde (14/14), sem erro de runtime/console — nota: nas
+    provas com múltiplos worktrees usou-se `E2E_PORT` exclusiva, pois o dev
+    server é `--strictPort` e colide na 5173.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's

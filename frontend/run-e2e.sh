@@ -19,6 +19,7 @@ DATA_FILE="$DIR/.data/db.json"
 HAD_DATABASE=0
 SERVER_PID=""
 CYPRESS_PID=""
+CYPRESS_LOG="$(mktemp)"
 cd "$DIR"
 
 cleanup() {
@@ -34,7 +35,7 @@ cleanup() {
   else
     rm -f "$DATA_FILE"
   fi
-  rm -f "$LOG" "$BACKUP"
+  rm -f "$LOG" "$BACKUP" "$CYPRESS_LOG"
 }
 trap cleanup EXIT INT TERM
 
@@ -62,9 +63,12 @@ if ! curl -s -o /dev/null "$BASE/"; then
   exit 1
 fi
 
-CYPRESS_BASE_URL="$BASE" timeout -k 10 "$TIMEOUT" ./node_modules/.bin/cypress run "$@" &
+CYPRESS_BASE_URL="$BASE" timeout -k 10 "$TIMEOUT" ./node_modules/.bin/cypress run "$@" 2>&1 | tee "$CYPRESS_LOG" &
 CYPRESS_PID=$!
 wait "$CYPRESS_PID"
 STATUS=$?
 CYPRESS_PID=""
+if [ "$STATUS" -eq 0 ] && grep -Eqi 'no spec files( were)? found' "$CYPRESS_LOG"; then
+  STATUS=1
+fi
 exit "$STATUS"
