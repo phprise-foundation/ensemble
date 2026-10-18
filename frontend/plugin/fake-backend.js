@@ -143,7 +143,7 @@ export function handle(db, method, segments, body) {
     if (method === 'PATCH' && id) {
       const issue = db.issues.find((candidate) => candidate.id === id)
       if (!issue) return { error: 'issue not found', status: 404 }
-      Object.assign(issue, body, { updatedAt: new Date().toISOString() })
+      Object.assign(issue, body, { id, updatedAt: new Date().toISOString() })
       return { data: issue }
     }
     if (method === 'POST' && id && sub === 'move') return moveIssue(db, id, body)
@@ -166,12 +166,14 @@ export function handle(db, method, segments, body) {
       const problem = sourcePathProblem(body.path)
       if (problem) return problem
       const entity = { ...body, name: sourceName(body) }
+      delete entity.__existing
       if (!entity.id) entity.id = slugify(entity.name)
       if (db.sources.some((item) => item.id === entity.id)) return { error: 'source id já existe', status: 409 }
       db.sources.push(entity)
       return { data: entity, status: 201 }
     }
     if (method === 'PATCH' && id) {
+      if (body.id !== undefined && body.id !== id) return { error: 'sources id divergente da URL: o id é imutável', status: 409 }
       const entity = db.sources.find((item) => item.id === id)
       if (!entity) return { error: 'source não encontrada', status: 404 }
       if (body.path !== undefined) {
@@ -202,6 +204,7 @@ export function handle(db, method, segments, body) {
     if (method === 'GET' && id === undefined) return { data: list }
     if (method === 'POST' && id === undefined) {
       const entity = { ...body }
+      delete entity.__existing
       if (!entity.id) {
         entity.id = entity.name ? slugify(entity.name) : `item-${Date.now()}`
       }
@@ -210,6 +213,7 @@ export function handle(db, method, segments, body) {
       return { data: entity, status: 201 }
     }
     if (method === 'PATCH' && id) {
+      if (body.id !== undefined && body.id !== id) return { error: `${head} id divergente da URL: o id é imutável`, status: 409 }
       const entity = list.find((item) => item.id === id)
       if (!entity) return { error: `${head} not found`, status: 404 }
       Object.assign(entity, body, { id })
