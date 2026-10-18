@@ -22,6 +22,12 @@ Funcionalidade: Colapso do menu lateral esquerdo
     Quando o usuário clica no botão de toggle
     Então o sidebar NÃO tem a classe `.collapsed`
 
+  Cenário: Estado convergente e sem persistência na Fase 1
+    Dado que o sidebar está expandido
+    Quando o usuário alterna o estado três vezes seguidas
+    Então o sidebar termina colapsado
+    E ao recarregar a aplicação o sidebar volta expandido
+
   Cenário: Tipos de navegação preservados
     Dado que o sidebar está colapsado
     Então os ícones de navegação permanecem acessíveis
@@ -42,7 +48,12 @@ Funcionalidade: Colapso do menu lateral esquerdo
     Dado que a tela está em modo desktop
     Então o botão de toggle tem `aria-label="Toggle sidebar"`
     E tem o atributo `aria-expanded`
+    E recebe foco visível ao navegar por teclado
 
   Cenário: Comportamento mobile inalterado
     Dado que a largura da tela é inferior ou igual ao breakpoint móvel
     Então o botão `.sidebar-toggle` não está visível
+
+  Cenário: Ponto de corte compartilhado com a KAN-9
+    Dado que o ponto de corte desktop/mobile é decidido uma única vez
+    Então a regra do drawer mobile e a regra do toggle desktop usam a mesma variável SCSS
