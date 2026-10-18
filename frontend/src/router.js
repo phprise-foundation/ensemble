@@ -7,6 +7,7 @@ import AgentsPage from './views/AgentsPage.vue'
 import RolesPage from './views/RolesPage.vue'
 import ProfilesPage from './views/ProfilesPage.vue'
 import ExperiencesPage from './views/ExperiencesPage.vue'
+import ProfilePage from './views/ProfilePage.vue'
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -19,6 +20,7 @@ export const router = createRouter({
     { path: '/teams/:teamId/agents', name: 'agents', component: AgentsPage, meta: { title: 'Agents', feature: 'agents' } },
     { path: '/teams/:teamId/roles', name: 'roles', component: RolesPage, meta: { title: 'Roles', feature: 'roles' } },
     { path: '/teams/:teamId/profiles', name: 'profiles', component: ProfilesPage, meta: { title: 'Profiles', feature: 'profiles' } },
+    { path: '/profile', name: 'profile', component: ProfilePage, meta: { title: 'Profile', feature: 'profile' } },
     { path: '/experiences', name: 'experiences', component: ExperiencesPage, meta: { title: 'Experiences', feature: 'experiences' } },
     { path: '/:pathMatch(.*)*', redirect: '/boards' },
   ],
