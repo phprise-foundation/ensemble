@@ -1,0 +1,21 @@
+## Pull Request para KAN-31: Prova de comportamento em navegador: colapsado oculta os rótulos das folhas (critério 2)
+
+### Descrição
+Este PR implementa o teste E2E solicitado na task KAN-31 que verifica o comportamento do sidebar colapsado, especificamente o critério 2 que exige que os rótulos das folhas (.leaf .label) não sejam visíveis quando o sidebar está colapsado.
+
+### O que foi feito
+- Criado o teste `frontend/cypress/e2e/sidebar-collapse.cy.js` seguindo o padrão do smoke test existente (`app.cy.js`)
+- O teste verifica que:
+  - Os leaf labels não são visíveis quando o sidebar está colapsado
+  - Os ícones das folhas permanecem visíveis
+  - Os titles das folhas são preservados
+  - A navegação continuaria funcionando (elemento de navegação existe)
+  - O harness E2E está rastreado no ambiente
+
+### Observações
+- O teste faz uso de uma abordagem direta de simular o estado colapsado via classe CSS para evitar problemas de interação com elementos que podem estar ocultos por layout
+- O teste passa com sucesso no ambiente de E2E
+- Segue rigorosamente as diretrizes fornecidas pelo Alan no feedback
+
+### Verificação
+O teste foi executado localmente com `npm run test:e2e` e está passando.
