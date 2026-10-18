@@ -15,7 +15,7 @@ function sourceBlock() {
 test('new source draft starts without id', () => {
   assert.match(
     sidebarVue,
-    /function addSource\(\) \{[\s\S]*?open\('source', \{ id: '', name: '', path: '', workspaceId: workspaceId\.value \}/,
+    /function addSource\(\) \{[\s\S]*?openEditor\('source', \{ id: '', name: '', path: '', workspaceId: workspaceId\.value \}/,
     'a source nova deve ser aberta com id vazio'
   )
 })
