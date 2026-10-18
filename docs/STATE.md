@@ -128,6 +128,18 @@
     create → POST and edit → PATCH for both entities). The review validated the
     merge artifact (15/15 vitest, 23/23 `node:test`, PHPUnit 42/122,
     Psalm 0). PR #23, release `v0.10.1`.
+  - **Código de saída do harness de E2E (KAN-57):** `frontend/run-e2e.sh` passou
+    a capturar o status do `wait` do Cypress e repassá-lo com `exit` **depois**
+    do cleanup (`trap cleanup EXIT` continua derrubando dev server e runner):
+    suíte vermelha sai com ≠ 0, timeout sai com ≠ 0 e a rodada verde segue com
+    `0` — antes a última atribuição (`CYPRESS_PID=""`) fixava o status em 0 e
+    mascarava qualquer reprova. O contrato de teste escrito pela QA no
+    Refinamento entrou commitado (`frontend/tests/run-e2e-exit-code.{feature,test.mjs}`
+    — BDD em português + integração `node:test`, 3 testes — mais as fixtures
+    `cypress/harness/{failing,passing}.cy.js`, fora de `cypress/e2e/` e portanto
+    invisíveis à rodada padrão; os `*.test.mjs` seguem fora do vitest via
+    `test.exclude`). Evidência da barra de qualidade: `node --test` 3/3, vitest
+    32/32 e `npm run test:e2e` verde, sem erro de runtime/console. PR #60.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's
