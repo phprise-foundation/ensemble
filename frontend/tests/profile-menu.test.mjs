@@ -130,4 +130,6 @@ test('especificação E2E de navegador para o menu de perfil', () => {
   assert.match(spec, /profile-trigger/, 'o E2E abre o menu de perfil na interface')
   assert.match(spec, /Session ended/, 'o E2E cobre o fim de sessão no navegador')
   assert.match(spec, /vite-error-overlay/, 'o E2E falha em erro de runtime/overlay do Vite')
+  assert.match(spec, /getBoundingClientRect/, 'o E2E mede o avatar de 38px no navegador (grão 1 da seção 11)')
+  assert.match(spec, /--breakpoint-sidebar/, 'o E2E lê o corte da variável CSS da KAN-12, sem literal (grão 2 da seção 11)')
 })

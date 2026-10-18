@@ -43,6 +43,12 @@ Funcionalidade: Menu de perfil do usuário no topo direito
     Então o novo nome passa a ser exibido no menu do topo
     E o nome completo aparece por inteiro na tela de profile
 
+  Cenário: Recarregar a tela de profile mostra o nome persistido no campo
+    Dado que o usuário salvou um novo nome de exibição
+    Quando a tela de profile é recarregada
+    Então o campo do nome de exibição volta com o nome persistido
+    E o campo de login, somente leitura, mantém a credencial inalterada
+
   Cenário: Nome acima de 40 caracteres é recusado
     Dado que o usuário está na tela de profile
     Quando informa um nome de exibição com mais de 40 caracteres e salva
@@ -53,6 +59,8 @@ Funcionalidade: Menu de perfil do usuário no topo direito
     Dado que o usuário altera o nome de exibição
     Então o identificador de login permanece o mesmo
     E a credencial de login nunca é enviada nem alterada
+    E na tela de profile o campo de login, somente leitura, mantém o valor de
+    antes de salvar
 
   Cenário: Logout encerra a sessão e torna a área protegida inacessível
     Dado que o menu de perfil está aberto
