@@ -65,4 +65,6 @@ fi
 CYPRESS_BASE_URL="$BASE" timeout -k 10 "$TIMEOUT" ./node_modules/.bin/cypress run "$@" &
 CYPRESS_PID=$!
 wait "$CYPRESS_PID"
+STATUS=$?
 CYPRESS_PID=""
+exit "$STATUS"
