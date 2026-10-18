@@ -7,6 +7,20 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.5 — 2026-10-18
+
+### Changed
+
+- **KAN-54** — o spec E2E do drawer (`frontend/cypress/e2e/mobile-drawer.cy.js`)
+  foi pousado na árvore: vivia apenas não rastreado no worktree e morria num
+  `git clean` — a lição do dark-theme repetida na camada de prova: artefato bom
+  em endereço fraco. O spec prova o gesto no navegador: nasce sem `.open`,
+  abre pelo acionador, fecha por scrim, ESC e troca de rota, foco devolvido ao
+  acionador, viewport pinada em `760x900` e `screenshotOnRunFailure` desligado;
+  comentários, títulos e mensagens de falha em pt-BR, sem tocar em asserção ou
+  seletor. Mudança só de teste, sem código de produção; 3/3 verde reproduzido
+  na revisão contra a `main` pós-merge. PR #57, release `v0.11.5`.
+
 ## v0.11.4 — 2026-10-18
 
 ### Fixed

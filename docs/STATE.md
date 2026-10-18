@@ -149,6 +149,15 @@
     `$sidebar-breakpoint: <valor>;` — sem conhecer o valor; `:14` e `:15`
     permanecem inalterados. Diff de uma linha, commit atômico, sem alteração em
     produção; suíte verde (4/4 node tests). PR #55, release `v0.11.2`.
+  - **Rastreio do spec E2E do drawer (KAN-54):** o spec
+    `frontend/cypress/e2e/mobile-drawer.cy.js` — prova do critério 4 da KAN-9 no
+    navegador, que vivia apenas não rastreado no worktree e morria num
+    `git clean` — pousou na árvore com endereço forte (commit atômico, PR #57,
+    release `v0.11.5`). Sem alteração em produção; 3/3 verde reproduzido na
+    revisão contra a ponta pós-merge. Imprecisão de proveniência herdada no
+    cabeçalho do artefato ("— KAN-30"; o spec nasceu na linhagem do critério 4
+    da KAN-9) registrada como não bloqueante, com correção de uma linha
+    sugerida.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.
