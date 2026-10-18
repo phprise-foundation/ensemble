@@ -52,3 +52,24 @@ test('collapse state is deterministic and not persisted in Fase 1', () => {
 test('desktop toggle breakpoint shares the single source of truth with KAN-9', () => {
   assert.match(css, /@media\s*\(\s*min-width\s*:\s*\$sidebar-breakpoint\s*\+\s*1\s*\)/, 'a media query desktop do toggle consome a variavel SCSS do breakpoint')
 })
+
+const DESKTOP_MEDIA = /@media\s*\(\s*min-width\s*:\s*\$sidebar-breakpoint\s*\+\s*1\s*\)\s*\{([\s\S]*?)\n\}/g
+
+function desktopCss(source) {
+  return [...source.matchAll(DESKTOP_MEDIA)].map((match) => match[1]).join('\n')
+}
+
+function outsideDesktopCss(source) {
+  return source.replace(DESKTOP_MEDIA, '')
+}
+
+test('regras do colapso ficam escopadas ao desktop', () => {
+  assert.match(desktopCss(css), /\.sidebar\.collapsed/, 'as regras de .sidebar.collapsed devem viver na media query de desktop')
+  assert.doesNotMatch(outsideDesktopCss(css), /\.sidebar\.collapsed/, 'nenhuma regra de .sidebar.collapsed pode valer fora do desktop')
+})
+
+test('atalho de colapso inerte no mobile', () => {
+  const handler = appVue.match(/function\s+handleKeyboardShortcut\s*\(event\)\s*\{([\s\S]*?)\n\}/)
+  assert.ok(handler, 'o atalho de teclado deve existir em App.vue')
+  assert.match(handler[1], /isMobile\.value/, 'o atalho deve consultar o viewport antes de alternar o estado')
+})
