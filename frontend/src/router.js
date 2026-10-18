@@ -22,7 +22,6 @@ export const router = createRouter({
     { path: '/teams/:teamId/profiles', name: 'profiles', component: ProfilesPage, meta: { title: 'Profiles', feature: 'profiles' } },
     { path: '/profile', name: 'profile', component: ProfilePage, meta: { title: 'Profile', feature: 'profile' } },
     { path: '/experiences', name: 'experiences', component: ExperiencesPage, meta: { title: 'Experiences', feature: 'experiences' } },
-    { path: '/profile', name: 'profile', component: ProfilePage, meta: { title: 'Profile' } },
     { path: '/:pathMatch(.*)*', redirect: '/boards' },
   ],
 })

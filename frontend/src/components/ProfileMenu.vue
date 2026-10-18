@@ -58,7 +58,7 @@ onUnmounted(() => {
       @click="toggle"
     >
       <span class="profile-avatar">{{ session.initial }}</span>
-      <span class="profile-name">{{ session.label }}</span>
+      <span class="profile-name" :title="session.label">{{ session.label }}</span>
     </button>
     <div v-if="open" class="profile-dropdown" role="menu">
       <button class="profile-item" role="menuitem" @click="goProfile">profile</button>
