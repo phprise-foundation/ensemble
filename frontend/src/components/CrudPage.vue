@@ -26,6 +26,7 @@ function openCreate() {
 
 function openEdit(row) {
   draft.value = JSON.parse(JSON.stringify(row))
+  draft.value.__existing = true
   error.value = ''
   editing.value = true
 }

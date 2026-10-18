@@ -35,6 +35,7 @@ function openCreate() {
 
 function openEdit(type) {
   draft.value = JSON.parse(JSON.stringify(type))
+  draft.value.__existing = true
   error.value = ''
   editing.value = true
 }
