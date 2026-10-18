@@ -176,7 +176,7 @@
     do banco do dev) e `cypress.config.js` ganhou `screenshotOnRunFailure:
     false`; guia em `docs/KAN-56-guide.md`. Evidência: node --test 4/4 no item e
     44/44 na suíte, vitest 32/32 e `npm run test:e2e` 10/10 (`app`, o spec novo
-    e `profile-menu`) com o db legado do harness. PR #61.
+    e `profile-menu`) com o db legado do harness. PR #61, release `v0.11.6`.
   - **Board:** responsive columns, cards (status colour, aging flag, avatar), the
     right-hand issue panel (status + assignee + comments) and drag & drop that
     respects the transitions. Dark default theme with a light option.

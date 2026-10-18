@@ -7,6 +7,25 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.11.6 — 2026-10-18
+
+### Fixed
+
+- **KAN-56** — o fake backend do protótipo (`frontend/plugin/fake-backend.js`)
+  passou a mesclar na leitura **somente as chaves ausentes** do seed
+  (`db[key] ??= seed[key]`): um `frontend/.data/db.json` criado antes da
+  KAN-32 (sem a chave `user`) deixou de estourar `500` em `GET`/`PATCH`
+  `/api/user` e de derrubar a sessão com `unhandledrejection` no boot. Chave
+  presente nunca é sobrescrita (arrays vazios e `displayName` definido
+  sobrevivem — testes dedicados em `frontend/tests/seed-backfill.test.mjs`,
+  4/4); o caminho "arquivo não existe" continua criando o seed completo.
+  Prova no nível da interface sobre o banco antigo:
+  `frontend/cypress/e2e/legacy-db-boot.cy.js` (zero erros de runtime/console,
+  login visível no menu, nome persistido após recarregar) e o harness
+  `run-e2e.sh` passa a semear o db legado com backup/restore do banco do dev.
+  Suíte verde: node --test 44/44, vitest 32/32, E2E 10/10. PR #61, release
+  `v0.11.6`.
+
 ## v0.11.5 — 2026-10-18
 
 ### Changed
