@@ -58,6 +58,18 @@ coluna é derivada de `column.statusIds` e um `columnId` forjado é ignorado.
 `src/api/client.js` anexa `status`/`field` ao `Error`; a UI nunca faz parsing
 da mensagem. Contrato de aceite: `docs/KAN-94-guide.md`.
 
+O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
+768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
+pela classe `body.drawer-locked` e expõe o botão dedicado
+`button.sidebar-close`; entre 768px e 1024px permanece o drawer parcial de
+200px com scrim; acima de 1024px a sidebar desktop não muda. O corte vive só no
+token `$mobile-breakpoint: 768px` (exportado como `--breakpoint-mobile`) e é
+consumido pelo SCSS como `max-width: $mobile-breakpoint - 1` e pelo JS via
+`mediaQueryFor('--breakpoint-mobile', -1)`. O contrato é provado em três
+níveis: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
+fonte e integração (`tests/mobile-drawer-fullscreen.test.mjs`/`.spec.js`) e
+navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`).
+
 ## Layers
 
 ```

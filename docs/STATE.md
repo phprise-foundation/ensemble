@@ -97,6 +97,22 @@
     single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
     `--breakpoint-sidebar` custom property for the drawer and the future icon
     bar.
+  - **Drawer em tela cheia abaixo de 768px (KAN-95 + KAN-96):** a produção
+    (PR #104) adicionou o token `$mobile-breakpoint: 768px`/`--breakpoint-mobile`
+    no SCSS, a media query estrita `max-width: $mobile-breakpoint - 1`, o painel
+    com `inset: 0; width: 100%` (sem `100vw`/`100vh`), o botão dedicado
+    `button.icon-btn.sidebar-close` (`v-if="narrow && isMobile"`, alvos de 44px
+    em `.nav-entry`/`.leaf`) e o scroll lock por classe `body.drawer-locked`
+    (`overflow: hidden`), controlado no `App.vue` (`isNarrow` via
+    `mediaQueryFor('--breakpoint-mobile', -1)`) e removido no unmount. A onda 2
+    (KAN-96, PR #116, release `v0.24.1`) provou o contrato: BDD em pt-BR
+    (`tests/mobile-drawer-fullscreen.feature`), contrato na fonte
+    (`tests/mobile-drawer-fullscreen.test.mjs`), integração no `App.vue`
+    (`tests/mobile-drawer-fullscreen.spec.js`) e E2E em navegador real
+    (`cypress/e2e/mobile-drawer-fullscreen.cy.js`), cobrindo 767/768/1023/1024/
+    1025, os quatro fechos (botão, Escape com foco de volta ao `menu-toggle`,
+    navegação e scrim na faixa parcial), lock, alvos de 44px e ausência de
+    overflow horizontal em 320/375/767px.
   - **Collapsed sidebar (activity bar) — CSS layer:** `--activity-width: 48px`
     token in `:root`; `.sidebar.collapsed` rules (icon-only — labels, chevrons,
     badges, source paths, brand text and entry actions hidden; icons centred;
