@@ -314,6 +314,21 @@
   a refinar nos PRs seguintes. Unit 53/53, build limpo, Cypress 25/25 com
   geometria e arraste reais. PR #77, release `v0.15.0`. CI: o passo `Contracts`
   segue vermelho por Xvfb (display :99), dívida de harness pré-existente.
+- **Grade inferior — store do console e catálogo (KAN-64):** `store/console.js`
+  transforma os comentários de `GET /api/issues` em mensagens
+  `{ seq, at, actor, kind, text }` (só `author !== 'user'`), com dedupe por
+  `issueId:commentId` e fallback autor + instante + hash do body para o
+  presenter PHP sem `id`; a releitura não duplica e os idênticos do mesmo lote
+  entram. O polling de 5s pausa em `document.hidden`; `start()`/`stop()` são
+  chamados por `AppConsole.vue` em `onMounted`/`onUnmounted` (grade montada por
+  `v-if`). `store/commands.js` executa localmente o catálogo fechado `/status`,
+  `/list`, `/help` e `/clear` contra o `boardStore`; `/clear` é local e sem eco,
+  desconhecido vira `error` sugerindo `/help`, e `busy` bloqueia reenvio. Falha
+  de polling vira uma única linha de erro até o próximo sucesso. O BDD mantém
+  os 12 cenários congelados e acrescenta o 6º (start/stop), total 13; node
+  `17/17`, vitest `53/53`, `console.cy.js` `3/3`, build verde. PR #87, release
+  `v0.15.2`. Pendência registrada na KAN-124: o poll imediato ao abrir a grade
+  ainda não é disparado, então o log pode ficar vazio por até 5s.
 - **Aceitação da grade direita — BDD, guardas e E2E (KAN-71):** a onda 3
   consumiu os contratos das ondas 1/2 e fechou os cinco critérios do RFC com
   prova executável. `tests/copilot.feature` (Gherkin pt-BR) descreve painel
@@ -325,8 +340,50 @@
   largura no DOM (320/400), abre card e reafirma `.issue-panel` e colunas ao
   alternar, e cobre 1024×900 e 390×844. Verificação na `main` pós-merge:
   vitest 53/53, guardas 7/7, E2E 27/27 (`copilot.cy.js` 8/8). PR #82, release
-  `v0.15.1`. Ressalva: a prova de independência do console fica para quando a
-  KAN-66 aterrissar; a CI segue vermelha no `Contracts` por Xvfb.
+  `v0.15.1`. Ressalva: a independência do console segue sem prova dedicada (a
+  KAN-66 cobriu só o painel de output); a CI segue vermelha no `Contracts` por
+  Xvfb.
+- **Grade inferior — painel de output (KAN-66):** `ConsoleOutput.vue` substitui
+  o stub da fundação e renderiza `consoleStore.state.messages` como log
+  `role="log"`/`aria-live="polite"`, uma `.console-line` por mensagem com classe
+  por `kind`, horário local e ator. `messages`/`unread` são computados — o
+  `/clear`, que troca o array, continua reagindo. `onMounted` ancora no fundo
+  antes de medir; com o leitor a ≤24px do fim o painel permanece fixado, rolar
+  para cima trava, e a pílula `.console-jump` conta `unread` e volta ao fundo
+  chamando `clearUnread()`. O filtro por ator (`All` + distintos) só altera a
+  renderização, o texto é interpolado (sem `v-html`) e o timer do indicador de
+  atividade é cancelado no unmount. Na árvore do PR: vitest `64/64` em UTC,
+  Asia/Tokyo e America/Sao_Paulo, build verde e E2E `27/27` (`console.cy.js`
+  `3/3`). PR #81, release `v0.16.0`; a CI segue vermelha no `Contracts` por
+  Xvfb.
+- **Grade inferior — painel de input (KAN-67):** `ConsoleInput.vue` substitui o
+  stub da fundação. O submit normaliza espaços, limpa o campo e entrega o texto
+  ao catálogo fechado por `runCommand(rawInput)`; com `state.busy` ativo, input
+  e botão ficam desabilitados e o submit é ignorado, fechando o reenvio
+  duplicado por três vias (componente, guarda de submit e store). Comando
+  desconhecido não é avaliado no componente: `commands.js` responde
+  `kind: 'error'` no output, e `/clear` segue local. O histórico ↑/↓ é efêmero,
+  preserva e devolve o rascunho digitado. O spec real ancora a saída de
+  `commands.js` (`Agentes:`, `Itens por status:`, `A fazer: 1`, `Feito: 1` e
+  `KAN-1 · Item ativo · A fazer`). Vitest `75/75`, build 59 módulos e CI
+  `frontend` verde na reexecução — a falha era flake do harness em
+  `run-e2e-exit-code`, reproduzido 3/3 local. PR #88, release `v0.17.0`; os
+  rótulos seguem o contrato do guia e a tradução pt-BR entra na KAN-18.
+- **Grade inferior — console em pt-BR, `at` ISO e poll imediato (KAN-18):** a
+  grade fecha o MVE com os rótulos do contrato aplicados em `ConsoleInput.vue`,
+  `ConsoleOutput.vue`, specs e E2E (`Entrada do console`,
+  `Digite um comando… (/help)`, `Enviar`, `Nenhuma mensagem`,
+  `Filtrar por ator`, `Todas`, `Nova saída`/`Ocioso`, `N nova`/`N novas`). A
+  pílula singular ganhou caso próprio e falha sob a mutação `nova{{ 's' }}`;
+  `append()` normaliza qualquer `at` para ISO 8601 UTC, inclusive o `+00:00` do
+  presenter PHP, e `start()` dispara `pollTick()` imediato (KAN-124), com a
+  reabertura medida sem `pollOnce()` manual. No merge com a main `c562dcb`:
+  vitest `79/79`, `console.test.mjs` `21/21`, build verde e E2E `27/27` em porta
+  livre (`console.cy.js` `3/3`). PR #92, release `v0.17.1`. Dívidas registradas:
+  o harness de E2E ainda aceita um Vite alheio na 5173 — o guarda está na
+  KAN-68/PR #90, que precisa de rebase — e o teste genérico de rótulos em
+  `console.spec.js` anuncia pluralizar a pílula sem medi-la (coberta no spec
+  dedicado).
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.

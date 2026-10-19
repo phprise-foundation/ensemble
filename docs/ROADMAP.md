@@ -78,8 +78,14 @@ marking what is still a prototype.
    grade direita ganhou o painel de copilot em esqueleto, colapsável pelo menu
    superior (KAN-62, release `v0.13.0`), com a aceitação fechada pela KAN-71
    (BDD, guardas e E2E; release `v0.15.1`), e a grade inferior ganhou a fundação
-   do console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`);
-   o chat real continua pendente.
+   do console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`) —
+   mais a store de mensagens, o polling idempotente e o catálogo fechado de
+   comandos (KAN-64, release `v0.15.2`) e o painel de output com autoscroll
+   travável, filtro por ator e pílula de não lidas (KAN-66, release `v0.16.0`)
+   e o painel de input com catálogo delegado, `busy` sem reenvio e histórico
+   efêmero (KAN-67, release `v0.17.0`); a KAN-18 fechou o MVE com os rótulos
+   pt-BR, o `at` em ISO 8601 UTC e o poll imediato na abertura (release
+   `v0.17.1`). O chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**

@@ -20,7 +20,19 @@ performs no network call and keeps no conversation state. The bottom grid is
 `AppConsole.vue` (`#app-console.console`), rendered inside `.content` after
 `.main`: `App.vue` owns `consoleOpen`/`consoleHeight`, the `.console-toggle`
 button and the `Ctrl+J`/`Cmd+J` shortcut, while the panel handles pointer and
-keyboard resizing and mounts the output/input panels.
+keyboard resizing and mounts the output/input panels: `ConsoleOutput.vue`
+renders `consoleStore` as a `role="log"` stream, and `ConsoleInput.vue`
+forwards the typed text to `store/commands.js::runCommand` (closed catalog),
+disabling input and submit while `consoleStore.state.busy` is set. `ConsoleOutput.vue`
+renders the log with a 24px autoscroll anchor, a render-only actor filter and a
+jump pill for unread messages; message text is always interpolated; the console
+labels follow the board's pt-BR contract. `store/console.js` owns
+the message log and the 5s polling of the existing `GET /api/issues` (started
+with an immediate tick so the grid opens filled), normalising every message
+timestamp to ISO 8601 UTC, adapting
+both comment payloads (camelCase fake backend and PHP presenter), deduplicating
+by comment key and pausing while the tab is hidden; `store/commands.js` executes
+the closed command catalog locally against `boardStore`.
 
 ## Layers
 

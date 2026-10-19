@@ -7,6 +7,79 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.17.1 — 2026-10-19
+
+### Fixed
+
+- **KAN-18** — grade inferior do console fecha o MVE em pt-BR: `ConsoleInput.vue`,
+  `ConsoleOutput.vue` e o E2E passam a usar os rótulos do contrato
+  (`Entrada do console`, `Digite um comando… (/help)`, `Enviar`,
+  `Nenhuma mensagem`, `Filtrar por ator`, `Todas`, `Nova saída`/`Ocioso`,
+  `N nova`/`N novas`), com a pílula singular medida por mutação. `append()`
+  normaliza todo `at` para ISO 8601 UTC (inclusive o `+00:00` do presenter PHP)
+  e preserva como texto o valor não interpretável. `start()` dispara
+  `pollTick()` imediato, então a grade abre preenchida (KAN-124); o dedupe cobre
+  a reabertura. Guia e `.feature` alinhados; no merge com a main `c562dcb`:
+  vitest `79/79`, `console.test.mjs` `21/21`, build verde e E2E `27/27` em porta
+  livre (`console.cy.js` `3/3`). PR #92, release `v0.17.1`. Ressalvas: o harness
+  de E2E ainda aceita um Vite alheio na 5173 (guarda na KAN-68/PR #90) e a
+  KAN-68 precisa de rebase sobre esta `main`.
+
+## v0.17.0 — 2026-10-19
+
+### Added
+
+- **KAN-67** — painel de input do console: `ConsoleInput.vue` substitui o stub
+  da fundação com `<form class="console-input">` (`aria-label="Console input"`,
+  placeholder `Type a command… (/help)`); o submit normaliza espaços, limpa o
+  campo e entrega o texto ao catálogo fechado via `runCommand(rawInput)`. Com
+  `consoleStore.state.busy` ativo, input e botão ficam desabilitados e o submit
+  é ignorado — sem reenvio duplicado. Comando desconhecido não é avaliado no
+  componente: o erro nasce em `commands.js` como `kind: 'error'` no output.
+  `/clear` continua puramente local. O histórico efêmero de ↑/↓ preserva e
+  devolve o rascunho digitado. 11 testes do componente; `npm run test:unit`
+  `75/75`, `npm run build` 59 módulos e CI `frontend` verde (a falha anterior
+  era flake do harness em `run-e2e-exit-code`, reproduzido 3/3 local). PR #88,
+  release `v0.17.0`. Os rótulos seguem o contrato do guia; a tradução pt-BR da
+  grade entra na KAN-18.
+
+## v0.16.0 — 2026-10-19
+
+### Added
+
+- **KAN-66** — painel de output do console: `ConsoleOutput.vue` renderiza o
+  `consoleStore` como log `role="log"`/`aria-live="polite"`, com uma linha
+  `.console-line.{agent,system,command,error}` por mensagem e horário local.
+  `messages`/`unread` são computados (sobrevivem ao `/clear`); ao montar o painel
+  ancora no fundo, e com o leitor a ≤24px do fim as mensagens novas mantêm o
+  autoscroll. Rolar para cima trava o painel, a pílula `.console-jump` conta as
+  novas e volta ao fundo com `clearUnread()`; o filtro por ator é só de render e
+  o texto é sempre interpolado (sem `v-html`). 13 testes do componente; na árvore
+  do PR vitest `64/64` em UTC, Asia/Tokyo e America/Sao_Paulo, build verde e E2E
+  `27/27` (`console.cy.js` `3/3`). PR #81, release `v0.16.0`. A CI `frontend`
+  segue vermelha no passo `Contracts` por Xvfb (dívida de harness).
+
+## v0.15.2 — 2026-10-19
+
+### Added
+
+- **KAN-64** — store do console e catálogo de comandos aceitos: `store/console.js`
+  normaliza os comentários de `GET /api/issues` em mensagens
+  `{ seq, at, actor, kind, text }` (só `author !== 'user'`), com dedupe por
+  `issueId:commentId` e fallback autor + instante + hash do body para o payload
+  do presenter PHP sem `id`; `at` ausente recebe o ISO do append. O polling de
+  5s pausa em `document.hidden` e `start()`/`stop()` acompanham a grade aberta
+  (montagem por `v-if`). `store/commands.js` executa localmente o catálogo
+  fechado `/status`, `/list`, `/help` e `/clear` contra o `boardStore`; `/clear`
+  não gera eco nem HTTP, desconhecido vira `kind: 'error'` sugerindo `/help`, e
+  `busy` bloqueia reenvio. Falha de polling vira uma única linha de erro até o
+  próximo sucesso. `console.feature` preserva os 12 cenários congelados e
+  acrescenta o 6º (start/stop), total 13. Verificação na árvore do PR: node
+  `17/17`, vitest `53/53`, `console.cy.js` `3/3` e build verde. PR #87, release
+  `v0.15.2`; o diff tem 6 arquivos (os 5 da sub-task mais `console.spec.js`,
+  alinhado ao contrato de erro do polling). Acompanhamento: KAN-124 cobre o poll
+  imediato ao abrir a grade.
+
 ## v0.15.1 — 2026-10-19
 
 ### Changed
