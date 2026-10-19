@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../store/session.js'
+import AppIcon from './../components/AppIcon.vue'
 
 const router = useRouter()
 const name = ref(session.displayName)
@@ -54,7 +55,7 @@ function back() {
       </div>
       <div class="profile-actions">
         <button type="button" @click="back">back</button>
-        <button type="submit">save</button>
+        <button type="submit"><AppIcon name="check" size="16" /> save</button>
         <span v-if="saved" class="hint" role="status">nome salvo</span>
       </div>
     </form>

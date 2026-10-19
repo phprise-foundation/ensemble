@@ -29,7 +29,7 @@ function toggle(field, value) {
     <div class="modal-card">
       <header class="modal-header">
         <h3>{{ title }}</h3>
-        <button class="icon-btn" @click="emit('close')"><AppIcon name="close" /></button>
+        <button class="icon-btn" title="Close" aria-label="Close" @click="emit('close')"><AppIcon name="close" size="20" /></button>
       </header>
 
       <div class="modal-body">
@@ -55,7 +55,7 @@ function toggle(field, value) {
 
       <footer class="modal-footer">
         <button class="button ghost" @click="emit('close')">Cancel</button>
-        <button class="button" @click="emit('save')">Save</button>
+        <button class="button" @click="emit('save')"><AppIcon name="check" size="16" /> Save</button>
       </footer>
     </div>
   </div>

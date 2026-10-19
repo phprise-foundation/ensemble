@@ -98,8 +98,8 @@ async function remove(type) {
         <span>{{ type.level }}</span>
         <span>{{ type.fields.length }}</span>
         <span class="actions">
-          <button class="icon-btn" title="Edit" @click="openEdit(type)"><AppIcon name="profiles" size="15" /></button>
-          <button class="icon-btn" title="Delete" @click="remove(type)"><AppIcon name="close" size="15" /></button>
+          <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(type)"><AppIcon name="edit" size="14" /></button>
+          <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(type)"><AppIcon name="delete" size="14" /></button>
         </span>
       </div>
     </div>
@@ -108,7 +108,7 @@ async function remove(type) {
       <div class="modal-card">
         <header class="modal-header">
           <h3>{{ draft.id ? 'Edit issue type' : 'New issue type' }}</h3>
-          <button class="icon-btn" @click="editing = false"><AppIcon name="close" /></button>
+          <button class="icon-btn" title="Close" aria-label="Close" @click="editing = false"><AppIcon name="close" size="20" /></button>
         </header>
 
         <div class="modal-body">
@@ -129,18 +129,18 @@ async function remove(type) {
             </select>
             <input v-if="field.type === 'select'" type="text" placeholder="a, b, c" v-model="field.options" />
             <label class="inline"><input type="checkbox" v-model="field.required" /> required</label>
-            <button class="icon-btn" title="Remove" :disabled="field.system" @click="removeField(index)">
-              <AppIcon name="close" size="15" />
+            <button class="icon-btn" title="Remove" :disabled="field.system" aria-label="Remove" @click="removeField(index)">
+              <AppIcon name="delete" size="14" />
             </button>
           </div>
-          <button class="button ghost" @click="addField"><AppIcon name="plus" size="15" /> Add field</button>
+          <button class="button ghost" @click="addField"><AppIcon name="plus" size="16" /> Add field</button>
 
           <p v-if="error" class="error">{{ error }}</p>
         </div>
 
         <footer class="modal-footer">
           <button class="button ghost" @click="editing = false">Cancel</button>
-          <button class="button" @click="save">Save</button>
+          <button class="button" @click="save"><AppIcon name="check" size="16" /> Save</button>
         </footer>
       </div>
     </div>

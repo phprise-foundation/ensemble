@@ -39,7 +39,7 @@ function toggleFilter(statusId) {
     <div class="modal-card">
       <header class="modal-header">
         <h3>{{ draft.id && draft.name ? 'Edit board' : 'New board' }}</h3>
-        <button class="icon-btn" @click="emit('close')"><AppIcon name="close" /></button>
+        <button class="icon-btn" title="Close" aria-label="Close" @click="emit('close')"><AppIcon name="close" size="20" /></button>
       </header>
 
       <div class="modal-body">
@@ -66,9 +66,9 @@ function toggleFilter(statusId) {
             </label>
             <span v-if="!statuses.length" class="muted small">Pick a workflow with statuses first</span>
           </div>
-          <button class="icon-btn" title="Remove" @click="removeColumn(index)"><AppIcon name="close" size="15" /></button>
+          <button class="icon-btn" title="Remove" aria-label="Remove" @click="removeColumn(index)"><AppIcon name="delete" size="14" /></button>
         </div>
-        <button class="button ghost" @click="addColumn"><AppIcon name="plus" size="15" /> Add column</button>
+        <button class="button ghost" @click="addColumn"><AppIcon name="plus" size="16" /> Add column</button>
 
         <h4 class="field-label">Filters (statuses shown; empty = all)</h4>
         <div class="checks">
@@ -83,7 +83,7 @@ function toggleFilter(statusId) {
 
       <footer class="modal-footer">
         <button class="button ghost" @click="emit('close')">Cancel</button>
-        <button class="button" @click="emit('save')">Save</button>
+        <button class="button" @click="emit('save')"><AppIcon name="check" size="16" /> Save</button>
       </footer>
     </div>
   </div>
