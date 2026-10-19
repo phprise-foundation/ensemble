@@ -7,6 +7,24 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.15.0 — 2026-10-19
+
+### Added
+
+- **KAN-65** — fundação da grade inferior do console no board novo: container
+  `AppConsole.vue` (`section#app-console.console`) com cabeçalho, fechar e
+  handle `.console-resize` (arraste por ponteiro, setas ↑/↓ de ±16px e duplo
+  clique restaurando 240px); estado `consoleOpen`/`consoleHeight` em `App.vue`
+  via `--console-height`, botão `.console-toggle` ao lado do sidebar com
+  `aria-expanded`/`aria-controls` e atalho `Ctrl+J`/`Cmd+J` desktop-only;
+  token `--font-mono` e todas as seções `.console*` em `main.scss`, com clamp
+  de 120px a 60vh e apenas tokens de tema. A fatia consolidou as versões
+  provisórias de store/output/input (KAN-64/66/67), refinadas pelos PRs
+  seguintes. Unit 53/53, build limpo e Cypress 25/25 (geometria e arraste
+  reais). PR #77, release `v0.15.0`. O passo `Contracts` do CI segue vermelho
+  por corrida de Xvfb (display :99), falha de harness pré-existente alheia a
+  esta fatia.
+
 ## v0.14.0 — 2026-10-19
 
 ### Added

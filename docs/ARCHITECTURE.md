@@ -16,7 +16,11 @@ exist. `src/App.vue` is the shell: the left `.sidebar`, the central `.content`
 `AppCopilot.vue` (`.copilot-panel`), a desktop-only skeleton mounted as a
 sibling of `.content` and always expanded on load; `.copilot-toggle` in the top
 bar and `Ctrl+Alt+B` hide or restore it without touching the other panels. It
-performs no network call and keeps no conversation state.
+performs no network call and keeps no conversation state. The bottom grid is
+`AppConsole.vue` (`#app-console.console`), rendered inside `.content` after
+`.main`: `App.vue` owns `consoleOpen`/`consoleHeight`, the `.console-toggle`
+button and the `Ctrl+J`/`Cmd+J` shortcut, while the panel handles pointer and
+keyboard resizing and mounts the output/input panels.
 
 ## Layers
 
