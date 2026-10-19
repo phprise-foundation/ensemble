@@ -1,7 +1,9 @@
 $sidebar-breakpoint: 1024px;
+$mobile-breakpoint: 768px;
 
 :root {
   --breakpoint-sidebar: #{$sidebar-breakpoint};
+  --breakpoint-mobile: #{$mobile-breakpoint};
   --sim: #ff8b00;
   --radius: 8px;
   --radius-sm: 6px;
@@ -590,6 +592,10 @@ textarea {
   margin-top: 8px;
 }
 
+body.drawer-locked {
+  overflow: hidden;
+}
+
 @media (max-width: $sidebar-breakpoint) {
   .sidebar {
     position: fixed;
@@ -608,6 +614,28 @@ textarea {
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 30;
+  }
+
+  @media (max-width: $mobile-breakpoint - 1) {
+    .sidebar {
+      inset: 0;
+      width: 100%;
+      flex: none;
+    }
+
+    .sidebar .nav-entry,
+    .sidebar .leaf {
+      min-height: 44px;
+    }
+
+    .sidebar .icon-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .sidebar-close {
+      margin-left: auto;
+    }
   }
 }
 
