@@ -55,6 +55,10 @@ async function openCreate() {
 
 watch(() => draft.value.summary, () => { summaryError.value = '' })
 watch(() => draft.value.statusId, () => { statusError.value = '' })
+watch(initialStatuses, (initials) => {
+  if (!editing.value || initials.some((status) => status.id === draft.value.statusId)) return
+  draft.value = { ...draft.value, statusId: initials[0]?.id || '' }
+})
 
 function applyFailure(failure) {
   if (failure.field === 'statusId') {
