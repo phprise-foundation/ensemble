@@ -175,7 +175,7 @@ describe('rail do sidebar colapsado', () => {
     cy.viewport(1024, 800)
     cy.visit('/')
     cy.get('.leaf').should('have.length.greaterThan', 0)
-    cy.get('button.sidebar-toggle').should('not.be.visible')
+    cy.get('button.sidebar-toggle').should('not.exist')
     cy.get('nav:not(.rail)').should('be.visible')
     cy.get('nav.rail').should('not.exist')
 
