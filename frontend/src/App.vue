@@ -153,10 +153,10 @@ function toggleSimulation() {
       <main class="main">
         <RouterView />
       </main>
+      <AppConsole v-if="!isMobile && consoleOpen" :style="consoleHeightStyle" @close="consoleOpen = false" />
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />
-    <AppConsole v-if="!isMobile && consoleOpen" :style="consoleHeightStyle" @close="consoleOpen = false" />
   </div>
   <div class="session-ended" v-else>
     <div class="session-ended-box">
