@@ -74,7 +74,9 @@ marking what is still a prototype.
 1. ~~**App shell + board** — sidebar, dark/light theme, responsive columns, cards
    (status colour, aging flag, avatar), right-hand issue panel and drag & drop
    that respects the configured transitions.~~ **Done (prototype).** O tema
-   escuro foi alinhado à paleta do VSCode Dark+ (KAN-8, release `v0.12.0`).
+   escuro foi alinhado à paleta do VSCode Dark+ (KAN-8, release `v0.12.0`). A
+   grade direita ganhou o painel de copilot em esqueleto, colapsável pelo menu
+   superior (KAN-62, release `v0.13.0`); o chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**

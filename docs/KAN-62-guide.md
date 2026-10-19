@@ -1,79 +1,111 @@
-# Guia de implementação — KAN-62: painel do copilot colapsável (grade direita)
+# Guia de Implementação — KAN-62: Grade direita (painel do copilot colapsável)
 
-Status: RFC aprovada (KAN-62) + ondas em voo. Escopo: **MVE de UI**.
-Autor da etapa: Framework Architect.
+Status: RFC aprovada. Escopo: **fase de desenho de UI (MVE)**. Autor da etapa:
+Framework Architect.
 
 ## Objetivo
 
-Espelhar a grade esquerda (KAN-10) no lado direito: um painel de copilot em
-esqueleto, montado como irmão do `.content`, alternado por um símbolo de grade no
-menu superior. Zero rede, zero store, zero persistência nesta rodada.
+Um símbolo de grade "direita" no menu superior (padrão do VSCode para a sidebar
+secundária) expande/colapsa o painel do copilot no lado direito da aplicação.
+Nesta rodada o painel é um **esqueleto**: estrutura, largura e alternância. O
+conteúdo de conversa não é critério de aceite.
+
+Totalmente **client-side**: nenhum endpoint novo, nenhuma store, nenhum
+`localStorage`, **nenhuma chamada de rede** (guarda do Systems Architect: nada de
+`GET/POST /api/chat`, nada de `CHAT_URL`). Colapsar apenas esconde o painel
+(decisão 7 — não há estado de conversa em jogo).
 
 ## Decisões que já governam a implementação
 
-- **Raiz do painel é irmã de `.content`**, dentro de `.app` (não tocar em `.main`
-  nem no painel de issue).
-- **Breakpoint único**: `$sidebar-breakpoint` (1024px). Desktop = `!isMobile`;
-  exatamente 1024px segue mobile (o símbolo e o painel não existem no DOM).
-- **Token próprio** `--copilot-width: min(25vw, 400px)`; nunca reutilizar
-  `--panel-width`.
-- **Nasce expandido** (`copilotOpen = ref(true)`), sem memória entre recargas.
-- **Atalho** `Ctrl+Alt+B`/`Cmd+Alt+B` desktop-only, checado **antes** do ramo do
-  `Ctrl+B` com guarda `event.altKey`, para um atalho não disparar dois toggles.
+- **Montagem no nível de `.app`:** o painel é irmão de `.content` (espelho da
+  barra lateral esquerda, altura total). Zero reestruturação de `.main` e
+  `.content`; o painel de issue (dentro do board) mantém seu comportamento
+  (decisão 5) e o board apenas comprime, custo aceito (decisão 6).
+- **Breakpoint único:** a fonte continua sendo `$sidebar-breakpoint` /
+  `--breakpoint-sidebar` (KAN-9/KAN-12). Desktop = `!isMobile`, a mesma media
+  query do `.sidebar-toggle`. *Ambiguidade resolvida:* o RFC diz "telas ≥ 1024px"
+  como atalho para "desktop"; exatamente 1024px permanece mobile, como já ocorre
+  com o toggle esquerdo. Não inventar um segundo valor.
+- **Largura própria:** token novo `--copilot-width: min(25vw, 400px)` no `:root`
+  (ao lado de `--activity-width`). **Não** reutilizar `--panel-width`
+  (`min(400px, 33vw)`, do painel de issue) — o RFC veda replicar um padrão sobre
+  o outro.
+- **Estado:** `copilotOpen = ref(true)` em `App.vue` — nasce expandido a cada
+  carregamento (decisão 4), sem persistência. Colapsar é **remoção do DOM**
+  (`v-if`); sem estado interno a perder.
+- **Símbolo desktop-only:** o botão usa `v-if="!isMobile"` (decisão 3 — "não são
+  renderizados"), espelhando o padrão já presente em `App.vue` para o drawer.
+- **Zero backend:** `AppCopilot.vue` não faz `fetch`, não importa store, não lê
+  variável de ambiente. O conteúdo é placeholder estático.
+- **Atalho:** `Ctrl+Alt+B` / `Cmd+Alt+B` desktop-only, paridade com o VSCode
+  ("Toggle Secondary Side Bar"), espelhando `Ctrl+B` (esquerda) e `Ctrl+J`
+  (inferior). Bônus de acessibilidade — **não** é critério de aceite.
+- **Idioma dos rótulos:** inglês, fiel ao resto da UI ("Session ended", "Toggle
+  sidebar"…); i18n já é item do roadmap.
+- **Sem comentários no código.** O "porquê" vive neste guia e nas mensagens de
+  commit.
 
 ## Contrato de nomes (fonte única — guia e testes mudam juntos)
 
 | Item | Valor acordado |
 |---|---|
 | Componente | `frontend/src/components/AppCopilot.vue` |
-| Raiz do painel | `<section id="app-copilot" class="copilot-panel">` |
-| Header | `.copilot-header` com título `Copilot` |
-| Corpo | `.copilot-body` com placeholder estático (`Coming soon`) |
-| Botão de topo | `.icon-btn.copilot-toggle` |
-| Rótulo do botão | `aria-label="Toggle copilot"` |
-| Reflexo de estado | `:aria-expanded="copilotOpen"` |
-| Alvo do botão | `aria-controls="app-copilot"` |
+| Elemento raiz | `<section id="app-copilot" class="copilot-panel">` |
+| Cabeçalho | `.copilot-header` com título `Copilot` |
+| Corpo placeholder | `.copilot-body` com texto estático em inglês |
+| Chave do ícone em `AppIcon` | `copilot` → `['M17 3h4v18h-4z', 'M3 3h11v18H3z']` |
+| Botão de topo | `.icon-btn.copilot-toggle` (ao lado de `.sidebar-toggle`/`.console-toggle`) |
+| Rótulo do botão | `aria-label="Toggle copilot"`, `:aria-expanded="copilotOpen"`, `aria-controls="app-copilot"`, `title` dinâmico |
 | Estado | `copilotOpen = ref(true)` em `App.vue` |
-| Montagem | `<AppCopilot v-if="!isMobile && copilotOpen" />` (irmão de `.content`) |
 | Token de largura | `--copilot-width: min(25vw, 400px)` no `:root` |
-| Chave do ícone | `copilot: ['M17 3h4v18h-4z', 'M3 3h11v18H3z']` (KAN-69) |
 | Atalho | `Ctrl+Alt+B` (Linux/Windows) e `Cmd+Alt+B` (macOS) |
 
 ## Mapa de alterações
 
 ```
-frontend/src/components/AppIcon.vue         → entrada copilot (KAN-69)
-frontend/src/components/AppCopilot.vue      → painel esqueleto (KAN-70)
-frontend/src/App.vue                        → estado + botão + atalho + montagem
-frontend/src/styles/main.scss               → --copilot-width + .copilot-*
-frontend/tests/copilot.feature              → cenários BDD (KAN-71)
-frontend/tests/copilot.test.mjs             → guardas estáticos (KAN-71)
-frontend/cypress/e2e/copilot.cy.js          → prova no navegador (KAN-71)
+frontend/src/components/AppIcon.vue    → entrada copilot (onda 1)
+frontend/src/components/AppCopilot.vue → painel esqueleto (onda 2)
+frontend/src/App.vue                   → estado copilotOpen + botão + atalho + montagem (onda 2)
+frontend/src/styles/main.scss          → --copilot-width + seções .copilot-* (onda 2)
+frontend/tests/copilot.feature         → cenários BDD (onda 3)
+frontend/tests/copilot.test.mjs        → guardas estáticos (onda 3)
+frontend/cypress/e2e/copilot.cy.js     → E2E dos 5 critérios (onda 3)
 ```
 
-## Mapa de ondas
+## Sub-tasks e paralelismo
 
-| Onda | Item | Conteúdo |
+| onda | sub-task | depende de |
 |---|---|---|
-| 1 | KAN-69 | chave `copilot` em `AppIcon.vue` |
-| 2 | KAN-70 | `AppCopilot.vue`, toggle, atalho e CSS (depois da KAN-65) |
-| 3 | KAN-71 | BDD, guardas e E2E (depois de 69 e 70) |
+| 1 | Ícone `copilot` em `AppIcon.vue` | — |
+| 2 | Fundação: `AppCopilot.vue` + `App.vue` + CSS | **KAN-65** (aterrissar antes) |
+| 3 | Testes: BDD + guardas + E2E | onda 1 e onda 2 |
 
-A hereditariedade no `frontend/` (App.vue, main.scss, AppIcon.vue) é compartilhada
-com a grade inferior (KAN-18); rebase antes de puxar a onda.
+O `App.vue`, o `main.scss` e o `AppIcon.vue` são território compartilhado com a
+grade inferior em voo (KAN-63/KAN-65). Honre as ondas: a onda 2 só aterrissa
+**depois** da KAN-65 (rebase incluído); a onda 1 é linha isolada no dicionário
+de ícones (rebase trivial sobre a KAN-63). A onda 3 consome todos os contratos e
+é a crítica de aceitação.
 
-## Barra de qualidade
+## Pontos de atenção
 
-- `node --test tests/copilot.test.mjs` verde (guardas estáticos, sem importar
-  `.vue` — o `node:test` lê os arquivos-fonte como texto).
-- `npm run test:unit` verde (contém os testes de componente).
-- `npm run test:e2e` verde nos viewports 1280×900, 1920×900 e 1024×900.
-- Sem erro de runtime/console.
+- **Armadilha do atalho:** `Ctrl+Alt+B` também casa com o guarda atual de
+  `Ctrl+B`. O ramo do copilot precisa ser checado **primeiro** (guarda com
+  `event.altKey`), e o do sidebar em seguida — caso contrário um atalho dispara
+  os dois toggles.
+- **Coexistência:** alternar o copilot não altera sidebar (`.collapsed`), console
+  (`#app-console`) nem painel de issue — cada grade tem seu `ref` independente.
+- **Larguras coexistindo por definição:** copilot `min(25vw, 400px)` × issue
+  `min(400px, 33vw)`. Em 1280px o copilot tem 320px; em 1920px, 400px — valores
+  úteis para asserção no E2E.
+- **Sem `v-html`, sem rede, sem shell.** Placeholder é texto interpolado.
 
 ## Observações para quem codar
 
-- O painel de issue (`.main`), sidebar e console não mudam de comportamento; o
-  único efeito colateral é a compressão de largura do board em 1024–1280px
-  (custo aceito na decisão 6 do RFC).
-- Colapsar é desmontar (`v-if`); nesta rodada não há estado de conversa a perder.
-- Sem comentários no código; o "porquê" vive neste guia e na mensagem de commit.
+- **Tema:** consumir só os tokens existentes (`--surface`, `--border`, `--text`,
+  `--muted`); borda esquerda do painel espelha `.sidebar`/`.issue-panel`.
+- **Acessibilidade:** `aria-expanded` dinâmico no botão, foco visível, painel
+  com `aria-controls` correspondente ao `id`.
+- **Qualidade (barra):** `npm run test:unit` verde, `node --test` das suítes
+  novas verde e `npm run test:e2e` verde, sem erro de runtime/console. A feature
+  só está pronta quando testada como o usuário a usa (navegador real, viewport
+  desktop e mobile), não apenas "não lançou exceção".

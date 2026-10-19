@@ -7,6 +7,26 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.13.0 — 2026-10-19
+
+### Added
+
+- **KAN-62** — grade direita do copilot no board novo (`frontend/`): painel
+  esqueleto `AppCopilot.vue` irmão de `.content` (`.copilot-panel`,
+  `#app-copilot`) com largura própria `--copilot-width: min(25vw, 400px)`,
+  montado expandido por padrão (`copilotOpen = ref(true)`) e alternado pelo
+  botão `.copilot-toggle` no menu superior (`aria-expanded`/`aria-controls`) e
+  pelo atalho `Ctrl+Alt+B`/`Cmd+Alt+B`, checado antes do ramo do `Ctrl+B` para
+  não disparar dois toggles. Desktop-only pelo breakpoint único
+  (`--breakpoint-sidebar`; 1024px permanece mobile), com painel e símbolo fora
+  do DOM em telas menores; sem rede, sem store e sem persistência (recarregar
+  volta expandido). O painel de issue, o sidebar e o console mantêm o
+  comportamento, aceitando apenas a compressão do board em 1024–1280px
+  (decisão 6 do RFC KAN-5). Contrato em `docs/KAN-62-guide.md`; provas: guardas
+  estáticos 7/7, vitest 36/36, build limpo e `copilot.cy.js` 6/6 nos viewports
+  1280×900, 1920×900 e 1024×900, sem erro de runtime/console. PR #74, release
+  `v0.13.0`.
+
 ## v0.12.0 — 2026-10-19
 
 ### Added

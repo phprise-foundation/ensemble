@@ -282,6 +282,22 @@
   reload, recarga hidratando o campo e sucesso pela região viva
   `[role="status"]`. Barra refeita em worktree limpo no merge: node 40/40,
   vitest 32/32, build limpo, E2E 8/8 sem erro de runtime. Release `v0.11.3`.
+- **Grade direita — painel do copilot colapsável (KAN-62):** o board novo ganha
+  o espelho da grade esquerda: `AppCopilot.vue` (esqueleto `#app-copilot`
+  `.copilot-panel`, irmão de `.content`) com token próprio
+  `--copilot-width: min(25vw, 400px)`, `copilotOpen = ref(true)` (nasce
+  expandido, sem persistência) e botão `.copilot-toggle` no menu superior com
+  `aria-expanded`/`aria-controls`, mais o atalho `Ctrl+Alt+B`/`Cmd+Alt+B`
+  checado antes do `Ctrl+B`. Desktop-only pelo breakpoint único: em 1024px ou
+  menos painel e símbolo não entram no DOM. Zero rede, zero store, zero
+  `v-html`; colapsar é `v-if` (não há conversa nesta rodada). O painel de issue,
+  o sidebar e o console permanecem independentes, com a compressão do board em
+  1024–1280px aceita no RFC KAN-5. Contrato em `docs/KAN-62-guide.md`; 7 guardas
+  estáticos, vitest 36/36, build e E2E 6/6 (1280/1920/1024) verdes. PR #74,
+  release `v0.13.0`.
+- Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
+  persistência da conversa e comportamento ao colapsar; lembrar a escolha
+  expandido/colapsado entre recarregamentos é item futuro de UI.
 
 ## Next
 

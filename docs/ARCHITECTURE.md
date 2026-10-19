@@ -7,6 +7,17 @@ kanban board that mirrors the agent-watcher data model (`column`, `agent`,
 `worker`, `blocked`, `blocked_by`, comments, stage history) so that agents can be
 pointed at it.
 
+## Frontend (Vue SPA)
+
+`frontend/` is a Vue 3 + Vite SPA, independent from the PHP backend and backed by
+a fake JSON API (`plugin/fake-backend.js`) until each screen's real endpoints
+exist. `src/App.vue` is the shell: the left `.sidebar`, the central `.content`
+(topbar + `.main`), and the independent panels. The right panel is
+`AppCopilot.vue` (`.copilot-panel`), a desktop-only skeleton mounted as a
+sibling of `.content` and always expanded on load; `.copilot-toggle` in the top
+bar and `Ctrl+Alt+B` hide or restore it without touching the other panels. It
+performs no network call and keeps no conversation state.
+
 ## Layers
 
 ```
