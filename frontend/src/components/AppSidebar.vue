@@ -343,7 +343,7 @@ async function removeEntity(kind, id, label) {
         aria-label="Fechar menu"
         @click="emit('close')"
       >
-        <AppIcon name="close" size="20" />
+        <AppIcon name="close" size="14" />
       </button>
     </div>
 
@@ -358,30 +358,30 @@ async function removeEntity(kind, id, label) {
 
     <nav v-else class="nav">
       <div class="nav-entry" title="Workspaces">
-        <AppIcon name="workspace" size="15" />
+        <AppIcon name="workspace" size="18" />
         <span>Workspaces</span>
         <span class="entry-actions">
-          <button class="icon-btn" title="New workspace (coming soon)" disabled><AppIcon name="plus" size="14" /></button>
+          <button class="icon-btn" title="New workspace (coming soon)" aria-label="New workspace (coming soon)" disabled><AppIcon name="plus" size="14" /></button>
         </span>
       </div>
 
       <div class="submenu">
         <div class="nav-entry" v-if="workspace" :title="workspace?.name">
-          <AppIcon name="workspace" size="15" />
+          <AppIcon name="workspace" size="14" />
           <span>{{ workspace.name }}</span>
           <span class="entry-actions">
-            <button class="icon-btn" title="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
+            <button class="icon-btn" title="Edit workspace" aria-label="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
           </span>
         </div>
 
         <div class="submenu">
           <!-- Boards -->
           <div class="nav-entry" :class="{ open: openBoards }" title="Boards" @click="openBoards = !openBoards">
-            <AppIcon name="board" size="15" />
+            <AppIcon name="board" size="18" />
             <span>Boards</span>
-            <AppIcon class="chevron" name="chevron" size="13" />
+            <AppIcon class="chevron" name="chevron" size="14" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New board" @click.stop="addBoard"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New board" aria-label="New board" @click.stop="addBoard"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openBoards" class="submenu">
@@ -392,18 +392,18 @@ async function removeEntity(kind, id, label) {
                 <span class="badge-id">{{ entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">
-                <button class="icon-btn" title="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Edit board" aria-label="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
               </span>
             </div>
           </div>
 
           <!-- Workflows -->
           <div class="nav-entry" :class="{ open: openWorkflows }" title="Workflows" @click="openWorkflows = !openWorkflows">
-            <AppIcon name="layers" size="15" />
+            <AppIcon name="layers" size="18" />
             <span>Workflows</span>
-            <AppIcon class="chevron" name="chevron" size="13" />
+            <AppIcon class="chevron" name="chevron" size="14" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New workflow" aria-label="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openWorkflows" class="submenu">
@@ -412,7 +412,7 @@ async function removeEntity(kind, id, label) {
                 <AppIcon name="layers" size="14" />
                 <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit workflow" aria-label="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
@@ -427,11 +427,11 @@ async function removeEntity(kind, id, label) {
 
           <!-- Teams -->
           <div class="nav-entry" :class="{ open: openTeams }" title="Teams" @click="openTeams = !openTeams">
-            <AppIcon name="agents" size="15" />
+            <AppIcon name="agents" size="18" />
             <span>Teams</span>
-            <AppIcon class="chevron" name="chevron" size="13" />
+            <AppIcon class="chevron" name="chevron" size="14" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New team" @click.stop="addTeam"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New team" aria-label="New team" @click.stop="addTeam"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openTeams" class="submenu">
@@ -440,7 +440,7 @@ async function removeEntity(kind, id, label) {
                 <AppIcon name="agents" size="14" />
                 <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit team" aria-label="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
@@ -455,11 +455,11 @@ async function removeEntity(kind, id, label) {
 
           <!-- Sources -->
           <div class="nav-entry" :class="{ open: openSources }" title="Sources" @click="openSources = !openSources">
-            <AppIcon name="folder" size="15" />
+            <AppIcon name="folder" size="18" />
             <span>Sources</span>
-            <AppIcon class="chevron" name="chevron" size="13" />
+            <AppIcon class="chevron" name="chevron" size="14" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New source" @click.stop="addSource"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New source" aria-label="New source" @click.stop="addSource"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openSources" class="submenu">
@@ -469,8 +469,8 @@ async function removeEntity(kind, id, label) {
               <span class="label">{{ source.name }}</span>
               <span class="source-path" :title="source.path">{{ source.path }}</span>
               <span class="entry-actions">
-                <button class="icon-btn" title="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
-                <button class="icon-btn" title="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="close" size="14" /></button>
+                <button class="icon-btn" title="Edit source" aria-label="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Delete source" aria-label="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="delete" size="14" /></button>
               </span>
             </div>
           </div>
