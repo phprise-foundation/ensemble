@@ -39,25 +39,27 @@ const run = (args, environment = {}) => {
   }
 };
 
+const harnessConfig = 'specPattern=cypress/harness/passing.cy.js,screenshotOnRunFailure=false';
+
 test('run-e2e.sh com --spec que não casa, deve retornar status 1', async () => {
   const port = await freePort();
-  assert.throws(() => run('--spec=invalid-pattern', { E2E_PORT: `${port}` }), (error) => error.status === 1);
+  assert.throws(() => run(`--config='${harnessConfig}' --spec=invalid-pattern`, { E2E_PORT: `${port}` }), (error) => error.status === 1);
 });
 
 test('run-e2e.sh com --spec="" (string vazia), deve retornar status 0', async () => {
   const port = await freePort();
-  run('--spec=', { E2E_PORT: `${port}` });
+  run(`--config='${harnessConfig}' --spec=`, { E2E_PORT: `${port}` });
 });
 
 test('run-e2e.sh sem --spec, deve retornar status 0', async () => {
   const port = await freePort();
-  run('', { E2E_PORT: `${port}` });
+  run(`--config='${harnessConfig}'`, { E2E_PORT: `${port}` });
 });
 
 test('run-e2e.sh com E2E_DATA_FILE não toca o .data do desenvolvedor', async () => {
   const port = await freePort();
   const developerDatabase = join(currentDirectory, '..', '.data', 'db.json');
   const existed = existsSync(developerDatabase);
-  run('', { E2E_PORT: `${port}` });
+  run(`--config='${harnessConfig}'`, { E2E_PORT: `${port}` });
   assert.equal(existsSync(developerDatabase), existed);
 });
