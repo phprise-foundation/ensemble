@@ -7,6 +7,22 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.15.1 — 2026-10-19
+
+### Changed
+
+- **KAN-71** — aceitação da grade direita fechada com prova executável: o BDD
+  `tests/copilot.feature` cobre os cinco critérios do RFC e a acessibilidade;
+  os 7 guardas de `tests/copilot.test.mjs` travam o contrato (`AppCopilot.vue`
+  sem rede/store/`v-html`, `copilotOpen = ref(true)`, `altKey` antes do ramo
+  `Ctrl+B`, token `--copilot-width` e ícone `copilot`); e
+  `cypress/e2e/copilot.cy.js` mede a largura real em 1280×900/1920×900, prova a
+  alternância por clique e `Ctrl+Alt+B` sem tocar sidebar, painel de issue ou
+  colunas, o reload expandido e a ausência de painel/símbolo em 1024×900 e
+  390×844. Verificação na `main` pós-merge: vitest 53/53, guardas 7/7, E2E
+  27/27 (`copilot.cy.js` 8/8), sem erro de runtime/console. PR #82, release
+  `v0.15.1`; a CI `frontend` segue vermelha na dívida de Xvfb.
+
 ## v0.15.0 — 2026-10-19
 
 ### Added
