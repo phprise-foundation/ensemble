@@ -67,6 +67,10 @@ watch(initialStatuses, (initials) => {
 })
 
 function applyFailure(failure) {
+  if (failure.field === 'summary') {
+    summaryError.value = failure.message
+    return
+  }
   if (failure.field === 'statusId') {
     statusError.value = failure.message
     return
