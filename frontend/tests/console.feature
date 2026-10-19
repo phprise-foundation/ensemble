@@ -5,7 +5,8 @@ Funcionalidade: Grade inferior de console (output + input)
 
   A grade nasce FECHADA a cada carregamento, sem persistência (sem
   localStorage). O output deriva de GET /api/issues por polling (5s):
-  comentários com author !== 'user', deduplicados por issueId:commentId.
+  comentários com author !== 'user', deduplicados pela chave adaptadora do
+  guia (issueId:commentId quando há id; senão autor + instante + hash do body).
   O input executa APENAS o catálogo fechado (/status, /list, /help, /clear)
   localmente contra o boardStore — sem shell, sem POST novo; comando
   desconhecido vira mensagem kind "error", nunca avaliação de input.
@@ -15,6 +16,8 @@ Funcionalidade: Grade inferior de console (output + input)
   - `seq` é monotônico; `unread` cresce a cada append e zera com
     clearUnread()/clear().
   - pollOnce é idempotente: reler as mesmas issues não duplica mensagem.
+  - O polling roda enquanto a grade está ABERTA: start() ao abrir e stop() ao
+    fechar (amarrado a consoleOpen pela fundação), pausa com document.hidden.
   - Catálogo fechado: /status, /list, /help, /clear; desconhecido → 'error'.
   - /clear é ação puramente local: zera mensagens e unread, zero chamadas HTTP.
   - busy enquanto um comando executa: reenvio no mesmo instante é ignorado.
@@ -22,18 +25,18 @@ Funcionalidade: Grade inferior de console (output + input)
   - Altura: 240px inicial; clamp 120px..60vh; duplo clique no handle restaura
     240px; setas ↑/↓ com o handle focado = ±16px.
   - A11y: role="log" + aria-live="polite" no output; botão com
-    aria-label="Toggle console", aria-expanded e aria-controls="app-console";
+    aria-label="Alternar console", aria-expanded e aria-controls="app-console";
     handle focável com aria-label="Resize console"; form com
     aria-label="Console input".
 
-  Mapeamento das suítes (quem mede o quê):
-  - Integração (node:test, tests/console.test.mjs): forma da mensagem,
-    idempotência do pollOnce (dedupe), catálogo fechado, /clear local, busy.
-  - Componentes (vitest): abrir/fechar com toggle e atalho (inerte no mobile),
-    clamp de altura, filtro do output, autoscroll travando e pílula limpando
-    unread.
-  - Navegador real (Cypress, cypress/e2e/console.cy.js): cenários marcados
-    como "E2E" abaixo — prova na interface em execução, não no source.
+  Mapeamento das suítes (quem mede o quê), pela ordem dos cenários abaixo:
+  - Integração (node:test, tests/console.test.mjs): 3, 8, 9, 10.
+  - Componentes (vitest): 1, 2, 4, 5, 7, 11 — abrir/fechar com toggle e
+    atalho (inerte no mobile), indicador de atividade, clamp de altura,
+    filtro do output, autoscroll travando e pílula limpando unread.
+  - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
+  - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
+    marcados como "E2E" abaixo, prova na interface em execução, não no source.
 
   Contexto:
     Dado o usuário autenticado no board
@@ -59,6 +62,8 @@ Funcionalidade: Grade inferior de console (output + input)
     E o actor da mensagem é o author do comentário e o text é o body
     Quando o mesmo pollOnce roda de novo sobre as mesmas issues
     Então nenhuma mensagem nova é acrescentada, por dedupe em issueId:commentId
+    Quando o payload não traz id (presenter PHP: author, body, created_at)
+    Então a chave é autor + instante + hash do body e a releitura não duplica
     Quando um comentário novo de agente chega no poll seguinte
     Então só essa mensagem nova é acrescentada ao fim do log
 
@@ -77,6 +82,13 @@ Funcionalidade: Grade inferior de console (output + input)
     Quando clica na pílula
     Então o log volta ao fundo e o unread zera
 
+  Cenário: start e stop acompanham a grade aberta e fechada
+    Dado a grade aberta e o consoleStore em polling
+    Quando a fundação fecha a grade
+    Então stop() encerra o ciclo e state.polling fica "false"
+    Quando a fundação abre a grade de novo
+    Então start() retoma o ciclo e um pollOnce imediato preenche o log
+
   Cenário: indicador de atividade sinaliza chegada
     Dado o painel de output visível
     Quando uma mensagem nova chega pelo polling
@@ -90,8 +102,9 @@ Funcionalidade: Grade inferior de console (output + input)
     Então a resposta kind "system" resume o estado dos agentes
     Quando digita "/list" e envia
     Então a resposta kind "system" lista as issues do board carregado
+    E "/clear" não entra nesse laço: ele zera o log (ver cenário próprio)
     Quando digita um comando fora do catálogo e envia
-    Então aparece uma mensagem kind "error" e nada é executado
+    Então aparece uma mensagem kind "error" que sugere /help e nada é executado
 
   Cenário: /clear é local e zera o log
     Dado mensagens no log
