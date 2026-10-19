@@ -32,6 +32,7 @@ describe('drawer mobile na interface em execução', () => {
   })
 
   it('abre pelo handler do toggle do menu e fecha pelo scrim', () => {
+    cy.viewport(1000, 900)
     cy.visit('/')
     cy.get('#app-sidebar')
       .should('not.have.class', 'open')
