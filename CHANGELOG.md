@@ -7,6 +7,24 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.17.0 — 2026-10-19
+
+### Added
+
+- **KAN-67** — painel de input do console: `ConsoleInput.vue` substitui o stub
+  da fundação com `<form class="console-input">` (`aria-label="Console input"`,
+  placeholder `Type a command… (/help)`); o submit normaliza espaços, limpa o
+  campo e entrega o texto ao catálogo fechado via `runCommand(rawInput)`. Com
+  `consoleStore.state.busy` ativo, input e botão ficam desabilitados e o submit
+  é ignorado — sem reenvio duplicado. Comando desconhecido não é avaliado no
+  componente: o erro nasce em `commands.js` como `kind: 'error'` no output.
+  `/clear` continua puramente local. O histórico efêmero de ↑/↓ preserva e
+  devolve o rascunho digitado. 11 testes do componente; `npm run test:unit`
+  `75/75`, `npm run build` 59 módulos e CI `frontend` verde (a falha anterior
+  era flake do harness em `run-e2e-exit-code`, reproduzido 3/3 local). PR #88,
+  release `v0.17.0`. Os rótulos seguem o contrato do guia; a tradução pt-BR da
+  grade entra na KAN-18.
+
 ## v0.16.0 — 2026-10-19
 
 ### Added

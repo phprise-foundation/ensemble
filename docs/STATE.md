@@ -356,6 +356,19 @@
   Asia/Tokyo e America/Sao_Paulo, build verde e E2E `27/27` (`console.cy.js`
   `3/3`). PR #81, release `v0.16.0`; a CI segue vermelha no `Contracts` por
   Xvfb.
+- **Grade inferior — painel de input (KAN-67):** `ConsoleInput.vue` substitui o
+  stub da fundação. O submit normaliza espaços, limpa o campo e entrega o texto
+  ao catálogo fechado por `runCommand(rawInput)`; com `state.busy` ativo, input
+  e botão ficam desabilitados e o submit é ignorado, fechando o reenvio
+  duplicado por três vias (componente, guarda de submit e store). Comando
+  desconhecido não é avaliado no componente: `commands.js` responde
+  `kind: 'error'` no output, e `/clear` segue local. O histórico ↑/↓ é efêmero,
+  preserva e devolve o rascunho digitado. O spec real ancora a saída de
+  `commands.js` (`Agentes:`, `Itens por status:`, `A fazer: 1`, `Feito: 1` e
+  `KAN-1 · Item ativo · A fazer`). Vitest `75/75`, build 59 módulos e CI
+  `frontend` verde na reexecução — a falha era flake do harness em
+  `run-e2e-exit-code`, reproduzido 3/3 local. PR #88, release `v0.17.0`; os
+  rótulos seguem o contrato do guia e a tradução pt-BR entra na KAN-18.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
