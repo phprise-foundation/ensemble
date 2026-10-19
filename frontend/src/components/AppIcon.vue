@@ -31,6 +31,7 @@ const paths = {
   layers: ['M12 3l9 5-9 5-9-5z', 'M3 13l9 5 9-5'],
   sidebar: ['M3 3h4v18H3z', 'M10 3h11v18H10z'],
   copilot: ['M17 3h4v18h-4z', 'M3 3h11v18H3z'],
+  console: ['M4 5h16v14H4z', 'M7 9l3 3-3 3', 'M13 15h4'],
 }
 </script>
 
