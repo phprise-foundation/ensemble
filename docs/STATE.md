@@ -314,6 +314,19 @@
   a refinar nos PRs seguintes. Unit 53/53, build limpo, Cypress 25/25 com
   geometria e arraste reais. PR #77, release `v0.15.0`. CI: o passo `Contracts`
   segue vermelho por Xvfb (display :99), dívida de harness pré-existente.
+- **Aceitação da grade direita — BDD, guardas e E2E (KAN-71):** a onda 3
+  consumiu os contratos das ondas 1/2 e fechou os cinco critérios do RFC com
+  prova executável. `tests/copilot.feature` (Gherkin pt-BR) descreve painel
+  expandido em 1280/1920, alternância, independência de sidebar/painel de
+  issue/colunas, ausência no breakpoint e no telefone, reload sem memória e
+  ARIA/atalho. `tests/copilot.test.mjs` soma 7 guardas estáticos (zero
+  rede/store/`v-html`, `copilotOpen = ref(true)`, `altKey` antes do `Ctrl+B`,
+  token de largura e ícone `copilot`). `cypress/e2e/copilot.cy.js` mede a
+  largura no DOM (320/400), abre card e reafirma `.issue-panel` e colunas ao
+  alternar, e cobre 1024×900 e 390×844. Verificação na `main` pós-merge:
+  vitest 53/53, guardas 7/7, E2E 27/27 (`copilot.cy.js` 8/8). PR #82, release
+  `v0.15.1`. Ressalva: a prova de independência do console fica para quando a
+  KAN-66 aterrissar; a CI segue vermelha no `Contracts` por Xvfb.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.

@@ -76,9 +76,10 @@ marking what is still a prototype.
    that respects the configured transitions.~~ **Done (prototype).** O tema
    escuro foi alinhado à paleta do VSCode Dark+ (KAN-8, release `v0.12.0`). A
    grade direita ganhou o painel de copilot em esqueleto, colapsável pelo menu
-   superior (KAN-62, release `v0.13.0`), e a grade inferior ganhou a fundação do
-   console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`); o
-   chat real continua pendente.
+   superior (KAN-62, release `v0.13.0`), com a aceitação fechada pela KAN-71
+   (BDD, guardas e E2E; release `v0.15.1`), e a grade inferior ganhou a fundação
+   do console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`);
+   o chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**
