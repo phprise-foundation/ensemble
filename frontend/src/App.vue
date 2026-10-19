@@ -5,6 +5,7 @@ import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
+import AppConsole from './components/AppConsole.vue'
 import AppCopilot from './components/AppCopilot.vue'
 import { boardStore } from './store/board.js'
 import { session } from './store/session.js'
@@ -16,6 +17,7 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const menuToggle = ref(null)
 const isMobile = ref(false)
+const consoleOpen = ref(false)
 const copilotOpen = ref(true)
 let mediaQuery = null
 
@@ -31,6 +33,10 @@ function handleKeyboardShortcut(event) {
   if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     sidebarCollapsed.value = !sidebarCollapsed.value
+  }
+  if (event.key === 'j' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    consoleOpen.value = !consoleOpen.value
   }
 }
 
@@ -105,6 +111,17 @@ function toggleSimulation() {
         </button>
         <button
           v-if="!isMobile"
+          class="icon-btn console-toggle"
+          :title="consoleOpen ? 'Hide console' : 'Show console'"
+          aria-label="Toggle console"
+          :aria-expanded="consoleOpen"
+          aria-controls="app-console"
+          @click="consoleOpen = !consoleOpen"
+        >
+          <AppIcon name="console" />
+        </button>
+        <button
+          v-if="!isMobile"
           class="icon-btn copilot-toggle"
           :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
           aria-label="Toggle copilot"
@@ -133,6 +150,7 @@ function toggleSimulation() {
       <main class="main">
         <RouterView />
       </main>
+      <AppConsole v-if="!isMobile && consoleOpen" @close="consoleOpen = false" />
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />
