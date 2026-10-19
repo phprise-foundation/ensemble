@@ -83,7 +83,7 @@ export function railSections(navigation) {
 export function isActiveLeaf(leaf, route, chosen) {
   const sameRoute = leaf.route.name === route.name
   const boardChosen = route.name === 'board' && !route.params.boardId
-  const chosenBoard = boardChosen && Boolean(chosen) && chosen.path === leaf.to
+  const chosenBoard = boardChosen && Boolean(chosen) && chosen.id === leaf.route.params.boardId
   if (!sameRoute) {
     return false
   }

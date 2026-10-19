@@ -27,6 +27,15 @@ const expectOneCurrent = (title) => {
   cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.attr', 'title', title)
 }
 
+const breakpoint = (win) =>
+  Number.parseInt(win.getComputedStyle(win.document.documentElement).getPropertyValue('--breakpoint-sidebar').trim(), 10)
+
+const expectDesktopLayout = (desktop) =>
+  cy.window().then((win) => {
+    const media = win.matchMedia(`(max-width: ${breakpoint(win)}px)`)
+    expect(media.matches, 'matchMedia do breakpoint do sidebar').to.equal(!desktop)
+  })
+
 describe('rail do sidebar colapsado', () => {
   let errors
 
@@ -129,6 +138,14 @@ describe('rail do sidebar colapsado', () => {
     expectOneCurrent('Experiences')
   })
 
+  it('destaca o board exibido na rota padrão /#/boards, sem id na rota', () => {
+    cy.visit('/#/boards')
+    cy.location('hash').should('eq', '#/boards')
+    cy.contains('strong', 'Kanban').should('be.visible')
+    collapse()
+    expectOneCurrent('Kanban')
+  })
+
   it('navega entre os links com Tab e mostra o foco visível', () => {
     cy.visit('/#/boards/KANB')
     collapse()
@@ -167,12 +184,16 @@ describe('rail do sidebar colapsado', () => {
   it('mantém a árvore expandida em 1024px e exibe o rail a partir de 1025px', () => {
     cy.viewport(1024, 800)
     cy.visit('/')
+    expectDesktopLayout(false)
     cy.get('.leaf').should('have.length.greaterThan', 0)
     cy.get('button.sidebar-toggle').should('not.be.visible')
     cy.get('nav:not(.rail)').should('be.visible')
     cy.get('nav.rail').should('not.exist')
 
     cy.viewport(1025, 800)
+    cy.reload()
+    expectDesktopLayout(true)
+    cy.get('button.sidebar-toggle').should('be.visible')
     cy.get('button.sidebar-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'collapsed')
     cy.get('nav.rail a.rail-leaf').should('have.length.greaterThan', 0)
