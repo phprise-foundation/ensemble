@@ -1,55 +1,66 @@
 import { boardStore } from './board.js'
 import { consoleStore } from './console.js'
 
-const COMMANDS = '/status /list /clear /help'
+export const CATALOG = ['/status', '/list', '/clear', '/help']
 
-function agentLine(team) {
-  const names = boardStore.agentsOf(team.id).map((agent) => agent.name)
-  return `${team.name}: ${names.length > 0 ? names.join(', ') : '—'}`
+function statusIdOf(issue) {
+  return issue.statusId ?? issue.status
+}
+
+function titleOf(issue) {
+  return issue.summary ?? issue.title ?? issue.id
+}
+
+function statusOf(issue) {
+  return boardStore.status(statusIdOf(issue))
+}
+
+function nameOf(issue) {
+  return statusOf(issue)?.name ?? '?'
+}
+
+function agentsText() {
+  const names = boardStore.state.agents.map((agent) => agent.name)
+  return names.length > 0 ? names.join(', ') : 'nenhum agente registrado'
+}
+
+function countText(status) {
+  const count = boardStore.state.issues.filter((issue) => statusIdOf(issue) === status.id).length
+  return `${status.name}: ${count}`
 }
 
 function statusText() {
-  const agents = boardStore.state.teams.map(agentLine)
-  const items = boardStore.state.statuses
-    .filter((status) => status.workflowId === boardStore.board.value?.workflowId)
-    .map((status) => {
-      const count = boardStore.state.issues.filter((issue) => issue.statusId === status.id).length
-      return `${status.name}: ${count}`
-    })
-  return ['Agentes:', ...agents, '', 'Itens por status:', ...items].join('\n')
+  const counts = boardStore.state.statuses.map(countText)
+  const header = counts.length > 0 ? 'Itens por status:' : 'Nenhum status carregado.'
+  return [`Agentes: ${agentsText()}`, '', header, ...counts].join('\n')
 }
 
 function isActive(issue) {
-  const status = boardStore.status(issue.statusId)
-  return Boolean(status && status.type !== 'final')
+  return statusOf(issue)?.type !== 'final'
+}
+
+function itemLine(issue) {
+  return `${issue.id} · ${titleOf(issue)} · ${nameOf(issue)}`
 }
 
 function listText() {
-  const lines = boardStore.state.issues
-    .filter(isActive)
-    .map((issue) => `${issue.id} · ${issue.summary} · ${boardStore.status(issue.statusId)?.name ?? '?'}`)
+  const lines = boardStore.state.issues.filter(isActive).map(itemLine)
   return lines.length > 0 ? ['Itens ativos:', ...lines].join('\n') : 'Nenhum item ativo no momento.'
 }
 
 function helpText() {
   return [
-    'Comandos disponíveis:',
-    '/status — resume agentes e itens por status',
-    '/list — lista os itens ativos',
+    `Comandos disponíveis: ${CATALOG.join(', ')}`,
+    '/status — resume os agentes e os itens por status',
+    '/list — lista os itens ativos do board',
     '/clear — limpa o console (ação local)',
     '/help — mostra este catálogo',
   ].join('\n')
 }
 
-function clearText() {
-  consoleStore.clear()
-  return 'Console limpo.'
-}
-
 const HANDLERS = {
   '/status': statusText,
   '/list': listText,
-  '/clear': clearText,
   '/help': helpText,
 }
 
@@ -58,24 +69,40 @@ function commandOf(input) {
 }
 
 function unknownText(command) {
-  return `Comando desconhecido: ${command}. Você quis dizer ${COMMANDS}? Use /help para ver o catálogo.`
+  return `Comando desconhecido: ${command}. Catálogo: ${CATALOG.join(', ')}. Use /help.`
 }
 
-export function runCommand(rawInput) {
-  const input = rawInput.trim()
-  if (!input) {
+function respond(text) {
+  consoleStore.append({ actor: 'system', kind: 'system', text })
+}
+
+function fail(text) {
+  consoleStore.append({ actor: 'system', kind: 'error', text })
+}
+
+function execute(input) {
+  const command = commandOf(input)
+  if (command === '/clear') {
+    consoleStore.clear()
     return
   }
-  consoleStore.append('command', 'user', input)
-  const command = commandOf(input)
+  consoleStore.append({ actor: 'user', kind: 'command', text: input })
   const handler = HANDLERS[command]
-  if (!handler) {
-    consoleStore.append('error', 'system', unknownText(command))
+  if (handler) {
+    respond(handler())
+    return
+  }
+  fail(unknownText(command))
+}
+
+export async function runCommand(rawInput) {
+  const input = String(rawInput ?? '').trim()
+  if (!input || consoleStore.state.busy) {
     return
   }
   consoleStore.state.busy = true
   try {
-    consoleStore.append('system', 'system', handler())
+    await Promise.resolve().then(() => execute(input))
   } finally {
     consoleStore.state.busy = false
   }
