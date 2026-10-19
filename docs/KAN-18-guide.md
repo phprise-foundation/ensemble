@@ -56,7 +56,7 @@ componentes.
 | Botão de topo | `.icon-btn.console-toggle` (ao lado do `.sidebar-toggle`) |
 | Rótulo do botão | `aria-label="Toggle console"`, `:aria-expanded="consoleOpen"`, `aria-controls="app-console"` |
 | Estado da grade | `consoleOpen = ref(false)` em `App.vue` |
-| Altura | `frontend/src/store/consoleHeight.js` → `consoleHeight` (240 inicial), `consoleStyle` com `--console-height` inline, clamp 120px..60vh; ações `growHeight`/`shrinkHeight` (±16px), `dragHeight`, `resetHeight` (duplo clique) |
+| Altura | `consoleHeight = ref(240)` em `App.vue`, `--console-height` inline na grade; `frontend/src/store/consoleHeight.js` expõe só as constantes (240/120/60vh/16px) e `clampHeight`; `AppConsole.vue` recebe `height`/`step` e emite `resize`/`adjust`/`reset` (sem estado local) |
 | Atalho | `Ctrl+J` (Linux/Windows) e `Cmd+J` (macOS) |
 | Elemento raiz | `<section id="app-console" class="console">` |
 | Handle de resize | `.console-resize` (borda superior; foco + setas ↑/↓ = ±16px) |
@@ -84,19 +84,18 @@ componentes.
   executa e grava o resultado (`'system'`); erro (`'error'`) para desconhecido;
   `busy` durante a execução.
 
-## Decisão registrada: altura fora de `App.vue`
+## Decisão registrada: altura em `App.vue`, componente sem estado
 
-O guia original congelava `consoleHeight = ref(240)` em `App.vue`. A
-implementação manteve em `App.vue` apenas o estado de abertura
-(`consoleOpen = ref(false)` + botão + `Ctrl+J`) e **encapsulou a altura** em
-`frontend/src/store/consoleHeight.js`, usada por `AppConsole.vue` (que não
-mantém estado local de altura).
+O estado da altura (`consoleHeight = ref(240)`) e o `--console-height` inline
+vivem em `App.vue`; `AppConsole.vue` recebe `height`/`step` por prop e emite
+`resize`/`adjust`/`reset`. `frontend/src/store/consoleHeight.js` guarda apenas
+as constantes (240/120/60vh/16px) e `clampHeight`, usadas pelo `App.vue` e
+pelos testes.
 
-Motivo: o estado, o clamp e a persistência de evento do resize (ponteiro,
-setas, duplo clique) pertencem à grade, não ao shell do app; `App.vue` fica com
-uma responsabilidade só e a altura ganha testes próprios. Os **nomes**
-(`consoleHeight`, `--console-height`, 240/120/60vh/16px) e o comportamento
-permanecem exatamente os congelados — só o arquivo que hospeda o estado mudou.
+Motivo: como a grade é montada com `v-if`, um `ref` dentro de `AppConsole`
+perderia a altura a cada fechar/reabrir; no `App.vue` a altura sobrevive ao
+ciclo de vida da grade e o componente fica sem estado próprio. Assim não
+existem duas versões do mesmo estado (emenda do Tech Lead para o KAN-18).
 
 ## Mapa de alterações
 
@@ -105,8 +104,8 @@ frontend/src/components/AppIcon.vue        → entrada console (KAN-63)
 frontend/src/store/console.js              → store + adaptador de polling (KAN-64)
 frontend/src/store/commands.js             → catálogo fechado de comandos (KAN-64)
 frontend/src/components/AppConsole.vue     → container, resize, stubs dos painéis (KAN-65)
-frontend/src/store/consoleHeight.js         → consoleHeight + ações de resize (KAN-65)
-frontend/src/App.vue                        → estado consoleOpen + botão + atalho (KAN-65)
+frontend/src/store/consoleHeight.js         → constantes + clampHeight (KAN-65)
+frontend/src/App.vue                        → consoleOpen + altura + botão + atalho (KAN-65)
 frontend/src/styles/main.scss              → --font-mono + todas as seções .console-* (KAN-65)
 frontend/src/components/ConsoleOutput.vue  → log, autoscroll, filtro, atividade (KAN-66)
 frontend/src/components/ConsoleInput.vue   → barra de comandos (KAN-67)

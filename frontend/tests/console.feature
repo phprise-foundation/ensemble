@@ -21,11 +21,12 @@ Funcionalidade: Grade inferior de console (output + input)
   - /clear é ação puramente local: zera mensagens e unread, zero chamadas HTTP.
   - busy enquanto um comando executa: reenvio no mesmo instante é ignorado.
   - Atalho Ctrl+J/Cmd+J desktop-only (inerte no mobile, espelha o Ctrl+B).
-  - Altura: 240px inicial; clamp 120px..60vh; duplo clique no handle restaura
-    240px; setas ↑/↓ com o handle focado = ±16px.
+  - Altura: 240px inicial, governada por App.vue (sobrevive a fechar/reabrir);
+    clamp 120px..60vh; duplo clique no handle restaura 240px; setas ↑/↓ com o
+    handle focado = ±16px.
   - A11y: role="log" + aria-live="polite" no output; botão com
-    aria-label="Toggle console", aria-expanded e aria-controls="app-console";
-    handle focável com aria-label="Resize console"; form com
+    aria-label="Alternar console", aria-expanded e aria-controls="app-console";
+    handle focável com aria-label="Redimensionar console"; form com
     aria-label="Console input".
 
   Mapeamento das suítes (quem mede o quê):
