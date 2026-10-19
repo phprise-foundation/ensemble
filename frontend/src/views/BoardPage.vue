@@ -5,6 +5,8 @@ import { boardStore } from '../store/board.js'
 import BoardColumn from '../components/BoardColumn.vue'
 import IssuePanel from '../components/IssuePanel.vue'
 import AppIcon from '../components/AppIcon.vue'
+import FieldLimit from '../components/FieldLimit.vue'
+import { DESCRIPTION_LIMIT, countCharacters, limitError, limitExceeded } from '../../shared/limits.js'
 
 const route = useRoute()
 
@@ -17,6 +19,8 @@ const error = ref('')
 const summaryInput = ref(null)
 const summaryError = ref('')
 const statusError = ref('')
+const descriptionError = ref('')
+const descriptionOver = computed(() => limitExceeded(countCharacters(draft.value.description), DESCRIPTION_LIMIT))
 
 const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
@@ -48,6 +52,7 @@ async function openCreate() {
   error.value = ''
   summaryError.value = ''
   statusError.value = ''
+  descriptionError.value = ''
   editing.value = true
   await nextTick()
   summaryInput.value?.focus()
@@ -55,10 +60,15 @@ async function openCreate() {
 
 watch(() => draft.value.summary, () => { summaryError.value = '' })
 watch(() => draft.value.statusId, () => { statusError.value = '' })
+watch(() => draft.value.description, () => { descriptionError.value = '' })
 
 function applyFailure(failure) {
   if (failure.field === 'statusId') {
     statusError.value = failure.message
+    return
+  }
+  if (failure.field === 'description') {
+    descriptionError.value = failure.message
     return
   }
   error.value = failure.message || 'Não foi possível criar a task.'
@@ -68,6 +78,7 @@ async function save() {
   error.value = ''
   summaryError.value = ''
   statusError.value = ''
+  descriptionError.value = ''
   if (!draft.value.summary) {
     summaryError.value = 'O resumo é obrigatório.'
     summaryInput.value?.focus()
@@ -76,6 +87,10 @@ async function save() {
   if (!initialStatuses.value.length) return
   if (!draft.value.statusId) {
     statusError.value = 'Selecione um status inicial.'
+    return
+  }
+  if (descriptionOver.value) {
+    descriptionError.value = limitError('description', countCharacters(draft.value.description), DESCRIPTION_LIMIT)
     return
   }
   try {
@@ -204,10 +219,23 @@ async function drop(columnId, beforeId) {
           <p v-if="summaryError" id="create-summary-error" class="error field-error" role="alert">
             {{ summaryError }}
           </p>
-          <label class="field" for="create-description">
-            <span>Description</span>
-            <textarea id="create-description" rows="4" v-model="draft.description"></textarea>
-          </label>
+          <div class="field">
+            <label for="create-description">Description</label>
+            <textarea
+              id="create-description"
+              rows="4"
+              v-model="draft.description"
+              aria-describedby="create-description-limit"
+              :aria-invalid="descriptionOver || Boolean(descriptionError)"
+            ></textarea>
+            <FieldLimit
+              id="create-description-limit"
+              field="description"
+              :text="draft.description"
+              :limit="DESCRIPTION_LIMIT"
+              :error="descriptionError"
+            />
+          </div>
           <label class="field" for="create-type">
             <span>Type</span>
             <select id="create-type" v-model="draft.typeId">
@@ -242,7 +270,7 @@ async function drop(columnId, beforeId) {
         </div>
         <footer class="modal-footer">
           <button class="button ghost" @click="editing = false">Cancel</button>
-          <button class="button" :disabled="!initialStatuses.length" @click="save"><AppIcon name="check" size="16" /> Create</button>
+          <button class="button" :disabled="!initialStatuses.length || descriptionOver" @click="save"><AppIcon name="check" size="16" /> Create</button>
         </footer>
       </div>
     </div>

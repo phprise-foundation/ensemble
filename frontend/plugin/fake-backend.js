@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createSeed } from '../src/data/seed.js'
+import { COMMENT_LIMIT, DESCRIPTION_LIMIT, countCharacters, limitError } from '../shared/limits.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const dataDirectory = join(here, '..', '.data')
@@ -113,6 +114,12 @@ function createColumnProblem(board, status) {
   return { column }
 }
 
+function limitProblem(field, value, limit) {
+  const length = countCharacters(value)
+  if (length <= limit) return null
+  return { error: limitError(field, length, limit), field, status: 422 }
+}
+
 function moveIssue(db, id, { columnId, statusId, order }) {
   const issue = db.issues.find((candidate) => candidate.id === id)
   const board = issue ? boardOf(db, issue.boardId) : null
@@ -153,6 +160,8 @@ export function handle(db, method, segments, body) {
     if (method === 'GET' && id === undefined) return { data: db.issues.slice().sort((a, b) => a.order - b.order) }
     if (method === 'GET' && id) return { data: db.issues.find((issue) => issue.id === id) ?? null }
     if (method === 'POST' && id === undefined) {
+      const descriptionProblem = limitProblem('description', body.description ?? '', DESCRIPTION_LIMIT)
+      if (descriptionProblem) return descriptionProblem
       const boardResult = boardProblem(db, body.boardId)
       if (boardResult.error) return boardResult
       const board = boardResult.board
@@ -185,6 +194,10 @@ export function handle(db, method, segments, body) {
     if (method === 'PATCH' && id) {
       const issue = db.issues.find((candidate) => candidate.id === id)
       if (!issue) return { error: 'issue not found', status: 404 }
+      const descriptionProblem = body.description === undefined
+        ? null
+        : limitProblem('description', body.description, DESCRIPTION_LIMIT)
+      if (descriptionProblem) return descriptionProblem
       Object.assign(issue, body, { id, updatedAt: new Date().toISOString() })
       return { data: issue }
     }
@@ -192,6 +205,8 @@ export function handle(db, method, segments, body) {
     if (method === 'POST' && id && sub === 'comments') {
       const issue = db.issues.find((candidate) => candidate.id === id)
       if (!issue) return { error: 'issue not found', status: 404 }
+      const commentProblem = limitProblem('comment', body.body ?? '', COMMENT_LIMIT)
+      if (commentProblem) return commentProblem
       issue.comments.push({ id: `c${Date.now()}`, author: body.author ?? 'user', body: body.body ?? '', at: new Date().toISOString() })
       issue.updatedAt = new Date().toISOString()
       return { data: issue }

@@ -1,6 +1,9 @@
 const now = Date.now()
 const hours = (count) => count * 60 * 60 * 1000
 
+const legacyDescription = `LEGACY-DESCRIPTION-START\n${'D'.repeat(4200)}\nLEGACY-DESCRIPTION-END`
+const legacyComment = `LEGACY-COMMENT-START\n${'C'.repeat(1100)}\nLEGACY-COMMENT-END`
+
 export function createSeed() {
   return {
     workspaces: [{ id: 'default', name: 'Default' }],
@@ -133,6 +136,15 @@ export function createSeed() {
         statusId: 'canceled', assigneeId: null, reporter: 'user', worker: '', order: 0,
         flags: [], comments: [],
         createdAt: new Date(now - hours(120)).toISOString(), updatedAt: new Date(now - hours(100)).toISOString(),
+      },
+      {
+        id: 'KANB-7', boardId: 'KANB', typeId: 'task', summary: 'Legacy issue over the limits',
+        description: legacyDescription,
+        statusId: 'to-develop', assigneeId: 'vivy', reporter: 'user', worker: '', order: 1,
+        flags: [], history: [], comments: [
+          { id: 'c-legacy', author: 'user', body: legacyComment, at: new Date(now - hours(25)).toISOString() },
+        ],
+        createdAt: new Date(now - hours(25)).toISOString(), updatedAt: new Date(now - hours(25)).toISOString(),
       },
     ],
   }
