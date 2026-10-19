@@ -33,7 +33,7 @@ const noChosenBoard = null
 describe('sidebarNavigation', () => {
   it('deriva folhas de boards, workflows, teams e Experiences sem Sources', () => {
     const navigation = sidebarNavigation(store, 'ws')
-    expect(navigation.boards.map((entry) => entry.leaves.map((leaf) => leaf.title))).toEqual([['Kanban'], ['Board 2']])
+    expect(navigation.boards.map((entry) => entry.leaf.title)).toEqual(['Kanban', 'Board 2'])
     expect(navigation.workflows.map((entry) => entry.leaves.map((leaf) => leaf.label))).toEqual([
       ['Statuses', 'Transitions', 'Issue types'],
       ['Statuses', 'Transitions', 'Issue types'],
@@ -49,7 +49,8 @@ describe('sidebarNavigation', () => {
   it('usa o mesmo formato de entrada em todas as seções', () => {
     const navigation = sidebarNavigation(store, 'ws')
     const entries = [...navigation.boards, ...navigation.workflows, ...navigation.teams, ...navigation.experiences]
-    expect(entries.every((entry) => entry.entity && Array.isArray(entry.leaves) && entry.leaves.length > 0)).toBe(true)
+    expect(entries.every((entry) => entry.entity)).toBe(true)
+    expect(entries.every((entry) => entry.leaf || (Array.isArray(entry.leaves) && entry.leaves.length > 0))).toBe(true)
   })
 
   it('devolve modelo e rail vazios sem workspace', () => {

@@ -53,6 +53,13 @@ function experienceLeaf() {
   }
 }
 
+function experienceEntry() {
+  return {
+    entity: { id: 'experiences', name: 'Experiences' },
+    leaves: [experienceLeaf()],
+  }
+}
+
 function emptyNavigation() {
   return { boards: [], workflows: [], teams: [], experiences: [] }
 }
@@ -62,7 +69,7 @@ function sectionsOf(navigation) {
     navigation.boards.map((entry) => [entry.leaf]),
     navigation.workflows.map((entry) => entry.leaves),
     navigation.teams.map((entry) => entry.leaves),
-    [navigation.experiences],
+    navigation.experiences.map((entry) => entry.leaves),
   ]
 }
 
@@ -73,7 +80,7 @@ export function sidebarNavigation(store, workspaceId) {
   const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaf: boardLeaf(board) }))
   const workflows = store.workflowsOf(workspaceId).map((workflow) => ({ entity: workflow, leaves: pageLeaves(WORKFLOW_PAGES, workflow, 'workflow') }))
   const teams = store.teamsOf(workspaceId).map((team) => ({ entity: team, leaves: pageLeaves(TEAM_PAGES, team, 'team') }))
-  return { boards, workflows, teams, experiences: [experienceLeaf()] }
+  return { boards, workflows, teams, experiences: [experienceEntry()] }
 }
 
 export function railSections(navigation) {
