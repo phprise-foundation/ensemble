@@ -33,6 +33,7 @@ async function settle() {
 }
 
 beforeEach(() => {
+  consoleStore.stop()
   consoleStore.clear()
 })
 
@@ -56,7 +57,7 @@ describe('ConsoleOutput', () => {
     await nextTick()
 
     expect(wrapper.findAll('.console-line')).toHaveLength(0)
-    expect(wrapper.text()).toContain('No messages')
+    expect(wrapper.text()).toContain('Nenhuma mensagem')
   })
 
   it('keeps scrolling to the end while pinned when a new message arrives', async () => {
@@ -119,7 +120,7 @@ describe('ConsoleOutput', () => {
     await settle()
 
     expect(log().element.scrollTop).toBe(700)
-    expect(wrapper.find('.console-jump').text()).toBe('2 new')
+    expect(wrapper.find('.console-jump').text()).toBe('2 novas')
   })
 
   it('shows no pill while idle unpinned without unread', async () => {
@@ -140,7 +141,7 @@ describe('ConsoleOutput', () => {
     appendMessages()
     await settle()
 
-    expect(wrapper.find('.console-jump').text()).toBe('2 new')
+    expect(wrapper.find('.console-jump').text()).toBe('2 novas')
     expect(consoleStore.state.unread).toBe(2)
 
     setSize(log().element, 1800, 200)
@@ -150,6 +151,26 @@ describe('ConsoleOutput', () => {
     expect(log().element.scrollTop).toBe(1800)
     expect(consoleStore.state.unread).toBe(0)
     expect(wrapper.find('.console-jump').exists()).toBe(false)
+  })
+
+  it('labels exactly one unread message as "1 nova" in the jump pill', async () => {
+    wrapper = mount(ConsoleOutput, { attachTo: document.body })
+    await settle()
+    setSize(log().element, 1000, 200)
+    await scrollTo(100)
+
+    consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'Única linha.', at: '2026-10-19T09:00:00.000Z' })
+    await settle()
+
+    expect(consoleStore.state.unread).toBe(1)
+    expect(wrapper.find('.console-jump').exists()).toBe(true)
+    expect(wrapper.find('.console-jump').text()).toBe('1 nova')
+
+    consoleStore.append({ actor: 'David', kind: 'agent', text: 'Segunda linha.', at: '2026-10-19T09:05:00.000Z' })
+    await settle()
+
+    expect(consoleStore.state.unread).toBe(2)
+    expect(wrapper.find('.console-jump').text()).toBe('2 novas')
   })
 
   it('renders the time with the local locale format', async () => {
@@ -185,7 +206,7 @@ describe('ConsoleOutput', () => {
     expect(wrapper.find('.console-text b').exists()).toBe(false)
   })
 
-  it('offers every distinct actor plus All in the filter', async () => {
+  it('offers "Todas" first and then every distinct actor in the filter', async () => {
     appendMessages()
     consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'Outra.', at: '2026-10-19T09:10:00.000Z' })
 
@@ -193,7 +214,7 @@ describe('ConsoleOutput', () => {
     await nextTick()
 
     const labels = wrapper.findAll('.console-filter option').map((option) => option.text())
-    expect(labels).toEqual(['All', 'Vivy', 'David'])
+    expect(labels).toEqual(['Todas', 'Vivy', 'David'])
   })
 
   it('filters only the rendering and keeps every message in the store', async () => {

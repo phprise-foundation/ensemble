@@ -40,9 +40,17 @@ function keyOf(issueId, comment) {
   return `${issueId}:${comment.author}@${stampOf(comment) ?? ''}#${fingerprint(textOf(comment))}`
 }
 
+function instantOf(value) {
+  if (value === undefined || value === null || value === '') {
+    return new Date().toISOString()
+  }
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString()
+}
+
 function nextMessage({ actor, kind, text, at }) {
   seq += 1
-  return { seq, at: at ?? new Date().toISOString(), actor, kind, text }
+  return { seq, at: instantOf(at), actor, kind, text }
 }
 
 function appendEntry(comment) {
@@ -153,6 +161,7 @@ export const consoleStore = {
     state.polling = true
     timer = window.setInterval(pollTick, POLL_INTERVAL_MS)
     document.addEventListener('visibilitychange', pollTick)
+    pollTick()
   },
 
   stop() {

@@ -18,6 +18,10 @@ Funcionalidade: Grade inferior de console (output + input)
   - pollOnce é idempotente: reler as mesmas issues não duplica mensagem.
   - O polling roda enquanto a grade está ABERTA: start() ao abrir e stop() ao
     fechar (amarrado a consoleOpen pela fundação), pausa com document.hidden.
+  - start() dispara o poll imediato (KAN-124): o primeiro lote não espera 5s.
+  - Todo "at" da mensagem é ISO 8601 UTC (Date#toISOString), inclusive o do
+    presenter PHP com created_at "+00:00"; o cru só entra na chave de dedupe.
+  - Rótulos do console em pt-BR (docs/KAN-18-guide.md, contrato de nomes).
   - Catálogo fechado: /status, /list, /help, /clear; desconhecido → 'error'.
   - /clear é ação puramente local: zera mensagens e unread, zero chamadas HTTP.
   - busy enquanto um comando executa: reenvio no mesmo instante é ignorado.
@@ -27,14 +31,18 @@ Funcionalidade: Grade inferior de console (output + input)
   - A11y: role="log" + aria-live="polite" no output; botão com
     aria-label="Alternar console", aria-expanded e aria-controls="app-console";
     handle focável com aria-label="Redimensionar console"; form com
-    aria-label="Console input".
+    aria-label="Entrada do console" e placeholder "Digite um comando… (/help)";
+    botão "Enviar"; vazio "Nenhuma mensagem"; filtro "Filtrar por ator" com
+    opção "Todas"; atividade "Nova saída"/"Ocioso"; pílula "N nova(s)".
 
   Mapeamento das suítes (quem mede o quê), pela ordem dos cenários abaixo:
   - Integração (node:test, tests/console.test.mjs): 3, 8, 9, 10.
   - Componentes (vitest): 1, 2, 4, 5, 7, 11 — abrir/fechar com toggle e
     atalho (inerte no mobile), indicador de atividade, clamp de altura,
-    filtro do output, autoscroll travando e pílula limpando unread.
+    filtro do output, autoscroll travando e pílula limpando unread; pílula
+    singular "1 nova" e plural "N novas" pelo mesmo spec.
   - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
+  - Rótulos pt-BR do output e do input: componentes (vitest).
   - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
     marcados como "E2E" abaixo, prova na interface em execução, não no source.
 
@@ -82,12 +90,21 @@ Funcionalidade: Grade inferior de console (output + input)
     Quando clica na pílula
     Então o log volta ao fundo e o unread zera
 
+  Cenário: a pílula singular da volta ao fim
+    Dado o log ancorado no fundo e o usuário rolou para cima, fora da âncora
+    Quando exatamente uma mensagem nova chega
+    Então a pílula .console-jump mostra "1 nova"
+    Quando mais uma mensagem chega antes de voltar ao fundo
+    Então a pílula passa a mostrar "2 novas"
+
   Cenário: start e stop acompanham a grade aberta e fechada
     Dado a grade aberta e o consoleStore em polling
     Quando a fundação fecha a grade
     Então stop() encerra o ciclo e state.polling fica "false"
     Quando a fundação abre a grade de novo
-    Então start() retoma o ciclo e um pollOnce imediato preenche o log
+    Então start() retoma o ciclo, dispara o poll imediato e o log abre
+    preenchido com os comentários de agentes, sem duplicar na releitura
+    E com document.hidden nenhum poll é disparado por start()
 
   Cenário: indicador de atividade sinaliza chegada
     Dado o painel de output visível

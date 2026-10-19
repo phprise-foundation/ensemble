@@ -65,8 +65,12 @@ componentes.
 | Handle de resize | `.console-resize` (borda superior; foco + setas ↑/↓ = ±16px) |
 | Log de output | `<div class="console-output" role="log" aria-live="polite">` |
 | Linha de mensagem | `.console-line` + `.console-line.{agent,system,command,error}` |
-| Entrada de comando | `<form class="console-input">` com `aria-label="Console input"` e placeholder `Type a command… (/help)` |
-| Pílula "voltar ao fim" | `.console-jump` (conta `unread`; some ao aterrissar no fundo) |
+| Entrada de comando | `<form class="console-input">` com `aria-label="Entrada do console"` e placeholder `Digite um comando… (/help)` |
+| Botão de envio | `.console-input-send` com texto `Enviar` |
+| Vazio no output | `.console-empty` com texto `Nenhuma mensagem` |
+| Filtro por ator | `.console-filter` com `aria-label="Filtrar por ator"`; opção fixa `Todas` |
+| Indicador de atividade | `.console-activity` com `aria-label` `Nova saída` / `Ocioso` |
+| Pílula "voltar ao fim" | `.console-jump` (`N nova` / `N novas` conforme a contagem `unread`; some ao aterrissar no fundo) |
 | Mensagem (forma) | `{ seq, at, actor, kind: 'agent'|'system'|'command'|'error', text }` |
 
 ## Adapter de comentários: dois payloads, uma chave
@@ -92,9 +96,12 @@ Regras da store (ponto único de adaptação):
   dedupe entre polls. Assim uma releitura do mesmo payload não duplica e o
   lote não perde linhas; a distinção fina só seria exata com `id` no
   presenter — decisão de backend fora da KAN-64.
-- **`at` da mensagem:** `created_at ?? at`; sem nenhum dos dois, o instante do
-  append (ISO). Um comentário sem `id` e sem instante só é distinguível pelo
-  texto, que faz parte da chave.
+- **`at` da mensagem:** `created_at ?? at` **normalizado para ISO 8601 UTC**
+  (`Date#toISOString`, ex.: `2026-10-19T10:00:00.000Z`) dentro de `append()`,
+  inclusive o `+00:00` do presenter PHP; o `at` do comentário só é usado para a
+  chave de dedupe, nunca cru na mensagem. Sem nenhum dos dois, o instante do
+  append (ISO). Valor não interpretável é preservado como texto. Um comentário
+  sem `id` e sem instante só é distinguível pelo texto, que faz parte da chave.
 - Comentários de `user` não entram.
 
 ## Adapter de issues nos comandos
@@ -109,7 +116,9 @@ quando o `GET /api/issues` real substituir o fake — a store não muda.
 
 - `state.messages` (append-only), `state.busy`, `state.unread`, `state.polling`.
 - `append({ actor, kind, text, at? })` → atribui `seq` monotônico e `at`
-  explícito (ou o instante do append); incrementa `unread`.
+  normalizado para ISO 8601 UTC (`Date#toISOString`): o `at` explícito (inclusive
+  o `+00:00` do presenter PHP) ou, sem ele, o instante do append; incrementa
+  `unread`.
 - `clearUnread()`, `clear()` (zera mensagens e `unread`).
 - `start()` / `stop()` → ciclo do polling (5s; pausa com `document.hidden`). O
   ciclo fica **amarrado à grade aberta/fechada pela fundação**: a grade só é
@@ -118,9 +127,10 @@ quando o `GET /api/issues` real substituir o fake — a store não muda.
   `onUnmounted`. Fechar a grade desmonta o componente e para o polling; um
   `v-show` manteria o ciclo rodando com a grade fechada, e por isso não é
   usado. `pollOnce()` e `pollTick()` exportados para testes.
-- **`pollOnce()` após `start()`:** o consumidor chama um poll imediato logo
-  depois de `start()`, para a grade não abrir vazia até o primeiro tick. Na
-  `main` de `v0.15.2` esse disparo ainda não existe; a correção está na KAN-124.
+- **`pollOnce()` após `start()`:** `start()` marca `state.polling`, agenda o
+  intervalo e dispara `pollTick()` na hora (respeitando `document.hidden`), para
+  a grade não abrir vazia até o primeiro tick; o dedupe cobre reaberturas
+  (KAN-124).
 - **`CATALOG`**: exportado por `commands.js` (`/status`, `/list`, `/clear`,
   `/help`); a mesma lista que o `/help` imprime.
 - **`pollOnce()`**: chamadas concorrentes compartilham a mesma requisição;
@@ -210,7 +220,7 @@ a crítica de aceitação.
 - **Autoscroll:** ancorado no fundo quando o usuário está a ≤24px dele; rolar
   para cima trava; a pílula `.console-jump` com `unread` volta ao fundo e chama
   `clearUnread()`.
-- **Filtro por ator:** `<select>` com `All` + atores distintos presentes nas
+- **Filtro por ator:** `<select>` com `Todas` + atores distintos presentes nas
   mensagens; filtro é só de render, nunca apaga mensagens.
 - **Segurança:** renderizar `text` como texto (interpolação Vue), nunca
   `v-html`; nada de shell, `eval` ou interpolação de comando.

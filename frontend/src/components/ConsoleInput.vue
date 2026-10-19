@@ -60,16 +60,16 @@ function onKeydown(event) {
 </script>
 
 <template>
-  <form class="console-input" aria-label="Console input" @submit.prevent="submit">
+  <form class="console-input" aria-label="Entrada do console" @submit.prevent="submit">
     <span class="console-prompt" aria-hidden="true">$</span>
     <input
       v-model="draft"
       class="console-input-field"
       type="text"
-      placeholder="Type a command… (/help)"
+      placeholder="Digite um comando… (/help)"
       :disabled="busy"
       @keydown="onKeydown"
     />
-    <button class="console-input-send" type="submit" :disabled="busy">Send</button>
+    <button class="console-input-send" type="submit" :disabled="busy">Enviar</button>
   </form>
 </template>

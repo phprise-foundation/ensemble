@@ -112,6 +112,16 @@ test('append respeita o "at" explícito quando recebido', () => {
   assert.equal(lastMessage().at, '2026-10-19T09:00:00.000Z')
 })
 
+test('todo "at" sai normalizado em ISO, inclusive o do presenter PHP', () => {
+  consoleStore.append({ actor: 'Ian', kind: 'agent', text: 'com fuso', at: '2026-10-19T09:00:00+00:00' })
+  consoleStore.append({ actor: 'Ian', kind: 'agent', text: 'sem fuso', at: '2026-10-19T09:00:00' })
+  consoleStore.append({ actor: 'Ian', kind: 'agent', text: 'sem instante' })
+
+  for (const message of consoleStore.state.messages) {
+    assert.equal(new Date(message.at).toISOString(), message.at)
+  }
+})
+
 test('payload do fake backend com id: idempotente, novos entram, user fica fora', async () => {
   issuesPayload = fakeBackendPayload(COMMENT_BY_ID)
 
@@ -121,6 +131,7 @@ test('payload do fake backend com id: idempotente, novos entram, user fica fora'
   assert.equal(fetchCalls, 2)
   assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
   assert.equal(consoleStore.state.messages[0].at, '2026-10-19T10:00:00.000Z')
+  assert.ok(consoleStore.state.messages.every((message) => new Date(message.at).toISOString() === message.at))
   assert.ok(consoleStore.state.messages.every((message) => message.kind === 'agent'))
 
   issuesPayload[0].comments.push({ id: 'c5', author: 'Ian', body: 'nova', at: '2026-10-19T11:00:00.000Z' })
@@ -150,7 +161,8 @@ test('payload do presenter PHP (created_at, mesmo segundo): nada se perde, nada 
   await consoleStore.pollOnce()
 
   assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
-  assert.equal(consoleStore.state.messages[0].at, '2026-10-19T10:00:00+00:00')
+  assert.equal(consoleStore.state.messages[0].at, '2026-10-19T10:00:00.000Z')
+  assert.ok(consoleStore.state.messages.every((message) => new Date(message.at).toISOString() === message.at))
 
   issuesPayload[0].comments.push({ author: 'Ian', body: 'nova', created_at: '2026-10-19T11:00:00+00:00' })
   await consoleStore.pollOnce()
@@ -304,6 +316,71 @@ test('busy é observável durante o comando e impede reenvio', async () => {
 
   const echos = consoleStore.state.messages.filter((message) => message.kind === 'command')
   assert.equal(echos.length, 1)
+})
+
+test('start() faz o poll imediato: a grade abre preenchida antes do primeiro tick', async () => {
+  issuesPayload = presenterPayload()
+  const intervals = []
+  try {
+    globalThis.window = {
+      setInterval: (callback, interval) => {
+        intervals.push({ callback, interval })
+        return 1
+      },
+      clearInterval: () => {},
+    }
+    globalThis.document = { hidden: false, addEventListener: () => {}, removeEventListener: () => {} }
+
+    consoleStore.start()
+    await consoleStore.pollOnce()
+
+    assert.equal(fetchCalls, 1)
+    assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
+    assert.equal(intervals.length, 1)
+  } finally {
+    consoleStore.stop()
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
+test('dois start()/stop() seguidos releem o lote sem duplicar', async () => {
+  issuesPayload = presenterPayload()
+  try {
+    globalThis.window = { setInterval: () => 1, clearInterval: () => {} }
+    globalThis.document = { hidden: false, addEventListener: () => {}, removeEventListener: () => {} }
+
+    consoleStore.start()
+    await consoleStore.pollOnce()
+    consoleStore.stop()
+    consoleStore.start()
+    await consoleStore.pollOnce()
+
+    assert.equal(fetchCalls, 2)
+    assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
+  } finally {
+    consoleStore.stop()
+    delete globalThis.window
+    delete globalThis.document
+  }
+})
+
+test('start() não dispara poll com a aba oculta', async () => {
+  issuesPayload = presenterPayload()
+  try {
+    globalThis.window = { setInterval: () => 1, clearInterval: () => {} }
+    globalThis.document = { hidden: true, addEventListener: () => {}, removeEventListener: () => {} }
+
+    consoleStore.start()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    assert.equal(fetchCalls, 0)
+    assert.deepEqual(texts(), [])
+  } finally {
+    consoleStore.stop()
+    delete globalThis.window
+    delete globalThis.document
+  }
 })
 
 test('polling com a rede fora não vaza rejeição solta entre ciclos', async () => {

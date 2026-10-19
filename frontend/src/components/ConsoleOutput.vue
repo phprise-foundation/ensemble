@@ -88,14 +88,14 @@ watch(actor, keepAtBottom, { flush: 'post' })
 <template>
   <div class="console-panel">
     <div class="console-toolbar">
-      <span class="console-activity" :class="{ active }" :aria-label="active ? 'New output' : 'Idle'"></span>
-      <select v-model="actor" class="console-filter" aria-label="Filter by actor">
-        <option value="all">All</option>
+      <span class="console-activity" :class="{ active }" :aria-label="active ? 'Nova saída' : 'Ocioso'"></span>
+      <select v-model="actor" class="console-filter" aria-label="Filtrar por ator">
+        <option value="all">Todas</option>
         <option v-for="name in actors" :key="name" :value="name">{{ name }}</option>
       </select>
     </div>
     <div ref="scroller" class="console-output" role="log" aria-live="polite" @scroll="anchorHere">
-      <p v-if="visible.length === 0" class="console-empty">No messages</p>
+      <p v-if="visible.length === 0" class="console-empty">Nenhuma mensagem</p>
       <div v-for="message in visible" :key="message.seq" class="console-line" :class="message.kind">
         <span class="console-time">{{ timeOf(message) }}</span>
         <span class="console-actor">{{ message.actor }}</span>
@@ -108,7 +108,7 @@ watch(actor, keepAtBottom, { flush: 'post' })
       type="button"
       @click="toBottom"
     >
-      {{ unread }} new
+      {{ unread }} nova{{ unread === 1 ? '' : 's' }}
     </button>
   </div>
 </template>
