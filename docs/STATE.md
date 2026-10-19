@@ -186,6 +186,21 @@
     server é `--strictPort` e colide na 5173. Na revisão do Tech Lead o verde
     foi reproduzido a partir de dentro de `frontend/`: `node --test` 3/3,
     vitest 32/32 e E2E 14/14. PR #64, release `v0.11.9`.
+  - **Tema escuro alinhado ao VSCode Dark+ (KAN-8, entrega KAN-61):** os nove
+    tokens base do tema escuro passaram aos valores exatos da referência
+    (`--bg #1e1e1e`, `--surface #252526`, `--surface-2 #2d2d2d`,
+    `--surface-3 #333333`, `--border #454545`, `--text #d4d4d4`,
+    `--muted #858585`, `--accent #3794ff`, `--accent-contrast #ffffff`);
+    `--selection #264f78`, `--button-bg #0e639c` e os seis `--syntax-*` nascem
+    no mesmo bloco escuro, os de syntax em reserva. A `::selection` é escopada
+    ao escuro, `.leaf.router-link-active` usa o token de seleção (segundo uso,
+    ≈5,73:1) e `.button` usa `var(--button-bg, var(--accent))`, cujo fallback
+    mantém o tema claro congelado (branco sobre `#0e639c`, ≈6,40:1). O arnés
+    `frontend/tests/dark-theme.test.mjs` passou a ler `main.scss`, eliminando o
+    ENOENT herdado da KAN-12. Tema claro, tokens de estado, `seed.js` e views
+    intocados; commit único Conventional e fatia atômica. Barra reexecutada no
+    merge — a árvore de `main` é idêntica à de `a18ebcb`: dark-theme 8/8,
+    vitest 32/32, build ok. PR #65, release `v0.12.0`.
   - **Drawer test robustness debts (KAN-30):** the generic toggle assert in
     `frontend/tests/mobile-drawer.test.mjs` was tightened to the specific
     handler `@click="sidebarOpen = true"`, aligned with the scrim assert's

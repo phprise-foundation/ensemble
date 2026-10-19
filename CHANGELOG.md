@@ -7,6 +7,26 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.12.0 — 2026-10-19
+
+### Added
+
+- **KAN-8** — tema escuro alinhado à paleta do VSCode Dark+ no frontend:
+  9 tokens base substituídos pelos valores exatos do Dark+
+  (`--bg`, `--surface`, `--surface-2`, `--surface-3`, `--border`, `--text`,
+  `--muted`, `--accent`, `--accent-contrast`), com tokens novos
+  `--selection`/`--button-bg` declarados no mesmo bloco escuro e 6 tokens
+  `--syntax-*` na reserva para futura coloração de blocos de código. A
+  `::selection` é escopada ao tema escuro, o item ativo do quadro
+  (`.leaf.router-link-active`) usa o token de seleção (segundo uso do token,
+  ≈5,73:1) e o botão primário usa `--button-bg` com fallback para `--accent`
+  (branco sobre `#0e639c`, ≈6,40:1, ADR David). Tema claro, tokens
+  `--danger`/`--warn`/`--ok`, `seed.js` e views intocados. O arnés
+  `frontend/tests/dark-theme.test.mjs` agora lê `main.scss`, eliminando o
+  ENOENT herdado da KAN-12. Barra de qualidade verificada de forma
+  independente em revisão (worktree do commit a18ebcb): `node --test` 60/60,
+  vitest 32/32, build ok. Entrega em fatia atômica por PR, release `v0.12.0`.
+
 ## v0.11.9 — 2026-10-19
 
 ### Fixed
