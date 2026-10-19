@@ -486,6 +486,22 @@ textarea {
   margin-left: auto;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.topbar h1 {
+  flex: 0 1 auto;
+}
+
+.topbar-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .menu-toggle {
   display: none;
 }
@@ -494,8 +510,24 @@ textarea {
   display: none;
 }
 
+.console-toggle {
+  display: none;
+}
+
+.copilot-toggle {
+  display: none;
+}
+
 @media (min-width: $sidebar-breakpoint + 1) {
   .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .console-toggle {
+    display: inline-flex;
+  }
+
+  .copilot-toggle {
     display: inline-flex;
   }
 }
