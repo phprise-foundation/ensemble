@@ -35,6 +35,20 @@ describe('frontend smoke', () => {
     })
   })
 
+  it('opens the console grid with Ctrl+J and keeps it closed by default', () => {
+    cy.viewport(1280, 800)
+    cy.visit('/')
+    cy.get('#app-console').should('not.exist')
+    cy.get('.console-toggle').should('have.attr', 'aria-expanded', 'false')
+    cy.get('body').type('{ctrl}j')
+    cy.get('#app-console').should('be.visible')
+    cy.get('#app-console').should('have.css', 'height').and('not.eq', '0px')
+    cy.get('.console-toggle').should('have.attr', 'aria-expanded', 'true')
+    cy.get('body').type('{ctrl}j')
+    cy.get('#app-console').should('not.exist')
+    expect(errors, 'runtime errors').to.deep.equal([])
+  })
+
   it('toggles the theme on the top bar control', () => {
     cy.visit('/')
     cy.get('html').should('have.attr', 'data-theme', 'dark')

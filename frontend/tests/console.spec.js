@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
-import AppConsole from '../src/components/AppConsole.vue'
 import ConsoleOutput from '../src/components/ConsoleOutput.vue'
 import { consoleStore } from '../src/store/console.js'
+import { resetConsoleHeight } from '../src/store/consoleHeight.js'
 
 vi.mock('../src/store/board.js', () => ({
   boardStore: {
@@ -92,13 +92,17 @@ function pressCtrlJ() {
 }
 
 function heightOf(wrapper) {
-  return wrapper.find('#app-console').attributes('style')
+  return wrapper.element.style.getPropertyValue('--console-height')
 }
 
-function mountConsole() {
-  return mount(AppConsole, {
+function mountConsoleInApp() {
+  setupMatchMedia(false)
+  return mount(App, {
     global: {
-      stubs: { ConsoleInput: true, ConsoleOutput: true },
+      stubs: {
+        ConsoleInput: true,
+        ConsoleOutput: true,
+      },
     },
     attachTo: document.body,
   })
@@ -112,6 +116,7 @@ function appendMessages() {
 
 beforeEach(() => {
   consoleStore.clear()
+  resetConsoleHeight()
 })
 
 describe('App console grid', () => {
@@ -175,52 +180,97 @@ describe('App console grid', () => {
 })
 
 describe('AppConsole resizing', () => {
+  async function openConsole() {
+    const app = mountConsoleInApp()
+    await nextTick()
+    await nextTick()
+    await app.find('.console-toggle').trigger('click')
+    await nextTick()
+    const panel = app.find('#app-console')
+    return { app, panel, handle: panel.find('.console-resize') }
+  }
+
   it('starts at 240px and grows or shrinks by 16px with the arrow keys', async () => {
-    const wrapper = mountConsole()
+    const { app, panel, handle } = await openConsole()
 
-    expect(heightOf(wrapper)).toContain(`--console-height: ${DEFAULT_HEIGHT}px`)
+    expect(heightOf(panel)).toBe(`${DEFAULT_HEIGHT}px`)
 
-    const handle = wrapper.find('.console-resize')
     await handle.trigger('keydown', { key: 'ArrowUp' })
-    expect(heightOf(wrapper)).toContain(`--console-height: ${DEFAULT_HEIGHT + STEP}px`)
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT + STEP}px`)
 
     await handle.trigger('keydown', { key: 'ArrowDown' })
     await handle.trigger('keydown', { key: 'ArrowDown' })
-    expect(heightOf(wrapper)).toContain(`--console-height: ${DEFAULT_HEIGHT - STEP}px`)
-    wrapper.unmount()
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT - STEP}px`)
+    app.unmount()
   })
 
   it('clamps the height at the 120px minimum', async () => {
-    const wrapper = mountConsole()
-    const handle = wrapper.find('.console-resize')
+    const { app, handle } = await openConsole()
 
     for (let index = 0; index < 20; index += 1) {
       await handle.trigger('keydown', { key: 'ArrowDown' })
     }
+    await nextTick()
 
-    expect(heightOf(wrapper)).toContain(`--console-height: ${MIN_HEIGHT}px`)
-    wrapper.unmount()
+    expect(heightOf(app.find('#app-console'))).toBe(`${MIN_HEIGHT}px`)
+    app.unmount()
   })
 
   it('restores 240px on double click over the handle', async () => {
-    const wrapper = mountConsole()
-    const handle = wrapper.find('.console-resize')
+    const { app, handle } = await openConsole()
 
     await handle.trigger('keydown', { key: 'ArrowUp' })
-    expect(heightOf(wrapper)).toContain(`--console-height: ${DEFAULT_HEIGHT + STEP}px`)
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT + STEP}px`)
 
     await handle.trigger('dblclick')
-    expect(heightOf(wrapper)).toContain(`--console-height: ${DEFAULT_HEIGHT}px`)
-    wrapper.unmount()
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT}px`)
+    app.unmount()
   })
 
-  it('emits close from the close button', async () => {
-    const wrapper = mountConsole()
+  it('closes from the header button of the grid', async () => {
+    const app = mountConsoleInApp()
+    await nextTick()
+    await nextTick()
+    await app.find('.console-toggle').trigger('click')
+    await nextTick()
 
-    await wrapper.find('button[aria-label="Close console"]').trigger('click')
+    await app.find('button[aria-label="Fechar console"]').trigger('click')
+    await nextTick()
 
-    expect(wrapper.emitted('close')).toHaveLength(1)
-    wrapper.unmount()
+    expect(app.find('#app-console').exists()).toBe(false)
+    expect(app.find('.console-toggle').attributes('aria-expanded')).toBe('false')
+    app.unmount()
+  })
+
+  it('leaves the height to the app so the grid survives closing and reopening', async () => {
+    const app = mountApp(false)
+    await nextTick()
+
+    expect(app.find('.console-toggle').attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT}px`)
+
+    await app.find('.console-toggle').trigger('click')
+    await nextTick()
+
+    const panel = app.find('#app-console')
+    expect(panel.exists()).toBe(true)
+    expect(panel.attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT}px`)
+
+    await panel.find('.console-resize').trigger('keydown', { key: 'ArrowUp' })
+    await nextTick()
+
+    expect(app.find('#app-console').attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT + STEP}px`)
+
+    await app.find('.console-toggle').trigger('click')
+    await nextTick()
+    await app.find('.console-toggle').trigger('click')
+    await nextTick()
+
+    expect(app.find('#app-console').attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT + STEP}px`)
+    app.unmount()
   })
 })
 

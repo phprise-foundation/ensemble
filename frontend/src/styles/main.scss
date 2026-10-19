@@ -1228,8 +1228,8 @@ textarea {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0 0 var(--console-height, 240px);
-  height: var(--console-height, 240px);
+  flex: 0 0 clamp(120px, var(--console-height, 240px), 60vh);
+  height: clamp(120px, var(--console-height, 240px), 60vh);
   min-height: 120px;
   background: var(--surface);
   color: var(--text);
@@ -1299,6 +1299,25 @@ textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 1px 4px;
+}
+
+.console-header .icon-btn {
+  font: inherit;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+    outline: none;
+  }
+}
+
+.console-title {
+  font-weight: 600;
 }
 
 .console-output {

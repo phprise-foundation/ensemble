@@ -5,9 +5,10 @@ import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
-import AppConsole from './components/AppConsole.vue'
 import AppCopilot from './components/AppCopilot.vue'
+import AppConsole from './components/AppConsole.vue'
 import { boardStore } from './store/board.js'
+import { consoleHeightStyle } from './store/consoleHeight.js'
 import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
@@ -17,8 +18,8 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const menuToggle = ref(null)
 const isMobile = ref(false)
-const consoleOpen = ref(false)
 const copilotOpen = ref(true)
+const consoleOpen = ref(false)
 let mediaQuery = null
 
 function handleKeyboardShortcut(event) {
@@ -30,13 +31,14 @@ function handleKeyboardShortcut(event) {
     copilotOpen.value = !copilotOpen.value
     return
   }
-  if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
-    event.preventDefault()
-    sidebarCollapsed.value = !sidebarCollapsed.value
-  }
   if (event.key === 'j' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     consoleOpen.value = !consoleOpen.value
+    return
+  }
+  if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    sidebarCollapsed.value = !sidebarCollapsed.value
   }
 }
 
@@ -111,17 +113,6 @@ function toggleSimulation() {
         </button>
         <button
           v-if="!isMobile"
-          class="icon-btn console-toggle"
-          :title="consoleOpen ? 'Hide console' : 'Show console'"
-          aria-label="Toggle console"
-          :aria-expanded="consoleOpen"
-          aria-controls="app-console"
-          @click="consoleOpen = !consoleOpen"
-        >
-          <AppIcon name="console" />
-        </button>
-        <button
-          v-if="!isMobile"
           class="icon-btn copilot-toggle"
           :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
           aria-label="Toggle copilot"
@@ -130,6 +121,18 @@ function toggleSimulation() {
           @click="copilotOpen = !copilotOpen"
         >
           <AppIcon name="copilot" />
+        </button>
+        <button
+          v-if="!isMobile"
+          class="icon-btn console-toggle"
+          :style="consoleHeightStyle"
+          :title="consoleOpen ? 'Ocultar console' : 'Mostrar console'"
+          aria-label="Alternar console"
+          :aria-expanded="consoleOpen"
+          aria-controls="app-console"
+          @click="consoleOpen = !consoleOpen"
+        >
+          <AppIcon name="console" />
         </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>
@@ -150,10 +153,10 @@ function toggleSimulation() {
       <main class="main">
         <RouterView />
       </main>
-      <AppConsole v-if="!isMobile && consoleOpen" @close="consoleOpen = false" />
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />
+    <AppConsole v-if="!isMobile && consoleOpen" :style="consoleHeightStyle" @close="consoleOpen = false" />
   </div>
   <div class="session-ended" v-else>
     <div class="session-ended-box">
