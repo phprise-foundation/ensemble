@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
+import ConsoleInput from '../src/components/ConsoleInput.vue'
 import ConsoleOutput from '../src/components/ConsoleOutput.vue'
 import { consoleStore } from '../src/store/console.js'
 import { DEFAULT_CONSOLE_HEIGHT } from '../src/store/consoleHeight.js'
@@ -117,7 +118,14 @@ function appendMessages() {
   consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'Segunda linha da Vivy.', at: '2026-10-19T09:10:00.000Z' })
 }
 
+async function settle() {
+  for (let round = 0; round < 5; round += 1) {
+    await nextTick()
+  }
+}
+
 beforeEach(() => {
+  consoleStore.stop()
   consoleStore.clear()
   fetchIssues.mockReset()
   fetchIssues.mockResolvedValue([])
@@ -147,6 +155,8 @@ describe('App console grid', () => {
     expect(wrapper.find('.console-toggle').attributes('aria-expanded')).toBe('true')
 
     await wrapper.find('.console-toggle').trigger('click')
+    await consoleStore.pollOnce()
+    fetchIssues.mockClear()
     await nextTick()
 
     expect(wrapper.find('#app-console').exists()).toBe(false)
@@ -183,6 +193,27 @@ describe('App console grid', () => {
     await nextTick()
 
     expect(wrapper.find('#app-console').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('labels the log in pt-BR and pluralizes the unread pill', async () => {
+    const wrapper = mount(ConsoleOutput, { attachTo: document.body })
+    await nextTick()
+
+    expect(wrapper.find('form.console-input').exists()).toBe(false)
+    expect(wrapper.find('.console-empty').text()).toBe('Nenhuma mensagem')
+    expect(wrapper.find('.console-filter').attributes('aria-label')).toBe('Filtrar por ator')
+    expect(wrapper.find('.console-filter option').text()).toBe('Todas')
+    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('Ocioso')
+
+    consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'uma' })
+    await nextTick()
+    await nextTick()
+    expect(wrapper.findAll('.console-filter option').map((node) => node.text())).toContain('Todas')
+
+    consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'duas' })
+    await nextTick()
+    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('Nova saída')
     wrapper.unmount()
   })
 })
@@ -344,6 +375,34 @@ describe('console polling', () => {
   })
 })
 
+describe('console reopen', () => {
+  it('an immediate poll after reopening fills the log with the agent comments', async () => {
+    fetchIssues.mockResolvedValue([
+      { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c1', author: 'Vivy', body: 'revisão pronta', at: '2026-10-19T10:00:00.000Z' }] },
+    ])
+    const wrapper = mountApp()
+
+    await wrapper.find('.console-toggle').trigger('click')
+    await consoleStore.pollOnce()
+    fetchIssues.mockClear()
+
+    pressCtrlJ()
+    await nextTick()
+    expect(wrapper.find('#app-console').exists()).toBe(false)
+
+    pressCtrlJ()
+    await settle()
+    await consoleStore.pollOnce()
+    await settle()
+
+    expect(wrapper.find('#app-console').exists()).toBe(true)
+    expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(wrapper.findAll('.console-line').map((node) => node.find('.console-text').text())).toEqual(['revisão pronta'])
+    consoleStore.stop()
+    wrapper.unmount()
+  })
+})
+
 describe('ConsoleOutput', () => {
   it('filters lines by the selected actor while the store keeps every message', async () => {
     appendMessages()
@@ -390,12 +449,11 @@ describe('ConsoleOutput', () => {
     expect(wrapper.find('.console-jump').exists()).toBe(false)
 
     appendMessages()
-    await nextTick()
-    await nextTick()
+    await settle()
 
     const jump = wrapper.find('.console-jump')
     expect(jump.exists()).toBe(true)
-    expect(jump.text()).toBe('3 new')
+    expect(jump.text()).toBe('3 novas')
     expect(consoleStore.state.unread).toBe(3)
 
     await jump.trigger('click')
@@ -403,6 +461,18 @@ describe('ConsoleOutput', () => {
     expect(consoleStore.state.unread).toBe(0)
     await nextTick()
     expect(wrapper.find('.console-jump').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe('ConsoleInput', () => {
+  it('labels the command bar in pt-BR', async () => {
+    const wrapper = mount(ConsoleInput)
+    await nextTick()
+
+    expect(wrapper.find('form.console-input').attributes('aria-label')).toBe('Entrada do console')
+    expect(wrapper.find('.console-input-field').attributes('placeholder')).toBe('Digite um comando… (/help)')
+    expect(wrapper.find('.console-input-send').text()).toBe('Enviar')
     wrapper.unmount()
   })
 })
