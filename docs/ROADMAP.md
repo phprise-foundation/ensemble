@@ -83,8 +83,9 @@ marking what is still a prototype.
    comandos (KAN-64, release `v0.15.2`) e o painel de output com autoscroll
    travável, filtro por ator e pílula de não lidas (KAN-66, release `v0.16.0`)
    e o painel de input com catálogo delegado, `busy` sem reenvio e histórico
-   efêmero (KAN-67, release `v0.17.0`); o poll imediato na abertura segue na
-   KAN-124 e o chat real continua pendente.
+   efêmero (KAN-67, release `v0.17.0`); a KAN-18 fechou o MVE com os rótulos
+   pt-BR, o `at` em ISO 8601 UTC e o poll imediato na abertura (release
+   `v0.17.1`). O chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**

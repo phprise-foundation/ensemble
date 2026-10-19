@@ -369,6 +369,21 @@
   `frontend` verde na reexecução — a falha era flake do harness em
   `run-e2e-exit-code`, reproduzido 3/3 local. PR #88, release `v0.17.0`; os
   rótulos seguem o contrato do guia e a tradução pt-BR entra na KAN-18.
+- **Grade inferior — console em pt-BR, `at` ISO e poll imediato (KAN-18):** a
+  grade fecha o MVE com os rótulos do contrato aplicados em `ConsoleInput.vue`,
+  `ConsoleOutput.vue`, specs e E2E (`Entrada do console`,
+  `Digite um comando… (/help)`, `Enviar`, `Nenhuma mensagem`,
+  `Filtrar por ator`, `Todas`, `Nova saída`/`Ocioso`, `N nova`/`N novas`). A
+  pílula singular ganhou caso próprio e falha sob a mutação `nova{{ 's' }}`;
+  `append()` normaliza qualquer `at` para ISO 8601 UTC, inclusive o `+00:00` do
+  presenter PHP, e `start()` dispara `pollTick()` imediato (KAN-124), com a
+  reabertura medida sem `pollOnce()` manual. No merge com a main `c562dcb`:
+  vitest `79/79`, `console.test.mjs` `21/21`, build verde e E2E `27/27` em porta
+  livre (`console.cy.js` `3/3`). PR #92, release `v0.17.1`. Dívidas registradas:
+  o harness de E2E ainda aceita um Vite alheio na 5173 — o guarda está na
+  KAN-68/PR #90, que precisa de rebase — e o teste genérico de rótulos em
+  `console.spec.js` anuncia pluralizar a pílula sem medi-la (coberta no spec
+  dedicado).
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
