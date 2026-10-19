@@ -100,6 +100,12 @@ export function createSeed() {
         flags: [], comments: [
           { id: 'c1', author: 'user', body: 'We lose users in the first step.', at: new Date(now - hours(26)).toISOString() },
         ],
+        history: [
+          { type: 'created', actor: 'user', at: new Date(now - hours(30)).toISOString(), summary: 'Issue created' },
+          { type: 'summary', actor: 'user', at: new Date(now - hours(29)).toISOString(), from: 'Onboarding', to: 'Frame the onboarding intent', summary: 'Summary narrowed to the onboarding intent' },
+          { type: 'description', actor: 'user', at: new Date(now - hours(28)).toISOString(), from: 'Smoother onboarding.', to: 'The client wants a smoother onboarding. Clarify value, risks and open questions.', summary: 'Description gained acceptance criteria' },
+          { type: 'assignee', actor: 'Vivy', at: new Date(now - hours(27)).toISOString(), from: null, to: 'vivy' },
+        ],
         createdAt: new Date(now - hours(26)).toISOString(), updatedAt: new Date(now - hours(26)).toISOString(),
       },
       {
@@ -107,6 +113,12 @@ export function createSeed() {
         description: 'After a successful login the app bounces back to the sign-in screen on slow networks.',
         statusId: 'in-development', assigneeId: 'kaio', reporter: 'user', worker: 'Kaio', order: 0,
         flags: [], comments: [],
+        history: [
+          { type: 'created', actor: 'user', at: new Date(now - hours(10)).toISOString(), summary: 'Issue created' },
+          { type: 'status', actor: 'user', at: new Date(now - hours(9)).toISOString(), from: 'to-develop', to: 'in-development', summary: 'Issue moved to In Development' },
+          { type: 'assignee', actor: 'Vivy', at: new Date(now - hours(5)).toISOString(), from: null, to: 'kaio' },
+          { type: 'status', actor: 'Kaio', at: new Date(now - hours(4)).toISOString(), from: 'in-review', to: 'in-development', summary: 'Issue returned to In Development for rework' },
+        ],
         createdAt: new Date(now - hours(10)).toISOString(), updatedAt: new Date(now - hours(2)).toISOString(),
       },
       {
@@ -114,6 +126,12 @@ export function createSeed() {
         description: 'Dark theme by default with a light option.',
         statusId: 'in-review', assigneeId: 'alan', reporter: 'user', worker: 'Alan', order: 0,
         flags: [], comments: [],
+        history: [
+          { type: 'created', actor: 'user', at: new Date(now - hours(8)).toISOString(), summary: 'Issue created' },
+          { type: 'status', actor: 'user', at: new Date(now - hours(7)).toISOString(), from: 'to-develop', to: 'in-development', summary: 'Issue moved to In Development' },
+          { type: 'status', actor: 'Kaio', at: new Date(now - hours(2)).toISOString(), from: 'in-development', to: 'in-review', summary: 'Issue moved to In Review' },
+          { type: 'assignee', actor: 'Alan', at: new Date(now - hours(1)).toISOString(), from: null, to: 'alan' },
+        ],
         createdAt: new Date(now - hours(8)).toISOString(), updatedAt: new Date(now - hours(1)).toISOString(),
       },
       {
@@ -121,6 +139,13 @@ export function createSeed() {
         description: 'Flag cards with more than 24h without activity.',
         statusId: 'in-test', assigneeId: 'mai', reporter: 'user', worker: '', order: 0,
         flags: [], comments: [],
+        history: [
+          { type: 'created', actor: 'user', at: new Date(now - hours(40)).toISOString(), summary: 'Issue created' },
+          { type: 'status', actor: 'user', at: new Date(now - hours(39)).toISOString(), from: 'to-develop', to: 'in-development', summary: 'Issue moved to In Development' },
+          { type: 'status', actor: 'Kaio', at: new Date(now - hours(35)).toISOString(), from: 'in-development', to: 'in-review', summary: 'Issue moved to In Review' },
+          { type: 'status', actor: 'Alan', at: new Date(now - hours(32)).toISOString(), from: 'in-review', to: 'in-test', summary: 'Issue moved to In Test' },
+          { type: 'assignee', actor: 'Alan', at: new Date(now - hours(31)).toISOString(), from: null, to: 'mai' },
+        ],
         createdAt: new Date(now - hours(40)).toISOString(), updatedAt: new Date(now - hours(30)).toISOString(),
       },
       {
@@ -128,13 +153,18 @@ export function createSeed() {
         description: 'Run tests on every pull request.',
         statusId: 'done', assigneeId: 'kaio', reporter: 'user', worker: '', order: 0,
         flags: [], comments: [],
+        history: [
+          { type: 'created', actor: 'user', at: new Date(now - hours(80)).toISOString(), summary: 'Issue created' },
+          { type: 'assignee', actor: 'Vivy', at: new Date(now - hours(75)).toISOString(), from: null, to: 'kaio' },
+          { type: 'status', actor: 'Kaio', at: new Date(now - hours(50)).toISOString(), from: 'in-test', to: 'done', summary: 'Issue moved to Done' },
+        ],
         createdAt: new Date(now - hours(80)).toISOString(), updatedAt: new Date(now - hours(50)).toISOString(),
       },
       {
         id: 'KANB-6', boardId: 'KANB', typeId: 'task', summary: 'Retire the legacy exporter',
         description: 'No longer needed.',
         statusId: 'canceled', assigneeId: null, reporter: 'user', worker: '', order: 0,
-        flags: [], comments: [],
+        flags: [], comments: [], history: [],
         createdAt: new Date(now - hours(120)).toISOString(), updatedAt: new Date(now - hours(100)).toISOString(),
       },
       {

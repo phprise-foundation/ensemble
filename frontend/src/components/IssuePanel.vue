@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
 import FieldLimit from './FieldLimit.vue'
+import IssueHistory from './IssueHistory.vue'
 import {
   COMMENT_LIMIT,
   DESCRIPTION_LIMIT,
@@ -13,6 +14,14 @@ import {
 
 const issue = boardStore.selectedIssue
 const comment = ref('')
+const activeTab = ref('comments')
+const commentsTab = ref(null)
+const historyTab = ref(null)
+
+const TABS = [
+  { id: 'comments', ref: commentsTab },
+  { id: 'history', ref: historyTab },
+]
 
 const editingDescription = ref(false)
 const descriptionDraft = ref('')
@@ -32,12 +41,44 @@ const targets = computed(() => (issue.value ? boardStore.userTargets(issue.value
 const overdue = computed(() => (issue.value ? boardStore.isOverdue(issue.value) : false))
 
 watch(() => issue.value?.id, () => {
+  activeTab.value = 'comments'
   editingDescription.value = false
   descriptionDraft.value = ''
   descriptionError.value = ''
 })
 watch(descriptionDraft, () => { descriptionError.value = '' })
 watch(comment, () => { commentError.value = '' })
+
+function selectTab(tabId) {
+  activeTab.value = tabId
+  const target = TABS.find((tab) => tab.id === tabId)?.ref
+  nextTick(() => target?.value?.focus())
+}
+
+function onTabKeydown(event) {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft' || event.key === 'Home' || event.key === 'End') {
+    event.preventDefault()
+  }
+  const offset = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+  if (offset !== 0) {
+    const current = TABS.findIndex((tab) => tab.id === activeTab.value)
+    const next = (current + offset + TABS.length) % TABS.length
+    selectTab(TABS[next].id)
+    return
+  }
+  if (event.key === 'Home') {
+    selectTab(TABS[0].id)
+    return
+  }
+  if (event.key === 'End') {
+    selectTab(TABS[TABS.length - 1].id)
+    return
+  }
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    event.target.click()
+  }
+}
 
 async function changeStatus(event) {
   const statusId = event.target.value
@@ -177,30 +218,83 @@ function format(value) {
       <p v-else class="body">{{ issue.description || 'No description' }}</p>
     </section>
 
-    <section class="panel-section">
-      <h3><AppIcon name="comment" size="16" /> Comments ({{ issue.comments.length }})</h3>
-      <div class="comment" v-for="entry in issue.comments" :key="entry.id">
-        <span class="comment-author">{{ entry.author }}</span>
-        <span class="muted small">{{ format(entry.at) }}</span>
-        <p>{{ entry.body }}</p>
+    <section class="panel-section panel-tabs">
+      <div class="tabs" role="tablist" aria-label="Issue details">
+        <button
+          id="issue-tab-comments"
+          ref="commentsTab"
+          type="button"
+          class="tab"
+          role="tab"
+          :aria-selected="activeTab === 'comments'"
+          aria-controls="issue-panel-comments"
+          :tabindex="activeTab === 'comments' ? 0 : -1"
+          @click="activeTab = 'comments'"
+          @keydown="onTabKeydown"
+        >
+          <AppIcon name="comment" size="16" />
+          Comments ({{ issue.comments.length }})
+        </button>
+        <button
+          id="issue-tab-history"
+          ref="historyTab"
+          type="button"
+          class="tab"
+          role="tab"
+          :aria-selected="activeTab === 'history'"
+          aria-controls="issue-panel-history"
+          :tabindex="activeTab === 'history' ? 0 : -1"
+          @click="activeTab = 'history'"
+          @keydown="onTabKeydown"
+        >
+          History
+          <span v-if="boardStore.simulated('history')" class="badge sim">
+            <span class="sim-dot sm"></span> Prototype
+          </span>
+        </button>
       </div>
-      <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
-      <textarea
-        v-model="comment"
-        rows="3"
-        placeholder="Write a comment..."
-        aria-label="Comment"
-        aria-describedby="issue-comment-limit"
-        :aria-invalid="commentOver || Boolean(commentError)"
-      ></textarea>
-      <FieldLimit
-        id="issue-comment-limit"
-        field="comment"
-        :text="commentPayload"
-        :limit="COMMENT_LIMIT"
-        :error="commentError"
-      />
-      <button class="button" :disabled="commentOver" @click="submitComment">Comment</button>
+
+      <div
+        id="issue-panel-comments"
+        role="tabpanel"
+        aria-labelledby="issue-tab-comments"
+        v-show="activeTab === 'comments'"
+      >
+        <div class="comments-body">
+          <div class="comment" v-for="entry in issue.comments" :key="entry.id">
+            <span class="comment-author">{{ entry.author }}</span>
+            <span class="muted small">{{ format(entry.at) }}</span>
+            <p>{{ entry.body }}</p>
+          </div>
+          <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
+          <textarea
+            v-model="comment"
+            rows="3"
+            placeholder="Write a comment..."
+            aria-label="Comment"
+            aria-describedby="issue-comment-limit"
+            :aria-invalid="commentOver || Boolean(commentError)"
+          ></textarea>
+          <FieldLimit
+            id="issue-comment-limit"
+            field="comment"
+            :text="commentPayload"
+            :limit="COMMENT_LIMIT"
+            :error="commentError"
+          />
+          <button class="button" :disabled="commentOver" @click="submitComment">Comment</button>
+        </div>
+      </div>
+
+      <div
+        id="issue-panel-history"
+        role="tabpanel"
+        aria-labelledby="issue-tab-history"
+        tabindex="0"
+        v-show="activeTab === 'history'"
+      >
+        <IssueHistory :events="issue.history || []" />
+      </div>
     </section>
   </aside>
 </template>
