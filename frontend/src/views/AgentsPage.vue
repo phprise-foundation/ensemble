@@ -96,8 +96,8 @@ onMounted(() => {
           <div class="muted small">{{ boardStore.profile(agent.profileId)?.name || 'No profile' }}</div>
           <p class="muted small">{{ agent.whoAmI }}</p>
           <div class="agent-actions">
-            <button class="icon-btn" title="Edit" @click="openEdit(agent)"><AppIcon name="profiles" size="15" /></button>
-            <button class="icon-btn" title="Delete" @click="remove(agent)"><AppIcon name="close" size="15" /></button>
+            <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(agent)"><AppIcon name="edit" size="14" /></button>
+            <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(agent)"><AppIcon name="delete" size="14" /></button>
           </div>
         </div>
       </article>
@@ -107,7 +107,7 @@ onMounted(() => {
       <div class="modal-card">
         <header class="modal-header">
           <h3>{{ draft.id ? 'Edit agent' : 'New agent' }}</h3>
-          <button class="icon-btn" @click="editing = false"><AppIcon name="close" /></button>
+          <button class="icon-btn" title="Close" aria-label="Close" @click="editing = false"><AppIcon name="close" size="20" /></button>
         </header>
 
         <div class="modal-body">
@@ -151,7 +151,7 @@ onMounted(() => {
 
         <footer class="modal-footer">
           <button class="button ghost" @click="editing = false">Cancel</button>
-          <button class="button" @click="save">Save</button>
+          <button class="button" @click="save"><AppIcon name="check" size="16" /> Save</button>
         </footer>
       </div>
     </div>

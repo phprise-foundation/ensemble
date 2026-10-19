@@ -94,6 +94,9 @@ marking what is still a prototype.
    (`frontend/src/navigation.js`) e, colapsada em desktop, um rail de 48px só
    com folhas navegáveis (KAN-83, release `v0.18.0`); Sources continuam fora do
    rail, e a adaptação de `sidebar-collapse.cy.js` segue na sub-task de testes.
+   O modelo ficou uniforme em `{ entity, leaves }` e o spec da fronteira de
+   1024px aceita o toggle ausente do DOM em modo mobile (KAN-87 prevalece;
+   KAN-91, release `v0.25.0`).
 3. ~~**Workflow admin** — statuses (type, colour, roles), transitions
    (user/agent/both) and issue types (custom fields, levels), scoped to a
    workflow.~~ **Done (prototype).**
@@ -111,7 +114,10 @@ marking what is still a prototype.
    while `aria-hidden`). O modal de nova task ficou em largura plena e nasceu
    validado: campos a 100%, seletor só com status `initial` e `POST /issues`
    rejeitando com 422 o que não for inicial (KAN-94, release `v0.19.0`; os
-   testes do contrato seguem nas subtarefas KAN-122/123).
+   testes do contrato seguem nas subtarefas KAN-122/123). O drawer da sidebar
+   em tela cheia abaixo de 768px (faixa parcial de 200px em 768–1024px
+   preservada) pousou com produção (KAN-95, PR #104) e suíte de testes
+   BDD/integração/E2E (KAN-96, PR #116, release `v0.24.1`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.

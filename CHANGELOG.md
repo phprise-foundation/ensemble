@@ -7,6 +7,40 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.25.0 — 2026-10-19
+
+### Fixed
+
+- **KAN-91** — modelo único de folhas uniformizado: `sidebarNavigation` passa a
+  devolver **todas** as seções como entries `{ entity, leaves }` (boards com
+  `leaves: [boardLeaf]` e Experiences via `experienceEntry()` com entity
+  sintético `{ id: 'experiences', name: 'Experiences' }`); `sectionsOf`
+  concatena `entry.leaves` de boards, workflows, teams e experiences numa
+  forma só e `railSections` mantém o filtro de grupos vazios;
+  `AppSidebar.vue` itera `entry.leaves` no grupo de boards (badge e
+  entry-actions preservados), conforme o contrato rastreado
+  `tests/sidebar-navigation.spec.js`. Na fronteira de 1024px, o spec do rail
+  passa a aceitar `button.sidebar-toggle` **ausente do DOM** em modo mobile
+  (`should('not.exist')`), alinhado à decisão KAN-87 (controle morto fora do
+  DOM); a asserção de 1025px continua exigindo o botão presente e clicável.
+  PRs #118/#119, release `v0.25.0`.
+
+
+## v0.24.1 — 2026-10-19
+
+### Added
+
+- **KAN-96** — suíte de testes do drawer em tela cheia (onda 2 da KAN-86;
+  mudança só de teste, sem código de produção): BDD em pt-BR
+  (`frontend/tests/mobile-drawer-fullscreen.feature`) cobrindo as faixas
+  767/768/1023/1024/1025, os quatro fechos, o lock do body, os alvos de 44px e
+  a ausência de overflow; contrato na fonte (`tests/mobile-drawer-fullscreen.test.mjs`,
+  token único `$mobile-breakpoint`/`--breakpoint-mobile`, media query estrita
+  `max-width: $mobile-breakpoint - 1`, `inset: 0`/`width: 100%`, sem `100vw`);
+  integração no `App.vue` (`tests/mobile-drawer-fullscreen.spec.js`) e E2E em
+  navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`). PR #116,
+  release `v0.24.1`.
+
 ## v0.19.0 — 2026-10-19
 
 ### Added

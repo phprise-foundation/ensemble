@@ -97,6 +97,22 @@
     single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
     `--breakpoint-sidebar` custom property for the drawer and the future icon
     bar.
+  - **Drawer em tela cheia abaixo de 768px (KAN-95 + KAN-96):** a produção
+    (PR #104) adicionou o token `$mobile-breakpoint: 768px`/`--breakpoint-mobile`
+    no SCSS, a media query estrita `max-width: $mobile-breakpoint - 1`, o painel
+    com `inset: 0; width: 100%` (sem `100vw`/`100vh`), o botão dedicado
+    `button.icon-btn.sidebar-close` (`v-if="narrow && isMobile"`, alvos de 44px
+    em `.nav-entry`/`.leaf`) e o scroll lock por classe `body.drawer-locked`
+    (`overflow: hidden`), controlado no `App.vue` (`isNarrow` via
+    `mediaQueryFor('--breakpoint-mobile', -1)`) e removido no unmount. A onda 2
+    (KAN-96, PR #116, release `v0.24.1`) provou o contrato: BDD em pt-BR
+    (`tests/mobile-drawer-fullscreen.feature`), contrato na fonte
+    (`tests/mobile-drawer-fullscreen.test.mjs`), integração no `App.vue`
+    (`tests/mobile-drawer-fullscreen.spec.js`) e E2E em navegador real
+    (`cypress/e2e/mobile-drawer-fullscreen.cy.js`), cobrindo 767/768/1023/1024/
+    1025, os quatro fechos (botão, Escape com foco de volta ao `menu-toggle`,
+    navegação e scrim na faixa parcial), lock, alvos de 44px e ausência de
+    overflow horizontal em 320/375/767px.
   - **Collapsed sidebar (activity bar) — CSS layer:** `--activity-width: 48px`
     token in `:root`; `.sidebar.collapsed` rules (icon-only — labels, chevrons,
     badges, source paths, brand text and entry actions hidden; icons centred;
@@ -416,6 +432,23 @@
   ainda espera `.leaf .label`, que o rail remove — a adaptação é prova de
   aceite da sub-task de testes; o check de CI vermelho do PR era do head
   anterior ao force-push. Release `v0.18.0`.
+- **Uniformização do modelo de folhas (KAN-91, fix):** o QA em `main`
+  (`36c6e91`) reprovou a incoerência entre o spec rastreado
+  `tests/sidebar-navigation.spec.js` (entries `{ entity, leaves }`) e a
+  produção (boards com `leaf` singular e Experiences como folha solta). O PR
+  #118 devolveu uma forma única: boards viram `{ entity, leaves: [boardLeaf] }`,
+  Experiences viram `experienceEntry()` com entity sintético, `sectionsOf`
+  concatena `entry.leaves` de todas as seções e `AppSidebar.vue` itera
+  `entry.leaves` em boards; `railSections` segue filtrando grupos vazios. Na
+  mesma rodada, conflito KAN-87 × KAN-84 resolvido pela Lucy: ≤1024px é mobile
+  (`v-if="!isMobile"` em `App.vue` intocado) e o spec do rail usa
+  `should('not.exist')` no toggle em 1024px (PR #119), com a asserção de
+  1025px intocada. Ressalva de infra: o evento `change` de `matchMedia` não é
+  disparado sob `cy.viewport` no Electron (harness de `run-e2e.sh`); num
+  navegador real (Chrome) o app reage pelo listener (spec 9/9 e suíte 47/47
+  em `--browser chrome`). Prova: `test:unit` 105/105, `node --test`
+  (collapse/navigation/topbar) e build em `main` (`d7a0af9`). Release
+  `v0.25.0`.
 - **Modal de nova task em largura total com status inicial validado (KAN-94,
   produção):** no protótipo, `summary` e `description` do modal de criação
   passam a ocupar 100% da largura útil (CSS aditivo escopado a
