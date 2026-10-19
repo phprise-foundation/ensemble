@@ -26,26 +26,24 @@ const stubs = vi.hoisted(() => ({
   hasSimulation: { value: true },
 }))
 
-vi.mock('../src/api/index.js', async () => ({
-  ...(await vi.importActual('../src/api/index.js')),
-  isSimulated: () => false,
-  setFeature: () => {},
-  setAll: stubs.setAll,
-  hasSimulation: {
-    get value() {
-      return stubs.hasSimulation.value
+vi.mock('../src/api/index.js', async () => {
+  const { computed, ref } = await import('vue')
+  const simulationRef = ref(true)
+  stubs.hasSimulation = simulationRef
+  return {
+    ...(await vi.importActual('../src/api/index.js')),
+    isSimulated: () => false,
+    setFeature: () => {},
+    setAll: stubs.setAll,
+    hasSimulation: computed(() => simulationRef.value),
+    simulatedFeatures: { value: [] },
+    simulation: { features: {} },
+    api: {
+      fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+      updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
     },
-    set value(enabled) {
-      stubs.hasSimulation.value = enabled
-    },
-  },
-  simulatedFeatures: { value: [] },
-  simulation: { features: {} },
-  api: {
-    fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-    updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-  },
-}))
+  }
+})
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ meta: { title: 'Titulo de teste' } }),
@@ -141,16 +139,12 @@ describe('Ordem dos controles do topbar', () => {
     const wrapper = await mountApp(false)
     const sim = wrapper.find('[data-topbar-slot="sim"]')
 
-    const renderedValue = () => (sim.attributes('aria-pressed') === 'true' ? true : false)
-
-    expect(renderedValue()).toBe(stubs.hasSimulation.value)
+    expect(sim.attributes('aria-pressed')).toBe('true')
     await sim.trigger('click')
     expect(stubs.setAll).toHaveBeenCalledWith(false)
     stubs.hasSimulation.value = false
-    await wrapper.vm.$forceUpdate()
     await nextTick()
-    expect(renderedValue()).toBe(false)
-    wrapper.unmount()
+    expect(wrapper.find('[data-topbar-slot="sim"]').attributes('aria-pressed')).toBe('false')
     wrapper.unmount()
   })
 

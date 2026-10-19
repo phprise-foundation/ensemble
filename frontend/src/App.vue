@@ -92,6 +92,8 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
   }
 })
 
+const simActive = computed(() => hasSimulation.value)
+
 function toggleSimulation() {
   setAll(!hasSimulation.value)
 }
@@ -124,7 +126,7 @@ function toggleSimulation() {
             class="button ghost sim-toggle"
             title="Alternar dados simulados"
             aria-label="Alternar dados simulados"
-            :aria-pressed="hasSimulation.value ? 'true' : 'false'"
+            :aria-pressed="simActive"
             @click="toggleSimulation"
           >
             <span class="sim-dot sm"></span>

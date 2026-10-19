@@ -22,10 +22,10 @@ const slots = () => [...actionsBlock().matchAll(/data-topbar-slot="([^"]+)"/g)].
 
 const consoleInTree = () => /AppConsole|class="icon-btn console-toggle"|app-console/.test(appVue)
 
-const expectedSequence = () =>
-  consoleInTree()
-    ? ['sim', 'grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
-    : ['sim', 'grid-left', 'grid-right', 'theme', 'profile']
+const expectedSequence = () => {
+  assert.ok(consoleInTree(), 'a grade inferior (console) deve estar na arvore do topbar')
+  return ['sim', 'grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
+}
 
 test('o grupo .topbar-actions fica depois do titulo e do spacer', () => {
   const actions = appVue.indexOf('<div class="topbar-actions">')
@@ -55,7 +55,7 @@ test('todas as grades sao desktop-only e o grupo e o unico container', () => {
 test('Sim e botao de alternancia com aria-pressed e dot visivel', () => {
   const block = actionsBlock()
   assert.match(block, /data-topbar-slot="sim"\s+class="button ghost sim-toggle"/)
-  assert.match(block, /:aria-pressed="hasSimulation\.value \? 'true' : 'false'"/)
+  assert.match(block, /:aria-pressed="simActive"/)
   assert.match(block, /<span class="sim-dot sm"><\/span>/)
 })
 

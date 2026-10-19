@@ -83,12 +83,12 @@ describe('ordem dos controles do topbar (KAN-87)', () => {
   it('Sim alterna os dados simulados e o console, o copilot e o sidebar acompanham os painéis', () => {
     viewportFromBreakpoint(200)
     cy.get('[data-topbar-slot="sim"]').then(($sim) => {
-      const initial = $sim.attr('aria-pressed')
-      expect(['true', 'false']).to.include(initial)
-      cy.get('[data-topbar-slot="sim"]').click()
-      cy.get('[data-topbar-slot="sim"]').click()
-      cy.get('[data-topbar-slot="sim"]').should('have.attr', 'aria-pressed', initial)
+      expect($sim.attr('aria-pressed'), 'sim=1 deixa o botão pressionado').to.eq('true')
     })
+    cy.get('[data-topbar-slot="sim"]').click()
+    cy.get('[data-topbar-slot="sim"]').should('have.attr', 'aria-pressed', 'false')
+    cy.get('[data-topbar-slot="sim"]').click()
+    cy.get('[data-topbar-slot="sim"]').should('have.attr', 'aria-pressed', 'true')
 
     cy.get('[data-topbar-slot="grid-bottom"]').then(($toggle) => {
       const wasExpanded = $toggle.attr('aria-expanded') === 'true'
