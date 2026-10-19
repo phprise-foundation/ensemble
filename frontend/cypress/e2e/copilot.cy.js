@@ -90,8 +90,41 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
     cy.get('#app-copilot').should('be.visible')
   })
 
+  it('abrir um issue e alternar o copilot não altera o painel de issue nem as colunas', () => {
+    cy.viewport(1280, 900)
+    cy.visit('/')
+    cy.get('.card').should('have.length.at.least', 1)
+    cy.get('.card').first().click()
+    cy.get('.issue-panel').should('be.visible')
+    cy.get('.issue-panel .panel-title').invoke('text').then((titulo) => {
+      cy.get('.column').then(($colunas) => {
+        const antes = $colunas.length
+
+        cy.get('button.copilot-toggle').click()
+        cy.get('#app-copilot').should('not.exist')
+        cy.get('.issue-panel').should('be.visible')
+        cy.get('.issue-panel .panel-title').should('have.text', titulo)
+        cy.get('.column').should('have.length', antes)
+
+        cy.get('body').type('{ctrl+alt+b}')
+        cy.get('#app-copilot').should('be.visible')
+        cy.get('.issue-panel').should('be.visible')
+        cy.get('.issue-panel .panel-title').should('have.text', titulo)
+        cy.get('.column').should('have.length', antes)
+        cy.get('#app-sidebar').should('not.have.class', 'collapsed')
+      })
+    })
+  })
+
   it('no breakpoint (1024x900, lado mobile) nem painel nem símbolo existem no DOM', () => {
     cy.viewport(1024, 900)
+    cy.visit('/')
+    cy.get('#app-copilot').should('not.exist')
+    cy.get('button.copilot-toggle').should('not.exist')
+  })
+
+  it('em viewport de telefone (390x844) nem painel nem símbolo existem no DOM', () => {
+    cy.viewport(390, 844)
     cy.visit('/')
     cy.get('#app-copilot').should('not.exist')
     cy.get('button.copilot-toggle').should('not.exist')

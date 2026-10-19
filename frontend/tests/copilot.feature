@@ -26,15 +26,21 @@ Funcionalidade: Colapso do painel do copilot (grade direita)
     Então o painel `#app-copilot` volta ao DOM
     E o botão tem `aria-expanded` valendo `true`
 
-  Cenário: O controle não afeta sidebar, console nem painel de issue
-    Dado que o sidebar está expandido
+  Cenário: O controle não afeta sidebar, painel de issue nem colunas do board
+    Dado que o sidebar está expandido e um issue está aberto no painel
     Quando o usuário alterna o copilot por clique ou atalho
     Então o sidebar mantém o estado que tinha antes
-    E o painel de issue não muda de comportamento
+    E o painel de issue continua visível com o mesmo título
     E as colunas do board continuam visíveis
 
   Cenário: Em viewport no breakpoint nem painel nem símbolo existem no DOM
     Dado que a largura da tela é 1024px (no breakpoint, lado mobile)
+    Quando a aplicação é carregada
+    Então o elemento `#app-copilot` não existe no DOM
+    E o botão `copilot-toggle` não existe no DOM
+
+  Cenário: Em viewport de telefone nem painel nem símbolo existem no DOM
+    Dado que a largura da tela é 390px (viewport de telefone)
     Quando a aplicação é carregada
     Então o elemento `#app-copilot` não existe no DOM
     E o botão `copilot-toggle` não existe no DOM
