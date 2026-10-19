@@ -18,7 +18,7 @@ let failureReported = false
 const seen = new Set()
 
 function stampOf(comment) {
-  return comment.created_at ?? comment.at ?? ''
+  return comment.created_at ?? comment.at
 }
 
 function textOf(comment) {
@@ -37,7 +37,7 @@ function keyOf(issueId, comment) {
   if (comment.id !== undefined && comment.id !== null) {
     return `${issueId}:${comment.id}`
   }
-  return `${issueId}:${comment.author}@${stampOf(comment)}#${fingerprint(textOf(comment))}`
+  return `${issueId}:${comment.author}@${stampOf(comment) ?? ''}#${fingerprint(textOf(comment))}`
 }
 
 function nextMessage({ actor, kind, text, at }) {

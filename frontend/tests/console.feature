@@ -30,11 +30,11 @@ Funcionalidade: Grade inferior de console (output + input)
     aria-label="Console input".
 
   Mapeamento das suítes (quem mede o quê), pela ordem dos cenários abaixo:
-  - Integração (node:test, tests/console.test.mjs): 3, 7, 8, 9.
-  - Componentes (vitest): 1, 2, 4, 5, 6, 10 — abrir/fechar com toggle e
+  - Integração (node:test, tests/console.test.mjs): 3, 8, 9, 10.
+  - Componentes (vitest): 1, 2, 4, 5, 7, 11 — abrir/fechar com toggle e
     atalho (inerte no mobile), indicador de atividade, clamp de altura,
     filtro do output, autoscroll travando e pílula limpando unread.
-  - Fundação (KAN-65) + loopback da store: 11 (start/stop com a grade).
+  - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
   - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
     marcados como "E2E" abaixo, prova na interface em execução, não no source.
 

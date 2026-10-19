@@ -176,6 +176,9 @@ test('releitura de payload sem id nem instante não duplica o mesmo comentário'
   await consoleStore.pollOnce()
 
   assert.deepEqual(texts(), ['revisão'])
+  assert.equal(lastMessage().at, lastMessage().at.trim())
+  assert.ok(lastMessage().at.length > 0)
+  assert.doesNotThrow(() => new Date(lastMessage().at).toISOString())
 })
 
 test('falha de rede vira mensagem error única sem derrubar a store', async () => {
