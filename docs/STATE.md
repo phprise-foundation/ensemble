@@ -301,6 +301,19 @@
   consumidor novo e nenhum ícone existente alterado. O rebase sobre a ponta
   pós-`copilot` (KAN-69) preservou o glifo anterior; vitest 36/36, build e CI
   verdes. PR #66, release `v0.14.0`.
+- **Grade inferior — fundação do console (KAN-65):** o board novo ganha a
+  `AppConsole.vue` (`section#app-console.console`) abaixo do `.main`, com
+  cabeçalho, botão fechar e handle `.console-resize` (arraste por ponteiro,
+  setas ↑/↓ de ±16px e duplo clique em 240px). `App.vue` mantém
+  `consoleOpen = ref(false)` e `consoleHeight = ref(240)`, aplica a altura por
+  `--console-height` inline, expõe `.console-toggle` com
+  `aria-expanded`/`aria-controls` ao lado do sidebar e responde a
+  `Ctrl+J`/`Cmd+J` só no desktop. `main.scss` recebe `--font-mono` e todas as
+  seções `.console*` com clamp 120px..60vh, consumindo só tokens de tema. A
+  fatia consolidou as versões provisórias de store/output/input (KAN-64/66/67),
+  a refinar nos PRs seguintes. Unit 53/53, build limpo, Cypress 25/25 com
+  geometria e arraste reais. PR #77, release `v0.15.0`. CI: o passo `Contracts`
+  segue vermelho por Xvfb (display :99), dívida de harness pré-existente.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
