@@ -402,6 +402,66 @@ describe('console reopen', () => {
   })
 })
 
+describe('AppConsole start', () => {
+  it('polls imediatamente ao montar: o log recebe o payload antes do primeiro tick de 5s', async () => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
+    fetchIssues.mockResolvedValue([
+      {
+        id: 'ISSUE-1',
+        title: 'Issue',
+        comments: [
+          { id: 'c1', author: 'Vivy', body: 'primeira', at: '2026-10-19T09:00:00.000Z' },
+          { id: 'c2', author: 'David', body: 'segunda', at: '2026-10-19T09:01:00.000Z' },
+        ],
+      },
+    ])
+
+    const wrapper = mountApp(false)
+    pressCtrlJ()
+    try {
+      await settle()
+
+      expect(fetchIssues).toHaveBeenCalledTimes(1)
+      expect(consoleStore.state.polling).toBe(true)
+      expect(consoleStore.state.messages.map((message) => message.text)).toEqual([
+        'primeira',
+        'segunda',
+      ])
+    } finally {
+      wrapper.unmount()
+      delete document.hidden
+    }
+  })
+
+  it('reabre a grade sem duplicar as mensagens já apresentadas', async () => {
+    consoleStore.resetDedupe()
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
+    fetchIssues.mockResolvedValue([
+      {
+        id: 'ISSUE-1',
+        title: 'Issue',
+        comments: [{ id: 'c1', author: 'Vivy', body: 'primeira', at: '2026-10-19T09:00:00.000Z' }],
+      },
+    ])
+
+    const first = mountApp(false)
+    first.find('.console-toggle').trigger('click')
+    await settle()
+    first.unmount()
+
+    const second = mountApp(false)
+    second.find('.console-toggle').trigger('click')
+    try {
+      await settle()
+      expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(2)
+      expect(consoleStore.state.messages.map((message) => message.text)).toEqual(['primeira'])
+    } finally {
+      second.unmount()
+      delete document.hidden
+    }
+  })
+})
+
 describe('ConsoleOutput', () => {
   it('filters lines by the selected actor while the store keeps every message', async () => {
     appendMessages()
