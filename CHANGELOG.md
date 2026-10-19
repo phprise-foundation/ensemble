@@ -7,6 +7,22 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.16.0 — 2026-10-19
+
+### Added
+
+- **KAN-66** — painel de output do console: `ConsoleOutput.vue` renderiza o
+  `consoleStore` como log `role="log"`/`aria-live="polite"`, com uma linha
+  `.console-line.{agent,system,command,error}` por mensagem e horário local.
+  `messages`/`unread` são computados (sobrevivem ao `/clear`); ao montar o painel
+  ancora no fundo, e com o leitor a ≤24px do fim as mensagens novas mantêm o
+  autoscroll. Rolar para cima trava o painel, a pílula `.console-jump` conta as
+  novas e volta ao fundo com `clearUnread()`; o filtro por ator é só de render e
+  o texto é sempre interpolado (sem `v-html`). 13 testes do componente; na árvore
+  do PR vitest `64/64` em UTC, Asia/Tokyo e America/Sao_Paulo, build verde e E2E
+  `27/27` (`console.cy.js` `3/3`). PR #81, release `v0.16.0`. A CI `frontend`
+  segue vermelha no passo `Contracts` por Xvfb (dívida de harness).
+
 ## v0.15.2 — 2026-10-19
 
 ### Added

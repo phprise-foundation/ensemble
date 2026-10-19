@@ -80,8 +80,9 @@ marking what is still a prototype.
    (BDD, guardas e E2E; release `v0.15.1`), e a grade inferior ganhou a fundação
    do console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`) —
    mais a store de mensagens, o polling idempotente e o catálogo fechado de
-   comandos (KAN-64, release `v0.15.2`); o poll imediato na abertura segue na
-   KAN-124 e o chat real continua pendente.
+   comandos (KAN-64, release `v0.15.2`) e o painel de output com autoscroll
+   travável, filtro por ator e pílula de não lidas (KAN-66, release `v0.16.0`);
+   o poll imediato na abertura segue na KAN-124 e o chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**
