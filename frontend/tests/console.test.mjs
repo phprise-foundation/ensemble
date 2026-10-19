@@ -5,6 +5,7 @@ import { api } from '../src/api/index.js'
 import { boardStore } from '../src/store/board.js'
 import { consoleStore } from '../src/store/console.js'
 import { CATALOG, runCommand } from '../src/store/commands.js'
+import { pollTick } from '../src/store/console.js'
 
 let fetchCalls
 let issuesPayload
@@ -204,4 +205,48 @@ test('busy é observável durante o comando e impede reenvio', async () => {
 
   const echos = messages().filter((message) => message.kind === 'command')
   assert.equal(echos.length, 1, 'o reenvio durante busy não gera eco')
+})
+
+test('polling com a rede fora não vaza rejeição solta entre ciclos', async () => {
+  const rejections = []
+  const onFailure = (reason) => rejections.push(reason?.message ?? reason)
+  process.on('unhandledRejection', onFailure)
+  process.on('uncaughtException', onFailure)
+
+  const original = api.fetchIssues
+  let tick = null
+  try {
+    globalThis.window = {
+      setInterval: (callback, interval) => {
+        tick = callback
+        assert.equal(interval, 5000)
+        return 1
+      },
+      clearInterval: () => {},
+    }
+    globalThis.document = { hidden: false, addEventListener: () => {}, removeEventListener: () => {} }
+    api.fetchIssues = async () => {
+      throw new Error('rede caiu')
+    }
+
+    consoleStore.start()
+    assert.equal(consoleStore.state.polling, true)
+
+    await pollTick()
+    await pollTick()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    assert.deepEqual(rejections, [], 'o ciclo descartado não pode soltar promise')
+    assert.equal(tick, pollTick)
+    const failures = messages().filter((message) => message.kind === 'error')
+    assert.equal(failures.length, 1, 'falha contínua aparece uma única vez no log')
+    assert.match(failures[0].text, /rede caiu/)
+  } finally {
+    consoleStore.stop()
+    api.fetchIssues = original
+    delete globalThis.window
+    delete globalThis.document
+    process.off('unhandledRejection', onFailure)
+    process.off('uncaughtException', onFailure)
+  }
 })

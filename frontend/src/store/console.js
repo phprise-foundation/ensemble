@@ -13,11 +13,58 @@ const state = reactive({
 let seq = 0
 let timer = null
 let inFlight = null
-const seen = new Set()
+let failureReported = false
+const absorbed = new Map()
 
 function nextMessage({ actor, kind, text, at }) {
   seq += 1
-  return { seq, at: at ?? new Date().toISOString(), actor, kind, text }
+  return { seq, at: at ?? new Date().toISOString(), kind, actor, text }
+}
+
+function absorb(issue) {
+  const comments = issue.comments ?? []
+  const cursor = absorbed.get(issue.id) ?? 0
+  for (const comment of comments.slice(cursor)) {
+    if (comment.author !== 'user') {
+      consoleStore.append({
+        actor: comment.author,
+        kind: 'agent',
+        text: comment.body,
+        at: comment.created_at,
+      })
+    }
+  }
+  absorbed.set(issue.id, comments.length)
+}
+
+async function collect() {
+  const issues = await api.fetchIssues()
+  for (const issue of issues ?? []) {
+    absorb(issue)
+  }
+}
+
+function reportFailure(error) {
+  if (failureReported) {
+    return
+  }
+  failureReported = true
+  consoleStore.append({
+    actor: 'system',
+    kind: 'error',
+    text: `Falha ao consultar o board: ${error?.message ?? error}`,
+  })
+}
+
+export async function pollTick() {
+  if (document.hidden) {
+    return
+  }
+  try {
+    await consoleStore.pollOnce()
+  } catch (error) {
+    reportFailure(error)
+  }
 }
 
 export const consoleStore = {
@@ -32,18 +79,28 @@ export const consoleStore = {
     state.unread = 0
   },
 
+  resetDedupe() {
+    absorbed.clear()
+    failureReported = false
+  },
+
   clear() {
     state.messages = []
     state.unread = 0
   },
 
-  async pollOnce() {
+  pollOnce() {
     if (inFlight) {
       return inFlight
     }
-    inFlight = readIssues().finally(() => {
-      inFlight = null
-    })
+    inFlight = collect()
+      .then(() => {
+        failureReported = false
+      })
+      .catch(reportFailure)
+      .finally(() => {
+        inFlight = null
+      })
     return inFlight
   },
 
@@ -65,33 +122,4 @@ export const consoleStore = {
     timer = null
     document.removeEventListener('visibilitychange', pollTick)
   },
-}
-
-function absorb(issueId, comment) {
-  const key = `${issueId}:${comment.id}`
-  if (comment.author === 'user' || seen.has(key)) {
-    return
-  }
-  seen.add(key)
-  consoleStore.append({ actor: comment.author, kind: 'agent', text: comment.body, at: comment.at })
-}
-
-async function readIssues() {
-  try {
-    const issues = await api.fetchIssues()
-    for (const issue of issues) {
-      for (const comment of issue.comments ?? []) {
-        absorb(issue.id, comment)
-      }
-    }
-  } catch {
-    return
-  }
-}
-
-async function pollTick() {
-  if (document.hidden) {
-    return
-  }
-  await consoleStore.pollOnce()
 }
