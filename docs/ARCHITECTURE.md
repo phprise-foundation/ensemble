@@ -48,7 +48,15 @@ the collapsed rail (`nav.nav.rail` in `AppSidebar.vue`) render from the same
 source; with no workspace the model is empty. The collapsed rail keeps only
 navigable leaves (`a.leaf.rail-leaf`, 36×36, 18px icon, `title`/`aria-label`
 from the unique `railTitle`); brand, group headers, badges, edit buttons and
-Sources stay outside it.
+Sources stay outside it. O modal de nova task (`BoardPage.vue`) cria issues
+pela porta da frente: o seletor de status lista apenas os `initial` do
+workflow (default: o primeiro; sem `initial`, o modal bloqueia com aviso em
+pt-BR) e o `POST /api/issues` valida tudo **antes** de qualquer mutação —
+`boardId` inválido/ausente, status não-inicial, de outro workflow, inexistente
+ou sem coluna respondem 422 `{ error, field }` (`boardId`/`statusId`), a
+coluna é derivada de `column.statusIds` e um `columnId` forjado é ignorado.
+`src/api/client.js` anexa `status`/`field` ao `Error`; a UI nunca faz parsing
+da mensagem. Contrato de aceite: `docs/KAN-94-guide.md`.
 
 ## Layers
 
