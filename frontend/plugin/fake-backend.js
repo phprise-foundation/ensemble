@@ -81,6 +81,38 @@ function nextIssueId(db, boardId) {
   return `${boardId}-${highest + 1}`
 }
 
+function boardProblem(db, boardId) {
+  const board = boardOf(db, boardId)
+  if (!board) return { error: 'board inválido', field: 'boardId', status: 422 }
+  return { board }
+}
+
+function createStatusProblem(db, board, statusId) {
+  const workflowStatuses = db.statuses.filter((status) => status.workflowId === board.workflowId)
+  if (statusId === undefined) {
+    const initial = workflowStatuses.find((status) => status.type === 'initial')
+    if (initial) return { status: initial }
+    return { error: 'workflow do board não tem status inicial', field: 'statusId', status: 422 }
+  }
+  const status = db.statuses.find((candidate) => candidate.id === statusId)
+  if (!status) return { error: 'status inexistente', field: 'statusId', status: 422 }
+  if (status.workflowId !== board.workflowId) {
+    return { error: 'status de outro workflow', field: 'statusId', status: 422 }
+  }
+  if (status.type !== 'initial') {
+    return { error: 'a nova task precisa nascer em um status inicial', field: 'statusId', status: 422 }
+  }
+  return { status }
+}
+
+function createColumnProblem(board, status) {
+  const column = board.columns.find((candidate) => candidate.statusIds.includes(status.id))
+  if (!column) {
+    return { error: 'status não está associado a nenhuma coluna do board', field: 'statusId', status: 422 }
+  }
+  return { column }
+}
+
 function moveIssue(db, id, { columnId, statusId, order }) {
   const issue = db.issues.find((candidate) => candidate.id === id)
   const board = issue ? boardOf(db, issue.boardId) : null
@@ -121,16 +153,22 @@ export function handle(db, method, segments, body) {
     if (method === 'GET' && id === undefined) return { data: db.issues.slice().sort((a, b) => a.order - b.order) }
     if (method === 'GET' && id) return { data: db.issues.find((issue) => issue.id === id) ?? null }
     if (method === 'POST' && id === undefined) {
-      const board = boardOf(db, body.boardId) ?? db.boards[0]
-      const workflowStatuses = db.statuses.filter((status) => status.workflowId === board.workflowId)
-      const initial = workflowStatuses.find((status) => status.type === 'initial') ?? workflowStatuses[0]
+      const boardResult = boardProblem(db, body.boardId)
+      if (boardResult.error) return boardResult
+      const board = boardResult.board
+      const statusResult = createStatusProblem(db, board, body.statusId)
+      if (statusResult.error) return statusResult
+      const status = statusResult.status
+      const columnResult = createColumnProblem(board, status)
+      if (columnResult.error) return columnResult
+      const column = columnResult.column
       const issue = {
         id: nextIssueId(db, board.id),
         boardId: board.id,
         typeId: body.typeId ?? 'task',
         summary: body.summary ?? '',
         description: body.description ?? '',
-        statusId: body.statusId ?? initial.id,
+        statusId: status.id,
         assigneeId: body.assigneeId ?? null,
         reporter: body.reporter ?? 'user',
         worker: '',
@@ -141,8 +179,7 @@ export function handle(db, method, segments, body) {
         updatedAt: new Date().toISOString(),
       }
       db.issues.push(issue)
-      const columnId = body.columnId ?? board.columns.find((column) => column.statusIds.includes(issue.statusId))?.id
-      issuesInColumn(db, board.id, columnId).forEach((candidate, index) => { candidate.order = index })
+      issuesInColumn(db, board.id, column.id).forEach((candidate, index) => { candidate.order = index })
       return { data: issue, status: 201 }
     }
     if (method === 'PATCH' && id) {
@@ -262,7 +299,7 @@ function middleware(data, req, res, next) {
     }
     res.statusCode = result.status ?? 200
     res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify(result.error ? { error: result.error } : result.data))
+    res.end(JSON.stringify(result.error ? { error: result.error, field: result.field } : result.data))
   })
 }
 
