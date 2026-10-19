@@ -11,6 +11,7 @@ $sidebar-breakpoint: 1024px;
   --copilot-width: min(25vw, 400px);
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :root[data-theme='dark'] {
@@ -436,6 +437,11 @@ textarea {
   min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+.content > .topbar,
+.content > #app-console {
+  flex-shrink: 0;
 }
 
 /* Copilot panel */
@@ -1254,4 +1260,213 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.console {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 clamp(120px, var(--console-height, 240px), 60vh);
+  height: clamp(120px, var(--console-height, 240px), 60vh);
+  min-height: 120px;
+  background: var(--surface);
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.console-resize {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: ns-resize;
+  background: transparent;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--accent);
+    outline: none;
+  }
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.console-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.console-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.console-activity {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+
+  &.active {
+    background: var(--accent);
+  }
+}
+
+.console-filter {
+  font: inherit;
+  color: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 4px;
+}
+
+.console-header .icon-btn {
+  font: inherit;
+  line-height: 1;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+    outline: none;
+  }
+}
+
+.console-title {
+  font-weight: 600;
+}
+
+.console-output {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.console-line {
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+
+  &.agent .console-actor {
+    color: var(--accent);
+  }
+
+  &.system .console-actor {
+    color: var(--ok);
+  }
+
+  &.command {
+    color: var(--text);
+
+    .console-text {
+      font-weight: 600;
+    }
+  }
+
+  &.error .console-text {
+    color: var(--danger);
+  }
+}
+
+.console-time {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.console-actor {
+  color: var(--syntax-type, var(--accent));
+  flex: 0 0 auto;
+}
+
+.console-text {
+  flex: 1;
+}
+
+.console-jump {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 2px 8px;
+  font: inherit;
+  color: var(--accent-contrast, #fff);
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.console-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.console-prompt {
+  color: var(--muted);
+}
+
+.console-input-field {
+  flex: 1;
+  font: inherit;
+  color: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 6px;
+
+  &:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+  }
+}
+
+.console-input-send {
+  font: inherit;
+  color: var(--accent-contrast, #fff);
+  background: var(--button-bg, var(--accent));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.console-toggle[aria-expanded='true'] {
+  color: var(--accent);
 }

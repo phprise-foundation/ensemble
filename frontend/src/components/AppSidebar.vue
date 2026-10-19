@@ -144,10 +144,6 @@ const workflows = computed(() => navigation.value.workflows.map((entry) => entry
 const showRail = computed(() => Boolean(props.collapsed && !props.isMobile))
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
 
-function relationName(entry) {
-  return entry.leaves[0].railTitle.split(' · ')[0]
-}
-
 const slugify = (text) =>
   String(text || '')
     .normalize('NFD')
@@ -401,9 +397,9 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openWorkflows" class="submenu">
             <div v-for="entry in navigation.workflows" :key="entry.entity.id">
-              <div class="nav-entry" :title="relationName(entry)">
+              <div class="nav-entry" :title="entry.entity.name">
                 <AppIcon name="layers" size="14" />
-                <span>{{ relationName(entry) }}</span>
+                <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
                   <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
@@ -429,9 +425,9 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openTeams" class="submenu">
             <div v-for="entry in navigation.teams" :key="entry.entity.id">
-              <div class="nav-entry" :title="relationName(entry)">
+              <div class="nav-entry" :title="entry.entity.name">
                 <AppIcon name="agents" size="14" />
-                <span>{{ relationName(entry) }}</span>
+                <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
                   <button class="icon-btn" title="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
