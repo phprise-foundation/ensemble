@@ -7,6 +7,27 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.15.2 — 2026-10-19
+
+### Added
+
+- **KAN-64** — store do console e catálogo de comandos aceitos: `store/console.js`
+  normaliza os comentários de `GET /api/issues` em mensagens
+  `{ seq, at, actor, kind, text }` (só `author !== 'user'`), com dedupe por
+  `issueId:commentId` e fallback autor + instante + hash do body para o payload
+  do presenter PHP sem `id`; `at` ausente recebe o ISO do append. O polling de
+  5s pausa em `document.hidden` e `start()`/`stop()` acompanham a grade aberta
+  (montagem por `v-if`). `store/commands.js` executa localmente o catálogo
+  fechado `/status`, `/list`, `/help` e `/clear` contra o `boardStore`; `/clear`
+  não gera eco nem HTTP, desconhecido vira `kind: 'error'` sugerindo `/help`, e
+  `busy` bloqueia reenvio. Falha de polling vira uma única linha de erro até o
+  próximo sucesso. `console.feature` preserva os 12 cenários congelados e
+  acrescenta o 6º (start/stop), total 13. Verificação na árvore do PR: node
+  `17/17`, vitest `53/53`, `console.cy.js` `3/3` e build verde. PR #87, release
+  `v0.15.2`; o diff tem 6 arquivos (os 5 da sub-task mais `console.spec.js`,
+  alinhado ao contrato de erro do polling). Acompanhamento: KAN-124 cobre o poll
+  imediato ao abrir a grade.
+
 ## v0.15.1 — 2026-10-19
 
 ### Changed

@@ -314,6 +314,21 @@
   a refinar nos PRs seguintes. Unit 53/53, build limpo, Cypress 25/25 com
   geometria e arraste reais. PR #77, release `v0.15.0`. CI: o passo `Contracts`
   segue vermelho por Xvfb (display :99), dívida de harness pré-existente.
+- **Grade inferior — store do console e catálogo (KAN-64):** `store/console.js`
+  transforma os comentários de `GET /api/issues` em mensagens
+  `{ seq, at, actor, kind, text }` (só `author !== 'user'`), com dedupe por
+  `issueId:commentId` e fallback autor + instante + hash do body para o
+  presenter PHP sem `id`; a releitura não duplica e os idênticos do mesmo lote
+  entram. O polling de 5s pausa em `document.hidden`; `start()`/`stop()` são
+  chamados por `AppConsole.vue` em `onMounted`/`onUnmounted` (grade montada por
+  `v-if`). `store/commands.js` executa localmente o catálogo fechado `/status`,
+  `/list`, `/help` e `/clear` contra o `boardStore`; `/clear` é local e sem eco,
+  desconhecido vira `error` sugerindo `/help`, e `busy` bloqueia reenvio. Falha
+  de polling vira uma única linha de erro até o próximo sucesso. O BDD mantém
+  os 12 cenários congelados e acrescenta o 6º (start/stop), total 13; node
+  `17/17`, vitest `53/53`, `console.cy.js` `3/3`, build verde. PR #87, release
+  `v0.15.2`. Pendência registrada na KAN-124: o poll imediato ao abrir a grade
+  ainda não é disparado, então o log pode ficar vazio por até 5s.
 - **Aceitação da grade direita — BDD, guardas e E2E (KAN-71):** a onda 3
   consumiu os contratos das ondas 1/2 e fechou os cinco critérios do RFC com
   prova executável. `tests/copilot.feature` (Gherkin pt-BR) descreve painel

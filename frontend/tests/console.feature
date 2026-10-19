@@ -26,7 +26,7 @@ Funcionalidade: Grade inferior de console (output + input)
     240px; setas ↑/↓ com o handle focado = ±16px.
   - A11y: role="log" + aria-live="polite" no output; botão com
     aria-label="Alternar console", aria-expanded e aria-controls="app-console";
-    handle focável com aria-label="Resize console"; form com
+    handle focável com aria-label="Redimensionar console"; form com
     aria-label="Console input".
 
   Mapeamento das suítes (quem mede o quê), pela ordem dos cenários abaixo:

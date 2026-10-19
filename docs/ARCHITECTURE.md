@@ -20,7 +20,11 @@ performs no network call and keeps no conversation state. The bottom grid is
 `AppConsole.vue` (`#app-console.console`), rendered inside `.content` after
 `.main`: `App.vue` owns `consoleOpen`/`consoleHeight`, the `.console-toggle`
 button and the `Ctrl+J`/`Cmd+J` shortcut, while the panel handles pointer and
-keyboard resizing and mounts the output/input panels.
+keyboard resizing and mounts the output/input panels. `store/console.js` owns
+the message log and the 5s polling of the existing `GET /api/issues`, adapting
+both comment payloads (camelCase fake backend and PHP presenter), deduplicating
+by comment key and pausing while the tab is hidden; `store/commands.js` executes
+the closed command catalog locally against `boardStore`.
 
 ## Layers
 
