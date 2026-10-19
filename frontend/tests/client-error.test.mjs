@@ -2,6 +2,32 @@ import assert from 'node:assert/strict'
 import { after, test } from 'node:test'
 
 import { request } from '../src/api/client.js'
+import { handle } from '../plugin/fake-backend.js'
+import { createSeed } from '../src/data/seed.js'
+
+function createBody(overrides = {}) {
+  return {
+    boardId: 'KANB',
+    summary: 'Task do contrato de criação',
+    description: '',
+    typeId: 'task',
+    statusId: 'to-develop',
+    assigneeId: null,
+    reporter: 'user',
+    columnId: 'todo',
+    ...overrides,
+  }
+}
+
+function columnOrders(database, columnId) {
+  const board = database.boards.find((candidate) => candidate.id === 'KANB')
+  const column = board.columns.find((candidate) => candidate.id === columnId)
+  const ids = column.statusIds
+  return database.issues
+    .filter((issue) => issue.boardId === 'KANB' && ids.includes(issue.statusId))
+    .sort((a, b) => a.order - b.order)
+    .map((issue) => `${issue.id}:${issue.order}`)
+}
 
 const realFetch = globalThis.fetch
 
@@ -101,4 +127,99 @@ test('erro de rede continua sendo o TypeError do fetch, sem status nem field', a
     assert.equal(failure.field, undefined)
     return true
   })
+})
+
+test('handle: POST /issues aceita status initial e deriva a coluna', () => {
+  const database = createSeed()
+
+  const response = handle(database, 'POST', ['issues'], createBody({ columnId: 'doing' }))
+
+  assert.equal(response.status, 201)
+  assert.equal(response.data.statusId, 'to-develop')
+  assert.ok(columnOrders(database, 'todo').some((entry) => entry.split(':')[0] === response.data.id))
+  assert.equal('columnId' in response.data, false)
+})
+
+test('handle: POST /issues sem statusId usa o primeiro initial do workflow', () => {
+  const database = createSeed()
+
+  const response = handle(database, 'POST', ['issues'], createBody({ statusId: undefined }))
+
+  assert.equal(response.status, 201)
+  assert.equal(response.data.statusId, 'to-develop')
+  assert.equal('columnId' in response.data, false)
+})
+
+test('handle: POST /issues rejeita status final, transitional e inexistente com 422', () => {
+  const cases = [
+    ['done', 'a nova task precisa nascer em um status inicial'],
+    ['canceled', 'a nova task precisa nascer em um status inicial'],
+    ['in-development', 'a nova task precisa nascer em um status inicial'],
+    ['nope', 'status inexistente'],
+  ]
+
+  for (const [statusId, expected] of cases) {
+    const database = createSeed()
+    const before = columnOrders(database, 'todo')
+
+    const response = handle(database, 'POST', ['issues'], createBody({ statusId }))
+
+    assert.equal(response.status, 422)
+    assert.equal(response.field, 'statusId')
+    assert.equal(response.error, expected)
+    assert.deepEqual(columnOrders(database, 'todo'), before)
+  }
+})
+
+test('handle: POST /issues rejeita status de outro workflow com 422', () => {
+  const database = createSeed()
+  database.statuses.push({ id: 'external', workflowId: 'other', name: 'External', type: 'initial', color: '#000000', roleIds: [] })
+  const before = columnOrders(database, 'todo')
+
+  const response = handle(database, 'POST', ['issues'], createBody({ statusId: 'external' }))
+
+  assert.equal(response.status, 422)
+  assert.equal(response.field, 'statusId')
+  assert.equal(response.error, 'status de outro workflow')
+  assert.deepEqual(columnOrders(database, 'todo'), before)
+})
+
+test('handle: POST /issues sem statusId e sem initial no workflow rejeita com 422', () => {
+  const database = createSeed()
+  const initial = database.statuses.find((status) => status.id === 'to-develop')
+  initial.type = 'transitional'
+  const before = columnOrders(database, 'todo')
+
+  const response = handle(database, 'POST', ['issues'], createBody({ statusId: undefined }))
+
+  assert.equal(response.status, 422)
+  assert.equal(response.field, 'statusId')
+  assert.equal(response.error, 'workflow do board não tem status inicial')
+  assert.deepEqual(columnOrders(database, 'todo'), before)
+})
+
+test('handle: POST /issues com board inválido rejeita com 422 e field boardId', () => {
+  const database = createSeed()
+  const before = columnOrders(database, 'todo')
+
+  const response = handle(database, 'POST', ['issues'], createBody({ boardId: 'NOPE' }))
+
+  assert.equal(response.status, 422)
+  assert.equal(response.field, 'boardId')
+  assert.equal(response.error, 'board inválido')
+  assert.deepEqual(columnOrders(database, 'todo'), before)
+})
+
+test('handle: status válido fora de qualquer coluna do board rejeita com 422', () => {
+  const database = createSeed()
+  const board = database.boards.find((candidate) => candidate.id === 'KANB')
+  board.columns[0].statusIds = []
+  const before = columnOrders(database, 'todo')
+
+  const response = handle(database, 'POST', ['issues'], createBody())
+
+  assert.equal(response.status, 422)
+  assert.equal(response.field, 'statusId')
+  assert.equal(response.error, 'status não está associado a nenhuma coluna do board')
+  assert.deepEqual(columnOrders(database, 'todo'), before)
 })
