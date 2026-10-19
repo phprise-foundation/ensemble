@@ -6,6 +6,7 @@ import AppSidebar from '../src/components/AppSidebar.vue'
 vi.mock('../src/store/board.js', () => ({
   boardStore: {
     workspace: { value: { id: 'ws', name: 'Workspace' } },
+    board: { value: null },
     boardsOf: () => [],
     workflowsOf: () => [],
     teamsOf: () => [],
@@ -113,5 +114,13 @@ describe('AppSidebar drawer accessibility', () => {
     expect(aside.attributes('role')).toBeUndefined()
     expect(aside.attributes('aria-modal')).toBeUndefined()
     expect(aside.attributes('aria-hidden')).toBeUndefined()
+  })
+
+  it('keeps the tree in the drawer when the collapsed flag is inherited from desktop', async () => {
+    const wrapper = mountSidebar({ open: true, isMobile: true, collapsed: true })
+    await nextTick()
+    expect(wrapper.find('nav.nav.rail').exists()).toBe(false)
+    expect(wrapper.find('.nav:not(.rail)').exists()).toBe(true)
+    expect(wrapper.find('#app-sidebar .brand').exists()).toBe(true)
   })
 })

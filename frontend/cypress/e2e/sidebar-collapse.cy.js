@@ -49,7 +49,7 @@ describe('sidebar colapsado na interface em execução', () => {
       cy.wrap($leaf).should('have.attr', 'title').and('not.be.empty')
     })
 
-    cy.get('.leaf').first().click({ force: true })
+    cy.get('nav.rail .rail-leaf').first().click()
     cy.location('hash').should('eq', '#/boards/KANB')
     cy.get('vite-error-overlay').should('not.exist')
   })

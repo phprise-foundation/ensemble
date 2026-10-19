@@ -139,7 +139,7 @@ const editor = ref(null)
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
-const showRail = computed(() => collapsed)
+const showRail = computed(() => collapsed && !isMobile)
 const railGroups = computed(() => railSections(navigation.value))
 const railLeaves = computed(() =>
   railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
@@ -333,7 +333,7 @@ async function removeEntity(kind, id, label) {
     :aria-hidden="isMobile ? !open : undefined"
     aria-label="Menu"
   >
-    <div class="brand">
+    <div v-if="!showRail" class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>
     </div>

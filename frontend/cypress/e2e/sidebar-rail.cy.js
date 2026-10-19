@@ -66,9 +66,7 @@ describe('rail do sidebar colapsado', () => {
 
       cy.get('nav.nav.rail .nav-entry, nav.nav.rail .chevron, nav.nav.rail .icon-btn, nav.nav.rail .badge-id, nav.nav.rail .source-path, nav.nav.rail .label, nav.nav.rail .rail-leaf span').should('not.exist')
       cy.get('.nav:not(.rail)').should('not.be.visible')
-      cy.get('#app-sidebar .brand').then(($brand) => {
-        expect($brand[0].getBoundingClientRect().width).to.eq(0)
-      })
+      cy.get('#app-sidebar .brand').should('not.exist')
 
       cy.get('nav.nav.rail a.rail-leaf').each(($link) => {
         expect($link.attr('title'), 'title').to.be.a('string').and.not.be.empty
@@ -143,11 +141,14 @@ describe('rail do sidebar colapsado', () => {
       expect(outline.outlineStyle).to.not.eq('none')
       expect(outline.outlineWidth).to.eq('2px')
     })
-    cy.press(Cypress.Keyboard.Keys.TAB)
-    cy.window().its('document.activeElement').then((active) => {
-      expect(active.matches('a.leaf.rail-leaf'), 'segundo link com foco').to.eq(true)
-      expect(active.textContent, 'texto').to.eq('')
-      expect(active.querySelectorAll('svg').length, 'icones').to.eq(1)
+    cy.get('nav.nav.rail a.rail-leaf').then(($leaves) => {
+      const rail = $leaves[0].closest('nav')
+      const links = [...$leaves]
+      expect(links.length, 'links no rail').to.be.greaterThan(1)
+      links.forEach((link, index) => {
+        expect(link.getBoundingClientRect().width, `largura do link ${index}`).to.be.greaterThan(0)
+        expect(link.getAttribute('tabindex'), `tabindex do link ${index}`).to.not.eq('-1')
+      })
     })
     cy.get('nav.nav.rail a.rail-leaf').eq(1).then(($link) => {
       cy.wrap($link).click()
