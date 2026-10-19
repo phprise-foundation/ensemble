@@ -472,6 +472,25 @@
   arbitrário, `typeId` não validado contra o workflow, escrita de `db.json`
   não atômica; os testes BDD/node:test/vitest/Cypress do contrato (§8) seguem
   nas subtarefas KAN-122/123.
+- **Limites de descrição e comentário no protótipo (KAN-93, produção):** o
+  fake backend passa a exigir o contrato do canal dos agentes: descrição ≤4095
+  e comentário ≤1023 code points (`Array.from`, equivalente a `mb_strlen`),
+  via o módulo único `frontend/shared/limits.js` (constantes e helpers
+  `countCharacters`/`warningThreshold`/`nearLimit`/`limitExceeded`/`limitError`,
+  sem duplicação em bundle, backend nem testes). Validar acontece **antes** de
+  qualquer mutação em `POST /issues` e `POST .../comments` (o `PATCH` valida
+  após o 404): acima do limite → `422 { error, field }` com a mensagem pt-BR
+  do contrato (`A descrição excede o limite de 4095 caracteres (4096).`), sem
+  gravar parcial e sem consumir id. A UI ganha contador `x/limite`, aviso
+  informativo aos 90% (`Math.ceil(limite * 0.9)` = 3686/921), erro acima do
+  limite, `Save`/`Create`/`Comment` desabilitados e `aria-describedby`/
+  `aria-invalid` nos três campos (criação, edição e comentário), com o novo
+  componente `FieldLimit.vue`; a edição de descrição no painel usa
+  `Save`/`Cancel`, e cancelar descarta. O item legado acima dos limites
+  (fixture `KANB-7`, só em `createSeed()`) é exibido integralmente, sem
+  truncar. Contrato: `docs/KAN-93-guide.md` §2–§7. Provas: 16/16 nos testes
+  de contrato do item, vitest 79/79, build ok e CI verde no head
+  reconciliado com `main` (PR #110, release `v0.26.0`).
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
