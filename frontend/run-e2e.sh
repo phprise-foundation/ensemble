@@ -49,6 +49,16 @@ node --input-type=module -e "import { createSeed } from './src/data/seed.js'; co
   exit 1
 }
 
+port_is_busy() {
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null && return 0
+  return 1
+}
+
+if port_is_busy; then
+  echo "port $PORT is already in use: the suite would measure another tree. Set E2E_PORT to a free port." >&2
+  exit 1
+fi
+
 ./node_modules/.bin/vite --port "$PORT" --strictPort --host 127.0.0.1 >"$LOG" 2>&1 &
 SERVER_PID=$!
 
@@ -56,6 +66,12 @@ for _ in $(seq 1 60); do
   curl -s -o /dev/null "$BASE/" && break
   sleep 0.5
 done
+
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+  echo "dev server process died before answering on $BASE:" >&2
+  cat "$LOG" >&2
+  exit 1
+fi
 
 if ! curl -s -o /dev/null "$BASE/"; then
   echo "dev server did not start on $BASE:" >&2
