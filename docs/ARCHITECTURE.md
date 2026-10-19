@@ -40,7 +40,15 @@ integration), `tests/console.spec.js` and `tests/console-output.spec.js`
 harness (`run-e2e.sh`) aborts with status 1 when the requested port is busy or
 the dev server dies, so the suite never measures a foreign Vite, and
 `cypress/support/e2e.js` fails any scenario whose page logs an error, an
-unhandled rejection or `console.error`.
+unhandled rejection or `console.error`. The sidebar navigation comes from
+`src/navigation.js`, a pure model: `sidebarNavigation(store, workspaceId)`
+builds every leaf (boards, workflow pages, team pages, Experiences) and
+`railSections(navigation)` picks the non-empty groups, so the expanded tree and
+the collapsed rail (`nav.nav.rail` in `AppSidebar.vue`) render from the same
+source; with no workspace the model is empty. The collapsed rail keeps only
+navigable leaves (`a.leaf.rail-leaf`, 36×36, 18px icon, `title`/`aria-label`
+from the unique `railTitle`); brand, group headers, badges, edit buttons and
+Sources stay outside it.
 
 ## Layers
 
