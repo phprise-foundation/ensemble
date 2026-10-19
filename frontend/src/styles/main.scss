@@ -348,6 +348,10 @@ textarea {
 }
 
 @media (min-width: $sidebar-breakpoint + 1) {
+  .sidebar.collapsed .brand {
+    display: none;
+  }
+
   .sidebar.collapsed {
     width: var(--activity-width);
     flex: 0 0 var(--activity-width);
@@ -380,6 +384,35 @@ textarea {
   .sidebar.collapsed .leaf {
     justify-content: center;
     gap: 0;
+  }
+
+  .rail {
+    gap: 0;
+    padding: 6px;
+  }
+
+  .rail .rail-leaf {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .rail .rail-leaf:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .rail .rail-divider {
+    flex: 0 0 auto;
+    height: 1px;
+    margin: 6px 4px;
+    background: var(--border);
+  }
+
+  .leaf.router-link-active {
+    background: var(--selection, var(--surface-3));
   }
 }
 
