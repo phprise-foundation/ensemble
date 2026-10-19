@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { railSections, sidebarNavigation } from '../src/navigation.js'
+import { isActiveLeaf, railSections, sidebarNavigation } from '../src/navigation.js'
 
 function storeWith({ boards = [], workflows = [], teams = [] }) {
   return {
@@ -46,4 +46,21 @@ test('Sources nao entra no rail', () => {
 test('railTitle do workflow e unico e prefixado pelo nome', () => {
   const leaf = sidebarNavigation(store, 'ws').workflows[1].leaves[0]
   assert.equal(leaf.railTitle, 'Flow B · Statuses')
+})
+
+test('link ativo considera o id do pai e destaca uma folha por vez', () => {
+  const leaves = railSections(sidebarNavigation(store, 'ws')).flat()
+  const boardCurrent = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'board', params: { boardId: 'KANB' } }))
+  const workflowCurrent = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'statuses', params: { workflowId: 'flow-b' } }))
+  const teamCurrent = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'profiles', params: { teamId: 'design' } }))
+  const boardChosen = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'board', params: {} }, { id: 'KANB', name: 'Kanban' }))
+  assert.deepEqual(boardCurrent.map((leaf) => leaf.railTitle), ['Kanban'])
+  assert.deepEqual(workflowCurrent.map((leaf) => leaf.railTitle), ['Flow B · Statuses'])
+  assert.deepEqual(teamCurrent.map((leaf) => leaf.railTitle), ['Design · Profiles'])
+  assert.deepEqual(boardChosen.map((leaf) => leaf.railTitle), ['Kanban'])
+})
+
+test('isActiveLeaf em rota sem id e sem board escolhido nao destaca nada', () => {
+  const leaves = railSections(sidebarNavigation(store, 'ws')).flat()
+  assert.deepEqual(leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'board', params: {} }, null)), [])
 })

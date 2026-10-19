@@ -7,6 +7,24 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.19.0 — 2026-10-19
+
+### Added
+
+- **KAN-94** — modal de nova task em largura total e status inicial validado
+  (produção): `input`/`textarea`/`select` do modal em `width: 100%` (CSS
+  aditivo em `.new-task-modal`, largura de 520px preservada), seletor de
+  status na criação restrito aos `initial` do workflow (default no primeiro;
+  UI bloqueada com aviso pt-BR quando não há `initial`), foco inicial no
+  summary e erros por campo acessíveis (`aria-invalid`, `aria-describedby`,
+  `role="alert"`). No fake backend, `POST /api/issues` valida antes de
+  qualquer mutação: `boardId` inválido → 422 `field: 'boardId'` sem fallback;
+  status omitido usa o primeiro `initial`; inexistente, de outro workflow,
+  não-inicial ou sem coluna → 422 `field: 'statusId'`; `columnId` forjado é
+  ignorado e a coluna deriva de `column.statusIds`. `client.js` anexa
+  `status`/`field` ao `Error`. Contrato em `docs/KAN-94-guide.md`; os testes
+  do §8 seguem nas subtarefas KAN-122/123. PR #103, release `v0.19.0`.
+
 ## v0.18.0 — 2026-10-19
 
 ### Added

@@ -9,7 +9,10 @@ export async function request(method, path, body) {
   const text = await response.text()
   const data = text ? JSON.parse(text) : null
   if (!response.ok) {
-    throw new Error((data && data.error) || `${response.status} ${response.statusText}`)
+    const error = new Error((data && data.error) || `${response.status} ${response.statusText}`)
+    error.status = response.status
+    error.field = (data && data.field) || null
+    throw error
   }
   return data
 }

@@ -41,7 +41,7 @@ test('botao .copilot-toggle tem ARIA e e desktop-only', () => {
   assert.match(appVue, /aria-label="Toggle copilot"/)
   assert.match(appVue, /:aria-expanded="copilotOpen"/)
   assert.match(appVue, /aria-controls="app-copilot"/)
-  assert.match(appVue, /v-if="!isMobile"\s+class="icon-btn copilot-toggle"/)
+  assert.match(appVue, /v-if="!isMobile"\s+data-topbar-slot="grid-right"\s+class="icon-btn copilot-toggle"/)
 })
 
 test('atalho Ctrl+Alt+B consulta altKey antes do ramo do Ctrl+B', () => {

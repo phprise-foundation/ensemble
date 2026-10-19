@@ -1,7 +1,9 @@
 $sidebar-breakpoint: 1024px;
+$mobile-breakpoint: 768px;
 
 :root {
   --breakpoint-sidebar: #{$sidebar-breakpoint};
+  --breakpoint-mobile: #{$mobile-breakpoint};
   --sim: #ff8b00;
   --radius: 8px;
   --radius-sm: 6px;
@@ -355,6 +357,7 @@ textarea {
   .sidebar.collapsed {
     width: var(--activity-width);
     flex: 0 0 var(--activity-width);
+    overflow-x: hidden;
   }
 
   .sidebar.collapsed .nav-entry > span:not(.entry-actions),
@@ -386,9 +389,17 @@ textarea {
     gap: 0;
   }
 
-  .rail {
-    gap: 0;
-    padding: 6px;
+  .nav.rail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .rail .rail-leaf {
@@ -406,13 +417,15 @@ textarea {
 
   .rail .rail-divider {
     flex: 0 0 auto;
+    width: 24px;
     height: 1px;
-    margin: 6px 4px;
+    margin: 2px 0;
     background: var(--border);
   }
 
-  .leaf.router-link-active {
+  .rail .rail-leaf[aria-current='page'] {
     background: var(--selection, var(--surface-3));
+    color: var(--text);
   }
 }
 
@@ -519,6 +532,22 @@ textarea {
   margin-left: auto;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.topbar h1 {
+  flex: 0 1 auto;
+}
+
+.topbar-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .menu-toggle {
   display: none;
 }
@@ -527,8 +556,24 @@ textarea {
   display: none;
 }
 
+.console-toggle {
+  display: none;
+}
+
+.copilot-toggle {
+  display: none;
+}
+
 @media (min-width: $sidebar-breakpoint + 1) {
   .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .console-toggle {
+    display: inline-flex;
+  }
+
+  .copilot-toggle {
     display: inline-flex;
   }
 }
@@ -623,6 +668,10 @@ textarea {
   margin-top: 8px;
 }
 
+body.drawer-locked {
+  overflow: hidden;
+}
+
 @media (max-width: $sidebar-breakpoint) {
   .sidebar {
     position: fixed;
@@ -641,6 +690,28 @@ textarea {
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     z-index: 30;
+  }
+
+  @media (max-width: $mobile-breakpoint - 1) {
+    .sidebar {
+      inset: 0;
+      width: 100%;
+      flex: none;
+    }
+
+    .sidebar .nav-entry,
+    .sidebar .leaf {
+      min-height: 44px;
+    }
+
+    .sidebar .icon-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .sidebar-close {
+      margin-left: auto;
+    }
   }
 }
 
@@ -1068,6 +1139,19 @@ textarea {
 .modal-footer {
   border-top: 1px solid var(--border);
   justify-content: flex-end;
+}
+
+.new-task-modal .field input,
+.new-task-modal .field textarea,
+.new-task-modal .field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.new-task-modal .field-error {
+  margin: -6px 0 14px;
+  padding: 0;
+  font-size: 12px;
 }
 
 .checks {
