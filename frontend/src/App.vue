@@ -111,6 +111,8 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
   }
 })
 
+const simActive = computed(() => hasSimulation.value)
+
 function toggleSimulation() {
   setAll(!hasSimulation.value)
 }
@@ -135,52 +137,67 @@ function toggleSimulation() {
         >
           <AppIcon name="menu" />
         </button>
-        <button
-          class="icon-btn sidebar-toggle"
-          title="Toggle sidebar"
-          aria-label="Toggle sidebar"
-          :aria-expanded="!sidebarCollapsed"
-          @click="sidebarCollapsed = !sidebarCollapsed"
-        >
-          <AppIcon name="sidebar" />
-        </button>
-        <button
-          v-if="!isMobile"
-          class="icon-btn console-toggle"
-          :title="consoleOpen ? 'Ocultar console' : 'Mostrar console'"
-          aria-label="Alternar console"
-          :aria-expanded="consoleOpen"
-          aria-controls="app-console"
-          @click="consoleOpen = !consoleOpen"
-        >
-          <AppIcon name="console" />
-        </button>
-
-        <button
-          v-if="!isMobile"
-          class="icon-btn copilot-toggle"
-          :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
-          aria-label="Toggle copilot"
-          :aria-expanded="copilotOpen"
-          aria-controls="app-copilot"
-          @click="copilotOpen = !copilotOpen"
-        >
-          <AppIcon name="copilot" />
-        </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>
-        <button
-          class="button ghost"
-          :title="hasSimulation ? 'Disable simulated data' : 'Enable simulated data'"
-          @click="toggleSimulation"
-        >
-          <span class="sim-dot sm"></span>
-          Sim
-        </button>
-        <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
-          <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
-        </button>
-        <ProfileMenu />
+        <div class="topbar-actions">
+          <button
+            data-topbar-slot="sim"
+            class="button ghost sim-toggle"
+            title="Alternar dados simulados"
+            aria-label="Alternar dados simulados"
+            :aria-pressed="simActive"
+            @click="toggleSimulation"
+          >
+            <span class="sim-dot sm"></span>
+            Sim
+          </button>
+          <button
+            v-if="!isMobile"
+            data-topbar-slot="grid-left"
+            class="icon-btn sidebar-toggle"
+            title="Toggle sidebar"
+            aria-label="Toggle sidebar"
+            aria-controls="app-sidebar"
+            :aria-expanded="!sidebarCollapsed"
+            @click="sidebarCollapsed = !sidebarCollapsed"
+          >
+            <AppIcon name="sidebar" />
+          </button>
+          <button
+            v-if="!isMobile"
+            data-topbar-slot="grid-bottom"
+            class="icon-btn console-toggle"
+            :title="consoleOpen ? 'Ocultar console' : 'Mostrar console'"
+            aria-label="Alternar console"
+            :aria-expanded="consoleOpen"
+            aria-controls="app-console"
+            @click="consoleOpen = !consoleOpen"
+          >
+            <AppIcon name="console" />
+          </button>
+          <button
+            v-if="!isMobile"
+            data-topbar-slot="grid-right"
+            class="icon-btn copilot-toggle"
+            :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
+            aria-label="Toggle copilot"
+            :aria-expanded="copilotOpen"
+            aria-controls="app-copilot"
+            @click="copilotOpen = !copilotOpen"
+          >
+            <AppIcon name="copilot" />
+          </button>
+          <button
+            data-topbar-slot="theme"
+            class="icon-btn theme-toggle"
+            :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'"
+            :aria-label="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'"
+            @click="toggleTheme"
+          >
+            <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
+          </button>
+          <ProfileMenu data-topbar-slot="profile" />
+        </div>
       </header>
 
       <main class="main">
