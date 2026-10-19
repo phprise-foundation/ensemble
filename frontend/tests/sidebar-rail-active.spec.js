@@ -46,6 +46,7 @@ function railLink(wrapper, title) {
 
 describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   beforeEach(() => {
+    boardStore.state.boardId = null
     for (const [collection, entities] of Object.entries(workspace)) {
       replaceState(collection, entities)
     }
@@ -71,6 +72,13 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   it('destaca somente a página do time atual quando a loja tem dois times', async () => {
     const wrapper = await mountAt('/teams/design/profiles')
     expect(currentTitles(wrapper)).toEqual(['Design team · Profiles'])
+    wrapper.unmount()
+  })
+
+  it('destaca o board escolhido pela loja na rota /boards sem id na rota', async () => {
+    boardStore.state.boardId = 'B2'
+    const wrapper = await mountAt('/boards')
+    expect(currentTitles(wrapper)).toEqual(['Board 2'])
     wrapper.unmount()
   })
 

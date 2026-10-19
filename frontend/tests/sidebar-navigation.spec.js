@@ -113,7 +113,7 @@ describe('isActiveLeaf', () => {
   it('destaca o board escolhido pela loja quando a rota /boards nao traz id', () => {
     const current = railSections(navigation)
       .flat()
-      .filter((leaf) => isActiveLeaf(leaf, routeOf('board', { boardId: '' }), { id: 'KANB', path: '/boards/KANB' }))
+      .filter((leaf) => isActiveLeaf(leaf, routeOf('board', { boardId: '' }), { id: 'KANB', name: 'Kanban' }))
     expect(current.map((leaf) => leaf.railTitle)).toEqual(['Kanban'])
   })
 

@@ -156,6 +156,13 @@ describe('rail do sidebar colapsado', () => {
     })
   })
 
+  it('destaca o board escolhido pela loja na rota padrão /#/boards', () => {
+    cy.visit('/#/boards')
+    cy.get('.leaf').should('have.length.greaterThan', 0)
+    collapse()
+    expectOneCurrent('Kanban')
+  })
+
   it('não exibe ponto de simulação no rail, como na árvore', () => {
     cy.visit('/#/boards')
     cy.get('.sim-dot').should('have.length.greaterThan', 0)
