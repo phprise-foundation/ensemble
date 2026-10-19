@@ -7,6 +7,24 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.17.1 — 2026-10-19
+
+### Fixed
+
+- **KAN-18** — grade inferior do console fecha o MVE em pt-BR: `ConsoleInput.vue`,
+  `ConsoleOutput.vue` e o E2E passam a usar os rótulos do contrato
+  (`Entrada do console`, `Digite um comando… (/help)`, `Enviar`,
+  `Nenhuma mensagem`, `Filtrar por ator`, `Todas`, `Nova saída`/`Ocioso`,
+  `N nova`/`N novas`), com a pílula singular medida por mutação. `append()`
+  normaliza todo `at` para ISO 8601 UTC (inclusive o `+00:00` do presenter PHP)
+  e preserva como texto o valor não interpretável. `start()` dispara
+  `pollTick()` imediato, então a grade abre preenchida (KAN-124); o dedupe cobre
+  a reabertura. Guia e `.feature` alinhados; no merge com a main `c562dcb`:
+  vitest `79/79`, `console.test.mjs` `21/21`, build verde e E2E `27/27` em porta
+  livre (`console.cy.js` `3/3`). PR #92, release `v0.17.1`. Ressalvas: o harness
+  de E2E ainda aceita um Vite alheio na 5173 (guarda na KAN-68/PR #90) e a
+  KAN-68 precisa de rebase sobre esta `main`.
+
 ## v0.17.0 — 2026-10-19
 
 ### Added
