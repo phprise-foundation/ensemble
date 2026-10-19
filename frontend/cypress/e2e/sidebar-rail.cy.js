@@ -180,6 +180,25 @@ describe('rail do sidebar colapsado', () => {
     cy.get('nav.rail').should('not.exist')
 
     cy.viewport(1025, 800)
+    cy.window().then((win) => {
+      win.dispatchEvent(new Event('resize'))
+    })
+    cy.get('button.sidebar-toggle').should('be.visible')
+    cy.get('nav:not(.rail)').should('be.visible')
+    cy.get('nav.rail').should('not.exist')
+
+    cy.viewport(1024, 800)
+    cy.window().then((win) => {
+      win.dispatchEvent(new Event('resize'))
+    })
+    cy.get('button.sidebar-toggle').should('not.exist')
+    cy.get('nav.rail').should('not.exist')
+    cy.get('nav:not(.rail)').should('be.visible')
+
+    cy.viewport(1025, 800)
+    cy.window().then((win) => {
+      win.dispatchEvent(new Event('resize'))
+    })
     cy.get('button.sidebar-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'collapsed')
     cy.get('nav.rail a.rail-leaf').should('have.length.greaterThan', 0)

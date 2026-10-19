@@ -68,12 +68,13 @@ function mediaQueryFor(property, offset = 0) {
   return window.matchMedia(`(max-width: ${limit}px)`)
 }
 
-function updateIsMobile(event) {
-  isMobile.value = event.matches
-}
-
-function updateIsNarrow(event) {
-  isNarrow.value = event.matches
+function updateViewportFlags() {
+  if (sidebarQuery) {
+    isMobile.value = sidebarQuery.matches
+  }
+  if (narrowQuery) {
+    isNarrow.value = narrowQuery.matches
+  }
 }
 
 onMounted(() => {
@@ -83,19 +84,20 @@ onMounted(() => {
   sidebarQuery = mediaQueryFor('--breakpoint-sidebar')
   narrowQuery = mediaQueryFor('--breakpoint-mobile', -1)
   if (sidebarQuery) {
-    isMobile.value = sidebarQuery.matches
-    sidebarQuery.addEventListener('change', updateIsMobile)
+    sidebarQuery.addEventListener('change', updateViewportFlags)
   }
   if (narrowQuery) {
-    isNarrow.value = narrowQuery.matches
-    narrowQuery.addEventListener('change', updateIsNarrow)
+    narrowQuery.addEventListener('change', updateViewportFlags)
   }
+    updateViewportFlags()
+    window.addEventListener('resize', updateViewportFlags)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyboardShortcut)
-  sidebarQuery?.removeEventListener('change', updateIsMobile)
-  narrowQuery?.removeEventListener('change', updateIsNarrow)
+  window.removeEventListener('resize', updateViewportFlags)
+  sidebarQuery?.removeEventListener('change', updateViewportFlags)
+  narrowQuery?.removeEventListener('change', updateViewportFlags)
   document.body.classList.remove('drawer-locked')
 })
 
