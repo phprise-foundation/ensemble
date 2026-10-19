@@ -43,6 +43,10 @@ Funcionalidade: Grade inferior de console (output + input)
     singular "1 nova" e plural "N novas" pelo mesmo spec.
   - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
   - Rótulos pt-BR do output e do input: componentes (vitest).
+  - Coletor de erro de runtime: cypress/support/e2e.js, cenário 14; a prova
+    de que ele derruba (e de que o limpo passa) está no registro do PR.
+  - Harness (node:test, tests/run-e2e-port.test.mjs): cenário 15 — porta
+    ocupada aborta em vez de medir outro Vite.
   - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
     marcados como "E2E" abaixo, prova na interface em execução, não no source.
 
@@ -154,3 +158,15 @@ Funcionalidade: Grade inferior de console (output + input)
     Quando digita "/clear" e envia
     Então o log esvazia na tela
     E o mesmo fluxo passa no tema escuro e no claro
+
+  Cenário: E2E — erro de runtime no navegador derruba o cenário
+    Dado qualquer spec do Cypress que visita o board
+    Quando o console do navegador registra um erro ou uma rejeição solta
+    Então o afterEach do suporte reprova o cenário com as linhas capturadas
+    E um cenário sem erro passa limpo (prova de mutação do coletor)
+
+  Cenário: E2E — o harness recusa medir um servidor alheio
+    Dado outro processo escutando na porta pedida em E2E_PORT
+    Quando npm run test:e2e sobe o harness
+    Então o harness aborta com status 1 e avisa que a porta está em uso
+    E o Cypress nem chega a rodar contra o servidor alheio
