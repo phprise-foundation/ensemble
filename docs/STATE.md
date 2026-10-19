@@ -471,7 +471,14 @@
   ausente no `applyFailure`, backend PHP real e `PATCH` ainda aceitam status
   arbitrário, `typeId` não validado contra o workflow, escrita de `db.json`
   não atômica; os testes BDD/node:test/vitest/Cypress do contrato (§8) seguem
-  nas subtarefas KAN-122/123.
+  nas subtarefas KAN-122/123. No re-teste, a corrida do default (modal aberto
+  durante o `GET /api/workspace` nascia sem status) foi corrigida no PR #114:
+  `watch(initialStatuses)` em `BoardPage.vue` reaplica o primeiro `initial`
+  quando o valor corrente deixa de ser inicial válido, sem sobrescrever a
+  escolha do usuário e mantendo o bloqueio sem `initial`; spec nova
+  `board-new-task-default-status.spec.js` (3/3). Barra final: vitest 108/108,
+  `node --test` 128/128, build ok e E2E 47/47 na `main` reconciliada
+  (`8978e80`); release `v0.27.0`.
 - **Limites de descrição e comentário no protótipo (KAN-93, produção):** o
   fake backend passa a exigir o contrato do canal dos agentes: descrição ≤4095
   e comentário ≤1023 code points (`Array.from`, equivalente a `mb_strlen`),

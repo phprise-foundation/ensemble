@@ -7,6 +7,21 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.27.0 — 2026-10-19
+
+### Fixed
+
+- **KAN-94** — corrida do default do status no modal de nova task: com o
+  `GET /api/workspace` em atraso, abrir o modal antes da resposta deixava o
+  seletor sem valor (`selectedIndex: -1`) mesmo após a chegada dos status.
+  Um `watch` em `initialStatuses` (`BoardPage.vue`) reaplica o primeiro
+  `initial` quando o valor corrente deixa de ser inicial válido, sem
+  sobrescrever a escolha do usuário e mantendo o bloqueio quando o workflow
+  não tem `initial`; spec nova
+  `frontend/tests/board-new-task-default-status.spec.js` (3/3). Barra de
+  revisão: vitest 108/108, `node --test` 128/128, build ok e E2E 47/47 na
+  `main` reconciliada. PR #114, release `v0.27.0`.
+
 ## v0.26.0 — 2026-10-19
 
 ### Added

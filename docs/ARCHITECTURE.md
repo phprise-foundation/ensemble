@@ -58,7 +58,9 @@ pt-BR) e o `POST /api/issues` valida tudo **antes** de qualquer mutação —
 ou sem coluna respondem 422 `{ error, field }` (`boardId`/`statusId`), a
 coluna é derivada de `column.statusIds` e um `columnId` forjado é ignorado.
 `src/api/client.js` anexa `status`/`field` ao `Error`; a UI nunca faz parsing
-da mensagem. Contrato de aceite: `docs/KAN-94-guide.md`.
+da mensagem. Um `watch` em `initialStatuses` reaplica o primeiro `initial`
+quando a lista chega com o modal já aberto (corrida do loading), preservando
+a escolha válida do usuário. Contrato de aceite: `docs/KAN-94-guide.md`.
 
 Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
 ESM puro sem DOM nem dependência de Vue — importável pelo bundle, pelo fake
