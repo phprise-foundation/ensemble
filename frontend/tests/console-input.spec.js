@@ -91,7 +91,7 @@ describe('ConsoleInput', () => {
     expect(runCommand).toHaveBeenCalledTimes(2)
   })
 
-  it('histórico ↑/↓ recupera do mais recente e volta ao vazio', async () => {
+  it('histórico ↑/↓ recupera do mais recente e volta ao rascunho', async () => {
     const wrapper = mount(ConsoleInput)
     await type(wrapper, '/help')
     await send(wrapper)
@@ -180,9 +180,11 @@ describe('ConsoleInput com o catálogo real', () => {
     await post(wrapper, '/status')
     await post(wrapper, '/list')
     const texts = consoleStore.state.messages.map((message) => message.text).join('\n')
-    expect(texts).toContain('Agentes:')
-    expect(texts).toContain('Time Kaio: Vivy')
-    expect(texts).toContain('KAN-1 · Item ativo · A fazer · agent-1')
+    expect(texts).toContain('Agentes: Vivy')
+    expect(texts).toContain('Itens por status:')
+    expect(texts).toContain('A fazer: 1')
+    expect(texts).toContain('Feito: 1')
+    expect(texts).toContain('KAN-1 · Item ativo · A fazer')
     expect(texts).not.toContain('KAN-2')
   })
 
