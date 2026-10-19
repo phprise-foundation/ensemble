@@ -18,11 +18,13 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const menuToggle = ref(null)
 const isMobile = ref(false)
+const isNarrow = ref(false)
 const copilotOpen = ref(true)
 const consoleOpen = ref(false)
 const consoleHeight = ref(DEFAULT_CONSOLE_HEIGHT)
 const consoleHeightStyle = computed(() => ({ '--console-height': `${consoleHeight.value}px` }))
-let mediaQuery = null
+let sidebarQuery = null
+let narrowQuery = null
 
 function adjustConsoleHeight(delta) {
   consoleHeight.value = clampHeight(consoleHeight.value + delta)
@@ -56,32 +58,49 @@ function handleKeyboardShortcut(event) {
   }
 }
 
-function sidebarMediaQuery() {
+function mediaQueryFor(property, offset = 0) {
   if (typeof document === 'undefined') {
     return null
   }
-  const value = getComputedStyle(document.documentElement).getPropertyValue('--breakpoint-sidebar').trim()
-  return window.matchMedia(`(max-width: ${value || '0px'})`)
+  const value = getComputedStyle(document.documentElement).getPropertyValue(property).trim()
+  const declared = Number.parseFloat(value)
+  const limit = Number.isFinite(declared) ? declared + offset : 0
+  return window.matchMedia(`(max-width: ${limit}px)`)
 }
 
 function updateIsMobile(event) {
   isMobile.value = event.matches
 }
 
+function updateIsNarrow(event) {
+  isNarrow.value = event.matches
+}
+
 onMounted(() => {
   boardStore.load()
   session.load()
   window.addEventListener('keydown', handleKeyboardShortcut)
-  mediaQuery = sidebarMediaQuery()
-  if (mediaQuery) {
-    isMobile.value = mediaQuery.matches
-    mediaQuery.addEventListener('change', updateIsMobile)
+  sidebarQuery = mediaQueryFor('--breakpoint-sidebar')
+  narrowQuery = mediaQueryFor('--breakpoint-mobile', -1)
+  if (sidebarQuery) {
+    isMobile.value = sidebarQuery.matches
+    sidebarQuery.addEventListener('change', updateIsMobile)
+  }
+  if (narrowQuery) {
+    isNarrow.value = narrowQuery.matches
+    narrowQuery.addEventListener('change', updateIsNarrow)
   }
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyboardShortcut)
-  mediaQuery?.removeEventListener('change', updateIsMobile)
+  sidebarQuery?.removeEventListener('change', updateIsMobile)
+  narrowQuery?.removeEventListener('change', updateIsNarrow)
+  document.body.classList.remove('drawer-locked')
+})
+
+watch([sidebarOpen, isNarrow], ([isOpen, narrow]) => {
+  document.body.classList.toggle('drawer-locked', isOpen && narrow)
 })
 
 watch(sidebarOpen, (isOpen, wasOpen) => {
@@ -99,7 +118,7 @@ function toggleSimulation() {
 
 <template>
   <div class="app" v-if="session.signedIn">
-    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" :collapsed="sidebarCollapsed" @close="sidebarOpen = false" />
+    <AppSidebar :open="sidebarOpen" :is-mobile="isMobile" :narrow="isNarrow" :collapsed="sidebarCollapsed" @close="sidebarOpen = false" />
     <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
     <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
