@@ -1243,6 +1243,44 @@ textarea {
   color: var(--muted);
 }
 
+.console-input {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.console-input-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.console-input-field:disabled {
+  opacity: 0.6;
+}
+
+.console-input-send {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent-contrast);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.console-input-send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .console-jump {
   position: absolute;
   right: 16px;
