@@ -6,15 +6,25 @@ import { runCommand } from '../store/commands.js'
 const draft = ref('')
 const history = []
 const cursor = ref(-1)
+const pending = ref('')
 const busy = computed(() => consoleStore.state.busy)
 
+function candidate() {
+  return draft.value.trim()
+}
+
 function submit() {
-  const raw = draft.value
-  if (busy.value || !raw.trim()) {
+  const raw = candidate()
+  if (busy.value || !raw) {
     return
   }
+  commit(raw)
+}
+
+function commit(raw) {
   history.push(raw)
   cursor.value = -1
+  pending.value = ''
   draft.value = ''
   runCommand(raw)
 }
@@ -23,7 +33,9 @@ function previous() {
   if (history.length === 0) {
     return
   }
-  cursor.value = cursor.value < 0 ? history.length - 1 : Math.max(0, cursor.value - 1)
+  const leaving = cursor.value < 0
+  pending.value = leaving ? draft.value : pending.value
+  cursor.value = leaving ? history.length - 1 : Math.max(0, cursor.value - 1)
   draft.value = history[cursor.value]
 }
 
@@ -32,12 +44,8 @@ function next() {
     return
   }
   cursor.value += 1
-  if (cursor.value >= history.length) {
-    cursor.value = -1
-    draft.value = ''
-    return
-  }
-  draft.value = history[cursor.value]
+  draft.value = cursor.value >= history.length ? pending.value : history[cursor.value]
+  cursor.value = cursor.value >= history.length ? -1 : cursor.value
 }
 
 function onKeydown(event) {
