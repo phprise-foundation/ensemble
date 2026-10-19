@@ -63,6 +63,6 @@ test('largura do painel usa token proprio min(25vw, 400px)', () => {
   assert.doesNotMatch(panelBlock[0], /--panel-width/)
 })
 
-test('dicionario de icones expoe a chave copilot', () => {
-  assert.match(iconsVue, /copilot:\s*\[[^\]]*'M17 3h4v18h-4z'/)
+test('AppIcon.vue mapeia copilot para PanelRight (Lucide)', () => {
+  assert.match(iconsVue, /copilot:\s*PanelRight/)
 })
