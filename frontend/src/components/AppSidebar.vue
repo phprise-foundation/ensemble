@@ -6,23 +6,23 @@ import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
-import { sidebarNavigation, railSections } from '../navigation.js'
+import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
-const props = defineProps({
+const emit = defineEmits(['close'])
+const { open, isMobile, collapsed } = defineProps({
   open: { type: Boolean, default: false },
   isMobile: { type: Boolean, default: false },
   collapsed: { type: Boolean, default: false },
 })
-const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
 
-const isModal = computed(() => props.isMobile && props.open)
+const isModal = computed(() => isMobile && open)
 
 router.afterEach(() => {
-  if (props.open) {
+  if (open) {
     emit('close')
   }
 })
@@ -95,9 +95,9 @@ function activateTrap() {
 }
 
 watch(
-  () => props.open,
+  () => open,
   (isOpen, wasOpen) => {
-    if (props.isMobile && isOpen) {
+    if (isMobile && isOpen) {
       activateTrap()
       return
     }
@@ -108,20 +108,20 @@ watch(
 )
 
 watch(
-  () => props.isMobile,
+  () => isMobile,
   (mobile) => {
     if (!mobile) {
       detachKeydown()
       return
     }
-    if (props.open) {
+    if (open) {
       activateTrap()
     }
   }
 )
 
 onMounted(() => {
-  if (props.isMobile && props.open) {
+  if (isMobile && open) {
     activateTrap()
   }
 })
@@ -139,11 +139,11 @@ const editor = ref(null)
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
-const boards = computed(() => (workspaceId.value ? boardStore.boardsOf(workspaceId.value) : []))
-const workflows = computed(() => (workspaceId.value ? boardStore.workflowsOf(workspaceId.value) : []))
+const showRail = computed(() => collapsed)
 const railGroups = computed(() => railSections(navigation.value))
-const showRail = computed(() => props.collapsed && !props.isMobile)
-const railLeaves = computed(() => railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: leaf.route === route.name }))))
+const railLeaves = computed(() =>
+  railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
+)
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
 
 const slugify = (text) =>
@@ -169,7 +169,7 @@ function editWorkspace() {
 }
 
 function addBoard() {
-  openEditor('board', { id: '', name: '', workflowId: workflows.value[0]?.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
+  openEditor('board', { id: '', name: '', workflowId: navigation.value.workflows[0]?.entity.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
 }
 
 function editBoard(board) {
@@ -188,7 +188,7 @@ function addWorkflow() {
         key: 'templateId',
         label: 'Start from a template (optional)',
         type: 'select',
-        options: () => [{ value: '', label: 'Empty' }, ...workflows.value.map((workflow) => ({ value: workflow.id, label: workflow.name }))],
+        options: () => [{ value: '', label: 'Empty' }, ...navigation.value.workflows.map((entry) => ({ value: entry.entity.id, label: entry.entity.name }))],
       },
     ],
   )
@@ -330,7 +330,7 @@ async function removeEntity(kind, id, label) {
     :class="{ open, collapsed }"
     :role="isModal ? 'dialog' : undefined"
     :aria-modal="isModal ? 'true' : undefined"
-    :aria-hidden="props.isMobile ? !open : undefined"
+    :aria-hidden="isMobile ? !open : undefined"
     aria-label="Menu"
   >
     <div class="brand">
@@ -367,14 +367,14 @@ async function removeEntity(kind, id, label) {
             </span>
           </div>
           <div v-show="openBoards" class="submenu">
-            <div v-for="board in boards" :key="board.id" class="nav-entry">
-              <RouterLink class="leaf" :to="`/boards/${board.id}`" :title="board.name">
-                <AppIcon name="board" size="14" />
-                <span class="label">{{ board.name }}</span>
-                <span class="badge-id">{{ board.id }}</span>
+            <div v-for="entry in navigation.boards" :key="entry.entity.id" class="nav-entry">
+              <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
+                <AppIcon :name="leaf.icon" size="14" />
+                <span class="label">{{ leaf.label }}</span>
+                <span class="badge-id">{{ entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">
-                <button class="icon-btn" title="Edit board" @click.stop="editBoard(board)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
               </span>
             </div>
           </div>
@@ -463,7 +463,7 @@ async function removeEntity(kind, id, label) {
     <div v-if="showRail" class="rail-slot"><nav class="rail" aria-label="Pages">
       <template v-for="(leaves, index) in railLeaves" :key="index">
         <div v-if="index > 0" class="rail-divider" role="separator"></div>
-        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : null">
+        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
           <AppIcon :name="leaf.icon" :size="18" />
         </RouterLink>
       </template>

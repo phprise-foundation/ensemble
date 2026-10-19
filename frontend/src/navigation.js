@@ -18,7 +18,7 @@ function pageLeaf(page, parent, section) {
     railTitle: `${parent.name} ${page.label}`,
     icon: page.icon,
     to: page.path(parent.id),
-    route: page.route,
+    route: { name: page.route, params: { [`${section}Id`]: parent.id } },
     feature: page.feature,
   }
 }
@@ -35,21 +35,26 @@ function boardLeaf(board) {
     railTitle: board.name,
     icon: 'board',
     to: `/boards/${board.id}`,
-    route: 'board',
+    route: { name: 'board', params: { boardId: board.id } },
     feature: null,
   }
 }
 
-function experienceLeaf() {
+function experienceEntry() {
   return {
-    key: 'experience:experiences',
-    label: 'Experiences',
-    title: 'Experiences',
-    railTitle: 'Experiences',
-    icon: 'experiences',
-    to: '/experiences',
-    route: 'experiences',
-    feature: 'experiences',
+    entity: { id: 'experiences', name: 'Experiences' },
+    leaves: [
+      {
+        key: 'experience:experiences',
+        label: 'Experiences',
+        title: 'Experiences',
+        railTitle: 'Experiences',
+        icon: 'experiences',
+        to: '/experiences',
+        route: { name: 'experiences', params: {} },
+        feature: 'experiences',
+      },
+    ],
   }
 }
 
@@ -58,24 +63,36 @@ function emptyNavigation() {
 }
 
 function sectionsOf(navigation) {
-  return [
-    navigation.boards.map((entry) => [entry.leaf]),
-    navigation.workflows.map((entry) => entry.leaves),
-    navigation.teams.map((entry) => entry.leaves),
-    [navigation.experiences],
-  ]
+  return [...navigation.boards, ...navigation.workflows, ...navigation.teams, ...navigation.experiences].map((entry) => entry.leaves)
 }
 
 export function sidebarNavigation(store, workspaceId) {
   if (!workspaceId) {
     return emptyNavigation()
   }
-  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaf: boardLeaf(board) }))
+  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaves: [boardLeaf(board)] }))
   const workflows = store.workflowsOf(workspaceId).map((workflow) => ({ entity: workflow, leaves: pageLeaves(WORKFLOW_PAGES, workflow, 'workflow') }))
   const teams = store.teamsOf(workspaceId).map((team) => ({ entity: team, leaves: pageLeaves(TEAM_PAGES, team, 'team') }))
-  return { boards, workflows, teams, experiences: [experienceLeaf()] }
+  return { boards, workflows, teams, experiences: [experienceEntry()] }
 }
 
 export function railSections(navigation) {
-  return sectionsOf(navigation).flat().filter((leaves) => leaves.length > 0)
+  return sectionsOf(navigation).filter((leaves) => leaves.length > 0)
+}
+
+export function isActiveLeaf(leaf, route, chosen) {
+  const sameRoute = leaf.route.name === route.name
+  const boardChosen = route.name === 'board' && !route.params.boardId
+  const chosenBoard = boardChosen && Boolean(chosen) && chosen.path === leaf.to
+  if (!sameRoute) {
+    return false
+  }
+  if (boardChosen) {
+    return chosenBoard
+  }
+  return matchesParams(leaf, route)
+}
+
+function matchesParams(leaf, route) {
+  return Object.entries(leaf.route.params).every(([key, value]) => route.params[key] === value)
 }
