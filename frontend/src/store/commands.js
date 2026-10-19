@@ -1,45 +1,48 @@
 import { boardStore } from './board.js'
 import { consoleStore } from './console.js'
 
-const CATALOG = '/status, /list, /help, /clear'
+export const CATALOG = ['/status', '/list', '/clear', '/help']
 
-function agentNamesOfTeam(team) {
-  const names = boardStore.agentsOf(team.id).map((agent) => agent.name)
-  return `${team.name}: ${names.length > 0 ? names.join(', ') : '—'}`
-}
-
-function statusText() {
-  const agentLines = boardStore.state.teams.map(agentNamesOfTeam)
-  const issueLines = activeIssues().map((issue) => `· ${issue.id} ${issue.summary} [${issue.statusId}]`)
-  return ['Agentes:', ...agentLines, '', 'Itens ativos:', ...issueLines].join('\n')
-}
-
-function statusNameOf(issue) {
-  return boardStore.status(issue.statusId)?.name ?? '—'
+function nameOf(statusId) {
+  return boardStore.status(statusId)?.name ?? statusId
 }
 
 function isActive(issue) {
-  const status = boardStore.status(issue.statusId)
-  return status === null || status.type !== 'final'
+  return boardStore.status(issue.statusId)?.type !== 'final'
 }
 
 function activeIssues() {
   return boardStore.state.issues.filter(isActive)
 }
 
-function listText() {
-  const lines = activeIssues().map((issue) => {
-    const creator = issue.assigneeId ?? issue.ownerId ?? '—'
-    const status = statusNameOf(issue)
-    return `${issue.id} · ${issue.summary} · ${status} · ${creator}`
+function agentsText() {
+  const names = boardStore.state.agents.map((agent) => agent.name)
+  return names.length > 0 ? names.join(', ') : 'nenhum agente registrado'
+}
+
+function groupedText(issues) {
+  const names = [...new Set(issues.map((issue) => nameOf(issue.statusId)))]
+  return names.map((name) => {
+    const ids = issues.filter((issue) => nameOf(issue.statusId) === name).map((issue) => issue.id)
+    return `${name}: ${ids.join(', ')}`
   })
+}
+
+function statusText() {
+  const active = activeIssues()
+  const header = active.length > 0 ? 'Itens ativos:' : 'Nenhum item ativo no momento.'
+  return [`Agentes: ${agentsText()}`, '', header, ...groupedText(active)].join('\n')
+}
+
+function listText() {
+  const lines = activeIssues().map((issue) => `${issue.id} · ${issue.summary} · ${nameOf(issue.statusId)}`)
   return lines.length > 0 ? ['Itens ativos:', ...lines].join('\n') : 'Nenhum item ativo no momento.'
 }
 
 function helpText() {
   return [
-    'Comandos disponíveis:',
-    '/status — resume o estado dos agentes e dos itens ativos',
+    `Comandos disponíveis: ${CATALOG.join(', ')}`,
+    '/status — resume os agentes e os itens ativos por status',
     '/list — lista os itens ativos do board',
     '/clear — limpa o console (ação local)',
     '/help — mostra este catálogo',
@@ -70,16 +73,18 @@ export async function runCommand(rawInput) {
 }
 
 async function execute(input) {
-  consoleStore.append({ actor: 'user', kind: 'command', text: input })
   const command = commandOf(input)
-  const handler = handlers[command]
   if (command === '/clear') {
     consoleStore.clear()
     return
   }
+  consoleStore.append({ actor: 'user', kind: 'command', text: input })
+  await Promise.resolve()
+  const handler = handlers[command]
   if (!handler) {
-    consoleStore.append({ actor: 'system', kind: 'error', text: `Comando desconhecido: ${command}. Catálogo: ${CATALOG}. Use /help.` })
+    const text = `Comando desconhecido: ${command}. Catálogo: ${CATALOG.join(', ')}. Use /help.`
+    consoleStore.append({ actor: 'system', kind: 'error', text })
     return
   }
-  consoleStore.append({ actor: 'system', kind: 'system', text: handler(input) })
+  consoleStore.append({ actor: 'system', kind: 'system', text: handler() })
 }

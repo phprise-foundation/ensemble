@@ -313,11 +313,15 @@ describe('AppConsole resizing', () => {
 })
 
 describe('console polling', () => {
-  it('keeps the rejected promise inside the store instead of leaking it', async () => {
+  it('keeps the failure of the polling inside the store as a single error line', async () => {
     fetchIssues.mockRejectedValue(new Error('GET /api/issues falhou'))
 
     await expect(consoleStore.pollOnce()).resolves.toBeUndefined()
-    expect(consoleStore.state.messages).toHaveLength(0)
+    await expect(consoleStore.pollOnce()).resolves.toBeUndefined()
+
+    const failures = consoleStore.state.messages.filter((message) => message.kind === 'error')
+    expect(failures).toHaveLength(1)
+    expect(failures[0].text).toContain('GET /api/issues falhou')
   })
 
   it('does not overlap ticks while one poll is still in flight', async () => {

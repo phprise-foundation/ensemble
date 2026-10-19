@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { consoleStore } from '../store/console.js'
 
 const PIN_TOLERANCE_PX = 24
@@ -21,7 +21,11 @@ const visible = computed(() => {
 })
 
 function timeOf(message) {
-  return message.at.slice(11, 19)
+  const date = new Date(message.at)
+  if (Number.isNaN(date.getTime())) {
+    return message.at
+  }
+  return date.toLocaleTimeString('pt-BR', { hour12: false })
 }
 
 function scrollToEnd(element) {
@@ -58,8 +62,14 @@ function signalActivity() {
   clearTimeout(activityTimer)
   activityTimer = setTimeout(() => {
     active.value = false
+    activityTimer = null
   }, ACTIVITY_MS)
 }
+
+onUnmounted(() => {
+  clearTimeout(activityTimer)
+  activityTimer = null
+})
 
 function keepAtBottom() {
   if (pinned.value && scroller.value) {
@@ -67,9 +77,12 @@ function keepAtBottom() {
   }
 }
 
-watch(() => messages.value.length, () => {
+watch([() => messages.value.length, () => consoleStore.state.unread], () => {
+  const latest = messages.value.at(-1)
+  if (latest?.kind === 'agent' && consoleStore.state.unread > 0) {
+    signalActivity()
+  }
   keepAtBottom()
-  signalActivity()
 }, { flush: 'post' })
 watch([pinned, actor], keepAtBottom, { flush: 'post' })
 </script>
