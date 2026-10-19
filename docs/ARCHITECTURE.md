@@ -32,7 +32,15 @@ with an immediate tick so the grid opens filled), normalising every message
 timestamp to ISO 8601 UTC, adapting
 both comment payloads (camelCase fake backend and PHP presenter), deduplicating
 by comment key and pausing while the tab is hidden; `store/commands.js` executes
-the closed command catalog locally against `boardStore`.
+the closed command catalog locally against `boardStore`. The grid is proven the
+way the user uses it: `tests/console.feature` is the single source of acceptance
+(16 scenarios, pt-BR) mapped one-to-one onto `tests/console.test.mjs` (node:test
+integration), `tests/console.spec.js` and `tests/console-output.spec.js`
+(vitest components) and `cypress/e2e/console.cy.js` (real browser). The E2E
+harness (`run-e2e.sh`) aborts with status 1 when the requested port is busy or
+the dev server dies, so the suite never measures a foreign Vite, and
+`cypress/support/e2e.js` fails any scenario whose page logs an error, an
+unhandled rejection or `console.error`.
 
 ## Layers
 
