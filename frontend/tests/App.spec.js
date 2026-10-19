@@ -8,6 +8,7 @@ vi.mock('../src/store/board.js', () => ({
   boardStore: {
     load: vi.fn(),
     workspace: { value: { id: 'ws', name: 'Workspace' } },
+    board: { value: null },
     boardsOf: () => [],
     workflowsOf: () => [],
     teamsOf: () => [],
