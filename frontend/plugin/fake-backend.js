@@ -7,7 +7,7 @@ import { COMMENT_LIMIT, DESCRIPTION_LIMIT, countCharacters, limitError } from '.
 
 const here = dirname(fileURLToPath(import.meta.url))
 const dataDirectory = join(here, '..', '.data')
-const dataFile = join(dataDirectory, 'db.json')
+const dataFile = process.env.E2E_DATA_FILE || join(dataDirectory, 'db.json')
 
 const COLLECTIONS = [
   'workspaces', 'workflows', 'statuses', 'transitions', 'issueTypes',
@@ -28,6 +28,7 @@ export function load(filePath = dataFile) {
 }
 
 function save(db) {
+  mkdirSync(dirname(dataFile), { recursive: true })
   writeFileSync(dataFile, JSON.stringify(db, null, 2))
 }
 

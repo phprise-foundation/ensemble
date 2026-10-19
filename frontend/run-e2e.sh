@@ -8,6 +8,10 @@
 # KAN-32): the suite must prove the fake backend backfills new seed keys on
 # boot, not only on a clean clone. The developer database is backed up before
 # and restored after the run.
+#
+# When E2E_DATA_FILE is set, the fixture goes to that file instead of the
+# developer database: nothing is backed up or restored, and the file is
+# removed on cleanup unless it already existed (KAN-125/145).
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${E2E_PORT:-5173}"
@@ -16,6 +20,7 @@ BASE="http://127.0.0.1:$PORT"
 LOG="$(mktemp)"
 BACKUP="$(mktemp)"
 DATA_FILE="$DIR/.data/db.json"
+EPHEMERAL=0
 HAD_DATABASE=0
 SERVER_PID=""
 CYPRESS_PID=""
@@ -30,20 +35,29 @@ cleanup() {
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
-  if [ "$HAD_DATABASE" = "1" ]; then
-    cp "$BACKUP" "$DATA_FILE"
-  else
+  if [ "$EPHEMERAL" = "1" ]; then
     rm -f "$DATA_FILE"
+  else
+    if [ "$HAD_DATABASE" = "1" ]; then
+      cp "$BACKUP" "$DATA_FILE"
+    else
+      rm -f "$DATA_FILE"
+    fi
   fi
   rm -f "$LOG" "$BACKUP" "$CYPRESS_LOG"
 }
 trap cleanup EXIT INT TERM
 
-if [ -f "$DATA_FILE" ]; then
+if [ -n "${E2E_DATA_FILE:-}" ]; then
+  DATA_FILE="$E2E_DATA_FILE"
+  EPHEMERAL=1
+  export E2E_DATA_FILE
+  mkdir -p "$(dirname "$DATA_FILE")"
+elif [ -f "$DATA_FILE" ]; then
   cp "$DATA_FILE" "$BACKUP"
   HAD_DATABASE=1
 fi
-mkdir -p "$DIR/.data"
+mkdir -p "$(dirname "$DATA_FILE")"
 node --input-type=module -e "import { createSeed } from './src/data/seed.js'; const database = createSeed(); delete database.user; process.stdout.write(JSON.stringify(database, null, 2))" >"$DATA_FILE" || {
   echo "could not prepare the legacy database fixture" >&2
   exit 1
