@@ -57,6 +57,28 @@ describe('frontend smoke', () => {
     expect(errors, 'runtime errors').to.deep.equal([])
   })
 
+  it('resizes the console grid by pointer drag within the 60vh ceiling', () => {
+    cy.viewport(1280, 800)
+    cy.visit('/')
+    cy.get('body').type('{ctrl}j')
+    cy.get('#app-console').should('have.css', 'height', '240px')
+    cy.get('.console-resize').then(($handle) => {
+      const box = $handle[0].getBoundingClientRect()
+      cy.wrap($handle).trigger('pointerdown', { clientY: box.top, force: true })
+      cy.window().trigger('pointermove', { clientY: box.top - 100 })
+      cy.window().trigger('pointerup', { clientY: box.top - 100 })
+    })
+    cy.get('#app-console').should('have.css', 'height', '340px')
+    cy.get('.console-resize').then(($handle) => {
+      const box = $handle[0].getBoundingClientRect()
+      cy.wrap($handle).trigger('pointerdown', { clientY: box.top, force: true })
+      cy.window().trigger('pointermove', { clientY: -5000 })
+      cy.window().trigger('pointerup', { clientY: -5000 })
+    })
+    cy.get('#app-console').should('have.css', 'height', '480px')
+    expect(errors, 'runtime errors').to.deep.equal([])
+  })
+
   it('toggles the theme on the top bar control', () => {
     cy.visit('/')
     cy.get('html').should('have.attr', 'data-theme', 'dark')

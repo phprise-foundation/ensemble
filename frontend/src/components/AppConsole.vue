@@ -3,41 +3,31 @@ import { onMounted, onUnmounted } from 'vue'
 import ConsoleInput from './ConsoleInput.vue'
 import ConsoleOutput from './ConsoleOutput.vue'
 import { consoleStore } from '../store/console.js'
-import {
-  CONSOLE_HEIGHT_STEP,
-  addConsoleHeight,
-  consoleHeightValue,
-  resetConsoleHeight,
-  setConsoleHeight,
-} from '../store/consoleHeight.js'
 
-const emit = defineEmits(['close'])
+const props = defineProps({
+  height: { type: Number, required: true },
+  step: { type: Number, required: true },
+})
+
+const emit = defineEmits(['close', 'resize', 'adjust', 'reset'])
 
 function onKeydown(event) {
-  const handlers = { ArrowUp: grow, ArrowDown: shrink }
-  const handler = handlers[event.key]
-  if (!handler) {
+  const directions = { ArrowUp: 1, ArrowDown: -1 }
+  const direction = directions[event.key]
+  if (!direction) {
     return
   }
   event.preventDefault()
-  handler()
-}
-
-function grow() {
-  addConsoleHeight(CONSOLE_HEIGHT_STEP)
-}
-
-function shrink() {
-  addConsoleHeight(-CONSOLE_HEIGHT_STEP)
+  emit('adjust', direction * props.step)
 }
 
 function onPointerDown(event) {
   event.preventDefault()
   const startY = event.clientY
-  const startHeight = consoleHeightValue()
+  const startHeight = props.height
 
   function onMove(moveEvent) {
-    setConsoleHeight(startHeight + (startY - moveEvent.clientY))
+    emit('resize', startHeight + (startY - moveEvent.clientY))
   }
 
   function onUp() {
@@ -68,7 +58,7 @@ onUnmounted(() => {
       aria-label="Redimensionar console"
       @keydown="onKeydown"
       @pointerdown="onPointerDown"
-      @dblclick="resetConsoleHeight"
+      @dblclick="emit('reset')"
     ></div>
     <div class="console-header">
       <span class="console-title">Console</span>

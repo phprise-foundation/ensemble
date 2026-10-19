@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import App from '../src/App.vue'
 import ConsoleOutput from '../src/components/ConsoleOutput.vue'
 import { consoleStore } from '../src/store/console.js'
-import { resetConsoleHeight } from '../src/store/consoleHeight.js'
+import { DEFAULT_CONSOLE_HEIGHT } from '../src/store/consoleHeight.js'
 
 vi.mock('../src/store/board.js', () => ({
   boardStore: {
@@ -23,6 +23,8 @@ vi.mock('../src/store/board.js', () => ({
   },
 }))
 
+const { fetchIssues } = vi.hoisted(() => ({ fetchIssues: vi.fn() }))
+
 vi.mock('../src/api/index.js', () => ({
   isSimulated: () => false,
   setFeature: () => {},
@@ -33,6 +35,7 @@ vi.mock('../src/api/index.js', () => ({
   api: {
     fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
     updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+    fetchIssues,
   },
 }))
 
@@ -46,7 +49,7 @@ vi.mock('../src/theme.js', () => ({
   toggleTheme: () => {},
 }))
 
-const DEFAULT_HEIGHT = 240
+const DEFAULT_HEIGHT = DEFAULT_CONSOLE_HEIGHT
 const MIN_HEIGHT = 120
 const STEP = 16
 
@@ -116,8 +119,13 @@ function appendMessages() {
 
 beforeEach(() => {
   consoleStore.clear()
-  resetConsoleHeight()
+  fetchIssues.mockReset()
+  fetchIssues.mockResolvedValue([])
 })
+
+function dispatchPointer(type, target, clientY) {
+  target.dispatchEvent(new window.PointerEvent(type, { clientY, bubbles: true, cancelable: true }))
+}
 
 describe('App console grid', () => {
   it('is born closed and toggles from the console button', async () => {
@@ -231,6 +239,36 @@ describe('AppConsole resizing', () => {
     app.unmount()
   })
 
+  it('resizes with the pointer drag and stops following once released', async () => {
+    const { app, handle } = await openConsole()
+
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT}px`)
+
+    dispatchPointer('pointerdown', handle.element, 600)
+    dispatchPointer('pointermove', window, 500)
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT + 100}px`)
+
+    dispatchPointer('pointerup', window, 500)
+    dispatchPointer('pointermove', window, 300)
+    await nextTick()
+    expect(heightOf(app.find('#app-console'))).toBe(`${DEFAULT_HEIGHT + 100}px`)
+    app.unmount()
+  })
+
+  it('clamps the pointer drag at the 60vh ceiling', async () => {
+    const { app, handle } = await openConsole()
+    const ceiling = Math.round(window.innerHeight * 0.6)
+
+    dispatchPointer('pointerdown', handle.element, 700)
+    dispatchPointer('pointermove', window, -5000)
+    await nextTick()
+
+    expect(heightOf(app.find('#app-console'))).toBe(`${Math.max(ceiling, MIN_HEIGHT)}px`)
+    dispatchPointer('pointerup', window, -5000)
+    app.unmount()
+  })
+
   it('closes from the header button of the grid', async () => {
     const app = mountConsoleInApp()
     await nextTick()
@@ -246,11 +284,11 @@ describe('AppConsole resizing', () => {
     app.unmount()
   })
 
-  it('leaves the height to the app so the grid survives closing and reopening', async () => {
+  it('keeps the height in App.vue so the grid survives closing and reopening', async () => {
     const app = mountApp(false)
     await nextTick()
 
-    expect(app.find('.console-toggle').attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT}px`)
+    expect(app.find('.console-toggle').attributes('style')).toBeUndefined()
 
     await app.find('.console-toggle').trigger('click')
     await nextTick()
@@ -271,6 +309,34 @@ describe('AppConsole resizing', () => {
 
     expect(app.find('#app-console').attributes('style')).toContain(`--console-height: ${DEFAULT_HEIGHT + STEP}px`)
     app.unmount()
+  })
+})
+
+describe('console polling', () => {
+  it('keeps the rejected promise inside the store instead of leaking it', async () => {
+    fetchIssues.mockRejectedValue(new Error('GET /api/issues falhou'))
+
+    await expect(consoleStore.pollOnce()).resolves.toBeUndefined()
+    expect(consoleStore.state.messages).toHaveLength(0)
+  })
+
+  it('does not overlap ticks while one poll is still in flight', async () => {
+    let release = () => {}
+    fetchIssues.mockReturnValue(new Promise((resolve) => {
+      release = resolve
+    }))
+
+    const first = consoleStore.pollOnce()
+    const second = consoleStore.pollOnce()
+    expect(fetchIssues).toHaveBeenCalledTimes(1)
+
+    release([])
+    await Promise.all([first, second])
+    expect(fetchIssues).toHaveBeenCalledTimes(1)
+
+    fetchIssues.mockResolvedValue([])
+    await consoleStore.pollOnce()
+    expect(fetchIssues).toHaveBeenCalledTimes(2)
   })
 })
 

@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
@@ -8,7 +8,7 @@ import AppIcon from './components/AppIcon.vue'
 import AppCopilot from './components/AppCopilot.vue'
 import AppConsole from './components/AppConsole.vue'
 import { boardStore } from './store/board.js'
-import { consoleHeightStyle } from './store/consoleHeight.js'
+import { CONSOLE_HEIGHT_STEP, DEFAULT_CONSOLE_HEIGHT, clampHeight } from './store/consoleHeight.js'
 import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
 import { hasSimulation, setAll } from './api/index.js'
@@ -20,7 +20,21 @@ const menuToggle = ref(null)
 const isMobile = ref(false)
 const copilotOpen = ref(true)
 const consoleOpen = ref(false)
+const consoleHeight = ref(DEFAULT_CONSOLE_HEIGHT)
+const consoleHeightStyle = computed(() => ({ '--console-height': `${consoleHeight.value}px` }))
 let mediaQuery = null
+
+function adjustConsoleHeight(delta) {
+  consoleHeight.value = clampHeight(consoleHeight.value + delta)
+}
+
+function setConsoleHeight(value) {
+  consoleHeight.value = clampHeight(value)
+}
+
+function resetConsoleHeight() {
+  consoleHeight.value = DEFAULT_CONSOLE_HEIGHT
+}
 
 function handleKeyboardShortcut(event) {
   if (isMobile.value) {
@@ -113,6 +127,18 @@ function toggleSimulation() {
         </button>
         <button
           v-if="!isMobile"
+          class="icon-btn console-toggle"
+          :title="consoleOpen ? 'Ocultar console' : 'Mostrar console'"
+          aria-label="Alternar console"
+          :aria-expanded="consoleOpen"
+          aria-controls="app-console"
+          @click="consoleOpen = !consoleOpen"
+        >
+          <AppIcon name="console" />
+        </button>
+
+        <button
+          v-if="!isMobile"
           class="icon-btn copilot-toggle"
           :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
           aria-label="Toggle copilot"
@@ -121,18 +147,6 @@ function toggleSimulation() {
           @click="copilotOpen = !copilotOpen"
         >
           <AppIcon name="copilot" />
-        </button>
-        <button
-          v-if="!isMobile"
-          class="icon-btn console-toggle"
-          :style="consoleHeightStyle"
-          :title="consoleOpen ? 'Ocultar console' : 'Mostrar console'"
-          aria-label="Alternar console"
-          :aria-expanded="consoleOpen"
-          aria-controls="app-console"
-          @click="consoleOpen = !consoleOpen"
-        >
-          <AppIcon name="console" />
         </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>
@@ -153,7 +167,16 @@ function toggleSimulation() {
       <main class="main">
         <RouterView />
       </main>
-      <AppConsole v-if="!isMobile && consoleOpen" :style="consoleHeightStyle" @close="consoleOpen = false" />
+      <AppConsole
+        v-if="!isMobile && consoleOpen"
+        :style="consoleHeightStyle"
+        :height="consoleHeight"
+        :step="CONSOLE_HEIGHT_STEP"
+        @resize="setConsoleHeight"
+        @adjust="adjustConsoleHeight"
+        @reset="resetConsoleHeight"
+        @close="consoleOpen = false"
+      />
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />

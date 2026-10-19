@@ -406,6 +406,11 @@ textarea {
   flex-direction: column;
 }
 
+.content > .topbar,
+.content > #app-console {
+  flex-shrink: 0;
+}
+
 /* Copilot panel */
 .copilot-panel {
   width: var(--copilot-width);

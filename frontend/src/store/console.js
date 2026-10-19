@@ -12,6 +12,7 @@ const state = reactive({
 
 let seq = 0
 let timer = null
+let inFlight = null
 const seen = new Set()
 
 function nextMessage({ actor, kind, text, at }) {
@@ -37,12 +38,13 @@ export const consoleStore = {
   },
 
   async pollOnce() {
-    const issues = await api.fetchIssues()
-    for (const issue of issues) {
-      for (const comment of issue.comments ?? []) {
-        absorb(issue.id, comment)
-      }
+    if (inFlight) {
+      return inFlight
     }
+    inFlight = readIssues().finally(() => {
+      inFlight = null
+    })
+    return inFlight
   },
 
   start() {
@@ -72,6 +74,19 @@ function absorb(issueId, comment) {
   }
   seen.add(key)
   consoleStore.append({ actor: comment.author, kind: 'agent', text: comment.body, at: comment.at })
+}
+
+async function readIssues() {
+  try {
+    const issues = await api.fetchIssues()
+    for (const issue of issues) {
+      for (const comment of issue.comments ?? []) {
+        absorb(issue.id, comment)
+      }
+    }
+  } catch {
+    return
+  }
 }
 
 async function pollTick() {
