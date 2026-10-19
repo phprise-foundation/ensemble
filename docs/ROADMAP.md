@@ -81,8 +81,10 @@ marking what is still a prototype.
    do console — container, toggle, `Ctrl+J` e CSS (KAN-65, release `v0.15.0`) —
    mais a store de mensagens, o polling idempotente e o catálogo fechado de
    comandos (KAN-64, release `v0.15.2`) e o painel de output com autoscroll
-   travável, filtro por ator e pílula de não lidas (KAN-66, release `v0.16.0`);
-   o poll imediato na abertura segue na KAN-124 e o chat real continua pendente.
+   travável, filtro por ator e pílula de não lidas (KAN-66, release `v0.16.0`)
+   e o painel de input com catálogo delegado, `busy` sem reenvio e histórico
+   efêmero (KAN-67, release `v0.17.0`); o poll imediato na abertura segue na
+   KAN-124 e o chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
    (prototype).**
