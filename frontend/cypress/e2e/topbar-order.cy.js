@@ -84,6 +84,15 @@ describe('ordem dos controles do topbar na interface em execução', () => {
     expectNoOverflow()
   })
 
+  it('usa os ícones Lucide corretos nos slots de grade', () => {
+    cy.viewport(1280, 900)
+    open()
+
+    cy.get('[data-topbar-slot="grid-left"] svg').should('have.class', 'lucide-panel-left')
+    cy.get('[data-topbar-slot="grid-bottom"] svg').should('have.class', 'lucide-panel-bottom')
+    cy.get('[data-topbar-slot="grid-right"] svg').should('have.class', 'lucide-panel-right')
+  })
+
   it('Sim alterna a simulação, mantém o rótulo e publica aria-pressed', () => {
     cy.viewport(1280, 900)
     open()
