@@ -40,21 +40,16 @@ function boardLeaf(board) {
   }
 }
 
-function experienceEntry() {
+function experienceLeaf() {
   return {
-    entity: { id: 'experiences', name: 'Experiences' },
-    leaves: [
-      {
-        key: 'experience:experiences',
-        label: 'Experiences',
-        title: 'Experiences',
-        railTitle: 'Experiences',
-        icon: 'experiences',
-        to: '/experiences',
-        route: { name: 'experiences', params: {} },
-        feature: 'experiences',
-      },
-    ],
+    key: 'experience:experiences',
+    label: 'Experiences',
+    title: 'Experiences',
+    railTitle: 'Experiences',
+    icon: 'experiences',
+    to: '/experiences',
+    route: { name: 'experiences', params: {} },
+    feature: 'experiences',
   }
 }
 
