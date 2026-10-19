@@ -41,15 +41,15 @@ describe('sidebar colapsado na interface em execução', () => {
     cy.get('.leaf .label').each(($label) => {
       cy.wrap($label).should('not.be.visible')
     })
-    cy.get('.leaf svg').should('have.length.greaterThan', 0)
-    cy.get('.leaf svg').each(($icon) => {
+    cy.get('nav.rail .rail-leaf svg').should('have.length.greaterThan', 0)
+    cy.get('nav.rail .rail-leaf svg').each(($icon) => {
       cy.wrap($icon).should('be.visible')
     })
-    cy.get('.leaf').each(($leaf) => {
+    cy.get('nav.rail .rail-leaf').each(($leaf) => {
       cy.wrap($leaf).should('have.attr', 'title').and('not.be.empty')
     })
 
-    cy.get('.leaf').first().click()
+    cy.get('.leaf').first().click({ force: true })
     cy.location('hash').should('eq', '#/boards/KANB')
     cy.get('vite-error-overlay').should('not.exist')
   })

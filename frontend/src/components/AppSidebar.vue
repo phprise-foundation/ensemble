@@ -6,6 +6,7 @@ import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
+import { sidebarNavigation, railSections } from '../navigation.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -137,9 +138,12 @@ const editor = ref(null)
 
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
+const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
 const boards = computed(() => (workspaceId.value ? boardStore.boardsOf(workspaceId.value) : []))
 const workflows = computed(() => (workspaceId.value ? boardStore.workflowsOf(workspaceId.value) : []))
-const teams = computed(() => (workspaceId.value ? boardStore.teamsOf(workspaceId.value) : []))
+const railGroups = computed(() => railSections(navigation.value))
+const showRail = computed(() => props.collapsed && !props.isMobile)
+const railLeaves = computed(() => railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: leaf.route === route.name }))))
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
 
 const slugify = (text) =>
@@ -334,7 +338,7 @@ async function removeEntity(kind, id, label) {
       <span>Multi Agent</span>
     </div>
 
-    <nav class="nav">
+    <nav v-show="!showRail" class="nav">
       <div class="nav-entry" title="Workspaces">
         <AppIcon name="workspace" size="15" />
         <span>Workspaces</span>
@@ -385,18 +389,20 @@ async function removeEntity(kind, id, label) {
             </span>
           </div>
           <div v-show="openWorkflows" class="submenu">
-            <div v-for="workflow in workflows" :key="workflow.id">
-              <div class="nav-entry" :title="workflow.name">
+            <div v-for="entry in navigation.workflows" :key="entry.entity.id">
+              <div class="nav-entry" :title="entry.entity.name">
                 <AppIcon name="layers" size="14" />
-                <span>{{ workflow.name }}</span>
+                <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(workflow)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/statuses`" title="Statuses"><AppIcon name="statuses" size="14" /><span class="label">Statuses</span><span class="sim-dot sm" v-if="isSimulated('statuses')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/transitions`" title="Transitions"><AppIcon name="transitions" size="14" /><span class="label">Transitions</span><span class="sim-dot sm" v-if="isSimulated('transitions')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/workflows/${workflow.id}/issue-types`" title="Issue types"><AppIcon name="issues" size="14" /><span class="label">Issue types</span><span class="sim-dot sm" v-if="isSimulated('issueTypes')"></span></RouterLink>
+                <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
+                  <AppIcon :name="leaf.icon" size="14" />
+                  <span class="label">{{ leaf.label }}</span>
+                  <span class="sim-dot sm" v-if="leaf.feature && isSimulated(leaf.feature)"></span>
+                </RouterLink>
               </div>
             </div>
           </div>
@@ -411,18 +417,20 @@ async function removeEntity(kind, id, label) {
             </span>
           </div>
           <div v-show="openTeams" class="submenu">
-            <div v-for="team in teams" :key="team.id">
-              <div class="nav-entry" :title="team.name">
+            <div v-for="entry in navigation.teams" :key="entry.entity.id">
+              <div class="nav-entry" :title="entry.entity.name">
                 <AppIcon name="agents" size="14" />
-                <span>{{ team.name }}</span>
+                <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit team" @click.stop="editTeam(team)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
-                <RouterLink class="leaf" :to="`/teams/${team.id}/agents`" title="Agents"><AppIcon name="agents" size="14" /><span class="label">Agents</span><span class="sim-dot sm" v-if="isSimulated('agents')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/teams/${team.id}/roles`" title="Roles"><AppIcon name="roles" size="14" /><span class="label">Roles</span><span class="sim-dot sm" v-if="isSimulated('roles')"></span></RouterLink>
-                <RouterLink class="leaf" :to="`/teams/${team.id}/profiles`" title="Profiles"><AppIcon name="profiles" size="14" /><span class="label">Profiles</span><span class="sim-dot sm" v-if="isSimulated('profiles')"></span></RouterLink>
+                <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
+                  <AppIcon :name="leaf.icon" size="14" />
+                  <span class="label">{{ leaf.label }}</span>
+                  <span class="sim-dot sm" v-if="leaf.feature && isSimulated(leaf.feature)"></span>
+                </RouterLink>
               </div>
             </div>
           </div>
@@ -451,6 +459,15 @@ async function removeEntity(kind, id, label) {
         </div>
       </div>
     </nav>
+
+    <div v-if="showRail" class="rail-slot"><nav class="rail" aria-label="Pages">
+      <template v-for="(leaves, index) in railLeaves" :key="index">
+        <div v-if="index > 0" class="rail-divider" role="separator"></div>
+        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : null">
+          <AppIcon :name="leaf.icon" :size="18" />
+        </RouterLink>
+      </template>
+    </nav></div>
 
   </aside>
   <Teleport to="body">
