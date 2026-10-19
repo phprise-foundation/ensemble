@@ -340,8 +340,22 @@
   largura no DOM (320/400), abre card e reafirma `.issue-panel` e colunas ao
   alternar, e cobre 1024×900 e 390×844. Verificação na `main` pós-merge:
   vitest 53/53, guardas 7/7, E2E 27/27 (`copilot.cy.js` 8/8). PR #82, release
-  `v0.15.1`. Ressalva: a prova de independência do console fica para quando a
-  KAN-66 aterrissar; a CI segue vermelha no `Contracts` por Xvfb.
+  `v0.15.1`. Ressalva: a independência do console segue sem prova dedicada (a
+  KAN-66 cobriu só o painel de output); a CI segue vermelha no `Contracts` por
+  Xvfb.
+- **Grade inferior — painel de output (KAN-66):** `ConsoleOutput.vue` substitui
+  o stub da fundação e renderiza `consoleStore.state.messages` como log
+  `role="log"`/`aria-live="polite"`, uma `.console-line` por mensagem com classe
+  por `kind`, horário local e ator. `messages`/`unread` são computados — o
+  `/clear`, que troca o array, continua reagindo. `onMounted` ancora no fundo
+  antes de medir; com o leitor a ≤24px do fim o painel permanece fixado, rolar
+  para cima trava, e a pílula `.console-jump` conta `unread` e volta ao fundo
+  chamando `clearUnread()`. O filtro por ator (`All` + distintos) só altera a
+  renderização, o texto é interpolado (sem `v-html`) e o timer do indicador de
+  atividade é cancelado no unmount. Na árvore do PR: vitest `64/64` em UTC,
+  Asia/Tokyo e America/Sao_Paulo, build verde e E2E `27/27` (`console.cy.js`
+  `3/3`). PR #81, release `v0.16.0`; a CI segue vermelha no `Contracts` por
+  Xvfb.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
