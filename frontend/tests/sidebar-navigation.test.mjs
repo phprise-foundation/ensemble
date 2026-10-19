@@ -37,10 +37,10 @@ test('ordem do rail: boards, workflows, teams e Experiences', () => {
     sections.map((leaves) => leaves.map((leaf) => leaf.railTitle)),
     [
       ['Kanban'],
-      ['Standard Statuses', 'Standard Transitions', 'Standard Issue types'],
-      ['Flow B Statuses', 'Flow B Transitions', 'Flow B Issue types'],
-      ['Default team Agents', 'Default team Roles', 'Default team Profiles'],
-      ['Design Agents', 'Design Roles', 'Design Profiles'],
+      ['Standard · Statuses', 'Standard · Transitions', 'Standard · Issue types'],
+      ['Flow B · Statuses', 'Flow B · Transitions', 'Flow B · Issue types'],
+      ['Default team · Agents', 'Default team · Roles', 'Default team · Profiles'],
+      ['Design · Agents', 'Design · Roles', 'Design · Profiles'],
       ['Experiences'],
     ],
   )
@@ -67,6 +67,6 @@ test('link ativo considera o id do pai e destaca uma folha por vez', () => {
   const workflowCurrent = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'statuses', params: { workflowId: 'flow-b' } }))
   const teamCurrent = leaves.filter((leaf) => isActiveLeaf(leaf, { name: 'profiles', params: { teamId: 'design' } }))
   assert.deepEqual(boardCurrent.map((leaf) => leaf.railTitle), ['Kanban'])
-  assert.deepEqual(workflowCurrent.map((leaf) => leaf.railTitle), ['Flow B Statuses'])
-  assert.deepEqual(teamCurrent.map((leaf) => leaf.railTitle), ['Design Profiles'])
+  assert.deepEqual(workflowCurrent.map((leaf) => leaf.railTitle), ['Flow B · Statuses'])
+  assert.deepEqual(teamCurrent.map((leaf) => leaf.railTitle), ['Design · Profiles'])
 })

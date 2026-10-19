@@ -139,7 +139,7 @@ const editor = ref(null)
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
-const showRail = computed(() => collapsed)
+const showRail = computed(() => collapsed && !isMobile)
 const railGroups = computed(() => railSections(navigation.value))
 const railLeaves = computed(() =>
   railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
@@ -338,7 +338,16 @@ async function removeEntity(kind, id, label) {
       <span>Multi Agent</span>
     </div>
 
-    <nav v-show="!showRail" class="nav">
+    <nav v-if="showRail" class="nav rail" aria-label="Pages">
+      <template v-for="(leaves, index) in railLeaves" :key="leaves[0].key">
+        <div v-if="index > 0" class="rail-divider" role="separator"></div>
+        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
+          <AppIcon :name="leaf.icon" :size="18" />
+        </RouterLink>
+      </template>
+    </nav>
+
+    <nav v-else class="nav">
       <div class="nav-entry" title="Workspaces">
         <AppIcon name="workspace" size="15" />
         <span>Workspaces</span>
@@ -459,15 +468,6 @@ async function removeEntity(kind, id, label) {
         </div>
       </div>
     </nav>
-
-    <div v-if="showRail" class="rail-slot"><nav class="rail" aria-label="Pages">
-      <template v-for="(leaves, index) in railLeaves" :key="index">
-        <div v-if="index > 0" class="rail-divider" role="separator"></div>
-        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
-          <AppIcon :name="leaf.icon" :size="18" />
-        </RouterLink>
-      </template>
-    </nav></div>
 
   </aside>
   <Teleport to="body">

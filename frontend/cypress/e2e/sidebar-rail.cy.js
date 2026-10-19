@@ -65,7 +65,7 @@ describe('rail do sidebar colapsado', () => {
       })
 
       cy.get('nav.rail .nav-entry, nav.rail .chevron, nav.rail .icon-btn, nav.rail .badge-id, nav.rail .source-path, nav.rail .label, nav.rail .rail-leaf span').should('not.exist')
-      cy.get('.nav').should('not.be.visible')
+      cy.get('nav:not(.rail)').should('not.exist')
       cy.get('#app-sidebar .brand').then(($brand) => {
         expect($brand[0].getBoundingClientRect().width).to.eq(0)
       })
@@ -80,7 +80,7 @@ describe('rail do sidebar colapsado', () => {
       cy.get('button.sidebar-toggle').click()
       cy.get('button.sidebar-toggle').should('have.attr', 'aria-expanded', 'true')
       cy.get('nav.rail').should('not.exist')
-      cy.get('.nav').should('be.visible')
+      cy.get('nav:not(.rail)').should('be.visible')
       cy.get('.leaf').should('have.length', treeLeaves)
     })
   })
@@ -116,13 +116,13 @@ describe('rail do sidebar colapsado', () => {
   it('mantém o destaque ao recarregar em deep link e ao clicar em Experiences', () => {
     cy.visit('/#/workflows/standard/transitions')
     collapse()
-    expectOneCurrent('Standard Transitions')
+    expectOneCurrent('Standard · Transitions')
     cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.class', 'router-link-active')
 
     cy.reload()
     cy.get('#app-sidebar').should('not.have.class', 'collapsed')
     collapse()
-    expectOneCurrent('Standard Transitions')
+    expectOneCurrent('Standard · Transitions')
 
     cy.get('nav.rail a.rail-leaf[title="Experiences"]').click()
     cy.location('hash').should('eq', '#/experiences')
@@ -169,7 +169,7 @@ describe('rail do sidebar colapsado', () => {
     cy.visit('/')
     cy.get('.leaf').should('have.length.greaterThan', 0)
     cy.get('button.sidebar-toggle').should('not.be.visible')
-    cy.get('.nav').should('be.visible')
+    cy.get('nav:not(.rail)').should('be.visible')
     cy.get('nav.rail').should('not.exist')
 
     cy.viewport(1025, 800)
@@ -218,12 +218,12 @@ describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
     cy.location('hash').should('eq', '#/boards/B2')
     expectOneCurrent('Board 2')
 
-    cy.get('nav.rail a.rail-leaf[title="Flow B Statuses"]').click()
+    cy.get('nav.rail a.rail-leaf[title="Flow B · Statuses"]').click()
     cy.location('hash').should('eq', '#/workflows/flow-b/statuses')
-    expectOneCurrent('Flow B Statuses')
+    expectOneCurrent('Flow B · Statuses')
 
-    cy.get('nav.rail a.rail-leaf[title="Design team Roles"]').click()
+    cy.get('nav.rail a.rail-leaf[title="Design team · Roles"]').click()
     cy.location('hash').should('eq', '#/teams/design/roles')
-    expectOneCurrent('Design team Roles')
+    expectOneCurrent('Design team · Roles')
   })
 })

@@ -64,19 +64,19 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
 
   it('destaca somente a página do workflow atual quando a loja tem dois workflows', async () => {
     const wrapper = await mountAt('/workflows/flow-b/transitions')
-    expect(currentTitles(wrapper)).toEqual(['Flow B Transitions'])
+    expect(currentTitles(wrapper)).toEqual(['Flow B · Transitions'])
     wrapper.unmount()
   })
 
   it('destaca somente a página do time atual quando a loja tem dois times', async () => {
     const wrapper = await mountAt('/teams/design/profiles')
-    expect(currentTitles(wrapper)).toEqual(['Design team Profiles'])
+    expect(currentTitles(wrapper)).toEqual(['Design team · Profiles'])
     wrapper.unmount()
   })
 
   it('move o destaque para o único link atual ao clicar no rail', async () => {
     const wrapper = await mountAt('/teams/default/agents')
-    expect(currentTitles(wrapper)).toEqual(['Default team Agents'])
+    expect(currentTitles(wrapper)).toEqual(['Default team · Agents'])
     await railLink(wrapper, 'Experiences').trigger('click')
     await flushPromises()
     expect(currentTitles(wrapper)).toEqual(['Experiences'])
