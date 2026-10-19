@@ -5,6 +5,8 @@ import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
+import { dialog } from '../store/dialog.js'
+import { toast } from '../store/toast.js'
 import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
@@ -307,20 +309,29 @@ function collectionOf(kind) {
 }
 
 async function removeEntity(kind, id, label) {
-  if (!window.confirm(`Delete "${label}"?`)) {
-    return
+  const ok = await dialog.confirm({
+    title: 'Delete?',
+    message: `"${label}" will be removed.`,
+    confirmLabel: 'Delete',
+    danger: true,
+  })
+  if (!ok) return
+  try {
+    if (kind === 'workflow') {
+      for (const status of boardStore.statusesOf(id)) await boardStore.removeEntity('statuses', status.id)
+      for (const transition of boardStore.transitionsOf(id)) await boardStore.removeEntity('transitions', transition.id)
+      for (const type of boardStore.issueTypesOf(id)) await boardStore.removeEntity('issueTypes', type.id)
+    }
+    if (kind === 'team') {
+      for (const agent of boardStore.agentsOf(id)) await boardStore.removeEntity('agents', agent.id)
+      for (const role of boardStore.rolesOf(id)) await boardStore.removeEntity('roles', role.id)
+      for (const profile of boardStore.profilesOf(id)) await boardStore.removeEntity('profiles', profile.id)
+    }
+    await boardStore.removeEntity(collectionOf(kind), id)
+    toast.success(`"${label}" deleted.`)
+  } catch (problem) {
+    toast.error(problem.message)
   }
-  if (kind === 'workflow') {
-    for (const status of boardStore.statusesOf(id)) await boardStore.removeEntity('statuses', status.id)
-    for (const transition of boardStore.transitionsOf(id)) await boardStore.removeEntity('transitions', transition.id)
-    for (const type of boardStore.issueTypesOf(id)) await boardStore.removeEntity('issueTypes', type.id)
-  }
-  if (kind === 'team') {
-    for (const agent of boardStore.agentsOf(id)) await boardStore.removeEntity('agents', agent.id)
-    for (const role of boardStore.rolesOf(id)) await boardStore.removeEntity('roles', role.id)
-    for (const profile of boardStore.profilesOf(id)) await boardStore.removeEntity('profiles', profile.id)
-  }
-  await boardStore.removeEntity(collectionOf(kind), id)
 }
 </script>
 

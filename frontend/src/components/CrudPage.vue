@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { boardStore } from '../store/board.js'
+import { dialog } from '../store/dialog.js'
+import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
 import { isSimulated } from '../api/index.js'
 
@@ -55,16 +57,28 @@ async function save() {
   try {
     await boardStore.saveEntity(props.schema.collection, draft.value)
     editing.value = false
+    const label = draft.value.name ?? draft.value.id ?? props.schema.singular
+    toast.success(`${label} saved.`)
   } catch (problem) {
     error.value = problem.message
   }
 }
 
 async function remove(row) {
-  if (!window.confirm(`Delete "${row.name ?? row.id}"?`)) {
-    return
+  const label = row.name ?? row.id
+  const ok = await dialog.confirm({
+    title: 'Delete?',
+    message: `"${label}" will be removed.`,
+    confirmLabel: 'Delete',
+    danger: true,
+  })
+  if (!ok) return
+  try {
+    await boardStore.removeEntity(props.schema.collection, row.id)
+    toast.success(`"${label}" deleted.`)
+  } catch (problem) {
+    toast.error(problem.message)
   }
-  await boardStore.removeEntity(props.schema.collection, row.id)
 }
 </script>
 
