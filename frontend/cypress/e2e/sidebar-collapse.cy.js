@@ -28,29 +28,37 @@ describe('sidebar colapsado na interface em execução', () => {
     })
   })
 
-  it('oculta os rótulos das folhas com submenu aberto e preserva ícones, títulos e navegação', () => {
-    cy.visit('/')
+  it('troca a árvore expandida pelo rail com ícones, tooltips e navegação, e volta ao expandido', () => {
+    cy.visit('/#/boards/KANB')
     cy.get('.nav-entry[title="Boards"]').should('have.class', 'open')
-    cy.get('.leaf .label').should('have.length.greaterThan', 0)
-    cy.get('.leaf .label').first().should('be.visible')
+    cy.get('nav:not(.rail) .leaf .label').should('have.length.greaterThan', 0)
+    cy.get('nav:not(.rail) .leaf .label').first().should('be.visible')
 
     cy.get('button.sidebar-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'collapsed')
     cy.get('button.sidebar-toggle').should('have.attr', 'aria-expanded', 'false')
 
-    cy.get('.leaf .label').each(($label) => {
-      cy.wrap($label).should('not.be.visible')
-    })
-    cy.get('.leaf svg').should('have.length.greaterThan', 0)
-    cy.get('.leaf svg').each(($icon) => {
+    cy.get('nav.rail').should('have.attr', 'aria-label', 'Pages')
+    cy.get('nav:not(.rail)').should('not.exist')
+    cy.get('nav.rail .rail-leaf svg').should('have.length.greaterThan', 0)
+    cy.get('nav.rail .rail-leaf svg').each(($icon) => {
       cy.wrap($icon).should('be.visible')
     })
-    cy.get('.leaf').each(($leaf) => {
+    cy.get('nav.rail a.leaf.rail-leaf').each(($leaf) => {
       cy.wrap($leaf).should('have.attr', 'title').and('not.be.empty')
+      cy.wrap($leaf).should('have.attr', 'aria-label').and('not.be.empty')
+      cy.wrap($leaf).then(($node) => {
+        expect($node.attr('aria-label')).to.eq($node.attr('title'))
+      })
     })
 
-    cy.get('.leaf').first().click()
+    cy.get('nav.rail .rail-leaf').first().click()
     cy.location('hash').should('eq', '#/boards/KANB')
     cy.get('vite-error-overlay').should('not.exist')
+
+    cy.get('button.sidebar-toggle').click()
+    cy.get('#app-sidebar').should('not.have.class', 'collapsed')
+    cy.get('nav.rail').should('not.exist')
+    cy.get('nav:not(.rail) .leaf .label').first().should('be.visible')
   })
 })
