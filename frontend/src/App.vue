@@ -5,6 +5,7 @@ import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
+import AppCopilot from './components/AppCopilot.vue'
 import { boardStore } from './store/board.js'
 import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
@@ -15,10 +16,16 @@ const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const menuToggle = ref(null)
 const isMobile = ref(false)
+const copilotOpen = ref(true)
 let mediaQuery = null
 
 function handleKeyboardShortcut(event) {
   if (isMobile.value) {
+    return
+  }
+  if (event.key === 'b' && (event.ctrlKey || event.metaKey) && event.altKey) {
+    event.preventDefault()
+    copilotOpen.value = !copilotOpen.value
     return
   }
   if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
@@ -96,6 +103,17 @@ function toggleSimulation() {
         >
           <AppIcon name="sidebar" />
         </button>
+        <button
+          v-if="!isMobile"
+          class="icon-btn copilot-toggle"
+          :title="copilotOpen ? 'Hide copilot' : 'Show copilot'"
+          aria-label="Toggle copilot"
+          :aria-expanded="copilotOpen"
+          aria-controls="app-copilot"
+          @click="copilotOpen = !copilotOpen"
+        >
+          <AppIcon name="copilot" />
+        </button>
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>
         <button
@@ -116,6 +134,8 @@ function toggleSimulation() {
         <RouterView />
       </main>
     </div>
+
+    <AppCopilot v-if="!isMobile && copilotOpen" />
   </div>
   <div class="session-ended" v-else>
     <div class="session-ended-box">
