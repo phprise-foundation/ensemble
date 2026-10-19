@@ -37,6 +37,25 @@ runner. When `package.json` changes, run `npm install` first.
 To point the app at the real PHP API later, build/serve with
 `VITE_API_URL=https://backend` — the fake backend is then bypassed.
 
+## Ícones
+
+Os ícones da interface usam [`lucide-vue-next`](https://lucide.dev) na versão
+exata `1.0.0` (em `dependencies`). Somente `src/components/AppIcon.vue` importa
+o pacote, via imports nomeados — sem `import *` nem import dinâmico, para o
+bundle não inflar.
+
+O wrapper preserva a API `<AppIcon name="edit" size="14" />`, com `name`
+obrigatório e `size` com default 18. Cada nome é mapeado a um componente Lucide
+no próprio `AppIcon.vue`; todo ícone sai com `stroke-width="2"`,
+`fill="none"`, `stroke="currentColor"`, pontas arredondadas e
+`aria-hidden="true"`.
+
+A escala de tamanhos é fechada: **14, 16, 18 e 20** (default 18), sempre pela
+prop `size` — nunca redimensionar por CSS.
+
+Exceção única: `name="smartboard"` é a marca custom da sidebar e mantém o
+desenho próprio (traço 2) dentro do `AppIcon.vue`; não é migrado para Lucide.
+
 ## Prototype marking
 
 Everything is backed by the fake backend for now, so an **orange banner** shows
