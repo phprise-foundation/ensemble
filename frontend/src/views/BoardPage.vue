@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { boardStore } from '../store/board.js'
 import BoardColumn from '../components/BoardColumn.vue'
@@ -14,11 +14,15 @@ const dropBefore = ref(null)
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
+const summaryInput = ref(null)
+const summaryError = ref('')
+const statusError = ref('')
 
 const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
 const statuses = computed(() => boardStore.boardStatuses.value)
 const issueTypes = computed(() => boardStore.boardIssueTypes.value)
+const initialStatuses = computed(() => statuses.value.filter((status) => status.type === 'initial'))
 const dragIssue = computed(
   () => boardStore.state.issues.find((issue) => issue.id === dragIssueId.value) || null,
 )
@@ -32,28 +36,54 @@ watch(
   { immediate: true },
 )
 
-function openCreate() {
-  const initial = statuses.value.find((status) => status.type === 'initial')
+async function openCreate() {
   draft.value = {
     boardId: board.value?.id,
     summary: '',
     description: '',
     typeId: issueTypes.value[0]?.id || 'task',
-    statusId: initial?.id || '',
+    statusId: initialStatuses.value[0]?.id || '',
     assigneeId: boardStore.state.agents[0]?.id || null,
   }
   error.value = ''
+  summaryError.value = ''
+  statusError.value = ''
   editing.value = true
+  await nextTick()
+  summaryInput.value?.focus()
+}
+
+watch(() => draft.value.summary, () => { summaryError.value = '' })
+watch(() => draft.value.statusId, () => { statusError.value = '' })
+
+function applyFailure(failure) {
+  if (failure.field === 'statusId') {
+    statusError.value = failure.message
+    return
+  }
+  error.value = failure.message || 'Não foi possível criar a task.'
 }
 
 async function save() {
   error.value = ''
+  summaryError.value = ''
+  statusError.value = ''
   if (!draft.value.summary) {
-    error.value = 'Summary is required'
+    summaryError.value = 'O resumo é obrigatório.'
+    summaryInput.value?.focus()
     return
   }
-  draft.value.columnId = boardStore.columnOf(draft.value.statusId)
-  await boardStore.createIssue(draft.value)
+  if (!initialStatuses.value.length) return
+  if (!draft.value.statusId) {
+    statusError.value = 'Selecione um status inicial.'
+    return
+  }
+  try {
+    await boardStore.createIssue(draft.value)
+  } catch (failure) {
+    applyFailure(failure)
+    return
+  }
   editing.value = false
 }
 
@@ -151,38 +181,68 @@ async function drop(columnId, beforeId) {
     <IssuePanel />
 
     <div v-if="editing" class="modal" @click.self="editing = false">
-      <div class="modal-card">
+      <div class="modal-card new-task-modal">
         <header class="modal-header">
           <h3>New task</h3>
           <button class="icon-btn" title="Close" aria-label="Close" @click="editing = false"><AppIcon name="close" size="20" /></button>
         </header>
         <div class="modal-body">
-          <label class="field"><span>Summary</span><input type="text" v-model="draft.summary" /></label>
-          <label class="field"><span>Description</span><textarea rows="4" v-model="draft.description"></textarea></label>
-          <label class="field">
+          <p v-if="!initialStatuses.length" id="create-no-initial" class="error field-error" role="alert">
+            Este workflow não tem status inicial. A criação de task está bloqueada.
+          </p>
+          <label class="field" for="create-summary">
+            <span>Summary</span>
+            <input
+              id="create-summary"
+              ref="summaryInput"
+              type="text"
+              v-model="draft.summary"
+              :aria-invalid="Boolean(summaryError)"
+              :aria-describedby="summaryError ? 'create-summary-error' : undefined"
+            />
+          </label>
+          <p v-if="summaryError" id="create-summary-error" class="error field-error" role="alert">
+            {{ summaryError }}
+          </p>
+          <label class="field" for="create-description">
+            <span>Description</span>
+            <textarea id="create-description" rows="4" v-model="draft.description"></textarea>
+          </label>
+          <label class="field" for="create-type">
             <span>Type</span>
-            <select v-model="draft.typeId">
+            <select id="create-type" v-model="draft.typeId">
               <option v-for="type in issueTypes" :key="type.id" :value="type.id">{{ type.name }}</option>
             </select>
           </label>
-          <label class="field">
+          <label class="field" for="create-status">
             <span>Status</span>
-            <select v-model="draft.statusId">
-              <option v-for="status in statuses" :key="status.id" :value="status.id">{{ status.name }}</option>
+            <select
+              id="create-status"
+              v-model="draft.statusId"
+              :disabled="!initialStatuses.length"
+              :aria-invalid="Boolean(statusError)"
+              :aria-describedby="statusError ? 'create-status-error' : undefined"
+            >
+              <option v-for="status in initialStatuses" :key="status.id" :value="status.id">
+                {{ status.name }}
+              </option>
             </select>
           </label>
-          <label class="field">
+          <p v-if="statusError" id="create-status-error" class="error field-error" role="alert">
+            {{ statusError }}
+          </p>
+          <label class="field" for="create-assignee">
             <span>Assignee</span>
-            <select v-model="draft.assigneeId">
+            <select id="create-assignee" v-model="draft.assigneeId">
               <option :value="null">Unassigned</option>
               <option v-for="agent in boardStore.state.agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
             </select>
           </label>
-          <p v-if="error" class="error">{{ error }}</p>
+          <p v-if="error" id="create-form-error" class="error" role="alert">{{ error }}</p>
         </div>
         <footer class="modal-footer">
           <button class="button ghost" @click="editing = false">Cancel</button>
-          <button class="button" @click="save"><AppIcon name="check" size="16" /> Create</button>
+          <button class="button" :disabled="!initialStatuses.length" @click="save"><AppIcon name="check" size="16" /> Create</button>
         </footer>
       </div>
     </div>
