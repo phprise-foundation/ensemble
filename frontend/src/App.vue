@@ -158,7 +158,7 @@ function toggleSimulation() {
           <span class="sim-dot sm"></span>
           Sim
         </button>
-        <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
+        <button class="icon-btn" :title="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" :aria-label="theme.mode === 'dark' ? 'Light theme' : 'Dark theme'" @click="toggleTheme">
           <AppIcon :name="theme.mode === 'dark' ? 'sun' : 'moon'" />
         </button>
         <ProfileMenu />

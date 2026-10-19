@@ -154,7 +154,7 @@ async function drop(columnId, beforeId) {
       <div class="modal-card">
         <header class="modal-header">
           <h3>New task</h3>
-          <button class="icon-btn" @click="editing = false"><AppIcon name="close" /></button>
+          <button class="icon-btn" title="Close" aria-label="Close" @click="editing = false"><AppIcon name="close" size="20" /></button>
         </header>
         <div class="modal-body">
           <label class="field"><span>Summary</span><input type="text" v-model="draft.summary" /></label>
@@ -182,7 +182,7 @@ async function drop(columnId, beforeId) {
         </div>
         <footer class="modal-footer">
           <button class="button ghost" @click="editing = false">Cancel</button>
-          <button class="button" @click="save">Create</button>
+          <button class="button" @click="save"><AppIcon name="check" size="16" /> Create</button>
         </footer>
       </div>
     </div>

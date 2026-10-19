@@ -39,8 +39,8 @@ function format(value) {
     <header class="panel-header">
       <span class="card-id muted">{{ issue.id }}</span>
       <div class="spacer"></div>
-      <button class="icon-btn" title="Close" @click="boardStore.clearSelection()">
-        <AppIcon name="close" />
+      <button class="icon-btn" title="Close" aria-label="Close" @click="boardStore.clearSelection()">
+        <AppIcon name="close" size="20" />
       </button>
     </header>
 
@@ -72,7 +72,7 @@ function format(value) {
     </label>
 
     <div v-if="overdue" class="panel-flag">
-      <AppIcon name="warning" size="15" /> More than 24h without activity
+      <AppIcon name="warning" size="16" /> More than 24h without activity
     </div>
 
     <section class="panel-section">
@@ -81,7 +81,7 @@ function format(value) {
     </section>
 
     <section class="panel-section">
-      <h3><AppIcon name="comment" size="15" /> Comments ({{ issue.comments.length }})</h3>
+      <h3><AppIcon name="comment" size="16" /> Comments ({{ issue.comments.length }})</h3>
       <div class="comment" v-for="entry in issue.comments" :key="entry.id">
         <span class="comment-author">{{ entry.author }}</span>
         <span class="muted small">{{ format(entry.at) }}</span>
