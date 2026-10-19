@@ -416,6 +416,29 @@
   ainda espera `.leaf .label`, que o rail remove — a adaptação é prova de
   aceite da sub-task de testes; o check de CI vermelho do PR era do head
   anterior ao force-push. Release `v0.18.0`.
+- **Modal de nova task em largura total com status inicial validado (KAN-94,
+  produção):** no protótipo, `summary` e `description` do modal de criação
+  passam a ocupar 100% da largura útil (CSS aditivo escopado a
+  `.new-task-modal`, largura do modal preservada em 520px) e o seletor de
+  status lista **somente** status `type === 'initial'` do workflow do board,
+  com default no primeiro da ordem (UI bloqueada, com aviso pt-BR, quando o
+  workflow não tem `initial`). O `POST /api/issues` do fake backend valida
+  **antes** de qualquer mutação: `boardId` ausente/inexistente → 422
+  `{ error, field: 'boardId' }` sem fallback para `db.boards[0]`; status
+  omitido usa o primeiro `initial`; inexistente, de outro workflow,
+  não-inicial ou sem coluna → 422 `field: 'statusId'`; `columnId` forjado é
+  ignorado e a coluna é derivada de `column.statusIds`. Nenhuma issue é
+  gravada nos casos rejeitados e o id seguinte não é consumido. `client.js`
+  anexa `status`/`field` ao `Error` e a UI mapeia o erro por campo
+  (`aria-invalid`, `aria-describedby`, `role="alert"`, mensagens em pt-BR),
+  com foco inicial no summary e fechamento só no sucesso (§5–§7 do guia
+  `docs/KAN-94-guide.md`). Barra: `node --test` 89/89, vitest 79/79, build ok
+  e E2E 27/27 em porta livre reproduzidos na revisão em worktree limpo. PR
+  #103, release `v0.19.0`. Dívidas registradas (guia §12): branch `summary`
+  ausente no `applyFailure`, backend PHP real e `PATCH` ainda aceitam status
+  arbitrário, `typeId` não validado contra o workflow, escrita de `db.json`
+  não atômica; os testes BDD/node:test/vitest/Cypress do contrato (§8) seguem
+  nas subtarefas KAN-122/123.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
