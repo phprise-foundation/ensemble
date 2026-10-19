@@ -8,21 +8,21 @@ import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
-const emit = defineEmits(['close'])
-const { open, isMobile, collapsed } = defineProps({
+const props = defineProps({
   open: { type: Boolean, default: false },
   isMobile: { type: Boolean, default: false },
   collapsed: { type: Boolean, default: false },
 })
+const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
 
-const isModal = computed(() => isMobile && open)
+const isModal = computed(() => props.isMobile && props.open)
 
 router.afterEach(() => {
-  if (open) {
+  if (props.open) {
     emit('close')
   }
 })
@@ -95,9 +95,9 @@ function activateTrap() {
 }
 
 watch(
-  () => open,
+  () => props.open,
   (isOpen, wasOpen) => {
-    if (isMobile && isOpen) {
+    if (props.isMobile && isOpen) {
       activateTrap()
       return
     }
@@ -108,20 +108,20 @@ watch(
 )
 
 watch(
-  () => isMobile,
+  () => props.isMobile,
   (mobile) => {
     if (!mobile) {
       detachKeydown()
       return
     }
-    if (open) {
+    if (props.open) {
       activateTrap()
     }
   }
 )
 
 onMounted(() => {
-  if (isMobile && open) {
+  if (props.isMobile && props.open) {
     activateTrap()
   }
 })
@@ -139,11 +139,12 @@ const editor = ref(null)
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
-const showRail = computed(() => collapsed && !isMobile)
 const railGroups = computed(() => railSections(navigation.value))
 const railLeaves = computed(() =>
   railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
 )
+const workflows = computed(() => navigation.value.workflows.map((entry) => entry.entity))
+const showRail = computed(() => Boolean(props.collapsed && !props.isMobile))
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
 
 const slugify = (text) =>
@@ -169,7 +170,7 @@ function editWorkspace() {
 }
 
 function addBoard() {
-  openEditor('board', { id: '', name: '', workflowId: navigation.value.workflows[0]?.entity.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
+  openEditor('board', { id: '', name: '', workflowId: workflows.value[0]?.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
 }
 
 function editBoard(board) {
@@ -188,7 +189,7 @@ function addWorkflow() {
         key: 'templateId',
         label: 'Start from a template (optional)',
         type: 'select',
-        options: () => [{ value: '', label: 'Empty' }, ...navigation.value.workflows.map((entry) => ({ value: entry.entity.id, label: entry.entity.name }))],
+        options: () => [{ value: '', label: 'Empty' }, ...workflows.value.map((workflow) => ({ value: workflow.id, label: workflow.name }))],
       },
     ],
   )
@@ -330,7 +331,7 @@ async function removeEntity(kind, id, label) {
     :class="{ open, collapsed }"
     :role="isModal ? 'dialog' : undefined"
     :aria-modal="isModal ? 'true' : undefined"
-    :aria-hidden="isMobile ? !open : undefined"
+    :aria-hidden="props.isMobile ? !open : undefined"
     aria-label="Menu"
   >
     <div class="brand">
@@ -377,9 +378,9 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openBoards" class="submenu">
             <div v-for="entry in navigation.boards" :key="entry.entity.id" class="nav-entry">
-              <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
-                <AppIcon :name="leaf.icon" size="14" />
-                <span class="label">{{ leaf.label }}</span>
+              <RouterLink class="leaf" :to="entry.leaf.to" :title="entry.leaf.title">
+                <AppIcon :name="entry.leaf.icon" size="14" />
+                <span class="label">{{ entry.leaf.label }}</span>
                 <span class="badge-id">{{ entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">

@@ -36,14 +36,18 @@ Funcionalidade: Grade inferior de console (output + input)
     opção "Todas"; atividade "Nova saída"/"Ocioso"; pílula "N nova(s)".
 
   Mapeamento das suítes (quem mede o quê), pela ordem dos cenários abaixo:
-  - Integração (node:test, tests/console.test.mjs): 3, 8, 9, 10.
-  - Componentes (vitest): 1, 2, 4, 5, 7, 11 — abrir/fechar com toggle e
+  - Integração (node:test, tests/console.test.mjs): 3, 9, 10, 11.
+  - Componentes (vitest): 1, 2, 4, 5, 6, 8, 12 — abrir/fechar com toggle e
     atalho (inerte no mobile), indicador de atividade, clamp de altura,
     filtro do output, autoscroll travando e pílula limpando unread; pílula
-    singular "1 nova" e plural "N novas" pelo mesmo spec.
-  - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
+    singular "1 nova" e plural "N novas" pelo mesmo spec; redimensionamento.
+  - Fundação (KAN-65) + loopback da store: 7 (start/stop com a grade).
   - Rótulos pt-BR do output e do input: componentes (vitest).
-  - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
+  - Coletor de erro de runtime: cypress/support/e2e.js, cenário 15; a prova
+    de que ele derruba (e de que o limpo passa) está no registro do PR.
+  - Harness (node:test, tests/run-e2e-port.test.mjs): cenário 16 — porta
+    ocupada aborta em vez de medir outro Vite.
+  - Navegador real (Cypress, cypress/e2e/console.cy.js): 13 e 14 — cenários
     marcados como "E2E" abaixo, prova na interface em execução, não no source.
 
   Contexto:
@@ -154,3 +158,15 @@ Funcionalidade: Grade inferior de console (output + input)
     Quando digita "/clear" e envia
     Então o log esvazia na tela
     E o mesmo fluxo passa no tema escuro e no claro
+
+  Cenário: E2E — erro de runtime no navegador derruba o cenário
+    Dado qualquer spec do Cypress que visita o board
+    Quando o console do navegador registra um erro ou uma rejeição solta
+    Então o afterEach do suporte reprova o cenário com as linhas capturadas
+    E um cenário sem erro passa limpo (prova de mutação do coletor)
+
+  Cenário: E2E — o harness recusa medir um servidor alheio
+    Dado outro processo escutando na porta pedida em E2E_PORT
+    Quando npm run test:e2e sobe o harness
+    Então o harness aborta com status 1 e avisa que a porta está em uso
+    E o Cypress nem chega a rodar contra o servidor alheio

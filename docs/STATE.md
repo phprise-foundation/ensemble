@@ -384,6 +384,38 @@
   KAN-68/PR #90, que precisa de rebase — e o teste genérico de rótulos em
   `console.spec.js` anuncia pluralizar a pílula sem medi-la (coberta no spec
   dedicado).
+- **Testes do console — BDD, integração e E2E da grade (KAN-68):** a grade
+  inferior tem prova completa como o usuário a usa. BDD em português com 16
+  cenários e mapeamento um a um para as suítes (integração 3,9,10,11; vitest
+  1,2,4,5,6,8,12; fundação 7; E2E 13,14; coletor 15; harness 16). O harness de
+  E2E recusa medir um Vite alheio — porta ocupada ou servidor morto abortam com
+  status 1 (`run-e2e-port.test.mjs`) — e o coletor em
+  `cypress/support/e2e.js` reprova qualquer cenário com erro, rejeição solta ou
+  `console.error`. Revisão 3 confirmou por mutação: sempre-plural derruba o
+  teste da pílula singular e remover o `pollTick()` imediato do `start()`
+  derruba a reabertura. Barra local: `node --test` 22/22, vitest 79/79, E2E
+  27/27 em porta livre. PR #90, release `v0.17.2`. Ressalva menor registrada na
+  revisão: preferir `toHaveBeenCalledTimes(1)` em vez de
+  `toBeGreaterThanOrEqual(1)` no spec de reabertura.
+- **Modelo único de folhas + rail colapsado (KAN-83, produção):** a sidebar tem
+  um só modelo de navegação. `frontend/src/navigation.js` é puro e expõe
+  `sidebarNavigation(store, workspaceId)` (boards, workflows com
+  Statuses/Transitions/Issue types, teams com Agents/Roles/Profiles e
+  Experiences, cada folha com `key`, `label`, `title`, `railTitle`, `icon`,
+  `to` e `feature`) e `railSections(navigation)`, que filtra grupos vazios;
+  workspace nulo devolve modelo e rail vazios. `AppSidebar.vue` consome o
+  modelo na árvore expandida (`entry.entity.name` para o grupo, folhas de
+  `entry.leaf`/`entry.leaves`) e, colapsada em desktop, troca a árvore por
+  `nav.nav.rail[aria-label="Pages"]` com folhas `a.leaf.rail-leaf` 36×36,
+  ícone 18px, `title`/`aria-label` pelo `railTitle` único e ativo com fallback
+  `var(--selection, var(--surface-3))`; o CSS é aditivo (`main.scss` +33/−0) e
+  mobile, drawer e KAN-65 ficam intactos. O primeiro PR (#85) foi rejeitado por
+  remover 239 linhas de CSS alheias e derivar o grupo de `railTitle.split`;
+  reenviado limpo no PR #96. Prova: `tests/sidebar-navigation.test.mjs` (5
+  testes) e `cypress/e2e/sidebar-rail.cy.js`. Ressalva: `sidebar-collapse.cy.js:41`
+  ainda espera `.leaf .label`, que o rail remove — a adaptação é prova de
+  aceite da sub-task de testes; o check de CI vermelho do PR era do head
+  anterior ao force-push. Release `v0.18.0`.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.

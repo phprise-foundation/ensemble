@@ -1,13 +1,13 @@
 const WORKFLOW_PAGES = [
-  { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', route: 'statuses', path: (id) => `/workflows/${id}/statuses` },
-  { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', route: 'transitions', path: (id) => `/workflows/${id}/transitions` },
-  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', route: 'issue-types', path: (id) => `/workflows/${id}/issue-types` },
+  { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', path: (id) => `/workflows/${id}/statuses` },
+  { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', path: (id) => `/workflows/${id}/transitions` },
+  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', path: (id) => `/workflows/${id}/issue-types` },
 ]
 
 const TEAM_PAGES = [
-  { key: 'agents', label: 'Agents', icon: 'agents', feature: 'agents', route: 'agents', path: (id) => `/teams/${id}/agents` },
-  { key: 'roles', label: 'Roles', icon: 'roles', feature: 'roles', route: 'roles', path: (id) => `/teams/${id}/roles` },
-  { key: 'profiles', label: 'Profiles', icon: 'profiles', feature: 'profiles', route: 'profiles', path: (id) => `/teams/${id}/profiles` },
+  { key: 'agents', label: 'Agents', icon: 'agents', feature: 'agents', path: (id) => `/teams/${id}/agents` },
+  { key: 'roles', label: 'Roles', icon: 'roles', feature: 'roles', path: (id) => `/teams/${id}/roles` },
+  { key: 'profiles', label: 'Profiles', icon: 'profiles', feature: 'profiles', path: (id) => `/teams/${id}/profiles` },
 ]
 
 function pageLeaf(page, parent, section) {
@@ -18,7 +18,7 @@ function pageLeaf(page, parent, section) {
     railTitle: `${parent.name} · ${page.label}`,
     icon: page.icon,
     to: page.path(parent.id),
-    route: { name: page.route, params: { [`${section}Id`]: parent.id } },
+    route: { name: page.key, params: { [`${section}Id`]: parent.id } },
     feature: page.feature,
   }
 }
@@ -40,21 +40,16 @@ function boardLeaf(board) {
   }
 }
 
-function experienceEntry() {
+function experienceLeaf() {
   return {
-    entity: { id: 'experiences', name: 'Experiences' },
-    leaves: [
-      {
-        key: 'experience:experiences',
-        label: 'Experiences',
-        title: 'Experiences',
-        railTitle: 'Experiences',
-        icon: 'experiences',
-        to: '/experiences',
-        route: { name: 'experiences', params: {} },
-        feature: 'experiences',
-      },
-    ],
+    key: 'experience:experiences',
+    label: 'Experiences',
+    title: 'Experiences',
+    railTitle: 'Experiences',
+    icon: 'experiences',
+    to: '/experiences',
+    route: { name: 'experiences', params: {} },
+    feature: 'experiences',
   }
 }
 
@@ -63,21 +58,27 @@ function emptyNavigation() {
 }
 
 function sectionsOf(navigation) {
-  return [...navigation.boards, ...navigation.workflows, ...navigation.teams, ...navigation.experiences].map((entry) => entry.leaves)
+  return [
+    navigation.boards.map((entry) => [entry.leaf]),
+    navigation.workflows.map((entry) => entry.leaves),
+    navigation.teams.map((entry) => entry.leaves),
+    [navigation.experiences],
+  ]
 }
 
 export function sidebarNavigation(store, workspaceId) {
   if (!workspaceId) {
     return emptyNavigation()
   }
-  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaves: [boardLeaf(board)] }))
+  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaf: boardLeaf(board) }))
   const workflows = store.workflowsOf(workspaceId).map((workflow) => ({ entity: workflow, leaves: pageLeaves(WORKFLOW_PAGES, workflow, 'workflow') }))
   const teams = store.teamsOf(workspaceId).map((team) => ({ entity: team, leaves: pageLeaves(TEAM_PAGES, team, 'team') }))
-  return { boards, workflows, teams, experiences: [experienceEntry()] }
+  return { boards, workflows, teams, experiences: [experienceLeaf()] }
 }
 
 export function railSections(navigation) {
-  return sectionsOf(navigation).filter((leaves) => leaves.length > 0)
+  const groups = sectionsOf(navigation).flat()
+  return groups.filter((leaves) => leaves.length > 0)
 }
 
 export function isActiveLeaf(leaf, route, chosen) {

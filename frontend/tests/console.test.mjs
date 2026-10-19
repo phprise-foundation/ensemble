@@ -100,6 +100,11 @@ test('forma da mensagem: chaves exatas, seq monotônico e kinds do catálogo', (
   consoleStore.append({ actor: 'system', kind: 'error', text: 'falha' })
 
   assert.deepEqual(Object.keys(lastMessage()), ['seq', 'at', 'actor', 'kind', 'text'])
+  const { actor, kind, text } = lastMessage()
+  assert.deepEqual(
+    { actor, kind, text },
+    { actor: 'system', kind: 'error', text: 'falha' },
+  )
   assert.ok(consoleStore.state.messages[1].seq > consoleStore.state.messages[0].seq)
   assert.doesNotThrow(() => new Date(consoleStore.state.messages[0].at).toISOString())
   for (const message of consoleStore.state.messages) {

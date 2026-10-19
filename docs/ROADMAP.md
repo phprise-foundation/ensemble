@@ -85,10 +85,15 @@ marking what is still a prototype.
    e o painel de input com catálogo delegado, `busy` sem reenvio e histórico
    efêmero (KAN-67, release `v0.17.0`); a KAN-18 fechou o MVE com os rótulos
    pt-BR, o `at` em ISO 8601 UTC e o poll imediato na abertura (release
-   `v0.17.1`). O chat real continua pendente.
+   `v0.17.1`); a KAN-68 fechou a prova da grade com BDD de 16 cenários,
+   integração, componentes e E2E, além do guarda de porta e do coletor de erros
+   no harness (release `v0.17.2`). O chat real continua pendente.
 2. ~~**Workspace tree** — the sidebar mirrors `workspaces -> boards / workflows /
    teams / sources`, with an SVG icon on every entry and menu editors.~~ **Done
-   (prototype).**
+   (prototype).** A sidebar ganhou um modelo único de folhas
+   (`frontend/src/navigation.js`) e, colapsada em desktop, um rail de 48px só
+   com folhas navegáveis (KAN-83, release `v0.18.0`); Sources continuam fora do
+   rail, e a adaptação de `sidebar-collapse.cy.js` segue na sub-task de testes.
 3. ~~**Workflow admin** — statuses (type, colour, roles), transitions
    (user/agent/both) and issue types (custom fields, levels), scoped to a
    workflow.~~ **Done (prototype).**
