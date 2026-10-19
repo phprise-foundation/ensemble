@@ -97,6 +97,22 @@
     single SCSS variable — `$sidebar-breakpoint` (`1024px`) — exported as the
     `--breakpoint-sidebar` custom property for the drawer and the future icon
     bar.
+  - **Drawer em tela cheia abaixo de 768px (KAN-95 + KAN-96):** a produção
+    (PR #104) adicionou o token `$mobile-breakpoint: 768px`/`--breakpoint-mobile`
+    no SCSS, a media query estrita `max-width: $mobile-breakpoint - 1`, o painel
+    com `inset: 0; width: 100%` (sem `100vw`/`100vh`), o botão dedicado
+    `button.icon-btn.sidebar-close` (`v-if="narrow && isMobile"`, alvos de 44px
+    em `.nav-entry`/`.leaf`) e o scroll lock por classe `body.drawer-locked`
+    (`overflow: hidden`), controlado no `App.vue` (`isNarrow` via
+    `mediaQueryFor('--breakpoint-mobile', -1)`) e removido no unmount. A onda 2
+    (KAN-96, PR #116, release `v0.24.1`) provou o contrato: BDD em pt-BR
+    (`tests/mobile-drawer-fullscreen.feature`), contrato na fonte
+    (`tests/mobile-drawer-fullscreen.test.mjs`), integração no `App.vue`
+    (`tests/mobile-drawer-fullscreen.spec.js`) e E2E em navegador real
+    (`cypress/e2e/mobile-drawer-fullscreen.cy.js`), cobrindo 767/768/1023/1024/
+    1025, os quatro fechos (botão, Escape com foco de volta ao `menu-toggle`,
+    navegação e scrim na faixa parcial), lock, alvos de 44px e ausência de
+    overflow horizontal em 320/375/767px.
   - **Collapsed sidebar (activity bar) — CSS layer:** `--activity-width: 48px`
     token in `:root`; `.sidebar.collapsed` rules (icon-only — labels, chevrons,
     badges, source paths, brand text and entry actions hidden; icons centred;
@@ -416,6 +432,23 @@
   ainda espera `.leaf .label`, que o rail remove — a adaptação é prova de
   aceite da sub-task de testes; o check de CI vermelho do PR era do head
   anterior ao force-push. Release `v0.18.0`.
+- **Uniformização do modelo de folhas (KAN-91, fix):** o QA em `main`
+  (`36c6e91`) reprovou a incoerência entre o spec rastreado
+  `tests/sidebar-navigation.spec.js` (entries `{ entity, leaves }`) e a
+  produção (boards com `leaf` singular e Experiences como folha solta). O PR
+  #118 devolveu uma forma única: boards viram `{ entity, leaves: [boardLeaf] }`,
+  Experiences viram `experienceEntry()` com entity sintético, `sectionsOf`
+  concatena `entry.leaves` de todas as seções e `AppSidebar.vue` itera
+  `entry.leaves` em boards; `railSections` segue filtrando grupos vazios. Na
+  mesma rodada, conflito KAN-87 × KAN-84 resolvido pela Lucy: ≤1024px é mobile
+  (`v-if="!isMobile"` em `App.vue` intocado) e o spec do rail usa
+  `should('not.exist')` no toggle em 1024px (PR #119), com a asserção de
+  1025px intocada. Ressalva de infra: o evento `change` de `matchMedia` não é
+  disparado sob `cy.viewport` no Electron (harness de `run-e2e.sh`); num
+  navegador real (Chrome) o app reage pelo listener (spec 9/9 e suíte 47/47
+  em `--browser chrome`). Prova: `test:unit` 105/105, `node --test`
+  (collapse/navigation/topbar) e build em `main` (`d7a0af9`). Release
+  `v0.25.0`.
 - **Modal de nova task em largura total com status inicial validado (KAN-94,
   produção):** no protótipo, `summary` e `description` do modal de criação
   passam a ocupar 100% da largura útil (CSS aditivo escopado a
@@ -438,7 +471,33 @@
   ausente no `applyFailure`, backend PHP real e `PATCH` ainda aceitam status
   arbitrário, `typeId` não validado contra o workflow, escrita de `db.json`
   não atômica; os testes BDD/node:test/vitest/Cypress do contrato (§8) seguem
-  nas subtarefas KAN-122/123.
+  nas subtarefas KAN-122/123. No re-teste, a corrida do default (modal aberto
+  durante o `GET /api/workspace` nascia sem status) foi corrigida no PR #114:
+  `watch(initialStatuses)` em `BoardPage.vue` reaplica o primeiro `initial`
+  quando o valor corrente deixa de ser inicial válido, sem sobrescrever a
+  escolha do usuário e mantendo o bloqueio sem `initial`; spec nova
+  `board-new-task-default-status.spec.js` (3/3). Barra final: vitest 108/108,
+  `node --test` 128/128, build ok e E2E 47/47 na `main` reconciliada
+  (`8978e80`); release `v0.27.0`.
+- **Limites de descrição e comentário no protótipo (KAN-93, produção):** o
+  fake backend passa a exigir o contrato do canal dos agentes: descrição ≤4095
+  e comentário ≤1023 code points (`Array.from`, equivalente a `mb_strlen`),
+  via o módulo único `frontend/shared/limits.js` (constantes e helpers
+  `countCharacters`/`warningThreshold`/`nearLimit`/`limitExceeded`/`limitError`,
+  sem duplicação em bundle, backend nem testes). Validar acontece **antes** de
+  qualquer mutação em `POST /issues` e `POST .../comments` (o `PATCH` valida
+  após o 404): acima do limite → `422 { error, field }` com a mensagem pt-BR
+  do contrato (`A descrição excede o limite de 4095 caracteres (4096).`), sem
+  gravar parcial e sem consumir id. A UI ganha contador `x/limite`, aviso
+  informativo aos 90% (`Math.ceil(limite * 0.9)` = 3686/921), erro acima do
+  limite, `Save`/`Create`/`Comment` desabilitados e `aria-describedby`/
+  `aria-invalid` nos três campos (criação, edição e comentário), com o novo
+  componente `FieldLimit.vue`; a edição de descrição no painel usa
+  `Save`/`Cancel`, e cancelar descarta. O item legado acima dos limites
+  (fixture `KANB-7`, só em `createSeed()`) é exibido integralmente, sem
+  truncar. Contrato: `docs/KAN-93-guide.md` §2–§7. Provas: 16/16 nos testes
+  de contrato do item, vitest 79/79, build ok e CI verde no head
+  reconciliado com `main` (PR #110, release `v0.26.0`).
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.

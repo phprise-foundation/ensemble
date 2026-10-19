@@ -42,7 +42,9 @@ the dev server dies, so the suite never measures a foreign Vite, and
 `cypress/support/e2e.js` fails any scenario whose page logs an error, an
 unhandled rejection or `console.error`. The sidebar navigation comes from
 `src/navigation.js`, a pure model: `sidebarNavigation(store, workspaceId)`
-builds every leaf (boards, workflow pages, team pages, Experiences) and
+builds every leaf (boards, workflow pages, team pages, Experiences) as uniform
+entries `{ entity, leaves }` (boards wrap one leaf; Experiences é um entry com
+entity sintético) and
 `railSections(navigation)` picks the non-empty groups, so the expanded tree and
 the collapsed rail (`nav.nav.rail` in `AppSidebar.vue`) render from the same
 source; with no workspace the model is empty. The collapsed rail keeps only
@@ -56,7 +58,35 @@ pt-BR) e o `POST /api/issues` valida tudo **antes** de qualquer mutação —
 ou sem coluna respondem 422 `{ error, field }` (`boardId`/`statusId`), a
 coluna é derivada de `column.statusIds` e um `columnId` forjado é ignorado.
 `src/api/client.js` anexa `status`/`field` ao `Error`; a UI nunca faz parsing
-da mensagem. Contrato de aceite: `docs/KAN-94-guide.md`.
+da mensagem. Um `watch` em `initialStatuses` reaplica o primeiro `initial`
+quando a lista chega com o modal já aberto (corrida do loading), preservando
+a escolha válida do usuário. Contrato de aceite: `docs/KAN-94-guide.md`.
+
+Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
+ESM puro sem DOM nem dependência de Vue — importável pelo bundle, pelo fake
+backend e por `node:test`/vitest: `DESCRIPTION_LIMIT = 4095`,
+`COMMENT_LIMIT = 1023` (code points, `Array.from` ≃ `mb_strlen`) e os helpers
+`countCharacters`/`warningThreshold`/`nearLimit`/`limitExceeded`/`limitError`.
+O fake backend valida `POST /issues`, `POST .../comments` e o `PATCH` ( após o
+404) **antes** de qualquer mutação e responde `422 { error, field }` com a
+mensagem pt-BR do contrato; nos três campos (criação, edição da descrição e
+comentário), `FieldLimit.vue` rende contador `x/limite`, aviso aos 90% e
+erro, e o campo liga-se por `aria-describedby`/`aria-invalid`, com
+`Save`/`Create`/`Comment` desabilitados acima do limite. Conteúdo legado
+(fixture `KANB-7`, só em `createSeed()`) é exibido integralmente. Contrato de
+aceite: `docs/KAN-93-guide.md`.
+
+O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
+768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
+pela classe `body.drawer-locked` e expõe o botão dedicado
+`button.sidebar-close`; entre 768px e 1024px permanece o drawer parcial de
+200px com scrim; acima de 1024px a sidebar desktop não muda. O corte vive só no
+token `$mobile-breakpoint: 768px` (exportado como `--breakpoint-mobile`) e é
+consumido pelo SCSS como `max-width: $mobile-breakpoint - 1` e pelo JS via
+`mediaQueryFor('--breakpoint-mobile', -1)`. O contrato é provado em três
+níveis: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
+fonte e integração (`tests/mobile-drawer-fullscreen.test.mjs`/`.spec.js`) e
+navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`).
 
 ## Layers
 

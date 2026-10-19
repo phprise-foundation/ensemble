@@ -7,6 +7,78 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.27.0 — 2026-10-19
+
+### Fixed
+
+- **KAN-94** — corrida do default do status no modal de nova task: com o
+  `GET /api/workspace` em atraso, abrir o modal antes da resposta deixava o
+  seletor sem valor (`selectedIndex: -1`) mesmo após a chegada dos status.
+  Um `watch` em `initialStatuses` (`BoardPage.vue`) reaplica o primeiro
+  `initial` quando o valor corrente deixa de ser inicial válido, sem
+  sobrescrever a escolha do usuário e mantendo o bloqueio quando o workflow
+  não tem `initial`; spec nova
+  `frontend/tests/board-new-task-default-status.spec.js` (3/3). Barra de
+  revisão: vitest 108/108, `node --test` 128/128, build ok e E2E 47/47 na
+  `main` reconciliada. PR #114, release `v0.27.0`.
+
+## v0.26.0 — 2026-10-19
+
+### Added
+
+- **KAN-93** — limites de descrição e comentário no protótipo (contrato do guia
+  `docs/KAN-93-guide.md` §4–§7): `frontend/shared/limits.js` é a única fonte
+  das constantes (4095/1023 code points, contados em `Array.from`) e dos
+  helpers `countCharacters`/`warningThreshold`/`nearLimit`/
+  `limitExceeded`/`limitError`, importados pelo bundle, pelo fake backend e
+  pelos testes de contrato. O fake backend valida `POST /issues` e
+  `POST .../comments` — e o `PATCH` depois do 404 — **antes** de qualquer
+  mutação e responde `422 { error, field }` com a mensagem do contrato em
+  pt-BR. A UI (criação em `BoardPage.vue`, edição e comentário em
+  `IssuePanel.vue`) ganha contador `x/limite`, aviso informativo aos 90%
+  (3686/921), erro acima do limite, botões desabilitados e
+  `aria-describedby`/`aria-invalid` nos três campos, via o novo
+  `FieldLimit.vue`; a edição da descrição no painel usa `Save`/`Cancel` sem
+  histórico. Item legado acima dos limites (fixture `KANB-7` no seed,
+  executável só em `createSeed()`) é exibido integralmente. Provas do revisor:
+  16/16 nos testes de contrato, vitest 79/79, build ok e CI verde no head
+  reconciliado com `main`. PR #110, release `v0.26.0`. Dívidas registradas:
+  testes dedicados do item ficam para KAN-118/119.
+
+## v0.25.0 — 2026-10-19
+
+### Fixed
+
+- **KAN-91** — modelo único de folhas uniformizado: `sidebarNavigation` passa a
+  devolver **todas** as seções como entries `{ entity, leaves }` (boards com
+  `leaves: [boardLeaf]` e Experiences via `experienceEntry()` com entity
+  sintético `{ id: 'experiences', name: 'Experiences' }`); `sectionsOf`
+  concatena `entry.leaves` de boards, workflows, teams e experiences numa
+  forma só e `railSections` mantém o filtro de grupos vazios;
+  `AppSidebar.vue` itera `entry.leaves` no grupo de boards (badge e
+  entry-actions preservados), conforme o contrato rastreado
+  `tests/sidebar-navigation.spec.js`. Na fronteira de 1024px, o spec do rail
+  passa a aceitar `button.sidebar-toggle` **ausente do DOM** em modo mobile
+  (`should('not.exist')`), alinhado à decisão KAN-87 (controle morto fora do
+  DOM); a asserção de 1025px continua exigindo o botão presente e clicável.
+  PRs #118/#119, release `v0.25.0`.
+
+
+## v0.24.1 — 2026-10-19
+
+### Added
+
+- **KAN-96** — suíte de testes do drawer em tela cheia (onda 2 da KAN-86;
+  mudança só de teste, sem código de produção): BDD em pt-BR
+  (`frontend/tests/mobile-drawer-fullscreen.feature`) cobrindo as faixas
+  767/768/1023/1024/1025, os quatro fechos, o lock do body, os alvos de 44px e
+  a ausência de overflow; contrato na fonte (`tests/mobile-drawer-fullscreen.test.mjs`,
+  token único `$mobile-breakpoint`/`--breakpoint-mobile`, media query estrita
+  `max-width: $mobile-breakpoint - 1`, `inset: 0`/`width: 100%`, sem `100vw`);
+  integração no `App.vue` (`tests/mobile-drawer-fullscreen.spec.js`) e E2E em
+  navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`). PR #116,
+  release `v0.24.1`.
+
 ## v0.19.0 — 2026-10-19
 
 ### Added

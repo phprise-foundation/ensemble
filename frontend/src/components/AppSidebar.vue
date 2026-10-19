@@ -389,9 +389,9 @@ async function removeEntity(kind, id, label) {
           </div>
           <div v-show="openBoards" class="submenu">
             <div v-for="entry in navigation.boards" :key="entry.entity.id" class="nav-entry">
-              <RouterLink class="leaf" :to="entry.leaf.to" :title="entry.leaf.title">
-                <AppIcon :name="entry.leaf.icon" size="14" />
-                <span class="label">{{ entry.leaf.label }}</span>
+              <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
+                <AppIcon :name="leaf.icon" size="14" />
+                <span class="label">{{ leaf.label }}</span>
                 <span class="badge-id">{{ entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">
