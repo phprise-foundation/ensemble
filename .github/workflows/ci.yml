@@ -15,6 +15,9 @@ jobs:
       - name: Install
         run: npm ci
         working-directory: frontend
+      - name: Unit (vitest)
+        run: npm run test:unit
+        working-directory: frontend
       - name: Contracts (node:test)
         run: node --test frontend/tests/*.test.mjs
       - name: Build

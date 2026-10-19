@@ -38,18 +38,17 @@ describe('sidebar colapsado na interface em execução', () => {
     cy.get('#app-sidebar').should('have.class', 'collapsed')
     cy.get('button.sidebar-toggle').should('have.attr', 'aria-expanded', 'false')
 
-    cy.get('.leaf .label').each(($label) => {
-      cy.wrap($label).should('not.be.visible')
-    })
-    cy.get('.leaf svg').should('have.length.greaterThan', 0)
-    cy.get('.leaf svg').each(($icon) => {
+    cy.get('nav:not(.rail)').should('not.exist')
+    cy.get('.leaf .label').should('not.exist')
+    cy.get('nav.rail .rail-leaf svg').should('have.length.greaterThan', 0)
+    cy.get('nav.rail .rail-leaf svg').each(($icon) => {
       cy.wrap($icon).should('be.visible')
     })
-    cy.get('.leaf').each(($leaf) => {
+    cy.get('nav.rail .rail-leaf').each(($leaf) => {
       cy.wrap($leaf).should('have.attr', 'title').and('not.be.empty')
     })
 
-    cy.get('.leaf').first().click()
+    cy.get('nav.rail .rail-leaf').first().click()
     cy.location('hash').should('eq', '#/boards/KANB')
     cy.get('vite-error-overlay').should('not.exist')
   })

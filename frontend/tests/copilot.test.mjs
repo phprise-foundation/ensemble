@@ -41,7 +41,7 @@ test('botao .copilot-toggle tem ARIA e e desktop-only', () => {
   assert.match(appVue, /aria-label="Toggle copilot"/)
   assert.match(appVue, /:aria-expanded="copilotOpen"/)
   assert.match(appVue, /aria-controls="app-copilot"/)
-  assert.match(appVue, /v-if="!isMobile"\s+class="icon-btn copilot-toggle"/)
+  assert.match(appVue, /v-if="!isMobile"\s+data-topbar-slot="grid-right"\s+class="icon-btn copilot-toggle"/)
 })
 
 test('atalho Ctrl+Alt+B consulta altKey antes do ramo do Ctrl+B', () => {
@@ -63,6 +63,6 @@ test('largura do painel usa token proprio min(25vw, 400px)', () => {
   assert.doesNotMatch(panelBlock[0], /--panel-width/)
 })
 
-test('dicionario de icones expoe a chave copilot', () => {
-  assert.match(iconsVue, /copilot:\s*\[[^\]]*'M17 3h4v18h-4z'/)
+test('AppIcon.vue mapeia copilot para PanelRight (Lucide)', () => {
+  assert.match(iconsVue, /copilot:\s*PanelRight/)
 })
