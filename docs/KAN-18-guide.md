@@ -57,7 +57,7 @@ componentes.
 | Catálogo de comandos | `frontend/src/store/commands.js` → `runCommand(rawInput)`, `CATALOG` |
 | Chave do ícone em `AppIcon` | `console` → `['M4 5h16v14H4z', 'M7 9l3 3-3 3', 'M13 15h4']` |
 | Botão de topo | `.icon-btn.console-toggle` (ao lado do `.sidebar-toggle`) |
-| Rótulo do botão | `aria-label="Toggle console"`, `:aria-expanded="consoleOpen"`, `aria-controls="app-console"` |
+| Rótulo do botão | `aria-label="Alternar console"`, `:aria-expanded="consoleOpen"`, `aria-controls="app-console"` |
 | Estado da grade | `consoleOpen = ref(false)` em `App.vue` |
 | Altura | `frontend/src/store/consoleHeight.js` → `consoleHeight` (240 inicial), `consoleStyle` com `--console-height` inline, clamp 120px..60vh; ações `growHeight`/`shrinkHeight` (±16px), `dragHeight`, `resetHeight` (duplo clique) |
 | Atalho | `Ctrl+J` (Linux/Windows) e `Cmd+J` (macOS) |
@@ -112,11 +112,12 @@ quando o `GET /api/issues` real substituir o fake — a store não muda.
   explícito (ou o instante do append); incrementa `unread`.
 - `clearUnread()`, `clear()` (zera mensagens e `unread`).
 - `start()` / `stop()` → ciclo do polling (5s; pausa com `document.hidden`). O
-  ciclo fica **amarrado à grade aberta/fechada pela fundação**: a fundação
-  (KAN-65) chama `start()` quando `consoleOpen` vira verdadeiro e `stop()`
-  quando volta a falso — não em `onMounted`/`onUnmounted`, para que `v-show`
-  não mantenha o polling com a grade fechada. `pollOnce()` e `pollTick()`
-  exportados para testes.
+  ciclo fica **amarrado à grade aberta/fechada pela fundação**: a grade só é
+  montada quando `consoleOpen` é verdadeiro, então `App.vue` a renderiza com
+  `v-if` e o `AppConsole.vue` chama `start()` em `onMounted` e `stop()` em
+  `onUnmounted`. Fechar a grade desmonta o componente e para o polling; um
+  `v-show` manteria o ciclo rodando com a grade fechada, e por isso não é
+  usado. `pollOnce()` e `pollTick()` exportados para testes.
 - **`pollOnce()` após `start()`:** o consumidor chama um poll imediato logo
   depois de `start()`, para a grade não abrir vazia até o primeiro tick.
 - **`CATALOG`**: exportado por `commands.js` (`/status`, `/list`, `/clear`,
@@ -213,7 +214,7 @@ a crítica de aceitação.
 - **Segurança:** renderizar `text` como texto (interpolação Vue), nunca
   `v-html`; nada de shell, `eval` ou interpolação de comando.
 - **Acessibilidade:** `role="log"` + `aria-live="polite"` no output; handle
-  focável com `aria-label="Resize console"`; foco visível em tudo interativo.
+  focável com `aria-label="Redimensionar console"`; foco visível em tudo interativo.
 - **Qualidade (barra):** `npm run test:unit` verde, `node --test` das suítes
   novas verde e `npm run test:e2e` verde, sem erro de runtime/console. A feature
   só está pronta quando testada como o usuário a usa (grade real, comandos

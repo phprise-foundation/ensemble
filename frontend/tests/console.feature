@@ -25,7 +25,7 @@ Funcionalidade: Grade inferior de console (output + input)
   - Altura: 240px inicial; clamp 120px..60vh; duplo clique no handle restaura
     240px; setas ↑/↓ com o handle focado = ±16px.
   - A11y: role="log" + aria-live="polite" no output; botão com
-    aria-label="Toggle console", aria-expanded e aria-controls="app-console";
+    aria-label="Alternar console", aria-expanded e aria-controls="app-console";
     handle focável com aria-label="Resize console"; form com
     aria-label="Console input".
 
