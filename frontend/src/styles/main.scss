@@ -1174,3 +1174,84 @@ textarea {
   align-items: center;
   gap: 8px;
 }
+
+.console-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.console-filter {
+  margin: 0 0 8px;
+  align-self: flex-start;
+  padding: 4px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.console-output {
+  flex: 1 1 auto;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.console-line {
+  display: flex;
+  gap: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.console-time,
+.console-actor {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.console-text {
+  color: var(--text);
+}
+
+.console-line.agent .console-actor {
+  color: var(--accent);
+}
+
+.console-line.command .console-text {
+  color: var(--accent);
+}
+
+.console-line.system .console-text {
+  color: var(--ok);
+}
+
+.console-line.error .console-text {
+  color: var(--danger);
+}
+
+.console-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.console-jump {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 6px 12px;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--accent-contrast);
+  cursor: pointer;
+  font-size: 12px;
+}
