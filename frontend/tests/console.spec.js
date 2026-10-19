@@ -376,19 +376,21 @@ describe('ConsoleOutput', () => {
   })
 
   it('shows the jump pill when unpinned with unread and clears unread on click', async () => {
-    appendMessages()
     const wrapper = mount(ConsoleOutput, { attachTo: document.body })
-    await nextTick()
-
-    expect(wrapper.find('.console-jump').exists()).toBe(false)
-    expect(consoleStore.state.unread).toBe(3)
-
     const scroller = wrapper.find('.console-output').element
     Object.defineProperty(scroller, 'scrollHeight', { configurable: true, value: 1000 })
     Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 200 })
+    await nextTick()
+    await nextTick()
     scroller.scrollTop = 0
 
     await wrapper.find('.console-output').trigger('scroll')
+    await nextTick()
+
+    expect(wrapper.find('.console-jump').exists()).toBe(false)
+
+    appendMessages()
+    await nextTick()
     await nextTick()
 
     const jump = wrapper.find('.console-jump')
