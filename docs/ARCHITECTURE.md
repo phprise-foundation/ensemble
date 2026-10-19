@@ -60,6 +60,20 @@ coluna é derivada de `column.statusIds` e um `columnId` forjado é ignorado.
 `src/api/client.js` anexa `status`/`field` ao `Error`; a UI nunca faz parsing
 da mensagem. Contrato de aceite: `docs/KAN-94-guide.md`.
 
+Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
+ESM puro sem DOM nem dependência de Vue — importável pelo bundle, pelo fake
+backend e por `node:test`/vitest: `DESCRIPTION_LIMIT = 4095`,
+`COMMENT_LIMIT = 1023` (code points, `Array.from` ≃ `mb_strlen`) e os helpers
+`countCharacters`/`warningThreshold`/`nearLimit`/`limitExceeded`/`limitError`.
+O fake backend valida `POST /issues`, `POST .../comments` e o `PATCH` ( após o
+404) **antes** de qualquer mutação e responde `422 { error, field }` com a
+mensagem pt-BR do contrato; nos três campos (criação, edição da descrição e
+comentário), `FieldLimit.vue` rende contador `x/limite`, aviso aos 90% e
+erro, e o campo liga-se por `aria-describedby`/`aria-invalid`, com
+`Save`/`Create`/`Comment` desabilitados acima do limite. Conteúdo legado
+(fixture `KANB-7`, só em `createSeed()`) é exibido integralmente. Contrato de
+aceite: `docs/KAN-93-guide.md`.
+
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
 pela classe `body.drawer-locked` e expõe o botão dedicado

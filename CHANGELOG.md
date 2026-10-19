@@ -7,6 +7,29 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.26.0 — 2026-10-19
+
+### Added
+
+- **KAN-93** — limites de descrição e comentário no protótipo (contrato do guia
+  `docs/KAN-93-guide.md` §4–§7): `frontend/shared/limits.js` é a única fonte
+  das constantes (4095/1023 code points, contados em `Array.from`) e dos
+  helpers `countCharacters`/`warningThreshold`/`nearLimit`/
+  `limitExceeded`/`limitError`, importados pelo bundle, pelo fake backend e
+  pelos testes de contrato. O fake backend valida `POST /issues` e
+  `POST .../comments` — e o `PATCH` depois do 404 — **antes** de qualquer
+  mutação e responde `422 { error, field }` com a mensagem do contrato em
+  pt-BR. A UI (criação em `BoardPage.vue`, edição e comentário em
+  `IssuePanel.vue`) ganha contador `x/limite`, aviso informativo aos 90%
+  (3686/921), erro acima do limite, botões desabilitados e
+  `aria-describedby`/`aria-invalid` nos três campos, via o novo
+  `FieldLimit.vue`; a edição da descrição no painel usa `Save`/`Cancel` sem
+  histórico. Item legado acima dos limites (fixture `KANB-7` no seed,
+  executável só em `createSeed()`) é exibido integralmente. Provas do revisor:
+  16/16 nos testes de contrato, vitest 79/79, build ok e CI verde no head
+  reconciliado com `main`. PR #110, release `v0.26.0`. Dívidas registradas:
+  testes dedicados do item ficam para KAN-118/119.
+
 ## v0.25.0 — 2026-10-19
 
 ### Fixed
