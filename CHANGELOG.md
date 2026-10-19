@@ -7,6 +7,25 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.25.0 — 2026-10-19
+
+### Fixed
+
+- **KAN-91** — modelo único de folhas uniformizado: `sidebarNavigation` passa a
+  devolver **todas** as seções como entries `{ entity, leaves }` (boards com
+  `leaves: [boardLeaf]` e Experiences via `experienceEntry()` com entity
+  sintético `{ id: 'experiences', name: 'Experiences' }`); `sectionsOf`
+  concatena `entry.leaves` de boards, workflows, teams e experiences numa
+  forma só e `railSections` mantém o filtro de grupos vazios;
+  `AppSidebar.vue` itera `entry.leaves` no grupo de boards (badge e
+  entry-actions preservados), conforme o contrato rastreado
+  `tests/sidebar-navigation.spec.js`. Na fronteira de 1024px, o spec do rail
+  passa a aceitar `button.sidebar-toggle` **ausente do DOM** em modo mobile
+  (`should('not.exist')`), alinhado à decisão KAN-87 (controle morto fora do
+  DOM); a asserção de 1025px continua exigindo o botão presente e clicável.
+  PRs #118/#119, release `v0.25.0`.
+
+
 ## v0.24.1 — 2026-10-19
 
 ### Added

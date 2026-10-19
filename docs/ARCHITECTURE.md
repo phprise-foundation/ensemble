@@ -42,7 +42,9 @@ the dev server dies, so the suite never measures a foreign Vite, and
 `cypress/support/e2e.js` fails any scenario whose page logs an error, an
 unhandled rejection or `console.error`. The sidebar navigation comes from
 `src/navigation.js`, a pure model: `sidebarNavigation(store, workspaceId)`
-builds every leaf (boards, workflow pages, team pages, Experiences) and
+builds every leaf (boards, workflow pages, team pages, Experiences) as uniform
+entries `{ entity, leaves }` (boards wrap one leaf; Experiences é um entry com
+entity sintético) and
 `railSections(navigation)` picks the non-empty groups, so the expanded tree and
 the collapsed rail (`nav.nav.rail` in `AppSidebar.vue`) render from the same
 source; with no workspace the model is empty. The collapsed rail keeps only

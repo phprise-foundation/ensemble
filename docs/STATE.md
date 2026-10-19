@@ -432,6 +432,23 @@
   ainda espera `.leaf .label`, que o rail remove — a adaptação é prova de
   aceite da sub-task de testes; o check de CI vermelho do PR era do head
   anterior ao force-push. Release `v0.18.0`.
+- **Uniformização do modelo de folhas (KAN-91, fix):** o QA em `main`
+  (`36c6e91`) reprovou a incoerência entre o spec rastreado
+  `tests/sidebar-navigation.spec.js` (entries `{ entity, leaves }`) e a
+  produção (boards com `leaf` singular e Experiences como folha solta). O PR
+  #118 devolveu uma forma única: boards viram `{ entity, leaves: [boardLeaf] }`,
+  Experiences viram `experienceEntry()` com entity sintético, `sectionsOf`
+  concatena `entry.leaves` de todas as seções e `AppSidebar.vue` itera
+  `entry.leaves` em boards; `railSections` segue filtrando grupos vazios. Na
+  mesma rodada, conflito KAN-87 × KAN-84 resolvido pela Lucy: ≤1024px é mobile
+  (`v-if="!isMobile"` em `App.vue` intocado) e o spec do rail usa
+  `should('not.exist')` no toggle em 1024px (PR #119), com a asserção de
+  1025px intocada. Ressalva de infra: o evento `change` de `matchMedia` não é
+  disparado sob `cy.viewport` no Electron (harness de `run-e2e.sh`); num
+  navegador real (Chrome) o app reage pelo listener (spec 9/9 e suíte 47/47
+  em `--browser chrome`). Prova: `test:unit` 105/105, `node --test`
+  (collapse/navigation/topbar) e build em `main` (`d7a0af9`). Release
+  `v0.25.0`.
 - **Modal de nova task em largura total com status inicial validado (KAN-94,
   produção):** no protótipo, `summary` e `description` do modal de criação
   passam a ocupar 100% da largura útil (CSS aditivo escopado a
