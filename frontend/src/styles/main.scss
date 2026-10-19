@@ -1037,6 +1037,19 @@ textarea {
   justify-content: flex-end;
 }
 
+.new-task-modal .field input,
+.new-task-modal .field textarea,
+.new-task-modal .field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.new-task-modal .field-error {
+  margin: -6px 0 14px;
+  padding: 0;
+  font-size: 12px;
+}
+
 .checks {
   display: flex;
   flex-wrap: wrap;
