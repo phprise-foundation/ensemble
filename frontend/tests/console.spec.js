@@ -119,9 +119,9 @@ function appendMessages() {
 }
 
 async function settle() {
-  for (let round = 0; round < 5; round += 1) {
-    await nextTick()
-  }
+  await nextTick()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  await nextTick()
 }
 
 beforeEach(() => {
@@ -387,8 +387,9 @@ describe('console reopen', () => {
     fetchIssues.mockClear()
 
     pressCtrlJ()
-    await nextTick()
+    await settle()
     expect(wrapper.find('#app-console').exists()).toBe(false)
+    expect(consoleStore.state.polling).toBe(false)
 
     pressCtrlJ()
     await settle()
