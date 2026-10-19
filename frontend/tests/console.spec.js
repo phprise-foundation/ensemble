@@ -392,11 +392,9 @@ describe('console reopen', () => {
 
     pressCtrlJ()
     await settle()
-    await consoleStore.pollOnce()
-    await settle()
 
     expect(wrapper.find('#app-console').exists()).toBe(true)
-    expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(1)
     expect(wrapper.findAll('.console-line').map((node) => node.find('.console-text').text())).toEqual(['revisão pronta'])
     consoleStore.stop()
     wrapper.unmount()

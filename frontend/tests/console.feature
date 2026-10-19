@@ -39,7 +39,8 @@ Funcionalidade: Grade inferior de console (output + input)
   - Integração (node:test, tests/console.test.mjs): 3, 8, 9, 10.
   - Componentes (vitest): 1, 2, 4, 5, 7, 11 — abrir/fechar com toggle e
     atalho (inerte no mobile), indicador de atividade, clamp de altura,
-    filtro do output, autoscroll travando e pílula limpando unread.
+    filtro do output, autoscroll travando e pílula limpando unread; pílula
+    singular "1 nova" e plural "N novas" pelo mesmo spec.
   - Fundação (KAN-65) + loopback da store: 6 (start/stop com a grade).
   - Rótulos pt-BR do output e do input: componentes (vitest).
   - Navegador real (Cypress, cypress/e2e/console.cy.js): 12 e 13 — cenários
@@ -88,6 +89,13 @@ Funcionalidade: Grade inferior de console (output + input)
     Então o autoscroll fica travado e a pílula .console-jump mostra o unread
     Quando clica na pílula
     Então o log volta ao fundo e o unread zera
+
+  Cenário: a pílula singular da volta ao fim
+    Dado o log ancorado no fundo e o usuário rolou para cima, fora da âncora
+    Quando exatamente uma mensagem nova chega
+    Então a pílula .console-jump mostra "1 nova"
+    Quando mais uma mensagem chega antes de voltar ao fundo
+    Então a pílula passa a mostrar "2 novas"
 
   Cenário: start e stop acompanham a grade aberta e fechada
     Dado a grade aberta e o consoleStore em polling

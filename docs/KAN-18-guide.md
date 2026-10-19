@@ -116,7 +116,9 @@ quando o `GET /api/issues` real substituir o fake — a store não muda.
 
 - `state.messages` (append-only), `state.busy`, `state.unread`, `state.polling`.
 - `append({ actor, kind, text, at? })` → atribui `seq` monotônico e `at`
-  explícito (ou o instante do append); incrementa `unread`.
+  normalizado para ISO 8601 UTC (`Date#toISOString`): o `at` explícito (inclusive
+  o `+00:00` do presenter PHP) ou, sem ele, o instante do append; incrementa
+  `unread`.
 - `clearUnread()`, `clear()` (zera mensagens e `unread`).
 - `start()` / `stop()` → ciclo do polling (5s; pausa com `document.hidden`). O
   ciclo fica **amarrado à grade aberta/fechada pela fundação**: a grade só é
