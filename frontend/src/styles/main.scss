@@ -13,18 +13,38 @@ $sidebar-breakpoint: 1024px;
 }
 
 :root[data-theme='dark'] {
-  --bg: #0b1220;
-  --surface: #111a2b;
-  --surface-2: #17223a;
-  --surface-3: #1e2c49;
-  --border: #24324f;
-  --text: #e6edf7;
-  --muted: #8ea0bd;
-  --accent: #4c9aff;
-  --accent-contrast: #04101f;
-  --danger: #ff6b6b;
-  --warn: #ffab00;
-  --ok: #57d9a3;
+  --bg: #1e1e1e;
+  --surface: #252526;
+  --surface-2: #2d2d2d;
+  --surface-3: #333333;
+  --border: #454545;
+  --text: #d4d4d4;
+  --muted: #858585;
+  --accent: #3794ff;
+  --accent-contrast: #ffffff;
+  --selection: #264f78;
+  --button-bg: #0e639c;
+  --syntax-comment: #6a9955;
+  --syntax-constant: #ce9178;
+  --syntax-entity: #569cd6;
+  --syntax-keyword: #569cd6;
+  --syntax-meta: #d7ba7d;
+  --syntax-string: #ce9178;
+  --syntax-variable: #9cdcfe;
+}
+
+:root[data-theme='dark'] ::selection {
+  background: var(--selection);
+  color: var(--text);
+}
+
+.leaf.router-link-active {
+  background: var(--selection);
+  color: var(--text);
+}
+
+.button {
+  background: var(--button-bg, var(--accent));
 }
 
 :root[data-theme='light'] {
