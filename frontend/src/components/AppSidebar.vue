@@ -6,7 +6,7 @@ import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
-import { sidebarNavigation, railSections } from '../navigation.js'
+import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -141,6 +141,9 @@ const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
 const railGroups = computed(() => railSections(navigation.value))
+const railLeaves = computed(() =>
+  railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
+)
 const workflows = computed(() => navigation.value.workflows.map((entry) => entry.entity))
 const showRail = computed(() => Boolean(props.collapsed && !props.isMobile))
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
@@ -348,9 +351,9 @@ async function removeEntity(kind, id, label) {
     </div>
 
     <nav v-if="showRail" class="nav rail" aria-label="Pages">
-      <template v-for="(leaves, index) in railGroups" :key="index">
-        <div v-if="index > 0" class="rail-divider" role="separator"></div>
-        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle">
+      <template v-for="(leaves, index) in railLeaves" :key="leaves[0].key">
+        <div v-if="index > 0" class="rail-divider" role="separator" aria-orientation="vertical"></div>
+        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
           <AppIcon :name="leaf.icon" :size="18" />
         </RouterLink>
       </template>

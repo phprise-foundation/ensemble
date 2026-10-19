@@ -357,6 +357,7 @@ textarea {
   .sidebar.collapsed {
     width: var(--activity-width);
     flex: 0 0 var(--activity-width);
+    overflow-x: hidden;
   }
 
   .sidebar.collapsed .nav-entry > span:not(.entry-actions),
@@ -388,9 +389,17 @@ textarea {
     gap: 0;
   }
 
-  .rail {
-    gap: 0;
-    padding: 6px;
+  .nav.rail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .rail .rail-leaf {
@@ -408,13 +417,15 @@ textarea {
 
   .rail .rail-divider {
     flex: 0 0 auto;
+    width: 24px;
     height: 1px;
-    margin: 6px 4px;
+    margin: 2px 0;
     background: var(--border);
   }
 
-  .leaf.router-link-active {
+  .rail .rail-leaf[aria-current='page'] {
     background: var(--selection, var(--surface-3));
+    color: var(--text);
   }
 }
 

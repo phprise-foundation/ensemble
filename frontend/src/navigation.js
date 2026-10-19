@@ -18,6 +18,7 @@ function pageLeaf(page, parent, section) {
     railTitle: `${parent.name} · ${page.label}`,
     icon: page.icon,
     to: page.path(parent.id),
+    route: { name: page.key, params: { [`${section}Id`]: parent.id } },
     feature: page.feature,
   }
 }
@@ -34,6 +35,7 @@ function boardLeaf(board) {
     railTitle: board.name,
     icon: 'board',
     to: `/boards/${board.id}`,
+    route: { name: 'board', params: { boardId: board.id } },
     feature: null,
   }
 }
@@ -46,6 +48,7 @@ function experienceLeaf() {
     railTitle: 'Experiences',
     icon: 'experiences',
     to: '/experiences',
+    route: { name: 'experiences', params: {} },
     feature: 'experiences',
   }
 }
@@ -76,4 +79,20 @@ export function sidebarNavigation(store, workspaceId) {
 export function railSections(navigation) {
   const groups = sectionsOf(navigation).flat()
   return groups.filter((leaves) => leaves.length > 0)
+}
+
+export function isActiveLeaf(leaf, route, chosen) {
+  const sameRoute = leaf.route.name === route.name
+  const boardChosen = route.name === 'board' && !route.params.boardId
+  if (!sameRoute) {
+    return false
+  }
+  if (boardChosen) {
+    return Boolean(chosen) && chosen.id === leaf.route.params.boardId
+  }
+  return matchesParams(leaf, route)
+}
+
+function matchesParams(leaf, route) {
+  return Object.entries(leaf.route.params).every(([key, value]) => route.params[key] === value)
 }
