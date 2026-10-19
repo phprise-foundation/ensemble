@@ -10,6 +10,7 @@ import { isSimulated } from '../api/index.js'
 const props = defineProps({
   open: { type: Boolean, default: false },
   isMobile: { type: Boolean, default: false },
+  narrow: { type: Boolean, default: false },
   collapsed: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
@@ -332,6 +333,16 @@ async function removeEntity(kind, id, label) {
     <div class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>
+      <button
+        v-if="narrow && isMobile"
+        class="icon-btn sidebar-close"
+        type="button"
+        title="Fechar menu"
+        aria-label="Fechar menu"
+        @click="emit('close')"
+      >
+        <AppIcon name="close" size="20" />
+      </button>
     </div>
 
     <nav class="nav">
