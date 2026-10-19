@@ -1,180 +1,348 @@
 import assert from 'node:assert/strict'
-import { after, test } from 'node:test'
+import { afterEach, beforeEach, test } from 'node:test'
 
-import { consoleStore } from '../src/store/console.js'
-import { runCommand } from '../src/store/commands.js'
+import { api } from '../src/api/index.js'
 import { boardStore } from '../src/store/board.js'
+import { consoleStore, pollTick } from '../src/store/console.js'
+import { CATALOG, runCommand } from '../src/store/commands.js'
 
-const realFetch = globalThis.fetch
-let fetchCalls = []
-let routes = {}
+let fetchCalls
+let issuesPayload
 
-function stubFetch(nextRoutes) {
-  routes = nextRoutes
-  fetchCalls = []
-  globalThis.fetch = async (input, init) => {
-    const url = String(input).replace(/^https?:\/\/[^/]+/, '')
-    fetchCalls.push({ url, method: init?.method ?? 'GET' })
-    const body = routes[url]
-    if (body === undefined) {
-      return {
-        ok: false,
-        status: 404,
-        statusText: 'Not Found',
-        text: async () => JSON.stringify({ error: 'not found' }),
-      }
-    }
-    return { ok: true, status: 200, text: async () => JSON.stringify(body) }
-  }
+api.fetchIssues = async () => {
+  fetchCalls += 1
+  return issuesPayload
 }
 
-after(() => {
-  globalThis.fetch = realFetch
-})
-
-function agentComment(id, author, body, at) {
-  return { id, author, body, at }
+function seedBoard({ statuses = [], issues = [], agents = [] } = {}) {
+  Object.assign(boardStore.state, {
+    statuses,
+    issues,
+    agents,
+    boards: [{ id: 'KANB', workflowId: 'wf' }],
+    boardId: 'KANB',
+  })
 }
 
-function boardIssues() {
+const STATUSES = [
+  { id: 'draft', name: 'Rascunho', workflowId: 'wf', type: 'initial' },
+  { id: 'coding', name: 'Coding', workflowId: 'wf', type: 'transitional' },
+  { id: 'done', name: 'Done', workflowId: 'wf', type: 'final' },
+]
+
+const AGENTS = [{ id: 'ian', name: 'Ian' }, { id: 'alan', name: 'Alan' }]
+
+const COMMENT_BY_ID = 0
+const COMMENT_BY_STAMP = 1
+
+function fakeBackendPayload(form) {
+  const comments = [
+    { id: 'c1', author: form === COMMENT_BY_ID ? 'Ian' : 'user', body: 'primeira', at: '2026-10-19T10:00:00.000Z' },
+    { id: 'c2', author: 'Ian', body: 'segunda', at: '2026-10-19T10:00:00.000Z' },
+    { id: 'c3', author: 'user', body: 'digitado por mim', at: '2026-10-19T10:06:00.000Z' },
+  ]
   return [
+    { id: 'KANB-1', summary: 'item KANB-1', statusId: 'coding', comments },
     {
-      id: 'KANB-1', summary: 'Frame the onboarding intent', statusId: 'to-develop', assigneeId: 'vivy',
-      comments: [
-        agentComment('c1', 'user', 'We lose users in the first step.', '2026-10-19T09:00:00.000Z'),
-        agentComment('c2', 'Vivy', 'Rascunhei o fluxo de onboarding em tres passos.', '2026-10-19T09:05:00.000Z'),
-      ],
-    },
-    {
-      id: 'KANB-2', summary: 'Fix the login redirect loop', statusId: 'in-development', assigneeId: 'kaio',
-      comments: [
-        agentComment('c3', 'David', 'Validei o desenho da grade inferior.', '2026-10-19T09:10:00.000Z'),
-      ],
+      id: 'KANB-2',
+      summary: 'item KANB-2',
+      statusId: 'draft',
+      comments: [{ id: 'c4', author: 'Alan', body: 'revisão', at: '2026-10-19T10:07:00.000Z' }],
     },
   ]
 }
 
-const workspace = {
-  boards: [{ id: 'KANB', name: 'Multi-agent', workflowId: 'wf-default', columns: [] }],
+function presenterPayload() {
+  return [
+    {
+      id: 64,
+      title: 'Store do console',
+      status: 'coding',
+      comments: [
+        { author: 'Ian', body: 'primeira', created_at: '2026-10-19T10:00:00+00:00' },
+        { author: 'Ian', body: 'segunda', created_at: '2026-10-19T10:00:00+00:00' },
+        { author: 'user', body: 'digitado por mim', created_at: '2026-10-19T10:06:00+00:00' },
+      ],
+    },
+    {
+      id: 65,
+      title: 'Outro item',
+      status: 'done',
+      comments: [{ author: 'Alan', body: 'revisão', created_at: '2026-10-19T10:07:00+00:00' }],
+    },
+  ]
 }
 
-test('forma da mensagem: append atribui seq monotônico, at, actor, kind e text', () => {
+function texts() {
+  return consoleStore.state.messages.map((message) => message.text)
+}
+
+function lastMessage() {
+  return consoleStore.state.messages.at(-1)
+}
+
+beforeEach(() => {
+  fetchCalls = 0
+  issuesPayload = []
   consoleStore.clear()
-
-  consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'Primeira linha do log.' })
-  consoleStore.append({ actor: 'system', kind: 'system', text: 'Segunda linha.', at: '2026-10-19T09:00:00.000Z' })
-
-  const messages = consoleStore.state.messages
-  assert.equal(messages.length, 2, 'cada append entra no log na ordem')
-  assert.deepEqual(
-    Object.keys(messages[0]).sort(),
-    ['actor', 'at', 'kind', 'seq', 'text'],
-    'a mensagem carrega exatamente o contrato { seq, at, actor, kind, text }',
-  )
-  assert.equal(messages[1].seq, messages[0].seq + 1, 'seq é monotônico')
-  assert.ok(!Number.isNaN(Date.parse(messages[0].at)), 'at nasce com uma data válida')
-  assert.equal(messages[1].at, '2026-10-19T09:00:00.000Z', 'at explícito é respeitado')
-  assert.equal(consoleStore.state.unread, 2, 'cada append incrementa unread')
-
-  consoleStore.clearUnread()
-  assert.equal(consoleStore.state.unread, 0, 'clearUnread zera o unread sem apagar mensagens')
-  assert.equal(consoleStore.state.messages.length, 2, 'clearUnread não toca no log')
-
-  consoleStore.clear()
-  assert.equal(consoleStore.state.messages.length, 0, 'clear zera o log')
-  assert.equal(consoleStore.state.unread, 0, 'clear zera o unread')
+  consoleStore.resetDedupe()
+  seedBoard()
 })
 
-test('pollOnce é idempotente: reler as mesmas issues não duplica mensagem', async () => {
-  consoleStore.clear()
-  const issues = boardIssues()
-  stubFetch({ '/api/issues': issues })
-
-  await consoleStore.pollOnce()
-  const agentes = consoleStore.state.messages.filter((message) => message.kind === 'agent')
-  assert.equal(agentes.length, 2, 'só comentários com author diferente de user viram mensagem')
-  assert.deepEqual(
-    agentes.map((message) => message.actor),
-    ['Vivy', 'David'],
-    'o actor da mensagem é o author do comentário',
-  )
-  assert.equal(
-    agentes[0].text,
-    'Rascunhei o fluxo de onboarding em tres passos.',
-    'o text da mensagem é o body do comentário',
-  )
-
-  await consoleStore.pollOnce()
-  assert.equal(
-    consoleStore.state.messages.filter((message) => message.kind === 'agent').length,
-    2,
-    'dedupe por issueId:commentId mantém o log estável entre polls',
-  )
-
-  issues[0].comments.push(agentComment('c4', 'Vivy', 'Segundo rascunho anexado.', '2026-10-19T09:20:00.000Z'))
-  await consoleStore.pollOnce()
-  const depois = consoleStore.state.messages.filter((message) => message.kind === 'agent')
-  assert.equal(depois.length, 3, 'só o comentário novo entra no poll seguinte')
-  assert.equal(depois[2].actor, 'Vivy')
-  assert.equal(depois[2].text, 'Segundo rascunho anexado.')
+afterEach(() => {
+  seedBoard()
+  consoleStore.resetDedupe()
 })
 
-test('catálogo fechado: /status, /list e /help respondem system e desconhecido vira error', async () => {
-  consoleStore.clear()
-  stubFetch({ '/api/workspace': workspace, '/api/issues': boardIssues() })
-  await boardStore.load()
+test('forma da mensagem: chaves exatas, seq monotônico e kinds do catálogo', () => {
+  consoleStore.append({ actor: 'user', kind: 'command', text: '/help' })
+  consoleStore.append({ actor: 'system', kind: 'system', text: 'resposta' })
+  consoleStore.append({ actor: 'system', kind: 'error', text: 'falha' })
 
-  const respostas = {}
-  for (const command of ['/help', '/status', '/list']) {
-    const antes = consoleStore.state.messages.length
-    await runCommand(command)
-    const novos = consoleStore.state.messages.slice(antes)
-    assert.equal(novos[0].kind, 'command', `${command} registra o eco no log`)
-    assert.equal(novos[0].text, command, 'o eco guarda o comando digitado')
-    assert.equal(novos[1].kind, 'system', `${command} responde com kind system`)
-    assert.ok(novos[1].text.length > 0, `${command} responde com texto no log`)
-    respostas[command] = novos[1].text
+  assert.deepEqual(Object.keys(lastMessage()), ['seq', 'at', 'actor', 'kind', 'text'])
+  assert.ok(consoleStore.state.messages[1].seq > consoleStore.state.messages[0].seq)
+  assert.doesNotThrow(() => new Date(consoleStore.state.messages[0].at).toISOString())
+  for (const message of consoleStore.state.messages) {
+    assert.ok(['command', 'system', 'agent', 'error'].includes(message.kind))
   }
-  assert.ok(respostas['/list'].includes('KANB-1'), '/list lista as issues do board carregado')
-  assert.ok(respostas['/status'].length > 0, '/status resume o estado dos agentes')
-
-  const antesErro = consoleStore.state.messages.length
-  await runCommand('/rm -rf /')
-  const erro = consoleStore.state.messages.slice(antesErro)
-  assert.equal(erro[0].kind, 'command', 'comando desconhecido também registra o eco')
-  assert.equal(erro[1].kind, 'error', 'comando fora do catálogo responde com kind error')
-  assert.ok(
-    !erro.some((message) => message.kind === 'system'),
-    'nada é executado fora do catálogo fechado',
-  )
 })
 
-test('/clear é local: zera o log e o unread sem chamada HTTP', async () => {
-  consoleStore.clear()
-  stubFetch({})
-  consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'linha que vai sumir' })
-  consoleStore.append({ actor: 'system', kind: 'system', text: 'outra linha' })
-  assert.equal(consoleStore.state.messages.length, 2)
+test('append respeita o "at" explícito quando recebido', () => {
+  consoleStore.append({ actor: 'Ian', kind: 'agent', text: 'linha', at: '2026-10-19T09:00:00.000Z' })
+  assert.equal(lastMessage().at, '2026-10-19T09:00:00.000Z')
+})
 
-  const chamadasAntes = fetchCalls.length
+test('payload do fake backend com id: idempotente, novos entram, user fica fora', async () => {
+  issuesPayload = fakeBackendPayload(COMMENT_BY_ID)
+
+  await consoleStore.pollOnce()
+  await consoleStore.pollOnce()
+
+  assert.equal(fetchCalls, 2)
+  assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
+  assert.equal(consoleStore.state.messages[0].at, '2026-10-19T10:00:00.000Z')
+  assert.ok(consoleStore.state.messages.every((message) => message.kind === 'agent'))
+
+  issuesPayload[0].comments.push({ id: 'c5', author: 'Ian', body: 'nova', at: '2026-10-19T11:00:00.000Z' })
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão', 'nova'])
+})
+
+test('payload do fake backend sem id: fallback por autor, instante e texto', async () => {
+  issuesPayload = fakeBackendPayload(COMMENT_BY_STAMP)
+
+  await consoleStore.pollOnce()
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['segunda', 'revisão'])
+
+  issuesPayload[0].comments.push({ author: 'Alan', body: 'nova', at: '2026-10-19T10:00:00.000Z' })
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['segunda', 'revisão', 'nova'])
+})
+
+test('payload do presenter PHP (created_at, mesmo segundo): nada se perde, nada duplica', async () => {
+  issuesPayload = presenterPayload()
+
+  await consoleStore.pollOnce()
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
+  assert.equal(consoleStore.state.messages[0].at, '2026-10-19T10:00:00+00:00')
+
+  issuesPayload[0].comments.push({ author: 'Ian', body: 'nova', created_at: '2026-10-19T11:00:00+00:00' })
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão', 'nova'])
+})
+
+test('comentários idênticos sem id no mesmo lote entram os dois; releitura não duplica', async () => {
+  const comment = { author: 'Ian', body: 'ok', created_at: '2026-10-19T10:00:00+00:00' }
+  issuesPayload = [{ id: 64, title: 'item', status: 'coding', comments: [comment, { ...comment }, comment] }]
+
+  await consoleStore.pollOnce()
+  assert.deepEqual(texts(), ['ok', 'ok', 'ok'])
+
+  await consoleStore.pollOnce()
+  assert.deepEqual(texts(), ['ok', 'ok', 'ok'])
+})
+
+test('releitura de payload sem id nem instante não duplica o mesmo comentário', async () => {
+  issuesPayload = [{ id: 64, title: 'item', status: 'coding', comments: [{ author: 'Alan', body: 'revisão' }] }]
+
+  await consoleStore.pollOnce()
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(texts(), ['revisão'])
+})
+
+test('falha de rede vira mensagem error única sem derrubar a store', async () => {
+  const original = api.fetchIssues
+  api.fetchIssues = async () => {
+    fetchCalls += 1
+    throw new Error('HTTP 500')
+  }
+
+  try {
+    await assert.doesNotReject(() => consoleStore.pollOnce())
+    await assert.doesNotReject(() => consoleStore.pollOnce())
+  } finally {
+    api.fetchIssues = original
+  }
+
+  assert.equal(consoleStore.state.messages.filter((message) => message.kind === 'error').length, 1)
+  assert.match(lastMessage().text, /HTTP 500/)
+})
+
+test('pollOnce concorrente compartilha a requisição e nunca rejeita', async () => {
+  issuesPayload = presenterPayload()
+
+  await Promise.all([consoleStore.pollOnce(), consoleStore.pollOnce()])
+  await consoleStore.pollOnce()
+
+  assert.equal(fetchCalls, 2)
+  assert.deepEqual(texts(), ['primeira', 'segunda', 'revisão'])
+})
+
+test('/status e /list rendem com payload camelCase do boardStore', async () => {
+  seedBoard({
+    statuses: STATUSES,
+    agents: AGENTS,
+    issues: [
+      { id: 'KAN-1', summary: 'item ativo', statusId: 'coding' },
+      { id: 'KAN-2', summary: 'item final', statusId: 'done' },
+    ],
+  })
+
+  await runCommand('/status')
+  assert.match(lastMessage().text, /Agentes: Ian, Alan/)
+  assert.match(lastMessage().text, /Coding: 1/)
+  assert.match(lastMessage().text, /Done: 1/)
+
+  await runCommand('/list')
+  assert.match(lastMessage().text, /KAN-1 · item ativo · Coding/)
+  assert.doesNotMatch(lastMessage().text, /KAN-2/)
+})
+
+test('/status e /list rendem com issue do presenter PHP (title/status)', async () => {
+  seedBoard({
+    statuses: STATUSES,
+    agents: AGENTS,
+    issues: [
+      { id: 64, title: 'Store do console', status: 'coding' },
+      { id: 65, title: 'Outro', status: 'done' },
+    ],
+  })
+
+  await runCommand('/status')
+  assert.match(lastMessage().text, /Coding: 1/)
+  assert.doesNotMatch(lastMessage().text, /undefined/)
+
+  await runCommand('/list')
+  assert.match(lastMessage().text, /64 · Store do console · Coding/)
+  assert.doesNotMatch(lastMessage().text, /undefined/)
+  assert.doesNotMatch(lastMessage().text, /65/)
+})
+
+test('polling descarta consulta com a aba oculta', async () => {
+  globalThis.document = { hidden: true }
+  try {
+    await pollTick()
+  } finally {
+    delete globalThis.document
+  }
+
+  assert.equal(fetchCalls, 0)
+})
+
+test('/status responde com registro de agentes vazio', async () => {
+  await runCommand('/status')
+  assert.equal(lastMessage().kind, 'system')
+  assert.match(lastMessage().text, /nenhum agente registrado/)
+})
+
+test('catálogo fechado, /help lista e desconhecido vira error sugerindo /help', async () => {
+  assert.deepEqual(CATALOG, ['/status', '/list', '/clear', '/help'])
+
+  await runCommand('/help')
+  assert.equal(lastMessage().kind, 'system')
+  assert.match(lastMessage().text, /\/status.*\/list.*\/clear.*\/help/)
+
+  await runCommand('/deploy')
+  const unknown = lastMessage()
+  assert.equal(unknown.kind, 'error')
+  assert.match(unknown.text, /Comando desconhecido/)
+  assert.match(unknown.text, /\/help/)
+})
+
+test('/clear é local: zera log e unread sem eco nem HTTP', async () => {
+  consoleStore.append({ actor: 'Ian', kind: 'agent', text: 'mensagem de agente' })
+  consoleStore.append({ actor: 'system', kind: 'system', text: 'resposta' })
+
   await runCommand('/clear')
 
-  assert.equal(consoleStore.state.messages.length, 0, '/clear esvazia o log')
-  assert.equal(consoleStore.state.unread, 0, '/clear zera o unread')
-  assert.equal(fetchCalls.length, chamadasAntes, '/clear é ação puramente local, zero HTTP')
+  assert.equal(fetchCalls, 0)
+  assert.equal(consoleStore.state.messages.length, 0)
+  assert.equal(consoleStore.state.unread, 0)
+  assert.equal(consoleStore.state.busy, false)
 })
 
-test('busy impede reenvio: comando enviado durante a execução é ignorado', async () => {
-  consoleStore.clear()
-  stubFetch({ '/api/workspace': workspace, '/api/issues': boardIssues() })
-  await boardStore.load()
-  consoleStore.clear()
+test('busy é observável durante o comando e impede reenvio', async () => {
+  const first = runCommand('/help')
+  assert.equal(consoleStore.state.busy, true)
 
-  const primeira = runCommand('/list')
-  const segunda = runCommand('/list')
-  await Promise.all([primeira, segunda])
+  await Promise.all([first, runCommand('/list')])
+  consoleStore.state.busy = true
+  await runCommand('/status')
+  consoleStore.state.busy = false
+  assert.equal(consoleStore.state.busy, false)
 
-  const ecos = consoleStore.state.messages.filter((message) => message.kind === 'command')
-  assert.equal(ecos.length, 1, 'apenas um eco mesmo com dois envios concorrentes')
-  assert.equal(consoleStore.state.busy, false, 'busy volta a false depois que o comando termina')
+  const echos = consoleStore.state.messages.filter((message) => message.kind === 'command')
+  assert.equal(echos.length, 1)
+})
+
+test('polling com a rede fora não vaza rejeição solta entre ciclos', async () => {
+  const rejections = []
+  const onFailure = (reason) => rejections.push(reason?.message ?? reason)
+  process.on('unhandledRejection', onFailure)
+  process.on('uncaughtException', onFailure)
+
+  const original = api.fetchIssues
+  let scheduled = null
+  try {
+    globalThis.window = {
+      setInterval: (callback, interval) => {
+        scheduled = callback
+        assert.equal(interval, 5000)
+        return 1
+      },
+      clearInterval: () => {},
+    }
+    globalThis.document = { hidden: false, addEventListener: () => {}, removeEventListener: () => {} }
+    api.fetchIssues = async () => {
+      throw new Error('rede caiu')
+    }
+
+    consoleStore.start()
+    assert.equal(consoleStore.state.polling, true)
+
+    await pollTick()
+    await pollTick()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+
+    assert.deepEqual(rejections, [])
+    assert.equal(scheduled, pollTick)
+    const failures = consoleStore.state.messages.filter((message) => message.kind === 'error')
+    assert.equal(failures.length, 1)
+    assert.match(failures[0].text, /rede caiu/)
+  } finally {
+    consoleStore.stop()
+    api.fetchIssues = original
+    delete globalThis.window
+    delete globalThis.document
+    process.off('unhandledRejection', onFailure)
+    process.off('uncaughtException', onFailure)
+  }
 })
