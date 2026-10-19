@@ -115,6 +115,11 @@ const SidebarStub = {
   template: '<div class="sidebar-stub"></div>',
 }
 
+const CopilotStub = {
+  name: 'AppCopilot',
+  template: '<section id="app-copilot" class="copilot-panel-stub"></section>',
+}
+
 function mountAppWithSidebarStub() {
   setupMatchMedia(false)
   return mount(App, {
@@ -124,6 +129,7 @@ function mountAppWithSidebarStub() {
         RouterLink: 'a',
         AppIcon: 'span',
         AppSidebar: SidebarStub,
+        AppCopilot: CopilotStub,
       },
     },
     attachTo: document.body,
@@ -184,6 +190,68 @@ describe('App sidebar collapse toggle', () => {
 
     expect(removeListener).toHaveBeenCalledWith('keydown', expect.any(Function))
     removeListener.mockRestore()
+  })
+})
+
+describe('App copilot panel toggle', () => {
+  beforeEach(() => {
+    document.documentElement.style.setProperty('--breakpoint-sidebar', '100px')
+  })
+
+  it('renders the panel open on desktop and toggles it from the top button', async () => {
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    const toggle = wrapper.find('.copilot-toggle')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.attributes('aria-label')).toBe('Toggle copilot')
+    expect(toggle.attributes('aria-controls')).toBe('app-copilot')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(true)
+
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(false)
+
+    await toggle.trigger('click')
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('toggles the copilot with Ctrl+Alt+B without touching the sidebar', async () => {
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    const control = pressShortcut({ ctrlKey: true, altKey: true })
+    await nextTick()
+    expect(control.defaultPrevented).toBe(true)
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(false)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+
+    pressShortcut({ metaKey: true, altKey: true })
+    await nextTick()
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('toggles the sidebar with Ctrl+B without touching the copilot', async () => {
+    const wrapper = mountAppWithSidebarStub()
+    await nextTick()
+
+    pressShortcut({ ctrlKey: true })
+    await nextTick()
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
+    expect(wrapper.find('.copilot-panel-stub').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('hides the copilot toggle and panel on mobile', async () => {
+    const wrapper = await mountApp(true)
+    await nextTick()
+
+    expect(wrapper.find('.copilot-toggle').exists()).toBe(false)
+    expect(wrapper.find('.copilot-panel').exists()).toBe(false)
+    wrapper.unmount()
   })
 })
 
