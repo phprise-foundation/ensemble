@@ -7,6 +7,28 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.18.0 — 2026-10-19
+
+### Added
+
+- **KAN-83** — modelo único de folhas e rail colapsado na sidebar (produção):
+  `frontend/src/navigation.js` novo e puro expõe `sidebarNavigation(store,
+  workspaceId)` e `railSections(navigation)`; workspace nulo ou ainda não
+  carregado devolve modelo e rail vazios, sem erro. `AppSidebar.vue` passa a
+  consumir o modelo na árvore expandida (`entry.entity.name`, folhas derivadas
+  de `entry.leaf`/`entry.leaves`) e, com a sidebar colapsada em desktop
+  (`showRail = collapsed && !isMobile`), renderiza `nav.nav.rail[aria-label="Pages"]`
+  com folhas `a.leaf.rail-leaf` de 36×36, ícone de 18px, `title`/`aria-label`
+  pelo `railTitle` único ("Flow B · Statuses"), divisórias entre grupos e ativo
+  com fallback `var(--selection, var(--surface-3))`; brand, grupos, chevrons,
+  lápis, badges, paths, rótulos e Sources ficam fora do rail. CSS aditivo em
+  `main.scss` (largura 48px via `--activity-width`, foco 2px accent), sem
+  backend, sem `localStorage`, sem rota nova; mobile, drawer e a regra da KAN-65
+  intactos. Prova: `tests/sidebar-navigation.test.mjs` (workspace nulo,
+  seções, páginas, Sources fora, `railTitle` único) e
+  `cypress/e2e/sidebar-rail.cy.js`. A adaptação de `sidebar-collapse.cy.js` ao
+  rail fica para a sub-task de testes. PR #96, release `v0.18.0`.
+
 ## v0.17.2 — 2026-10-19
 
 ### Fixed
