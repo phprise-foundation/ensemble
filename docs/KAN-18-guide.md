@@ -119,7 +119,8 @@ quando o `GET /api/issues` real substituir o fake — a store não muda.
   `v-show` manteria o ciclo rodando com a grade fechada, e por isso não é
   usado. `pollOnce()` e `pollTick()` exportados para testes.
 - **`pollOnce()` após `start()`:** o consumidor chama um poll imediato logo
-  depois de `start()`, para a grade não abrir vazia até o primeiro tick.
+  depois de `start()`, para a grade não abrir vazia até o primeiro tick. Na
+  `main` de `v0.15.2` esse disparo ainda não existe; a correção está na KAN-124.
 - **`CATALOG`**: exportado por `commands.js` (`/status`, `/list`, `/clear`,
   `/help`); a mesma lista que o `/help` imprime.
 - **`pollOnce()`**: chamadas concorrentes compartilham a mesma requisição;
