@@ -61,7 +61,7 @@ test('forma da mensagem: chaves exatas, seq monotônico e kinds do catálogo', (
 
   assert.deepEqual(
     Object.keys(lastMessage()),
-    ['seq', 'at', 'actor', 'kind', 'text'],
+    ['seq', 'at', 'kind', 'actor', 'text'],
     'a mensagem não pode ganhar campos extras',
   )
   assert.ok(messages()[1].seq > messages()[0].seq)
@@ -111,6 +111,31 @@ test('pollOnce lê o payload real: vários comentários por issue, novos entram,
     ['primeira', 'segunda', 'revisão', 'nova'],
     'comentário novo entra no poll seguinte',
   )
+})
+
+test('dedupe por cursor: dois comentários do mesmo autor no mesmo segundo entram os dois', async () => {
+  const sameSecond = '2026-10-19T10:00:00+00:00'
+  issuesPayload = [
+    {
+      id: 'KAN-1',
+      summary: 'item KAN-1',
+      statusId: 's1',
+      comments: [
+        { author: 'Ian', body: 'primeiro no mesmo segundo', created_at: sameSecond },
+        { author: 'Ian', body: 'segundo no mesmo segundo', created_at: sameSecond },
+      ],
+    },
+  ]
+
+  await consoleStore.pollOnce()
+
+  assert.deepEqual(messages().map((message) => message.text), [
+    'primeiro no mesmo segundo',
+    'segundo no mesmo segundo',
+  ])
+
+  await consoleStore.pollOnce()
+  assert.equal(messages().length, 2, 'relê as mesmas issues sem duplicar')
 })
 
 test('pollOnce é idempotente e serializa chamadas concorrentes', async () => {

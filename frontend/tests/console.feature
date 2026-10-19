@@ -5,13 +5,15 @@ Funcionalidade: Grade inferior de console (output + input)
 
   A grade nasce FECHADA a cada carregamento, sem persistência (sem
   localStorage). O output deriva de GET /api/issues por polling (5s):
-  comentários com author !== 'user', deduplicados por issueId:commentId.
+  comentários com author !== 'user', deduplicados por cursor append-only
+  por issue (contagem de comentários já absorvidos; o payload não traz id).
   O input executa APENAS o catálogo fechado (/status, /list, /help, /clear)
   localmente contra o boardStore — sem shell, sem POST novo; comando
   desconhecido vira mensagem kind "error", nunca avaliação de input.
 
   Contrato congelado:
-  - Mensagem: { seq, at, actor, kind: 'agent'|'system'|'command'|'error', text }.
+  - Mensagem: { seq, at, kind, actor, text } com kind em
+    'agent'|'system'|'command'|'error' (ordem das chaves congelada).
   - `seq` é monotônico; `unread` cresce a cada append e zera com
     clearUnread()/clear().
   - pollOnce é idempotente: reler as mesmas issues não duplica mensagem.
@@ -58,7 +60,7 @@ Funcionalidade: Grade inferior de console (output + input)
     Então só os comentários com author diferente de "user" viram mensagens kind "agent"
     E o actor da mensagem é o author do comentário e o text é o body
     Quando o mesmo pollOnce roda de novo sobre as mesmas issues
-    Então nenhuma mensagem nova é acrescentada, por dedupe em issueId:commentId
+    Então nenhuma mensagem nova é acrescentada, pelo cursor append-only por issue
     Quando um comentário novo de agente chega no poll seguinte
     Então só essa mensagem nova é acrescentada ao fim do log
 

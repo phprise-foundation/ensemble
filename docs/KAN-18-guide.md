@@ -23,7 +23,8 @@ componentes.
 
 - **Fonte do output (MVE):** polling de `GET /api/issues` a cada 5s; mensagens
   derivadas dos comentários cujo `author !== 'user'`, deduplicadas por
-  `issueId:commentId`. O adaptador vive **só na store** — é o único ponto que
+  cursor append-only por issue (o payload de `GET /api/issues` não expõe
+  `commentId`). O adaptador vive **só na store** — é o único ponto que
   muda quando a fonte real for decidida (acordo David/Jarvis: UI independente
   da fonte; polling e stream intercambiáveis).
 - **Comandos no MVE:** execução local contra o `boardStore`; nenhum POST novo,
@@ -63,7 +64,7 @@ componentes.
 | Linha de mensagem | `.console-line` + `.console-line.{agent,system,command,error}` |
 | Entrada de comando | `<form class="console-input">` com `aria-label="Console input"` e placeholder `Type a command… (/help)` |
 | Pílula "voltar ao fim" | `.console-jump` (conta `unread`; some ao aterrissar no fundo) |
-| Mensagem (forma) | `{ seq, at, actor, kind: 'agent'|'system'|'command'|'error', text }` |
+| Mensagem (forma) | `{ seq, at, kind, actor, text }`, com `kind: 'agent'|'system'|'command'|'error'` |
 
 ## Contrato da store (`consoleStore`)
 
@@ -88,7 +89,8 @@ componentes.
 O guia original congelava `consoleHeight = ref(240)` em `App.vue`. A
 implementação manteve em `App.vue` apenas o estado de abertura
 (`consoleOpen = ref(false)` + botão + `Ctrl+J`) e **encapsulou a altura** em
-`frontend/src/store/consoleHeight.js`, importada por `AppConsole.vue`.
+`frontend/src/store/consoleHeight.js`, usada por `AppConsole.vue` (que não
+mantém estado local de altura).
 
 Motivo: o estado, o clamp e a persistência de evento do resize (ponteiro,
 setas, duplo clique) pertencem à grade, não ao shell do app; `App.vue` fica com
