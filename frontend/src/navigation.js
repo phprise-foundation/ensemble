@@ -15,7 +15,7 @@ function pageLeaf(page, parent, section) {
     key: `${section}:${parent.id}:${page.key}`,
     label: page.label,
     title: page.label,
-    railTitle: `${parent.name} ${page.label}`,
+    railTitle: `${parent.name} · ${page.label}`,
     icon: page.icon,
     to: page.path(parent.id),
     route: { name: page.route, params: { [`${section}Id`]: parent.id } },

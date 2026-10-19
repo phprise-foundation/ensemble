@@ -37,11 +37,11 @@ async function mountAt(path) {
 }
 
 function currentTitles(wrapper) {
-  return wrapper.findAll('nav.rail a.rail-leaf[aria-current="page"]').map((link) => link.attributes('title'))
+  return wrapper.findAll('nav.nav.rail a.rail-leaf[aria-current="page"]').map((link) => link.attributes('title'))
 }
 
 function railLink(wrapper, title) {
-  return wrapper.findAll('nav.rail a.rail-leaf').find((link) => link.attributes('title') === title)
+  return wrapper.findAll('nav.nav.rail a.rail-leaf').find((link) => link.attributes('title') === title)
 }
 
 describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
@@ -54,7 +54,7 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   it('destaca somente o board atual quando a loja tem dois boards', async () => {
     const first = await mountAt('/boards/KANB')
     expect(currentTitles(first)).toEqual(['Kanban'])
-    expect(first.findAll('nav.rail a.rail-leaf')).toHaveLength(15)
+    expect(first.findAll('nav.nav.rail a.rail-leaf')).toHaveLength(15)
     first.unmount()
 
     const second = await mountAt('/boards/B2')
@@ -64,19 +64,19 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
 
   it('destaca somente a página do workflow atual quando a loja tem dois workflows', async () => {
     const wrapper = await mountAt('/workflows/flow-b/transitions')
-    expect(currentTitles(wrapper)).toEqual(['Flow B Transitions'])
+    expect(currentTitles(wrapper)).toEqual(['Flow B · Transitions'])
     wrapper.unmount()
   })
 
   it('destaca somente a página do time atual quando a loja tem dois times', async () => {
     const wrapper = await mountAt('/teams/design/profiles')
-    expect(currentTitles(wrapper)).toEqual(['Design team Profiles'])
+    expect(currentTitles(wrapper)).toEqual(['Design team · Profiles'])
     wrapper.unmount()
   })
 
   it('move o destaque para o único link atual ao clicar no rail', async () => {
     const wrapper = await mountAt('/teams/default/agents')
-    expect(currentTitles(wrapper)).toEqual(['Default team Agents'])
+    expect(currentTitles(wrapper)).toEqual(['Default team · Agents'])
     await railLink(wrapper, 'Experiences').trigger('click')
     await flushPromises()
     expect(currentTitles(wrapper)).toEqual(['Experiences'])

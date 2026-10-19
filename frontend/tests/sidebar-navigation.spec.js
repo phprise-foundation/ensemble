@@ -64,10 +64,10 @@ describe('railSections', () => {
     expect(sections.map((leaves) => leaves.map((leaf) => leaf.railTitle))).toEqual([
       ['Kanban'],
       ['Board 2'],
-      ['Standard Statuses', 'Standard Transitions', 'Standard Issue types'],
-      ['Flow B Statuses', 'Flow B Transitions', 'Flow B Issue types'],
-      ['Default team Agents', 'Default team Roles', 'Default team Profiles'],
-      ['Design Agents', 'Design Roles', 'Design Profiles'],
+      ['Standard · Statuses', 'Standard · Transitions', 'Standard · Issue types'],
+      ['Flow B · Statuses', 'Flow B · Transitions', 'Flow B · Issue types'],
+      ['Default team · Agents', 'Default team · Roles', 'Default team · Profiles'],
+      ['Design · Agents', 'Design · Roles', 'Design · Profiles'],
       ['Experiences'],
     ])
     const titles = sections.flat().map((leaf) => leaf.railTitle)
@@ -95,14 +95,14 @@ describe('isActiveLeaf', () => {
     const current = railSections(navigation)
       .flat()
       .filter((leaf) => isActiveLeaf(leaf, routeOf('statuses', { workflowId: 'flow-b' })))
-    expect(current.map((leaf) => leaf.railTitle)).toEqual(['Flow B Statuses'])
+    expect(current.map((leaf) => leaf.railTitle)).toEqual(['Flow B · Statuses'])
   })
 
   it('destaca somente o time atual quando ha dois times', () => {
     const current = railSections(navigation)
       .flat()
       .filter((leaf) => isActiveLeaf(leaf, routeOf('roles', { teamId: 'design' })))
-    expect(current.map((leaf) => leaf.railTitle)).toEqual(['Design Roles'])
+    expect(current.map((leaf) => leaf.railTitle)).toEqual(['Design · Roles'])
   })
 
   it('nao destaca nenhum board na rota /boards sem board escolhido', () => {

@@ -460,7 +460,7 @@ async function removeEntity(kind, id, label) {
       </div>
     </nav>
 
-    <div v-if="showRail" class="rail-slot"><nav class="rail" aria-label="Pages">
+    <div v-if="showRail" class="rail-slot"><nav class="nav rail" aria-label="Pages">
       <template v-for="(leaves, index) in railLeaves" :key="index">
         <div v-if="index > 0" class="rail-divider" role="separator"></div>
         <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">

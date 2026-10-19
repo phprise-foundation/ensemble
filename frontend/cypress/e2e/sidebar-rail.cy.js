@@ -23,8 +23,8 @@ const collapse = () => {
 }
 
 const expectOneCurrent = (title) => {
-  cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.length', 1)
-  cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.attr', 'title', title)
+  cy.get('nav.nav.rail a.rail-leaf[aria-current="page"]').should('have.length', 1)
+  cy.get('nav.nav.rail a.rail-leaf[aria-current="page"]').should('have.attr', 'title', title)
 }
 
 describe('rail do sidebar colapsado', () => {
@@ -48,11 +48,11 @@ describe('rail do sidebar colapsado', () => {
     cy.get('.leaf').its('length').then((treeLeaves) => {
       collapse()
 
-      cy.get('nav.rail').should('have.attr', 'aria-label', 'Pages')
-      cy.get('nav.rail a.leaf.rail-leaf').should('have.length', treeLeaves + 1)
-      cy.get('nav.rail .rail-divider').should('have.length.greaterThan', 0)
+      cy.get('nav.nav.rail').should('have.attr', 'aria-label', 'Pages')
+      cy.get('nav.nav.rail a.leaf.rail-leaf').should('have.length', treeLeaves + 1)
+      cy.get('nav.nav.rail .rail-divider').should('have.length.greaterThan', 0)
 
-      cy.get('nav.rail .rail-leaf svg').first().then(($svg) => {
+      cy.get('nav.nav.rail .rail-leaf svg').first().then(($svg) => {
         expect(Math.round($svg[0].getBoundingClientRect().width)).to.eq(18)
         expect(Math.round($svg[0].getBoundingClientRect().height)).to.eq(18)
       })
@@ -60,17 +60,17 @@ describe('rail do sidebar colapsado', () => {
       cy.get('#app-sidebar').then(($sidebar) => {
         expect(Math.round($sidebar[0].getBoundingClientRect().width)).to.eq(48)
       })
-      cy.get('nav.rail').then(($rail) => {
+      cy.get('nav.nav.rail').then(($rail) => {
         expect($rail[0].scrollWidth).to.be.at.most($rail[0].clientWidth)
       })
 
-      cy.get('nav.rail .nav-entry, nav.rail .chevron, nav.rail .icon-btn, nav.rail .badge-id, nav.rail .source-path, nav.rail .label, nav.rail .rail-leaf span').should('not.exist')
-      cy.get('.nav').should('not.be.visible')
+      cy.get('nav.nav.rail .nav-entry, nav.nav.rail .chevron, nav.nav.rail .icon-btn, nav.nav.rail .badge-id, nav.nav.rail .source-path, nav.nav.rail .label, nav.nav.rail .rail-leaf span').should('not.exist')
+      cy.get('.nav:not(.rail)').should('not.be.visible')
       cy.get('#app-sidebar .brand').then(($brand) => {
         expect($brand[0].getBoundingClientRect().width).to.eq(0)
       })
 
-      cy.get('nav.rail a.rail-leaf').each(($link) => {
+      cy.get('nav.nav.rail a.rail-leaf').each(($link) => {
         expect($link.attr('title'), 'title').to.be.a('string').and.not.be.empty
         expect($link.attr('aria-label'), 'aria-label').to.eq($link.attr('title'))
       })
@@ -79,8 +79,8 @@ describe('rail do sidebar colapsado', () => {
 
       cy.get('button.sidebar-toggle').click()
       cy.get('button.sidebar-toggle').should('have.attr', 'aria-expanded', 'true')
-      cy.get('nav.rail').should('not.exist')
-      cy.get('.nav').should('be.visible')
+      cy.get('nav.nav.rail').should('not.exist')
+      cy.get('.nav:not(.rail)').should('be.visible')
       cy.get('.leaf').should('have.length', treeLeaves)
     })
   })
@@ -96,15 +96,15 @@ describe('rail do sidebar colapsado', () => {
     })
     collapse()
     cy.get('@treeCount').then((treeCount) => {
-      cy.get('nav.rail a.rail-leaf').should('have.length', treeCount + 1)
-      cy.get('nav.rail a.rail-leaf').last().should('have.attr', 'title', 'Experiences')
+      cy.get('nav.nav.rail a.rail-leaf').should('have.length', treeCount + 1)
+      cy.get('nav.nav.rail a.rail-leaf').last().should('have.attr', 'title', 'Experiences')
     })
   })
 
   it('cada link do rail navega para o seu endereço e destaca apenas ele', () => {
     cy.visit('/')
     collapse()
-    cy.get('nav.rail a.rail-leaf').each(($link) => {
+    cy.get('nav.nav.rail a.rail-leaf').each(($link) => {
       const title = $link.attr('title')
       const path = `#${$link[0].href.split('#')[1] || ''}`
       cy.wrap($link).click()
@@ -116,15 +116,15 @@ describe('rail do sidebar colapsado', () => {
   it('mantém o destaque ao recarregar em deep link e ao clicar em Experiences', () => {
     cy.visit('/#/workflows/standard/transitions')
     collapse()
-    expectOneCurrent('Standard Transitions')
-    cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.class', 'router-link-active')
+    expectOneCurrent('Standard · Transitions')
+    cy.get('nav.nav.rail a.rail-leaf[aria-current="page"]').should('have.class', 'router-link-active')
 
     cy.reload()
     cy.get('#app-sidebar').should('not.have.class', 'collapsed')
     collapse()
-    expectOneCurrent('Standard Transitions')
+    expectOneCurrent('Standard · Transitions')
 
-    cy.get('nav.rail a.rail-leaf[title="Experiences"]').click()
+    cy.get('nav.nav.rail a.rail-leaf[title="Experiences"]').click()
     cy.location('hash').should('eq', '#/experiences')
     expectOneCurrent('Experiences')
   })
@@ -136,7 +136,7 @@ describe('rail do sidebar colapsado', () => {
       expect($toggle[0].matches(':focus')).to.eq(true)
       expect($toggle[0].matches(':focus-visible'), 'botão com foco visível').to.eq(true)
     })
-    cy.get('nav.rail a.rail-leaf').first().focus()
+    cy.get('nav.nav.rail a.rail-leaf').first().focus()
     cy.focused().then(($first) => {
       expect($first.attr('title')).to.eq('Kanban')
       const outline = $first[0].ownerDocument.defaultView.getComputedStyle($first[0])
@@ -149,7 +149,7 @@ describe('rail do sidebar colapsado', () => {
       expect(active.textContent, 'texto').to.eq('')
       expect(active.querySelectorAll('svg').length, 'icones').to.eq(1)
     })
-    cy.get('nav.rail a.rail-leaf').eq(1).then(($link) => {
+    cy.get('nav.nav.rail a.rail-leaf').eq(1).then(($link) => {
       cy.wrap($link).click()
       cy.location('hash').should('eq', `#${$link[0].href.split('#')[1]}`)
       expectOneCurrent($link.attr('title'))
@@ -160,8 +160,8 @@ describe('rail do sidebar colapsado', () => {
     cy.visit('/#/boards')
     cy.get('.sim-dot').should('have.length.greaterThan', 0)
     collapse()
-    cy.get('nav.rail .sim-dot').should('not.exist')
-    cy.get('nav.rail a.rail-leaf svg').should('have.length.greaterThan', 0)
+    cy.get('nav.nav.rail .sim-dot').should('not.exist')
+    cy.get('nav.nav.rail a.rail-leaf svg').should('have.length.greaterThan', 0)
   })
 
   it('mantém a árvore expandida em 1024px e exibe o rail a partir de 1025px', () => {
@@ -169,13 +169,13 @@ describe('rail do sidebar colapsado', () => {
     cy.visit('/')
     cy.get('.leaf').should('have.length.greaterThan', 0)
     cy.get('button.sidebar-toggle').should('not.be.visible')
-    cy.get('.nav').should('be.visible')
-    cy.get('nav.rail').should('not.exist')
+    cy.get('.nav:not(.rail)').should('be.visible')
+    cy.get('nav.nav.rail').should('not.exist')
 
     cy.viewport(1025, 800)
     cy.get('button.sidebar-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'collapsed')
-    cy.get('nav.rail a.rail-leaf').should('have.length.greaterThan', 0)
+    cy.get('nav.nav.rail a.rail-leaf').should('have.length.greaterThan', 0)
   })
 })
 
@@ -214,16 +214,16 @@ describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
     collapse()
     expectOneCurrent('Kanban')
 
-    cy.get('nav.rail a.rail-leaf[title="Board 2"]').click()
+    cy.get('nav.nav.rail a.rail-leaf[title="Board 2"]').click()
     cy.location('hash').should('eq', '#/boards/B2')
     expectOneCurrent('Board 2')
 
-    cy.get('nav.rail a.rail-leaf[title="Flow B Statuses"]').click()
+    cy.get('nav.nav.rail a.rail-leaf[title="Flow B · Statuses"]').click()
     cy.location('hash').should('eq', '#/workflows/flow-b/statuses')
-    expectOneCurrent('Flow B Statuses')
+    expectOneCurrent('Flow B · Statuses')
 
-    cy.get('nav.rail a.rail-leaf[title="Design team Roles"]').click()
+    cy.get('nav.nav.rail a.rail-leaf[title="Design team · Roles"]').click()
     cy.location('hash').should('eq', '#/teams/design/roles')
-    expectOneCurrent('Design team Roles')
+    expectOneCurrent('Design team · Roles')
   })
 })
