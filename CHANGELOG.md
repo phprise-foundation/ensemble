@@ -7,6 +7,18 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.14.0 — 2026-10-19
+
+### Added
+
+- **KAN-63** — ícone `console` no dicionário `paths` de `AppIcon.vue` do board
+  novo: terminal com moldura, prompt e linha (`M4 5h16v14H4z`,
+  `M7 9l3 3-3 3`, `M13 15h4`), no estilo dos demais glifos (`fill: none`,
+  `stroke: currentColor`, `stroke-width: 1.8`, viewBox 24). Diff de uma linha,
+  sem consumidor novo e sem alterar ícones existentes; rebase sobre a ponta
+  pós-`copilot` (KAN-69). Vitest 36/36, build e CI verdes. PR #66, release
+  `v0.14.0`.
+
 ## v0.13.0 — 2026-10-19
 
 ### Added
