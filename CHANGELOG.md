@@ -7,6 +7,23 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.17.2 — 2026-10-19
+
+### Fixed
+
+- **KAN-68** — a grade inferior do console agora tem prova completa como o
+  usuário a usa: BDD em português com 16 cenários mapeados um a um para as
+  suítes, integração `node:test` (forma da mensagem, idempotência do
+  `pollOnce`, catálogo fechado, `/clear` local, `busy` sem reenvio), vitest
+  (abrir/fechar, clamp, filtro, autoscroll e pílula singular/plural) e E2E no
+  navegador (`/help`, `/clear`, `role="log"`, temas escuro e claro). O harness
+  de E2E recusa medir um Vite alheio: porta ocupada ou servidor morto abortam
+  com status 1 (`run-e2e-port.test.mjs`), e o coletor em
+  `cypress/support/e2e.js` reprova qualquer cenário com erro, rejeição solta ou
+  `console.error`. Verificado por mutação: sempre-plural derruba o teste da
+  pílula e remover o poll imediato do `start()` derruba a reabertura. Barra:
+  `node --test` 22/22, vitest 79/79, E2E 27/27. PR #90, release `v0.17.2`.
+
 ## v0.17.1 — 2026-10-19
 
 ### Fixed
