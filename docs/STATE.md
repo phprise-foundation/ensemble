@@ -295,6 +295,12 @@
   1024–1280px aceita no RFC KAN-5. Contrato em `docs/KAN-62-guide.md`; 7 guardas
   estáticos, vitest 36/36, build e E2E 6/6 (1280/1920/1024) verdes. PR #74,
   release `v0.13.0`.
+- **Ícone `console` em `AppIcon.vue` (KAN-63):** entrada `console` no dicionário
+  `paths` com os três caminhos do contrato KAN-18 (`M4 5h16v14H4z`,
+  `M7 9l3 3-3 3`, `M13 15h4`), no estilo herdado do componente; nenhum
+  consumidor novo e nenhum ícone existente alterado. O rebase sobre a ponta
+  pós-`copilot` (KAN-69) preservou o glifo anterior; vitest 36/36, build e CI
+  verdes. PR #66, release `v0.14.0`.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
