@@ -9,59 +9,52 @@ const state = reactive({
   variant: 'info',
   role: 'dialog',
   scrimCloses: false,
-  resolver: null,
+  resolve: null
 })
 
-function applyOptions(options) {
-  state.title = options.title
+function applyOptions (options = {}) {
+  state.title = options.title ?? ''
   state.message = options.message ?? ''
   state.confirmLabel = options.confirmLabel ?? 'Confirm'
   state.cancelLabel = options.cancelLabel ?? 'Cancel'
   state.variant = options.variant ?? 'info'
+  state.role = options.danger === true ? 'alertdialog' : 'dialog'
   state.scrimCloses = options.scrimCloses ?? false
-  state.role = options.danger ? 'alertdialog' : 'dialog'
 }
 
-function finish(result) {
-  if (!state.open) {
-    return
-  }
+function finish (result) {
+  const resolve = state.resolve
+  state.resolve = null
   state.open = false
-  const resolve = state.resolver
-  state.resolver = null
   resolve?.(result)
 }
 
 export const dialog = {
-  confirmChoice() {
-    finish(true)
-  },
-  refuse() {
-    finish(false)
-  },
-}
-
-export const dialogStore = {
-  state,
-  confirm(options = {}) {
-    if (state.open) {
-      return Promise.resolve(false)
-    }
+  /**
+   * Open a confirm dialog. Resolves true (confirm) or false
+   * (cancel / Escape / scrim). Resolves false immediately when
+   * a dialog is already open.
+   */
+  confirm (options = {}) {
+    if (state.open) return Promise.resolve(false)
     applyOptions(options)
-    return new Promise((resolve) => {
-      state.resolver = resolve
+    state.scrimCloses = options.scrimCloses ?? false
+    return new Promise(resolve => {
+      state.resolve = resolve
       state.open = true
     })
   },
-  alert(options = {}) {
-    return dialogStore.confirm({
-      ...options,
-      confirmLabel: options.confirmLabel ?? 'OK',
-      cancelLabel: '',
-      scrimCloses: options.scrimCloses ?? true,
-    }).then(() => undefined)
-  },
-}
 
-const dialogState = state
-export default dialogState
+  /**
+   * Open an alert dialog. Single OK button, scrim closes by default.
+   * Resolves immediately when a dialog is already open.
+   */
+  alert (options = {}) {
+    return dialog.confirm({
+      ...options,
+      cancelLabel: '',
+      confirmLabel: options.confirmLabel ?? 'OK',
+      scrimCloses: options.scrimCloses ?? true
+    }).then(() => undefined)
+  }
+}
