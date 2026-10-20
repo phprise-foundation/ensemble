@@ -1,13 +1,13 @@
 const WORKFLOW_PAGES = [
-  { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', path: (id) => `/workflows/${id}/statuses` },
-  { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', path: (id) => `/workflows/${id}/transitions` },
-  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', path: (id) => `/workflows/${id}/issue-types` },
+  { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', route: 'statuses', path: (id) => `/workflows/${id}/statuses` },
+  { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', route: 'transitions', path: (id) => `/workflows/${id}/transitions` },
+  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', route: 'issue-types', path: (id) => `/workflows/${id}/issue-types` },
 ]
 
 const TEAM_PAGES = [
-  { key: 'agents', label: 'Agents', icon: 'agents', feature: 'agents', path: (id) => `/teams/${id}/agents` },
-  { key: 'roles', label: 'Roles', icon: 'roles', feature: 'roles', path: (id) => `/teams/${id}/roles` },
-  { key: 'profiles', label: 'Profiles', icon: 'profiles', feature: 'profiles', path: (id) => `/teams/${id}/profiles` },
+  { key: 'agents', label: 'Agents', icon: 'agents', feature: 'agents', route: 'agents', path: (id) => `/teams/${id}/agents` },
+  { key: 'roles', label: 'Roles', icon: 'roles', feature: 'roles', route: 'roles', path: (id) => `/teams/${id}/roles` },
+  { key: 'profiles', label: 'Profiles', icon: 'profiles', feature: 'profiles', route: 'profiles', path: (id) => `/teams/${id}/profiles` },
 ]
 
 function pageLeaf(page, parent, section) {
@@ -18,7 +18,7 @@ function pageLeaf(page, parent, section) {
     railTitle: `${parent.name} · ${page.label}`,
     icon: page.icon,
     to: page.path(parent.id),
-    route: { name: page.key, params: { [`${section}Id`]: parent.id } },
+    route: { name: page.route, params: { [`${section}Id`]: parent.id } },
     feature: page.feature,
   }
 }
@@ -85,11 +85,12 @@ export function railSections(navigation) {
 export function isActiveLeaf(leaf, route, chosen) {
   const sameRoute = leaf.route.name === route.name
   const boardChosen = route.name === 'board' && !route.params.boardId
+  const chosenBoard = boardChosen && Boolean(chosen) && chosen.path === leaf.to
   if (!sameRoute) {
     return false
   }
   if (boardChosen) {
-    return Boolean(chosen) && chosen.id === leaf.route.params.boardId
+    return chosenBoard
   }
   return matchesParams(leaf, route)
 }

@@ -8,22 +8,22 @@ import { boardStore } from '../store/board.js'
 import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
-const props = defineProps({
+const emit = defineEmits(['close'])
+const { open, isMobile, collapsed, narrow } = defineProps({
   open: { type: Boolean, default: false },
   isMobile: { type: Boolean, default: false },
-  narrow: { type: Boolean, default: false },
   collapsed: { type: Boolean, default: false },
+  narrow: { type: Boolean, default: false },
 })
-const emit = defineEmits(['close'])
 
 const route = useRoute()
 const router = useRouter()
 const sidebar = ref(null)
 
-const isModal = computed(() => props.isMobile && props.open)
+const isModal = computed(() => isMobile && open)
 
 router.afterEach(() => {
-  if (props.open) {
+  if (open) {
     emit('close')
   }
 })
@@ -96,9 +96,9 @@ function activateTrap() {
 }
 
 watch(
-  () => props.open,
+  () => open,
   (isOpen, wasOpen) => {
-    if (props.isMobile && isOpen) {
+    if (isMobile && isOpen) {
       activateTrap()
       return
     }
@@ -109,20 +109,20 @@ watch(
 )
 
 watch(
-  () => props.isMobile,
+  () => isMobile,
   (mobile) => {
     if (!mobile) {
       detachKeydown()
       return
     }
-    if (props.open) {
+    if (open) {
       activateTrap()
     }
   }
 )
 
 onMounted(() => {
-  if (props.isMobile && props.open) {
+  if (isMobile && open) {
     activateTrap()
   }
 })
@@ -140,12 +140,11 @@ const editor = ref(null)
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
 const navigation = computed(() => sidebarNavigation(boardStore, workspaceId.value))
+const showRail = computed(() => collapsed && !isMobile)
 const railGroups = computed(() => railSections(navigation.value))
 const railLeaves = computed(() =>
   railGroups.value.map((leaves) => leaves.map((leaf) => ({ ...leaf, current: isActiveLeaf(leaf, route, boardStore.board.value) }))),
 )
-const workflows = computed(() => navigation.value.workflows.map((entry) => entry.entity))
-const showRail = computed(() => Boolean(props.collapsed && !props.isMobile))
 const sources = computed(() => (workspaceId.value ? boardStore.sourcesOf(workspaceId.value) : []))
 
 const slugify = (text) =>
@@ -171,7 +170,7 @@ function editWorkspace() {
 }
 
 function addBoard() {
-  openEditor('board', { id: '', name: '', workflowId: workflows.value[0]?.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
+  openEditor('board', { id: '', name: '', workflowId: navigation.value.workflows[0]?.entity.id || '', workspaceId: workspaceId.value, filters: { statusIds: [] }, columns: [] }, 'New board', [])
 }
 
 function editBoard(board) {
@@ -190,7 +189,7 @@ function addWorkflow() {
         key: 'templateId',
         label: 'Start from a template (optional)',
         type: 'select',
-        options: () => [{ value: '', label: 'Empty' }, ...workflows.value.map((workflow) => ({ value: workflow.id, label: workflow.name }))],
+        options: () => [{ value: '', label: 'Empty' }, ...navigation.value.workflows.map((entry) => ({ value: entry.entity.id, label: entry.entity.name }))],
       },
     ],
   )
@@ -332,10 +331,10 @@ async function removeEntity(kind, id, label) {
     :class="{ open, collapsed }"
     :role="isModal ? 'dialog' : undefined"
     :aria-modal="isModal ? 'true' : undefined"
-    :aria-hidden="props.isMobile ? !open : undefined"
+    :aria-hidden="isMobile ? !open : undefined"
     aria-label="Menu"
   >
-    <div class="brand">
+    <div v-if="!showRail" class="brand">
       <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
       <span>Multi Agent</span>
       <button
@@ -346,45 +345,36 @@ async function removeEntity(kind, id, label) {
         aria-label="Fechar menu"
         @click="emit('close')"
       >
-        <AppIcon name="close" size="14" />
+        <AppIcon name="close" size="20" />
       </button>
     </div>
 
-    <nav v-if="showRail" class="nav rail" aria-label="Pages">
-      <template v-for="(leaves, index) in railLeaves" :key="leaves[0].key">
-        <div v-if="index > 0" class="rail-divider" role="separator" aria-orientation="vertical"></div>
-        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
-          <AppIcon :name="leaf.icon" :size="18" />
-        </RouterLink>
-      </template>
-    </nav>
-
-    <nav v-else class="nav">
+    <nav v-show="!showRail" class="nav">
       <div class="nav-entry" title="Workspaces">
-        <AppIcon name="workspace" size="18" />
+        <AppIcon name="workspace" size="15" />
         <span>Workspaces</span>
         <span class="entry-actions">
-          <button class="icon-btn" title="New workspace (coming soon)" aria-label="New workspace (coming soon)" disabled><AppIcon name="plus" size="14" /></button>
+          <button class="icon-btn" title="New workspace (coming soon)" disabled><AppIcon name="plus" size="14" /></button>
         </span>
       </div>
 
       <div class="submenu">
         <div class="nav-entry" v-if="workspace" :title="workspace?.name">
-          <AppIcon name="workspace" size="14" />
+          <AppIcon name="workspace" size="15" />
           <span>{{ workspace.name }}</span>
           <span class="entry-actions">
-            <button class="icon-btn" title="Edit workspace" aria-label="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
+            <button class="icon-btn" title="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
           </span>
         </div>
 
         <div class="submenu">
           <!-- Boards -->
           <div class="nav-entry" :class="{ open: openBoards }" title="Boards" @click="openBoards = !openBoards">
-            <AppIcon name="board" size="18" />
+            <AppIcon name="board" size="15" />
             <span>Boards</span>
-            <AppIcon class="chevron" name="chevron" size="14" />
+            <AppIcon class="chevron" name="chevron" size="13" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New board" aria-label="New board" @click.stop="addBoard"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New board" @click.stop="addBoard"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openBoards" class="submenu">
@@ -395,18 +385,18 @@ async function removeEntity(kind, id, label) {
                 <span class="badge-id">{{ entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">
-                <button class="icon-btn" title="Edit board" aria-label="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
               </span>
             </div>
           </div>
 
           <!-- Workflows -->
           <div class="nav-entry" :class="{ open: openWorkflows }" title="Workflows" @click="openWorkflows = !openWorkflows">
-            <AppIcon name="layers" size="18" />
+            <AppIcon name="layers" size="15" />
             <span>Workflows</span>
-            <AppIcon class="chevron" name="chevron" size="14" />
+            <AppIcon class="chevron" name="chevron" size="13" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New workflow" aria-label="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New workflow" @click.stop="addWorkflow"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openWorkflows" class="submenu">
@@ -415,7 +405,7 @@ async function removeEntity(kind, id, label) {
                 <AppIcon name="layers" size="14" />
                 <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit workflow" aria-label="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit workflow" @click.stop="editWorkflow(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
@@ -430,11 +420,11 @@ async function removeEntity(kind, id, label) {
 
           <!-- Teams -->
           <div class="nav-entry" :class="{ open: openTeams }" title="Teams" @click="openTeams = !openTeams">
-            <AppIcon name="agents" size="18" />
+            <AppIcon name="agents" size="15" />
             <span>Teams</span>
-            <AppIcon class="chevron" name="chevron" size="14" />
+            <AppIcon class="chevron" name="chevron" size="13" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New team" aria-label="New team" @click.stop="addTeam"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New team" @click.stop="addTeam"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openTeams" class="submenu">
@@ -443,7 +433,7 @@ async function removeEntity(kind, id, label) {
                 <AppIcon name="agents" size="14" />
                 <span>{{ entry.entity.name }}</span>
                 <span class="entry-actions">
-                  <button class="icon-btn" title="Edit team" aria-label="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
+                  <button class="icon-btn" title="Edit team" @click.stop="editTeam(entry.entity)"><AppIcon name="edit" size="14" /></button>
                 </span>
               </div>
               <div class="submenu">
@@ -458,11 +448,11 @@ async function removeEntity(kind, id, label) {
 
           <!-- Sources -->
           <div class="nav-entry" :class="{ open: openSources }" title="Sources" @click="openSources = !openSources">
-            <AppIcon name="folder" size="18" />
+            <AppIcon name="folder" size="15" />
             <span>Sources</span>
-            <AppIcon class="chevron" name="chevron" size="14" />
+            <AppIcon class="chevron" name="chevron" size="13" />
             <span class="entry-actions">
-              <button class="icon-btn" title="New source" aria-label="New source" @click.stop="addSource"><AppIcon name="plus" size="14" /></button>
+              <button class="icon-btn" title="New source" @click.stop="addSource"><AppIcon name="plus" size="14" /></button>
             </span>
           </div>
           <div v-show="openSources" class="submenu">
@@ -472,14 +462,23 @@ async function removeEntity(kind, id, label) {
               <span class="label">{{ source.name }}</span>
               <span class="source-path" :title="source.path">{{ source.path }}</span>
               <span class="entry-actions">
-                <button class="icon-btn" title="Edit source" aria-label="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
-                <button class="icon-btn" title="Delete source" aria-label="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="delete" size="14" /></button>
+                <button class="icon-btn" title="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
+                <button class="icon-btn" title="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="close" size="14" /></button>
               </span>
             </div>
           </div>
         </div>
       </div>
     </nav>
+
+    <div v-if="showRail" class="rail-slot"><nav class="nav rail" aria-label="Pages">
+      <template v-for="(leaves, index) in railLeaves" :key="index">
+        <div v-if="index > 0" class="rail-divider" role="separator"></div>
+        <RouterLink v-for="leaf in leaves" :key="leaf.key" class="leaf rail-leaf" :to="leaf.to" :title="leaf.railTitle" :aria-label="leaf.railTitle" :aria-current="leaf.current ? 'page' : undefined">
+          <AppIcon :name="leaf.icon" :size="18" />
+        </RouterLink>
+      </template>
+    </nav></div>
 
   </aside>
   <Teleport to="body">
