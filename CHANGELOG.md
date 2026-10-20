@@ -7,6 +7,23 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.29.2 — 2026-10-20
+
+### Testing
+
+- **KAN-114** — E2E e auditoria visual da aba `History`: novo spec
+  `frontend/cypress/e2e/issue-history.cy.js` cobrindo o guia
+  `docs/KAN-90-guide.md` §7.4–§7.5 (abas padrão e contador restrito a
+  Comments, cinco tipos de evento com ícone/autor/`<time datetime>`/resumo,
+  ordem cronológica inversa, empty state em KANB-6, reset ao trocar de issue,
+  navegação por teclado com wrap/Home/End e roving tabindex, selo
+  `?sim=1`/`?sim=0` via `collectErrors` e zero erros de `vite-error-overlay`).
+  Suíte E2E 52/53 com a única falha em `sidebar-rail` atribuída a defeito
+  pré-existente (KAN-91/PR #128); auditoria visual em 1280×800, 1024px, dark e
+  light com 12 screenshots registrados em
+  `var/kanban.local/artifacts/kan-114-auditoria-visual/`. PR #140, release
+  `v0.29.2`.
+
 ## v0.29.1 — 2026-10-20
 
 ### Documentation

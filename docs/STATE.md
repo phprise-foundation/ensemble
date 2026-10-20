@@ -535,6 +535,22 @@
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
+- **E2E e auditoria visual da aba History (KAN-114, verificação):** novo spec
+  `frontend/cypress/e2e/issue-history.cy.js` com `collectErrors` e sem
+  `vite-error-overlay`, cobrindo o guia `docs/KAN-90-guide.md` §7.4–§7.5:
+  aba padrão Comments com contador restrito, timeline de KANB-1/KANB-2 com os
+  cinco tipos de evento (ícone, autor, `<time datetime>`, resumo) em ordem
+  inversa, History sem comentários, empty state em KANB-6 e reset ao trocar de
+  issue, teclado completo (setas com wrap, Home/End, Enter/Espaço, roving
+  tabindex, `aria-selected`/`aria-controls`, foco visível) e selo
+  `Prototype` sob `?sim=1` oculto sob `?sim=0`. `icon-standard.cy.js` não
+  existe nesta base (Saída 2 legalmente vazia), auditoria visual em
+  1280×800/1024px dark e light com 12 screenshots em
+  `var/kanban.local/artifacts/kan-114-auditoria-visual/`, e suíte E2E 52/53
+  verde com a única falha (`sidebar-rail`) sendo defeito pré-existente
+  reproduzido na base pura e atribuído à KAN-91/PR #128. Ressalvas não
+  bloqueantes registradas: segmento `?sim=0` sem asserção de zero erros e
+  quirk `{end}`/`{home}` coberto via `cy.focused`. PR #140, release `v0.29.2`.
 
 ## Next
 

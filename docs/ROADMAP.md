@@ -130,7 +130,9 @@ marking what is still a prototype.
    `Comments | History` com timeline mock acessível (tablist, roving
    tabindex, setas com wrap, reset ao trocar de issue, selo `Prototype`),
    componente `IssueHistory.vue`, eventos no seed/fake backend e guia
-   `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`).
+   `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`). A aba History
+   foi verificada com o spec E2E `frontend/cypress/e2e/issue-history.cy.js`
+   (KAN-114, PR #140, release `v0.29.2`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
