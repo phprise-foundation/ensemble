@@ -7,6 +7,19 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.29.1 — 2026-10-20
+
+### Documentation
+
+- **KAN-112/91** — publicação do guia de implementação da KAN-83
+  (`docs/KAN-83-guide.md`): objetivo do rail colapsado, decisões que governam a
+  fatia (folha = rota navegável, Experiences no rail, fonte única de folhas,
+  corte desktop, tooltip `title` + `aria-label`, rota ativa via
+  `router-link-active`/`aria-current`) e o contrato de nomes compartilhado por
+  guia e testes (modelo, seletores, larguras e foco). A produção já estava na
+  `main`; o PR #139 levou apenas o guia (diff só de documentação). PR #139,
+  release `v0.29.1`.
+
 ## v0.29.0 — 2026-10-20
 
 ### Added

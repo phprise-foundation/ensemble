@@ -94,6 +94,9 @@ marking what is still a prototype.
    (`frontend/src/navigation.js`) e, colapsada em desktop, um rail de 48px só
    com folhas navegáveis (KAN-83, release `v0.18.0`); Sources continuam fora do
    rail, e a adaptação de `sidebar-collapse.cy.js` segue na sub-task de testes.
+   O guia de implementação do rail (`docs/KAN-83-guide.md`, com o contrato de
+   nomes e as decisões da RFC) está publicado na `main` (KAN-112, PR #139,
+   release `v0.29.1`).
    O modelo ficou uniforme em `{ entity, leaves }` e o spec da fronteira de
    1024px aceita o toggle ausente do DOM em modo mobile (KAN-87 prevalece;
    KAN-91, release `v0.25.0`).

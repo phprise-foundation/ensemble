@@ -515,6 +515,23 @@
   nos dois painéis). Guia commitado junto. Barra de revisão: vitest 121/121,
   `node --test` 138/138, build ok, E2E completo 47/47 na `main` reconciliada.
   PR #129, release `v0.29.0`.
+- **Guia do rail colapsado publicado (KAN-91/KAN-112, documentação):** a
+  sub-task KAN-112 existiu para liberar a produção da KAN-91, que morava sem
+  commit no worktree de um agente. O primeiro PR (#128) foi rejeitado: além de
+  CI vermelho (`sidebar-navigation`/`sidebar-rail-active`), o diff apagava
+  produção já mesclada (`.topbar-actions`, `.console-toggle`,
+  `body.drawer-locked`, `aria-label`s). Na revisão do PR #139 constatou-se que
+  `navigation.js`, `AppSidebar.vue` e `main.scss` já estavam idênticos na
+  `main` (entrados no PR #118 e no QA do v0.25.0); o PR levou só o guia
+  `docs/KAN-83-guide.md` (+213/−0, arquivo novo), com objetivo, decisões e o
+  contrato de nomes do rail. Revisão: diff só de `.md`; os 16 vitest dos specs
+  que reprovaram o #128 passam (`sidebar-navigation` +
+  `sidebar-rail-active`); a falha de CI de `run-e2e-exit-code.test.mjs` é
+  infra (dev server morre com `JSON.parse` de JSON vazio no runner), sem
+  relação com o diff. Ressalva registrada na KAN-92: o guia escreve
+  `showRail = computed(() => props.collapsed && !props.isMobile)`, a produção
+  tem `Boolean(...)` em volta — equivalentes, reconciliar no texto quando a
+  KAN-92 tocar os testes. PR #139, release `v0.29.1`.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
