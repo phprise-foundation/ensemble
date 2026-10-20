@@ -498,6 +498,23 @@
   truncar. Contrato: `docs/KAN-93-guide.md` §2–§7. Provas: 16/16 nos testes
   de contrato do item, vitest 79/79, build ok e CI verde no head
   reconciliado com `main` (PR #110, release `v0.26.0`).
+- **Abas Comments | History com timeline mock no painel (KAN-90-A/KAN-113,
+  produção):** o painel de issue do protótipo ganha abas **Comments** (padrão)
+  e **History** conforme o guia `docs/KAN-90-guide.md` (§3–§6): feature
+  `history` em `simulation.js` (seleto `Prototype` via `boardStore.simulated`),
+  seed com `history` cobrindo os cinco tipos de evento (`created`, `status`,
+  `assignee`, `summary`, `description`), rework em KANB-2 e `[]` em KANB-6/7,
+  fake backend com backfill aditivo idempotente em `load()` e `history: []` no
+  `POST /issues` (move/PATCH/comentários não geram eventos), novo componente
+  `IssueHistory.vue` (ordem cronológica inversa sem mutar a prop, ícones por
+  tipo via `AppIcon`, nomes resolvidos no store com fallback bruto/`—`/
+  `Unassigned`, `<time :datetime>`, empty state `No history yet`, compatível
+  com o contrato real sem `type`) e abas acessíveis em `IssuePanel.vue`
+  (tablist/tab/tabpanel, roving tabindex, setas com wrap, Home/End,
+  Enter/Espaço, foco em `nextTick`, contador apenas em Comments, `v-show`
+  nos dois painéis). Guia commitado junto. Barra de revisão: vitest 121/121,
+  `node --test` 138/138, build ok, E2E completo 47/47 na `main` reconciliada.
+  PR #129, release `v0.29.0`.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.

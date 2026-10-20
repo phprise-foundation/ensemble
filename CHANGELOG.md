@@ -7,6 +7,28 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.29.0 — 2026-10-20
+
+### Added
+
+- **KAN-113** — abas `Comments | History` no painel da issue com timeline mock:
+  feature `history` adicionada a `frontend/src/api/simulation.js` (default
+  ligado); seed com eventos de `history` cobrindo os cinco tipos
+  (`created`/`status`/`assignee`/`summary`/`description`), com rework em
+  KANB-2/KANB-5 e `history: []` em KANB-6/KANB-7 para o empty state; fake
+  backend com backfill aditivo idempotente `issue.history ??= []` em `load()`
+  e `history: []` no `POST /issues` (move/PATCH/comentários não geram
+  eventos); novo componente `IssueHistory.vue` com ordenação cronológica
+  inversa sem mutar a prop, ícone por tipo via `AppIcon`, resolução de
+  status/agente no store com fallbacks, `<time :datetime>` e empty state
+  `No history yet`; abas em `IssuePanel.vue` com ARIA completo
+  (tablist/tab/tabpanel, roving tabindex, setas com wrap, Home/End,
+  Enter/Espaço), reset a Comments ao trocar de issue e selo `Prototype` via
+  `boardStore.simulated('history')`; estilos de abas e timeline em
+  `main.scss`. Guia `docs/KAN-90-guide.md` commitado. Barra de revisão:
+  vitest 121/121, `node --test` 138/138, build ok, E2E 47/47. PR #129,
+  release `v0.29.0`.
+
 ## v0.27.0 — 2026-10-19
 
 ### Fixed
