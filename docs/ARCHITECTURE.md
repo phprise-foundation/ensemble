@@ -72,8 +72,9 @@ cronologia inversa sem mutar a prop, resolve nomes de status/agente no store
 (com fallbacks bruto/`—`/`Unassigned`), renderiza `<time :datetime>` e um
 empty state `No history yet`; um selo `Prototype` depende de
 `boardStore.simulated('history')`. O seed e o fake backend fornecem os
+`boardStore.simulated('history')`. O seed e o fake backend fornecem os
 eventos mock (`docs/KAN-90-guide.md`, KAN-113). A cobertura E2E dessa junção
-(prova teclado/AIAA, empty state, reset e selo `?sim`) está em
+(prova teclado/ARIA, empty state, reset e selo `?sim`) está em
 `cypress/e2e/issue-history.cy.js` (KAN-114, PR #140, release `v0.29.2`).
 
 Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
