@@ -1,13 +1,12 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue'
-import { dialogStore } from '../store/dialog.js'
+import { dialogStore, dialog } from '../store/dialog.js'
 import AppIcon from './AppIcon.vue'
 
 const state = dialogStore.state
-const overlay = ref(null)
 const card = ref(null)
-const confirmButton = ref(null)
 const cancelButton = ref(null)
+const confirmButton = ref(null)
 let lastFocused = null
 
 function confirm() {
@@ -25,7 +24,7 @@ function onScrimClick() {
 }
 
 function focusables() {
-  const buttons = Array.from(card.value?.querySelectorAll('button') ?? [])
+  const buttons = card.value ? Array.from(card.value.querySelectorAll('button')) : []
   return buttons.filter((button) => !button.disabled)
 }
 
@@ -36,7 +35,7 @@ function onKeydown(event) {
     return
   }
   if (event.key === 'Enter') {
-    if (event.target?.tagName === 'BUTTON') {
+    if (event.target.nodeType === 1 && event.target.tagName === 'BUTTON') {
       return
     }
     event.preventDefault()
@@ -76,11 +75,23 @@ function applyInert(value) {
   }
 }
 
+function variantIcon(variant) {
+  if (variant === 'success') {
+    return 'check'
+  }
+  if (variant === 'info') {
+    return 'info'
+  }
+  if (variant === 'warning' || variant === 'danger') {
+    return 'warning'
+  }
+  return 'close'
+}
+
 watch(
   () => state.open,
   (open) => {
     if (open) {
-      overlay.value?.addEventListener('keydown', onKeydown)
       lastFocused = document.activeElement
       applyInert(true)
       document.body.style.overflow = 'hidden'
@@ -90,7 +101,6 @@ watch(
         target?.focus()
       })
     } else {
-      overlay.value?.removeEventListener('keydown', onKeydown)
       applyInert(false)
       document.body.style.overflow = ''
       document.body.classList.remove('dialog-locked')
@@ -109,7 +119,6 @@ watch(
   <Teleport to="body">
     <div
       v-if="state.open"
-      ref="overlay"
       class="dialog-overlay"
       @click.self="onScrimClick"
       @keydown="onKeydown"
@@ -121,12 +130,10 @@ watch(
         aria-modal="true"
         aria-labelledby="dialog-title"
         aria-describedby="dialog-message"
+        tabindex="-1"
       >
-        <h3
-          id="dialog-title"
-          :class="['dialog-title', `dialog-${state.variant}`]"
-        >
-          <AppIcon class="dialog-title-icon" :name="state.icon" />
+        <h3 id="dialog-title" :class="['dialog-title', `dialog-variant-${state.variant}`]">
+          <AppIcon class="dialog-title-icon" :name="variantIcon(state.variant)" />
           {{ state.title }}
         </h3>
         <p id="dialog-message" v-if="state.message" class="dialog-message">{{ state.message }}</p>

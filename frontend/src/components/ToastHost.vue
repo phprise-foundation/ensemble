@@ -22,7 +22,7 @@ function dismiss(id) {
         >
           <AppIcon
             class="toast-icon"
-            :name="item.kind === 'success' ? 'check' : (item.kind === 'error' ? 'close' : 'warning')"
+            :name="item.kind === 'success' ? 'check' : (item.kind === 'info' ? 'info' : 'warning')"
           />
           <span class="toast-text">{{ item.text }}</span>
           <button
