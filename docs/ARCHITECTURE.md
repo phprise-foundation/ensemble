@@ -62,6 +62,17 @@ da mensagem. Um `watch` em `initialStatuses` reaplica o primeiro `initial`
 quando a lista chega com o modal já aberto (corrida do loading), preservando
 a escolha válida do usuário. Contrato de aceite: `docs/KAN-94-guide.md`.
 
+O painel de issue (`IssuePanel.vue`) apresenta o conteúdo em duas abas
+acessíveis — **Comments** (padrão, com contador) e **History** — com roving
+tabindex, setas ←/→ com wrap, Home/End, Enter/Espaço, foco em `nextTick`,
+`v-show` em ambos os painéis e reset a Comments ao trocar de issue. A aba
+History exibe o componente `IssueHistory.vue`, que ordena os eventos em
+cronologia inversa sem mutar a prop, resolve nomes de status/agente no store
+(com fallbacks bruto/`—`/`Unassigned`), renderiza `<time :datetime>` e um
+empty state `No history yet`; um selo `Prototype` depende de
+`boardStore.simulated('history')`. O seed e o fake backend fornecem os
+eventos mock (`docs/KAN-90-guide.md`, KAN-113).
+
 Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
 ESM puro sem DOM nem dependência de Vue — importável pelo bundle, pelo fake
 backend e por `node:test`/vitest: `DESCRIPTION_LIMIT = 4095`,

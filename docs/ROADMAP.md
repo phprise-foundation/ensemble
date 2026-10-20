@@ -123,7 +123,11 @@ marking what is still a prototype.
    (≤4095/≤1023 code points): contador com aviso aos 90%, bloqueio de
    salvar/enviar acima do limite, `422 { error, field }` antes de qualquer
    mutação no fake backend e conteúdo legado exibido integralmente
-   (KAN-93, PR #110, release `v0.26.0`).
+   (KAN-93, PR #110, release `v0.26.0`). O painel de issue ganhou abas
+   `Comments | History` com timeline mock acessível (tablist, roving
+   tabindex, setas com wrap, reset ao trocar de issue, selo `Prototype`),
+   componente `IssueHistory.vue`, eventos no seed/fake backend e guia
+   `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
