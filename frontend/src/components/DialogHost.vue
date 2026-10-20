@@ -4,9 +4,10 @@ import { dialogStore, dialog } from '../store/dialog.js'
 import AppIcon from './AppIcon.vue'
 
 const state = dialogStore.state
+const overlay = ref(null)
 const card = ref(null)
-const cancelButton = ref(null)
 const confirmButton = ref(null)
+const cancelButton = ref(null)
 let lastFocused = null
 
 function confirm() {
@@ -82,7 +83,7 @@ function variantIcon(variant) {
   if (variant === 'info') {
     return 'info'
   }
-  if (variant === 'warning' || variant === 'danger') {
+  if (variant === 'danger' || variant === 'warning') {
     return 'warning'
   }
   return 'close'
@@ -95,7 +96,6 @@ watch(
       lastFocused = document.activeElement
       applyInert(true)
       document.body.style.overflow = 'hidden'
-      document.body.classList.add('dialog-locked')
       nextTick(() => {
         const target = state.cancelLabel ? cancelButton.value : confirmButton.value
         target?.focus()
@@ -103,7 +103,6 @@ watch(
     } else {
       applyInert(false)
       document.body.style.overflow = ''
-      document.body.classList.remove('dialog-locked')
       nextTick(() => {
         if (lastFocused && document.contains(lastFocused)) {
           lastFocused.focus()
@@ -119,6 +118,7 @@ watch(
   <Teleport to="body">
     <div
       v-if="state.open"
+      ref="overlay"
       class="dialog-overlay"
       @click.self="onScrimClick"
       @keydown="onKeydown"

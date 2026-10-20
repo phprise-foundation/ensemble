@@ -1829,3 +1829,14 @@ textarea[aria-invalid='true'] {
 .toast-close {
   flex: none;
 }
+
+/* dialog host */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
