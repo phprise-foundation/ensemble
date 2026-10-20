@@ -37,6 +37,8 @@ $mobile-breakpoint: 768px;
   --danger: #ff6b6b;
   --warn: #ffab00;
   --ok: #57d9a3;
+  --success: #3fb950;
+  --warning: #d29922;
 }
 
 :root[data-theme='light'] {
@@ -52,6 +54,8 @@ $mobile-breakpoint: 768px;
   --danger: #de350b;
   --warn: #ff8b00;
   --ok: #006644;
+  --success: #1a7f37;
+  --warning: #9a6700;
 }
 
 :root[data-theme='dark'] ::selection {
@@ -1706,4 +1710,122 @@ textarea[aria-invalid='true'] {
 .panel-section .body,
 .comment p {
   overflow-wrap: anywhere;
+}
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  width: min(420px, calc(100vw - 48px));
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+.dialog-title-icon {
+  color: var(--accent);
+}
+
+.dialog-variant-danger .dialog-title-icon {
+  color: var(--danger);
+}
+
+.dialog-variant-success .dialog-title-icon {
+  color: var(--success);
+}
+
+.dialog-variant-warning .dialog-title-icon {
+  color: var(--warning);
+}
+
+.dialog-message {
+  margin: 0 0 20px;
+  color: var(--text);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Toast */
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 91;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  pointer-events: auto;
+}
+
+.toast-success {
+  border-left-color: var(--success);
+}
+
+.toast-error {
+  border-left-color: var(--danger);
+}
+
+.toast-info {
+  border-left-color: var(--accent);
+}
+
+.toast-warning {
+  border-left-color: var(--warning);
+}
+
+.toast-icon {
+  color: var(--accent);
+}
+
+.toast-success .toast-icon {
+  color: var(--success);
+}
+
+.toast-error .toast-icon {
+  color: var(--danger);
+}
+
+.toast-warning .toast-icon {
+  color: var(--warning);
+}
+
+.toast-close {
+  flex: none;
 }
