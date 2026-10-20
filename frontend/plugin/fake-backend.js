@@ -24,6 +24,9 @@ export function load(filePath = dataFile) {
   for (const key of Object.keys(seed)) {
     database[key] ??= seed[key]
   }
+  for (const issue of database.issues ?? []) {
+    issue.history ??= []
+  }
   return database
 }
 
@@ -183,6 +186,7 @@ export function handle(db, method, segments, body) {
         worker: '',
         order: 0,
         flags: [],
+        history: [],
         comments: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
