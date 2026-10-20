@@ -90,7 +90,7 @@ export function createSeed() {
 
     sources: [],
 
-    user: { login: 'admin', displayName: '' },
+    user: { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
 
     issues: [
       {
