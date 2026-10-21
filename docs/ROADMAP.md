@@ -153,7 +153,8 @@ marking what is still a prototype.
    bloqueantes (`store/toast.js` + `ToastHost.vue`, máx. 3, 4s/6s,
    `aria-live`); os quatro fluxos de save migram erro com campo para inline e
    erro sem campo (rede/422) para `toast.error` (KAN-127, PR #138, release
-   `v0.31.0`; guarda estática e E2E dedicados seguem em KAN-138/139). Os
+   `v0.31.0`); a guarda estática fechou em KAN-138 e o E2E dedicado em
+   KAN-139 (`cypress/e2e/dialogs.cy.js`, PR #169, release `v0.34.1`). Os
    avatares ficaram circulares e os comentários ganharam autor: assignee do
    card via o `Avatar` compartilhado (fallback `?`/cor neutra sem assignee) e
    comentários com miniatura + nome + timestamp absoluto, mapeando o `author`

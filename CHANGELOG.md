@@ -7,6 +7,18 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.34.1 — 2026-10-22
+
+### Testing
+
+- **KAN-139 — E2E dos diálogos e toasts:** novo spec
+  `frontend/cypress/e2e/dialogs.cy.js` cobrindo o §8.4 do guia
+  `docs/KAN-127-guide.md`: exclusão cancelada (Cancelar/Escape) e confirmada
+  (Enter/clique) nas quatro superfícies migradas (CrudPage, AgentsPage,
+  IssueTypesPage, AppSidebar), foco inicial no Cancelar e retorno ao gatilho,
+  `alertdialog`/`aria-modal`, scrim rejeitado no confirm, toast de erro com
+  `role="alert"` e overlay medido em 390×844. PR #169, release `v0.34.1`.
+
 ## v0.34.0 — 2026-10-22
 
 ### Added
