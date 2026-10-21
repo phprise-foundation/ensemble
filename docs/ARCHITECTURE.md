@@ -89,7 +89,11 @@ comentário), `FieldLimit.vue` rende contador `x/limite`, aviso aos 90% e
 erro, e o campo liga-se por `aria-describedby`/`aria-invalid`, com
 `Save`/`Create`/`Comment` desabilitados acima do limite. Conteúdo legado
 (fixture `KANB-7`, só em `createSeed()`) é exibido integralmente. Contrato de
-aceite: `docs/KAN-93-guide.md`.
+aceite: `docs/KAN-93-guide.md`. A cobertura: BDD congelado em
+`tests/description-comment-limits.feature`, contrato em `node:test`
+(`limits.test.mjs`, `limits-backend.test.mjs`, `client-error.test.mjs`) e UI
+em vitest (`field-limit.spec.js`, `issue-limits.spec.js`) — KAN-118, PR #147,
+release `v0.30.1`.
 
 O perfil do usuário é servido pelo fake backend em `GET/PATCH /api/user` com
 resposta única de quatro campos `{ login, displayName, avatar, avatarColor }`

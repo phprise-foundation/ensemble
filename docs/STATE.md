@@ -498,6 +498,15 @@
   truncar. Contrato: `docs/KAN-93-guide.md` §2–§7. Provas: 16/16 nos testes
   de contrato do item, vitest 79/79, build ok e CI verde no head
   reconciliado com `main` (PR #110, release `v0.26.0`).
+- **Limites: testes BDD, node:test e vitest (KAN-118):** a suíte do contrato
+  de limites (§8 do guia `docs/KAN-93-guide.md`) fechada em três arquivos
+  `node:test` (`limits.test.mjs`, `limits-backend.test.mjs`,
+  `client-error.test.mjs`: 30/30) e dois specs vitest (`field-limit.spec.js`,
+  `issue-limits.spec.js`: 15/15), com `test:unit` 18 arquivos / 200 testes
+  verdes. Os cenários de 90% verificam o aviso a partir de 3686/921, o
+  contrato BDD congelado de `description-comment-limits.feature` segue
+  intacto (hash igual ao de `main`) e `test-kan-94.md` fora de escopo foi
+  removido. PR #147, release `v0.30.1`.
 - **Abas Comments | History com timeline mock no painel (KAN-90-A/KAN-113,
   produção):** o painel de issue do protótipo ganha abas **Comments** (padrão)
   e **History** conforme o guia `docs/KAN-90-guide.md` (§3–§6): feature

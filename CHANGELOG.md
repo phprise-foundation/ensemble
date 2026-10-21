@@ -7,6 +7,16 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.30.1 — 2026-10-21
+
+### Testing
+
+- **KAN-118** — limites de descrição e comentário: testes BDD, node:test e
+  vitest conforme o guia `docs/KAN-93-guide.md`. Cenários de 90% verificam o
+  aviso a partir de 3686/921 (não 3685/920); o contrato congelado de
+  `frontend/tests/description-comment-limits.feature` preservado intacto.
+  PR #147, release `v0.30.1`.
+
 ## v0.29.2 — 2026-10-20
 
 ### Testing

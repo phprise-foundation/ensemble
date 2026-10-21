@@ -129,7 +129,9 @@ marking what is still a prototype.
    (≤4095/≤1023 code points): contador com aviso aos 90%, bloqueio de
    salvar/enviar acima do limite, `422 { error, field }` antes de qualquer
    mutação no fake backend e conteúdo legado exibido integralmente
-   (KAN-93, PR #110, release `v0.26.0`). O painel de issue ganhou abas
+   (KAN-93, PR #110, release `v0.26.0`); a suíte de testes do contrato
+   (BDD/node:test/vitest) fechou com KAN-118, PR #147, release `v0.30.1`.
+   O painel de issue ganhou abas
    `Comments | History` com timeline mock acessível (tablist, roving
    tabindex, setas com wrap, reset ao trocar de issue, selo `Prototype`),
    componente `IssueHistory.vue`, eventos no seed/fake backend e guia
