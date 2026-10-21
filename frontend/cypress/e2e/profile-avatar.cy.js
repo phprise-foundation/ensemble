@@ -149,6 +149,20 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
     saveButton().should('be.disabled')
   })
 
+  it('cancelar o confirm mantém o rascunho na página e volta a perguntar na próxima navegação', () => {
+    cy.get('[data-test="display-name"]').clear().type('Maria Fernanda')
+    cy.get('.submenu a.leaf').first().click({ force: true })
+    cy.get('.dialog-card .dialog-cancel').first().click()
+    cy.hash().should('contain', '/profile')
+    cy.get('[data-test="display-name"]').should('have.value', 'Maria Fernanda')
+    cy.get('.dialog-card').should('not.exist')
+
+    cy.get('.submenu a.leaf').first().click({ force: true })
+    cy.get('.dialog-card').should('be.visible')
+    cy.get('.dialog-card .dialog-cancel').first().click()
+    cy.hash().should('contain', '/profile')
+  })
+
   it('sair com pendências pede o confirm custom com foco no cancelar e descarta o rascunho', () => {
     cy.window().then((win) => {
       cy.stub(win, 'confirm').as('nativeConfirm')

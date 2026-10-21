@@ -2,17 +2,17 @@ import { onBeforeUnmount, ref } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { dialog } from '../store/dialog.js'
 
-export function useDirtyGuard({ router, isDirty }) {
+async function confirmDiscard() {
+  return dialog.confirm({
+    title: 'Discard changes?',
+    message: 'Your unsaved changes will be lost.',
+    danger: true,
+  })
+}
+
+export function useDirtyGuard({ router, isDirty, confirmLeave = confirmDiscard }) {
   const allowNext = ref(false)
   const pendingTo = ref(null)
-
-  async function confirmLeave() {
-    return dialog.confirm({
-      title: 'Discard changes?',
-      message: 'Your unsaved changes will be lost.',
-      danger: true,
-    })
-  }
 
   async function gate(to) {
     if (!isDirty() || allowNext.value) {
@@ -26,7 +26,8 @@ export function useDirtyGuard({ router, isDirty }) {
       return false
     }
     allowNext.value = true
-    router.push(pendingTo.value)
+    const failure = await router.push(pendingTo.value)
+    if (failure) consume()
     return false
   }
 
