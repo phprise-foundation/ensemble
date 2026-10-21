@@ -61,7 +61,11 @@ async function save() {
     editing.value = false
     toast.success(`${draft.value.name} saved.`)
   } catch (problem) {
-    error.value = problem.message
+    if (problem.field) {
+      error.value = problem.message
+      return
+    }
+    toast.error(problem.message)
   }
 }
 
