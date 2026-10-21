@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { execSync } from 'node:child_process';
 import { strict as assert } from 'node:assert';
 import { createServer } from 'node:http';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -29,9 +31,17 @@ test('run-e2e.sh com a porta ocupada, deve abortar sem medir o servidor alheio',
   const foreign = await listen();
   context.after(() => foreign.close());
   const port = `${foreign.address().port}`;
+  const directory = mkdtempSync(join(tmpdir(), 'e2e-port-'));
+  context.after(() => rmSync(directory, { recursive: true, force: true }));
+  const dataFile = join(directory, 'db.json');
 
   assert.throws(
-    () => run({ E2E_PORT: port }),
+    () => run({ E2E_PORT: port, E2E_DATA_FILE: dataFile }),
     (error) => error.status === 1 && /already in use/.test(error.stderr),
+  );
+
+  assert.doesNotThrow(
+    () => JSON.parse(readFileSync(dataFile, 'utf8')),
+    'o arquivo efêmero semeado antes do aborto precisa continuar legível',
   );
 });

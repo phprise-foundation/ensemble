@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { connect, createServer } from 'node:net'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
@@ -20,6 +22,12 @@ function runHarness(command, args, port, extraEnv = {}) {
 
 function outputOf(run) {
   return `${run.stdout || ''}\n${run.stderr || ''}`
+}
+
+function ephemeralDataFile(t) {
+  const directory = mkdtempSync(join(tmpdir(), 'e2e-exit-code-'))
+  t.after(() => rmSync(directory, { recursive: true, force: true }))
+  return join(directory, 'db.json')
 }
 
 function freePort() {
@@ -49,12 +57,13 @@ function portIsFree(port) {
   })
 }
 
-test('spec vermelho reprova o comando canonico e nao deixa o dev server de pe', async () => {
+test('spec vermelho reprova o comando canonico e nao deixa o dev server de pe', async (t) => {
   const port = await freePort()
   const run = runHarness(
     'npm',
     ['run', 'test:e2e', '--', '--config', harnessConfig, '--spec', 'cypress/harness/failing.cy.js'],
-    port
+    port,
+    { E2E_DATA_FILE: ephemeralDataFile(t) }
   )
   const output = outputOf(run)
   assert.match(output, /1 of 1 failed/, `o Cypress precisa ter rodado e reprovado de verdade:\n${output}`)
@@ -66,25 +75,26 @@ test('spec vermelho reprova o comando canonico e nao deixa o dev server de pe', 
   assert.equal(await portIsFree(port), true, 'o dev server precisa ser derrubado mesmo no caminho vermelho')
 })
 
-test('spec verde mantem o comando verde', async () => {
+test('spec verde mantem o comando verde', async (t) => {
   const port = await freePort()
   const run = runHarness(
     'bash',
     ['run-e2e.sh', '--config', harnessConfig, '--spec', 'cypress/harness/passing.cy.js'],
-    port
+    port,
+    { E2E_DATA_FILE: ephemeralDataFile(t) }
   )
   const output = outputOf(run)
   assert.match(output, /All specs passed/, `o Cypress precisa ter rodado e aprovado de verdade:\n${output}`)
   assert.equal(run.status, 0, `suite verde precisa sair com zero; saiu com ${run.status}:\n${output}`)
 })
 
-test('timeout do Cypress reprova o comando', async () => {
+test('timeout do Cypress reprova o comando', async (t) => {
   const port = await freePort()
   const run = runHarness(
     'bash',
     ['run-e2e.sh', '--config', harnessConfig, '--spec', 'cypress/harness/passing.cy.js'],
     port,
-    { E2E_TIMEOUT: '1' }
+    { E2E_TIMEOUT: '1', E2E_DATA_FILE: ephemeralDataFile(t) }
   )
   const output = outputOf(run)
   assert.doesNotMatch(output, /dev server did not start/, `a falha nao pode ser do dev server:\n${output}`)
