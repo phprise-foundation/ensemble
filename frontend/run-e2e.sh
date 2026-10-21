@@ -17,7 +17,9 @@
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${E2E_PORT:-5173}"
-TIMEOUT="${E2E_TIMEOUT:-300}"
+SPEC_COUNT="$(find "$DIR/cypress/e2e" -name '*.cy.js' | wc -l | tr -d ' ')"
+DEFAULT_TIMEOUT=$((120 + 60 * SPEC_COUNT))
+TIMEOUT="${E2E_TIMEOUT:-$DEFAULT_TIMEOUT}"
 BASE="http://127.0.0.1:$PORT"
 LOG="$(mktemp)"
 DATA_FILE="${E2E_DATA_FILE:-$DIR/.data/db.json}"

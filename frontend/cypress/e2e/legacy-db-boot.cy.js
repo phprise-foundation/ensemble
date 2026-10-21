@@ -39,7 +39,9 @@ describe('KAN-56 — boot sobre um db.json antigo, sem a chave user', () => {
   it('PATCH /api/user persiste o nome e mantém o login', () => {
     cy.request('PATCH', '/api/user', { displayName: 'Legacy QA' }).then((response) => {
       expect(response.status).to.eq(200)
-      expect(response.body).to.deep.eq({ login: 'admin', displayName: 'Legacy QA' })
+      expect(response.body).to.deep.include({ login: 'admin', displayName: 'Legacy QA' })
+      expect(response.body.avatar).to.be.null
+      expect(response.body.avatarColor).to.match(/^#[0-9a-fA-F]{6}$/)
     })
 
     cy.visit('/')
