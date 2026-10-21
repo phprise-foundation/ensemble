@@ -7,6 +7,28 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.32.1 — 2026-10-21
+
+### Fixed
+
+- **KAN-125** — corrida no harness de contratos E2E (`run-e2e.sh`) quebrava o
+  CI em qualquer PR: cada invocação do harness agora usa porta livre
+  (`E2E_PORT`) e arquivo de dados próprio (`E2E_DATA_FILE`, gravação/restauração
+  atômicas; o `.data/db.json` do desenvolvedor nunca é tocado e o arquivo
+  efêmero não é removido pelo cleanup — KAN-145), o fake-backend também respeita
+  `E2E_DATA_FILE` e só persiste em mutações, e sem `DISPLAY` o Cypress roda em
+  Xvfb próprio derivado da porta (sem disputa do `:99`). Esqueletos de aceite
+  em repositório (`run-e2e-parallel`/`isolation`/`data-file`/`fallback` e
+  `writes.cy.js`); `run-e2e-port` migrado para dados efêmeros (KAN-144). PR
+  #151, release `v0.32.1`.
+
+## v0.32.0 — 2026-10-21
+
+### Added
+
+- **KAN-131** — perfil, fase 1: foto como rascunho, `updateProfile` e Save com
+  estados no perfil (PR #146).
+
 ## v0.31.0 — 2026-10-21
 
 ### Added

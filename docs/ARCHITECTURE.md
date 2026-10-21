@@ -38,7 +38,13 @@ way the user uses it: `tests/console.feature` is the single source of acceptance
 integration), `tests/console.spec.js` and `tests/console-output.spec.js`
 (vitest components) and `cypress/e2e/console.cy.js` (real browser). The E2E
 harness (`run-e2e.sh`) aborts with status 1 when the requested port is busy or
-the dev server dies, so the suite never measures a foreign Vite, and
+the dev server dies, so the suite never measures a foreign Vite: each
+invocation selects its own port (`E2E_PORT`) and its own data file
+(`E2E_DATA_FILE`, written/restored atomically; the developer's
+`.data/db.json` is never touched and the ephemeral file is never removed),
+and with no `DISPLAY` available it raises its own Xvfb display derived from
+the port — contract tests survive `node --test` parallelism with the 5173
+busy (KAN-125/144/145). Também
 `cypress/support/e2e.js` fails any scenario whose page logs an error, an
 unhandled rejection or `console.error`. The sidebar navigation comes from
 `src/navigation.js`, a pure model: `sidebarNavigation(store, workspaceId)`

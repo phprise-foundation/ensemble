@@ -18,6 +18,10 @@
 8. **Scale the model** — multiple boards, relationships between agents, triggers
    and automation.
 9. **Hardening** — SSE/streaming, token instead of raw password, polish.
+   - **Dívida QA conhecida (candidata a item):** os specs de browser
+     `description-comment-limits` e `legacy-db-boot` falham no CI (etapa
+     Browser E2E) também no `main` puro — repro de 2026-10-21 no 9418d86.
+     Não é dívida da KAN-125 (PR #151).
 
 ## Active plan — board-driven agents & dynamic workflow (single container)
 

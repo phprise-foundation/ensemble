@@ -594,6 +594,15 @@
   dívida: falso positivo da guarda da KAN-138 nas definições de
   `store/dialog.js` e rótulo default do `alert` ambíguo no guia §3. PR #138,
   release `v0.31.0`.
+- **KAN-125** — corrida no harness de contratos E2E (`run-e2e.sh`) extinta:
+  dados efêmeros por invocação (`E2E_DATA_FILE`, atômicos, nunca tocam nem
+  removem o db do desenvolvedor), porta livre em todos os contratos (KAN-144) e
+  Xvfb próprio por invocação. Verificação da revisão: worktree do head com
+  `node --test tests/*.test.mjs` duas rodadas consecutivas, 188/188 nas duas,
+  com a 5173 ocupada; repro no `main` puro provou que a vermelhidão residual do
+  Browser E2E (`description-comment-limits`, `legacy-db-boot`) é dívida
+  anterior, fora do escopo (candidata a item próprio). PR #151, release
+  `v0.32.1`.
 
 ## Next
 
