@@ -7,6 +7,29 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.33.0 — 2026-10-21
+
+### Added
+
+- **KAN-126 — perfil completo (foto do usuário, save com estados, remoção do
+  voltar).** A pilha pousou na ordem revisada: fundação de diálogos e toasts
+  (refundação da KAN-127, PR #145), Fase 2 — guarda de saída one-shot
+  (`useDirtyGuard`) com confirm custom `Discard changes?` focado no cancelar,
+  botão voltar removido e feedback do save e das fotos rejeitadas por toasts
+  (PR #152), Fase 3 — `ProfileMenu` do topbar via o `Avatar` compartilhado
+  (PR #153), testes de contrato/BDD/backfill (KAN-132, PR #144) e o E2E do
+  perfil com prova de payload (PR #159, alinhamento de contrato no PR #160).
+  Verificação da revisão na árvore integrada: build verde, vitest 210/210,
+  node:test 206/206, drawer-a11y 17/17, E2E 91/91.
+
+### Fixed
+
+- Deduplicado o `Info` do `AppIcon.vue` (import e mapa), que quebraria o build
+  na integração das duas fundações de diálogos (KAN-127/KAN-136).
+- O spec do perfil pousado asservia o contrato pré-Fase 2/3 (`[role="status"]`
+  persistente, avatar de 38px, confirm nativo); alinhado a toast/22px/confirm
+  custom no PR #160.
+
 ## v0.32.1 — 2026-10-21
 
 ### Fixed

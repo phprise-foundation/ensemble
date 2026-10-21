@@ -118,7 +118,17 @@ ausente preserva, `avatar: null` remove — no lugar do antigo `rename()`. A
 página de perfil (`ProfilePage.vue`) edita um rascunho local `{ displayName,
 avatar }` e emite **um único PATCH** de nome+foto no Save, com preview
 circular via `<Avatar>` e fallback na inicial sobre `avatarColor`
-(Contrato de aceite: `docs/KAN-126-guide.md` §5, KAN-131).
+(Contrato de aceite: `docs/KAN-126-guide.md` §5, KAN-131). A Fase 2 removeu o
+botão voltar e pôs a guarda de saída one-shot (`composables/useDirtyGuard.js`):
+navegar com pendências abre o confirm custom `Discard changes?` com foco
+inicial no cancelar — fundação de diálogos/toasts da KAN-127 (`store/dialog.js`
++ `DialogHost.vue`, `store/toast.js` + `ToastHost.vue`; refundação pousada via
+PR #145) — e o feedback do save e das fotos rejeitadas é por toast, sem
+`alert`/`confirm` nativos (KAN-134). A Fase 3 pinta a identidade do usuário no
+`ProfileMenu` via o `Avatar` compartilhado, size `sm` (KAN-135). O E2E
+(`cypress/e2e/profile-avatar.cy.js`) cobre upload, validação, remoção,
+save/reload, fallback e a prova de payload — data URL enviado menor que o
+arquivo original (KAN-133).
 
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll

@@ -119,8 +119,10 @@ marking what is still a prototype.
    backfill no boot e lib `avatarColorFor` (KAN-129, release `v0.30.0`);
    a foto no front-end segue o guia `docs/KAN-126-guide.md`: a Fase 1 pousou —
    rascunho local de nome+foto, `updateProfile` e Save com estados
-   (KAN-131, release `v0.32.0`) — e a guarda de saída com toasts segue nas
-   fases seguintes.
+   (KAN-131, release `v0.32.0`) — e a guarda de saída one-shot com confirm
+   custom, os toasts acessíveis, o avatar no topbar via `Avatar` e o E2E do
+   perfil (upload, validação, remoção, save/reload, fallback e prova de
+   payload) pousaram com a KAN-126 integral (release `v0.33.0`).
 7. **Board polish** — open an issue on its own page; make board filters affect the
    cards; surface Experiences in the new menu; WIP hints; remove the off-canvas
    drawer from the Tab order when closed on mobile (`inert` on the `<aside>`
