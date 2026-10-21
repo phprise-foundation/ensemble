@@ -1,26 +1,49 @@
 <script setup>
-import AppIcon from './AppIcon.vue'
+import { computed } from 'vue'
 import { toast } from '../store/toast.js'
+import AppIcon from './AppIcon.vue'
 
-const items = toast.items
+const VARIANT_ICONS = {
+  info: 'info',
+  success: 'check',
+  warning: 'warning',
+  danger: 'warning',
+  error: 'warning',
+}
 
-const ICONS = { success: 'check', error: 'warning', warning: 'warning', info: 'info' }
+const items = computed(() => toast.toasts)
+
+const variantIcon = (kind) => VARIANT_ICONS[kind] || 'info'
+
+function handleClose(id) {
+  toast.dismiss(id)
+}
 </script>
 
 <template>
   <Teleport to="body">
     <div class="toast-host" aria-live="polite">
       <div
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.id"
         class="toast"
-        :class="`toast-${item.kind}`"
+        :class="item.kind"
         :role="item.kind === 'error' ? 'alert' : undefined"
+        :data-index="index"
       >
-        <AppIcon :name="ICONS[item.kind] ?? 'info'" size="16" class="toast-icon" />
+        <AppIcon
+          :name="variantIcon(item.kind)"
+          :size="16"
+          class="toast-icon"
+        />
         <span class="toast-text">{{ item.text }}</span>
-        <button class="icon-btn toast-close" aria-label="Close" @click="toast.dismiss(item.id)">
-          <AppIcon name="close" size="14" />
+        <button
+          type="button"
+          class="icon-btn toast-close"
+          aria-label="Close"
+          @click="handleClose(item.id)"
+        >
+          <AppIcon name="close" :size="14" />
         </button>
       </div>
     </div>

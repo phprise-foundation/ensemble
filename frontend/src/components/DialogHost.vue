@@ -1,108 +1,192 @@
 <script setup>
-import { nextTick, ref, watch } from 'vue'
-import AppIcon from './AppIcon.vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { dialog } from '../store/dialog.js'
+import AppIcon from './AppIcon.vue'
 
-const state = dialog.state
-const card = ref(null)
-const cancelButton = ref(null)
-const confirmButton = ref(null)
-let previousFocus = null
+const dialogCard = ref(null)
 
-const ROLE = { dialog: 'dialog', alertdialog: 'alertdialog' }
-
-function role() {
-  return state.danger ? ROLE.alertdialog : ROLE.dialog
+const VARIANT_ICONS = {
+  info: 'info',
+  success: 'check',
+  warning: 'warning',
+  danger: 'warning',
 }
 
-function variantIcon() {
-  return { info: 'info', success: 'check', warning: 'warning', danger: 'warning' }[state.variant] ?? 'info'
+const variantIcon = computed(() => VARIANT_ICONS[dialog.variant] || 'info')
+
+let lastFocusedElement = null
+
+function isButtonTarget(target) {
+  return target instanceof Element && target.closest('button') !== null
 }
 
-function applySideEffects(open) {
-  const app = document.getElementById('app')
-  if (app) app.inert = open
-  document.body.style.overflow = open ? 'hidden' : ''
+function applyLocks() {
+  document.body.style.overflow = 'hidden'
+  const appElement = document.getElementById('app')
+  if (appElement) {
+    appElement.inert = true
+  }
+}
+
+function releaseLocks() {
+  document.body.style.overflow = ''
+  const appElement = document.getElementById('app')
+  if (appElement) {
+    appElement.inert = false
+  }
+}
+
+function focusInitialElement() {
+  if (!dialogCard.value) return
+
+  if (dialog.cancelLabel) {
+    const cancelButton = dialogCard.value.querySelector('.dialog-cancel')
+    if (cancelButton) {
+      cancelButton.focus()
+      return
+    }
+  }
+  const confirmButton = dialogCard.value.querySelector('.dialog-confirm')
+  if (confirmButton) {
+    confirmButton.focus()
+  }
 }
 
 function restoreFocus() {
-  nextTick(() => {
-    if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus()
-    previousFocus = null
-  })
+  if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+    lastFocusedElement.focus()
+  }
+  lastFocusedElement = null
+}
+
+function handleKeydown(event) {
+  if (!dialog.open) return
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    dialog.finish(false)
+    return
+  }
+
+  if (event.key === 'Enter' && !isButtonTarget(event.target)) {
+    event.preventDefault()
+    dialog.finish(true)
+  }
+}
+
+function handleFocusTrap(event) {
+  if (!dialogCard.value) return
+
+  const focusable = Array.from(
+    dialogCard.value.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    )
+  )
+  if (focusable.length === 0) return
+
+  const firstElement = focusable[0]
+  const lastElement = focusable[focusable.length - 1]
+
+  if (event.shiftKey && event.target === firstElement) {
+    event.preventDefault()
+    lastElement.focus()
+  } else if (!event.shiftKey && event.target === lastElement) {
+    event.preventDefault()
+    firstElement.focus()
+  }
+}
+
+function handleScrimClick() {
+  if (dialog.scrimCloses) {
+    dialog.finish(false)
+  }
 }
 
 watch(
-  () => state.open,
-  (open) => {
-    applySideEffects(open)
-    if (!open) {
-      restoreFocus()
-      return
+  () => dialog.open,
+  (newOpen) => {
+    if (newOpen) {
+      lastFocusedElement = document.activeElement
+      nextTick(() => {
+        focusInitialElement()
+        applyLocks()
+      })
+    } else {
+      nextTick(() => {
+        releaseLocks()
+        restoreFocus()
+      })
     }
-    previousFocus = document.activeElement
-    nextTick(() => {
-      const target = state.hasCancel ? cancelButton.value : confirmButton.value
-      if (target) target.focus()
-    })
-  },
+  }
 )
 
-function onKeydown(event) {
-  if (event.key === 'Escape') {
-    event.preventDefault()
-    dialog.cancel()
-    return
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+  if (dialog.open) {
+    lastFocusedElement = document.activeElement
+    nextTick(() => {
+      focusInitialElement()
+      applyLocks()
+    })
   }
-  if (event.key === 'Enter' && !(event.target instanceof HTMLButtonElement)) {
-    event.preventDefault()
-    dialog.accept()
-    return
-  }
-  if (event.key === 'Tab') {
-    cycleFocus(event)
-  }
-}
+})
 
-function cycleFocus(event) {
-  const focusable = [...card.value.querySelectorAll('button')]
-  if (!focusable.length) return
-  const first = focusable[0]
-  const last = focusable[focusable.length - 1]
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault()
-    last.focus()
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault()
-    first.focus()
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeydown)
+  if (dialog.open) {
+    releaseLocks()
   }
-}
+})
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="state.open" class="dialog-overlay" @click.self="state.scrimCloses && dialog.cancel()">
+    <div
+      v-if="dialog.open"
+      class="dialog-overlay"
+      @click.self="handleScrimClick"
+    >
       <div
-        ref="card"
+        ref="dialogCard"
         class="dialog-card"
-        :class="`dialog-${state.variant}`"
-        :role="role()"
-        aria-modal="true"
+        tabindex="-1"
+        :role="dialog.variant === 'danger' ? 'alertdialog' : 'dialog'"
+        :aria-modal="true"
         aria-labelledby="dialog-title"
-        :aria-describedby="state.message ? 'dialog-message' : undefined"
-        @keydown="onKeydown"
+        :aria-describedby="dialog.message ? 'dialog-message' : undefined"
+        @keydown.tab="handleFocusTrap"
       >
-        <div class="dialog-heading">
-          <AppIcon :name="variantIcon()" size="18" class="dialog-icon" />
-          <h3 id="dialog-title" class="dialog-title">{{ state.title }}</h3>
+        <div class="dialog-header">
+          <span class="dialog-icon" :class="'variant-' + dialog.variant">
+            <AppIcon :name="variantIcon" :size="20" />
+          </span>
+          <h2 id="dialog-title" class="dialog-title">
+            {{ dialog.title }}
+          </h2>
         </div>
-        <p v-if="state.message" id="dialog-message" class="dialog-message">{{ state.message }}</p>
+        <div
+          v-if="dialog.message"
+          id="dialog-message"
+          class="dialog-message"
+        >
+          {{ dialog.message }}
+        </div>
         <div class="dialog-actions">
-          <button v-if="state.hasCancel" ref="cancelButton" class="button ghost" @click="dialog.cancel()">
-            {{ state.cancelLabel }}
+          <button
+            v-if="dialog.cancelLabel"
+            type="button"
+            class="button ghost dialog-cancel"
+            @click="dialog.finish(false)"
+          >
+            {{ dialog.cancelLabel }}
           </button>
-          <button ref="confirmButton" class="button" :class="{ danger: state.danger }" @click="dialog.accept()">
-            {{ state.confirmLabel }}
+          <button
+            type="button"
+            class="button dialog-confirm"
+            :class="{ danger: dialog.variant === 'danger' }"
+            @click="dialog.finish(true)"
+          >
+            {{ dialog.confirmLabel }}
           </button>
         </div>
       </div>

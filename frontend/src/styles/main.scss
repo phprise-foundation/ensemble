@@ -1378,13 +1378,8 @@ body.drawer-locked {
 .profile-avatar {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
-  background: var(--surface-3);
+  font-size: 16px;
   border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
 }
 
 .profile-name {
@@ -1743,147 +1738,133 @@ textarea[aria-invalid='true'] {
   overflow-wrap: anywhere;
 }
 
+/* Dialog */
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 0.55);
-  padding: 16px;
+  z-index: 60;
+  padding: 20px;
 }
 
 .dialog-card {
-  width: 100%;
-  max-width: 420px;
+  width: min(420px, 100%);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  outline: none;
 }
 
-.dialog-heading {
+.dialog-header {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.dialog-icon {
-  flex-shrink: 0;
-  color: var(--accent);
-}
-
-.dialog-success .dialog-icon {
-  color: var(--success);
-}
-
-.dialog-warning .dialog-icon,
-.dialog-danger .dialog-icon {
-  color: var(--warning);
-}
-
-.dialog-danger .dialog-icon {
-  color: var(--danger);
-}
-
-.dialog-title {
+.dialog-header h2 {
   margin: 0;
-  font-size: 15px;
-  color: var(--text);
+  font-size: 16px;
 }
+
+.dialog-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.dialog-icon.variant-info    { color: var(--accent); }
+.dialog-icon.variant-success { color: var(--success); }
+.dialog-icon.variant-warning { color: var(--warning); }
+.dialog-icon.variant-danger  { color: var(--danger); }
 
 .dialog-message {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-  overflow-wrap: anywhere;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
 }
 
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 16px;
 }
 
+/* Toast */
 .toast-host {
   position: fixed;
   right: 16px;
   bottom: 16px;
-  z-index: 60;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  z-index: 70;
+  max-width: 320px;
 }
 
 .toast {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 320px;
-  max-width: 320px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-radius: 6px;
-  padding: 8px 10px;
-  animation: toast-in 160ms ease-out;
+  border-left: 4px solid var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.18s ease;
 }
 
-.toast-success {
+.toast.success {
   border-left-color: var(--success);
 }
 
-.toast-success .toast-icon {
-  color: var(--success);
-}
-
-.toast-error {
+.toast.error {
   border-left-color: var(--danger);
 }
 
-.toast-error .toast-icon {
-  color: var(--danger);
-}
-
-.toast-warning {
-  border-left-color: var(--warning);
-}
-
-.toast-warning .toast-icon {
-  color: var(--warning);
-}
-
-.toast-info {
+.toast.info {
   border-left-color: var(--accent);
 }
 
-.toast-info .toast-icon {
-  color: var(--accent);
+.toast.warning {
+  border-left-color: var(--warning);
 }
 
-.toast-text {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text);
-  overflow-wrap: anywhere;
+.toast-icon {
+  flex: 0 0 auto;
+  color: var(--muted);
 }
+
+.toast.success .toast-icon { color: var(--success); }
+.toast.error .toast-icon   { color: var(--danger); }
+.toast.info .toast-icon    { color: var(--accent); }
+.toast.warning .toast-icon { color: var(--warning); }
 
 .toast-close {
-  flex-shrink: 0;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 

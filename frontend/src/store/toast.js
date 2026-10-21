@@ -1,39 +1,57 @@
 import { reactive } from 'vue'
 
-const LIMIT = 3
-const DURATIONS = { success: 4000, info: 4000, error: 6000, warning: 6000 }
+const state = reactive({
+  toasts: [],
+})
 
-const state = reactive({ items: [] })
-let counter = 0
+const MAX_TOASTS = 3
+const SHORT_DURATION_MS = 4000
+const LONG_DURATION_MS = 6000
 
-function push(kind, text) {
-  counter += 1
-  const id = counter
-  state.items.push({ id, kind, text })
-  if (state.items.length > LIMIT) state.items.shift()
-  setTimeout(() => dismiss(id), DURATIONS[kind])
+let lastId = 0
+
+function removeToast(id) {
+  const index = state.toasts.findIndex((candidate) => candidate.id === id)
+  if (index !== -1) {
+    state.toasts.splice(index, 1)
+  }
 }
 
-function dismiss(id) {
-  const index = state.items.findIndex((item) => item.id === id)
-  if (index !== -1) state.items.splice(index, 1)
+function pushToast(kind, text) {
+  lastId += 1
+  const id = lastId
+  state.toasts.push({ id: id, kind: kind, text: text })
+
+  if (state.toasts.length > MAX_TOASTS) {
+    state.toasts.shift()
+  }
+
+  const duration = kind === 'error' || kind === 'warning' ? LONG_DURATION_MS : SHORT_DURATION_MS
+  setTimeout(() => removeToast(id), duration)
 }
 
 export const toast = {
-  get items() {
-    return state.items
+  get toasts() {
+    return state.toasts
   },
+
   success(text) {
-    push('success', text)
+    pushToast('success', text)
   },
+
   error(text) {
-    push('error', text)
+    pushToast('error', text)
   },
+
   info(text) {
-    push('info', text)
+    pushToast('info', text)
   },
+
   warning(text) {
-    push('warning', text)
+    pushToast('warning', text)
   },
-  dismiss,
+
+  dismiss(id) {
+    removeToast(id)
+  },
 }

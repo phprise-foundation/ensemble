@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ProfilePage from '../src/views/ProfilePage.vue'
 import { session } from '../src/store/session.js'
+import { toast } from '../src/store/toast.js'
 import { normalizeImageFile } from '../src/lib/image-normalize.js'
 
 const { fetchUser, updateUser } = vi.hoisted(() => ({
@@ -12,6 +13,8 @@ const { fetchUser, updateUser } = vi.hoisted(() => ({
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  onBeforeRouteLeave: vi.fn(),
+  onBeforeRouteUpdate: vi.fn(),
 }))
 
 vi.mock('../src/api/index.js', () => ({
@@ -32,6 +35,10 @@ const user = (overrides = {}) => ({
   avatarColor: '#4c9aff',
   ...overrides,
 })
+
+function ultimoToast() {
+  return toast.toasts[toast.toasts.length - 1]
+}
 
 async function mountPage(overrides = {}) {
   fetchUser.mockResolvedValue(user(overrides))
@@ -55,6 +62,7 @@ describe('ProfilePage', () => {
     fetchUser.mockReset()
     updateUser.mockReset()
     normalizeImageFile.mockReset()
+    toast.toasts.splice(0, toast.toasts.length)
     fetchUser.mockResolvedValue(user({ displayName: 'Maria Fernanda de Souza Oliveira', avatar: null }))
     updateUser.mockResolvedValue(user({ displayName: 'Maria Silva' }))
     normalizeImageFile.mockResolvedValue('data:image/webp;base64,AAA')
@@ -87,7 +95,7 @@ describe('ProfilePage', () => {
     wrapper.unmount()
   })
 
-  it('mostra loading no Save e o status de sucesso depois do PATCH', async () => {
+  it('mostra loading no Save e confirma o sucesso por toast depois do PATCH', async () => {
     let resolveUpdate
     updateUser.mockImplementation(
       () =>
@@ -108,13 +116,14 @@ describe('ProfilePage', () => {
     resolveUpdate(user({ displayName: 'Maria Silva' }))
     await flushPromises()
 
-    expect(wrapper.find('[data-test="save-status"]').text()).toBe('Saved.')
+    expect(ultimoToast()).toMatchObject({ kind: 'success', text: 'Saved.' })
     expect(updateUser).toHaveBeenCalledWith({ displayName: 'Maria Silva' })
 
     wrapper.unmount()
   })
 
-  it('mostra o erro inline custom quando o PATCH falha', async () => {
+  it('avisa o erro do PATCH por toast, sem diálogo nativo', async () => {
+    const alert = vi.spyOn(window, 'alert').mockImplementation(() => {})
     updateUser.mockRejectedValue(new Error('network down'))
     const wrapper = await mountPage()
 
@@ -122,8 +131,18 @@ describe('ProfilePage', () => {
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.find('.hint.error').text()).toBe('network down')
-    expect(wrapper.find('[data-test="save-status"]').exists()).toBe(false)
+    expect(ultimoToast()).toMatchObject({ kind: 'error', text: 'network down' })
+    expect(alert).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('mostra só o hint estático do input de arquivo, sem hook de erro morto', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.find('[data-test="file-error"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('PNG, JPEG or WebP up to 2 MB.')
+    expect(wrapper.find('.hint.error').exists()).toBe(false)
 
     wrapper.unmount()
   })
@@ -161,7 +180,7 @@ describe('ProfilePage', () => {
     wrapper.unmount()
   })
 
-  it('rejeita tipo inválido e arquivo acima de 2 MB sem alert e preserva a foto', async () => {
+  it('rejeita tipo inválido e arquivo acima de 2 MB por toast e preserva a foto', async () => {
     const alert = vi.spyOn(window, 'alert').mockImplementation(() => {})
     const wrapper = await mountPage()
 
@@ -169,14 +188,14 @@ describe('ProfilePage', () => {
     expect(wrapper.find('[data-test="avatar-preview"] img').exists()).toBe(true)
 
     await chooseFile(wrapper, new File(['text'], 'notes.txt', { type: 'text/plain' }))
-    expect(wrapper.find('.hint.error').text()).toBe('Use a PNG, JPEG or WebP image.')
+    expect(ultimoToast()).toMatchObject({ kind: 'error', text: 'Use a PNG, JPEG or WebP image.' })
     expect(wrapper.find('[data-test="avatar-preview"] img').exists()).toBe(true)
 
     await chooseFile(
       wrapper,
       new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' }),
     )
-    expect(wrapper.find('.hint.error').text()).toBe('The image must be at most 2 MB.')
+    expect(ultimoToast()).toMatchObject({ kind: 'error', text: 'The image must be at most 2 MB.' })
     expect(wrapper.find('[data-test="avatar-preview"] img').exists()).toBe(true)
     expect(alert).not.toHaveBeenCalled()
     expect(normalizeImageFile).toHaveBeenCalledTimes(1)
