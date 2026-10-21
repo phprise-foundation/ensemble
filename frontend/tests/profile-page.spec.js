@@ -8,6 +8,8 @@ const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+  onBeforeRouteLeave: vi.fn(),
+  onBeforeRouteUpdate: vi.fn(),
 }))
 
 vi.mock('../src/api/index.js', () => ({
