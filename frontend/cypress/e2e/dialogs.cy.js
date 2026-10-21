@@ -33,7 +33,7 @@ describe('diálogos e toasts na interface em execução', () => {
     cy.get(card).trigger('keydown', { key: 'Enter' })
     cy.get(card).should('not.exist')
     cy.get('.toast')
-      .should('have.class', 'toast-success')
+      .should('have.class', 'success')
       .and('contain', '"Coder" deleted.')
     cy.get('.table-row').contains('Coder').should('not.exist')
   })
@@ -95,7 +95,7 @@ describe('diálogos e toasts na interface em execução', () => {
     abrirDeleteSource('src-enter')
     cy.get(card).trigger('keydown', { key: 'Enter' })
     cy.get(card).should('not.exist')
-    cy.get('.toast').should('have.class', 'toast-success').and('contain', '"src-enter" deleted.')
+    cy.get('.toast').should('have.class', 'success').and('contain', '"src-enter" deleted.')
     cy.get('#app-sidebar').contains('src-enter').should('not.exist')
   })
 
