@@ -4,6 +4,7 @@ import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
 import FieldLimit from './FieldLimit.vue'
 import IssueHistory from './IssueHistory.vue'
+import Avatar from './Avatar.vue'
 import {
   COMMENT_LIMIT,
   DESCRIPTION_LIMIT,
@@ -153,9 +154,15 @@ function format(value) {
     <h2 class="panel-title">{{ issue.summary }}</h2>
 
     <div class="panel-meta">
-      <div class="portrait" :style="{ background: agent?.avatarColor || 'var(--surface-3)' }">
-        {{ agent ? agent.name.charAt(0) : '?' }}
-      </div>
+      <Avatar
+        v-if="agent"
+        class="portrait"
+        :name="agent.name"
+        :image="agent.avatar"
+        :color="agent.avatarColor"
+        size="md"
+      />
+      <div v-else class="portrait" :style="{ background: 'var(--surface-3)' }">?</div>
       <div>
         <div class="panel-assignee">{{ agent ? agent.name : 'Unassigned' }}</div>
         <div class="muted small">{{ role || 'No role' }}</div>
