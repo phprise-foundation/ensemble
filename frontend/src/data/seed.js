@@ -1,3 +1,5 @@
+import { VIVY_PORTRAIT } from './seed-portrait.js'
+
 const now = Date.now()
 const hours = (count) => count * 60 * 60 * 1000
 
@@ -78,7 +80,7 @@ export function createSeed() {
     ],
 
     agents: [
-      { id: 'vivy', teamId: 'default', name: 'Vivy', whoAmI: 'The first autonomous agent, curious about people.', age: 20, maritalStatus: 'Single', roleIds: ['product-owner'], profileId: 'socratic', avatarColor: '#4c9aff' },
+      { id: 'vivy', teamId: 'default', name: 'Vivy', whoAmI: 'The first autonomous agent, curious about people.', age: 20, maritalStatus: 'Single', roleIds: ['product-owner'], profileId: 'socratic', avatarColor: '#4c9aff', portrait: VIVY_PORTRAIT },
       { id: 'kaio', teamId: 'default', name: 'Kaio', whoAmI: 'A pragmatic builder.', age: 27, maritalStatus: 'Single', roleIds: ['coder'], profileId: 'skeptic', avatarColor: '#ff991f' },
       { id: 'alan', teamId: 'default', name: 'Alan', whoAmI: 'A patient reviewer and teacher.', age: 41, maritalStatus: 'Married', roleIds: ['tech-lead'], profileId: 'professor', avatarColor: '#8777d9' },
       { id: 'mai', teamId: 'default', name: 'Mai', whoAmI: 'Distrusts the happy path.', age: 33, maritalStatus: 'Single', roleIds: ['quality-assurance'], profileId: 'activist', avatarColor: '#00b8d9' },
@@ -90,7 +92,7 @@ export function createSeed() {
 
     sources: [],
 
-    user: { login: 'admin', displayName: '' },
+    user: { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
 
     issues: [
       {

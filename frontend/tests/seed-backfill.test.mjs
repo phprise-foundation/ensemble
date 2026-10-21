@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
@@ -33,21 +33,21 @@ test('backfill: banco antigo sem user ganha a chave e /api/user volta a responde
 
   assert.deepEqual(
     database.user,
-    { login: 'admin', displayName: '' },
-    'a chave ausente do seed é acrescentada na leitura',
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'a chave ausente do seed é acrescentada na leitura, já com avatar e cor',
   )
 
   const fetched = handle(database, 'GET', ['user'], {})
   assert.deepEqual(
     fetched,
-    { data: { login: 'admin', displayName: '' } },
-    'GET /api/user responde 200 com login e displayName vazio depois do backfill',
+    { data: { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' } },
+    'GET /api/user responde 200 com os quatro campos depois do backfill',
   )
 
   const patched = handle(database, 'PATCH', ['user'], { displayName: '  Ana  ' })
   assert.deepEqual(
     patched.data,
-    { login: 'admin', displayName: 'Ana' },
+    { login: 'admin', displayName: 'Ana', avatar: null, avatarColor: '#e5484d' },
     'PATCH /api/user volta a gravar o nome e mantém o login',
   )
 })
@@ -72,7 +72,32 @@ test('sem arquivo, o seed completo continua sendo criado', () => {
   const database = load(file)
 
   assert.ok(existsSync(file), 'o arquivo é criado quando ainda não existe')
-  assert.deepEqual(database.user, { login: 'admin', displayName: '' }, 'o banco novo nasce com o seed completo')
+  assert.deepEqual(
+    database.user,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'o banco novo nasce com o seed completo',
+  )
+})
+
+test('banco vazio, truncado ou não-objeto volta ao seed em vez de derrubar o boot', () => {
+  const empty = join(root, 'banco-vazio.json')
+  writeFileSync(empty, '')
+  const fromEmpty = load(empty)
+  assert.equal(fromEmpty.user.login, 'admin', 'arquivo vazio é refeito com o seed')
+  assert.ok(fromEmpty.issues.length > 0, 'o seed traz issues para a interface abrir')
+
+  const truncated = join(root, 'banco-truncado.json')
+  writeFileSync(truncated, '{"issues": [')
+  const fromTruncated = load(truncated)
+  assert.equal(fromTruncated.user.login, 'admin', 'JSON inválido não derruba o carregamento')
+  assert.ok(
+    JSON.parse(readFileSync(truncated, 'utf-8')).issues.length > 0,
+    'o arquivo corrompido é reescrito com o seed',
+  )
+
+  const nonObject = join(root, 'banco-nulo.json')
+  writeFileSync(nonObject, 'null')
+  assert.equal(load(nonObject).user.login, 'admin', 'JSON válido que não é objeto também é refeito')
 })
 
 test('backfill: user já existente preserva o displayName definido', () => {
@@ -83,7 +108,7 @@ test('backfill: user já existente preserva o displayName definido', () => {
 
   assert.deepEqual(
     database.user,
-    { login: 'admin', displayName: 'Ana' },
-    'a chave presente não é sobrescrita pelo seed',
+    { login: 'admin', displayName: 'Ana', avatar: null, avatarColor: '#e5484d' },
+    'a chave presente não é sobrescrita pelo seed; só os campos novos são completados',
   )
 })

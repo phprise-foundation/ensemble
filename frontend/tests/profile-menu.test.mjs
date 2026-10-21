@@ -19,15 +19,23 @@ test('protótipo: usuário corrente singleton e contrato de /api/user', async ()
   assert.equal(typeof backend.handle, 'function', 'fake-backend deve exportar handle para o teste de integração')
 
   const db = createSeed()
-  assert.deepEqual(db.user, { login: 'admin', displayName: '' }, 'o seed deve trazer o usuário corrente singleton')
+  assert.deepEqual(
+    db.user,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'o seed deve trazer o usuário corrente singleton com avatar e cor',
+  )
 
   const fetched = backend.handle(db, 'GET', ['user'], {})
-  assert.deepEqual(fetched.data, { login: 'admin', displayName: '' }, 'GET /api/user devolve login e displayName')
+  assert.deepEqual(
+    fetched.data,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'GET /api/user devolve login, displayName, avatar e avatarColor',
+  )
 
   const saved = backend.handle(db, 'PATCH', ['user'], { displayName: '  Maria Fernanda de Souza Oliveira  ' })
   assert.deepEqual(
     saved.data,
-    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira' },
+    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira', avatar: null, avatarColor: '#e5484d' },
     'PATCH /api/user normaliza com trim e aceita até 40 caracteres',
   )
 
@@ -120,12 +128,12 @@ test('tela de profile edita o nome sem tocar no login', () => {
 
   assert.match(route, /path:\s*'\/profile'/, "'/profile' deve ser rota própria, distinta de /teams/:teamId/profiles")
   assert.match(route, /ProfilePage/, 'a rota /profile deve apontar para o ProfilePage')
-  assert.match(page, /session\.rename/, 'a tela deve chamar session.rename(name)')
+  assert.match(page, /session\.updateProfile/, 'a tela deve chamar session.updateProfile({ displayName, avatar })')
   assert.match(page, /maxlength="?40"?/, 'o formulário limita o nome a 40 caracteres')
   assert.match(
     page,
-    /watch\(\s*\(\)\s*=>\s*session\.displayName/,
-    'o campo do nome acompanha a sessão quando ela hidrata depois da montagem',
+    /watch\(\s*\(\)\s*=>\s*\[session\.displayName,\s*session\.avatar\]/,
+    'os campos do perfil acompanham a sessão quando ela hidrata depois da montagem',
   )
   assert.match(page, /readonly/, 'o login fica somente leitura na tela')
 })

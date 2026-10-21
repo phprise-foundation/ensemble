@@ -7,6 +7,53 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.32.1 — 2026-10-21
+
+### Fixed
+
+- **KAN-125** — corrida no harness de contratos E2E (`run-e2e.sh`) quebrava o
+  CI em qualquer PR: cada invocação do harness agora usa porta livre
+  (`E2E_PORT`) e arquivo de dados próprio (`E2E_DATA_FILE`, gravação/restauração
+  atômicas; o `.data/db.json` do desenvolvedor nunca é tocado e o arquivo
+  efêmero não é removido pelo cleanup — KAN-145), o fake-backend também respeita
+  `E2E_DATA_FILE` e só persiste em mutações, e sem `DISPLAY` o Cypress roda em
+  Xvfb próprio derivado da porta (sem disputa do `:99`). Esqueletos de aceite
+  em repositório (`run-e2e-parallel`/`isolation`/`data-file`/`fallback` e
+  `writes.cy.js`); `run-e2e-port` migrado para dados efêmeros (KAN-144). PR
+  #151, release `v0.32.1`.
+
+## v0.32.0 — 2026-10-21
+
+### Added
+
+- **KAN-131** — perfil, fase 1: foto como rascunho, `updateProfile` e Save com
+  estados no perfil (PR #146).
+
+## v0.31.0 — 2026-10-21
+
+### Added
+
+- **KAN-127** — diálogos acessíveis: serviço central promise-based
+  `store/dialog.js` (`confirm` → bool, `alert` → void, uma caixa por vez) com
+  `DialogHost.vue` global (`alertdialog` em danger, foco inicial no Cancelar,
+  Escape/Enter/Tab, `inert` no `#app` + scroll lock, retorno de foco ao
+  gatilho) e toasts não bloqueantes `store/toast.js` + `ToastHost.vue` (máx.
+  3, 4s/6s, `aria-live`, `role=alert` no erro). Os quatro `window.confirm`
+  nativos (CrudPage, AgentsPage, IssueTypesPage, AppSidebar) migraram para
+  `dialog.confirm` danger com toasts de sucesso/erro: erro com `field` segue
+  inline, erro sem campo (rede/422 genérico) vai para `toast.error`. Zero
+  diálogos nativos em `src/**`. PR #138, release `v0.31.0`.
+
+## v0.30.1 — 2026-10-21
+
+### Testing
+
+- **KAN-118** — limites de descrição e comentário: testes BDD, node:test e
+  vitest conforme o guia `docs/KAN-93-guide.md`. Cenários de 90% verificam o
+  aviso a partir de 3686/921 (não 3685/920); o contrato congelado de
+  `frontend/tests/description-comment-limits.feature` preservado intacto.
+  PR #147, release `v0.30.1`.
+
 ## v0.29.2 — 2026-10-20
 
 ### Testing
@@ -23,6 +70,29 @@ https://github.com/phprise-foundation/multi-agent/releases
   light com 12 screenshots registrados em
   `var/kanban.local/artifacts/kan-114-auditoria-visual/`. PR #140, release
   `v0.29.2`.
+
+## v0.30.0 — 2026-10-21
+
+### Added
+
+- **KAN-129** — perfil no fake backend: `PATCH /api/user` parcial e idempotente
+  (§3 do guia `docs/KAN-126-guide.md`). Merge por campo — ausente preserva,
+  `avatar: null` remove a foto, `displayName` mantém trim ≤ 40 com 422,
+  `avatarColor` exige hex `#[0-9a-fA-F]{6}` (422) e `avatar` aceita só `null`
+  ou data URL `data:image/(png|jpeg|webp);base64,` com base64 ≤ 512 KiB (422).
+  A validação (`userChanges`) acontece **antes** de qualquer mutação
+  (`applyUserChanges`); PATCH inválido loga no console do plugin. GET e PATCH
+  respondem `{ login, displayName, avatar, avatarColor }`; o boot completa
+  bancos legados com `avatar ??= null` e `avatarColor ??= avatarColorFor(login)`
+  e o seed nasce com os campos novos. Nova lib pura
+  `frontend/src/lib/avatar-color.js` (`avatarColorFor`, FNV-1a sobre o login
+  com paleta fixa de 8 cores, §4.2 do guia). Cobertura em
+  `frontend/tests/profile-contract.test.mjs` (parcial, remoção, três mídias,
+  idempotência, 422s na borda do limite, valida-antes-de-mutar e backfill) e
+  ajustes em `profile-menu`/`seed-backfill`; `npm run build` verde e as 6
+  falhas restantes da suíte são pré-existentes em `main` (ambiente). Sem
+  alteração em `ProfilePage.vue`, `session.js` ou KAN-108. PR #143, release
+  `v0.30.0`.
 
 ## v0.29.1 — 2026-10-20
 

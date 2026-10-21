@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 import { api } from '../api/index.js'
 
-const state = reactive({ login: '', displayName: '', signedIn: true })
+const state = reactive({ login: '', displayName: '', avatar: '', avatarColor: '', signedIn: true })
 
 export const session = {
   get login() {
@@ -16,6 +16,12 @@ export const session = {
   set displayName(value) {
     state.displayName = value
   },
+  get avatar() {
+    return state.avatar
+  },
+  get avatarColor() {
+    return state.avatarColor || '#333333'
+  },
   get signedIn() {
     return state.signedIn
   },
@@ -29,11 +35,19 @@ export const session = {
     const user = await api.fetchUser()
     state.login = user.login
     state.displayName = user.displayName
+    state.avatar = user.avatar ?? ''
+    state.avatarColor = user.avatarColor ?? ''
   },
-  async rename(name) {
-    const user = await api.updateUser({ displayName: name })
+  async updateProfile({ displayName, avatar }) {
+    const changes = { displayName }
+    if (avatar !== undefined) {
+      changes.avatar = avatar
+    }
+    const user = await api.updateUser(changes)
     state.login = user.login
     state.displayName = user.displayName
+    state.avatar = user.avatar ?? ''
+    state.avatarColor = user.avatarColor ?? ''
     return user
   },
   signOut() {
