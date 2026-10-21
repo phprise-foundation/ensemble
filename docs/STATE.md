@@ -578,6 +578,22 @@
   revisão registrou três imprecisões não bloqueantes (cheque inalcançável de
   `Buffer.from` em `avatarProblem`, `String(value)` antes do `typeof` e o
   `'#e5484d'` hardcode no seed). PR #143, release `v0.30.0`.
+- **Diálogos acessíveis: serviço central de confirm/alert e toasts (KAN-127):**
+  o §7 de `docs/KAN-127-guide.md` substituiu os diálogos nativos da SPA.
+  `store/dialog.js` promise-based (`confirm` → bool, `alert` → void, uma
+  caixa por vez) com `DialogHost.vue` global no `App.vue` (`alertdialog` em
+  danger, foco inicial no Cancelar, Escape/Enter/Tab, `inert` no `#app` +
+  scroll lock, retorno de foco ao gatilho) e toasts não bloqueantes
+  `store/toast.js` + `ToastHost.vue` (máx. 3, 4s/6s, `aria-live`,
+  `role=alert` no erro, tokens `--success`/`--warning`). Os quatro
+  `window.confirm` (CrudPage, AgentsPage, IssueTypesPage, AppSidebar) migraram
+  para `dialog.confirm` danger com toasts de sucesso/erro: erro com `field`
+  segue inline, erro sem campo (rede/422 genérico) vai para `toast.error`.
+  Zero diálogos nativos em `src/**`. Verificação independente da revisão:
+  build, vitest 162/162, node:test e varredura PCRE2 verdes. Observações em
+  dívida: falso positivo da guarda da KAN-138 nas definições de
+  `store/dialog.js` e rótulo default do `alert` ambíguo no guia §3. PR #138,
+  release `v0.31.0`.
 
 ## Next
 

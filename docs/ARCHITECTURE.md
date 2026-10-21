@@ -115,9 +115,22 @@ pela classe `body.drawer-locked` e expõe o botão dedicado
 token `$mobile-breakpoint: 768px` (exportado como `--breakpoint-mobile`) e é
 consumido pelo SCSS como `max-width: $mobile-breakpoint - 1` e pelo JS via
 `mediaQueryFor('--breakpoint-mobile', -1)`. O contrato é provado em três
-níveis: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
+nívels: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
 fonte e integração (`tests/mobile-drawer-fullscreen.test.mjs`/`.spec.js`) e
 navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`).
+
+Os diálogos da SPA são centralizados: `store/dialog.js` expõe a API
+promise-based (`confirm` → bool, `alert` → void, uma caixa por vez) e
+`DialogHost.vue` — montado no `App.vue` junto de `ToastHost.vue` — renderiza o
+modal acessível (`role=dialog`/`alertdialog` em danger, `aria-modal`, foco
+inicial no Cancelar, Escape/Enter/Tab, `inert` no `#app` + scroll lock e
+retorno de foco ao gatilho). `store/toast.js` + `ToastHost.vue` entregam
+notificações não bloqueantes (máx. 3 simultâneas, 4s/6s, `aria-live`,
+`role=alert` no erro, tokens `--success`/`--warning`). Nenhum fluxo usa
+`window.confirm`/`alert`/`prompt`: os quatro saves (CrudPage, AgentsPage,
+IssueTypesPage, AppSidebar) chamam `dialog.confirm` danger e roteiam o erro
+pelo `problem.field` do `client.js` — com campo, inline; sem campo (rede/422
+genérico), `toast.error` (KAN-127, PR #138, release `v0.31.0`).
 
 ## Layers
 

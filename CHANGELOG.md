@@ -7,6 +7,21 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.31.0 — 2026-10-21
+
+### Added
+
+- **KAN-127** — diálogos acessíveis: serviço central promise-based
+  `store/dialog.js` (`confirm` → bool, `alert` → void, uma caixa por vez) com
+  `DialogHost.vue` global (`alertdialog` em danger, foco inicial no Cancelar,
+  Escape/Enter/Tab, `inert` no `#app` + scroll lock, retorno de foco ao
+  gatilho) e toasts não bloqueantes `store/toast.js` + `ToastHost.vue` (máx.
+  3, 4s/6s, `aria-live`, `role=alert` no erro). Os quatro `window.confirm`
+  nativos (CrudPage, AgentsPage, IssueTypesPage, AppSidebar) migraram para
+  `dialog.confirm` danger com toasts de sucesso/erro: erro com `field` segue
+  inline, erro sem campo (rede/422 genérico) vai para `toast.error`. Zero
+  diálogos nativos em `src/**`. PR #138, release `v0.31.0`.
+
 ## v0.30.1 — 2026-10-21
 
 ### Testing

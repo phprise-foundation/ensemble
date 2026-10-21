@@ -137,7 +137,14 @@ marking what is still a prototype.
    componente `IssueHistory.vue`, eventos no seed/fake backend e guia
    `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`). A aba History
    foi verificada com o spec E2E `frontend/cypress/e2e/issue-history.cy.js`
-   (KAN-114, PR #140, release `v0.29.2`).
+   (KAN-114, PR #140, release `v0.29.2`). Os diálogos nativos do navegador
+   saíram do código: serviço central promise-based (`store/dialog.js` +
+   `DialogHost.vue`, `alertdialog` em danger, foco inicial no Cancelar,
+   Escape/Enter, `inert` + scroll lock, retorno de foco) e toasts não
+   bloqueantes (`store/toast.js` + `ToastHost.vue`, máx. 3, 4s/6s,
+   `aria-live`); os quatro fluxos de save migram erro com campo para inline e
+   erro sem campo (rede/422) para `toast.error` (KAN-127, PR #138, release
+   `v0.31.0`; guarda estática e E2E dedicados seguem em KAN-138/139).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.
