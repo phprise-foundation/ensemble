@@ -25,12 +25,26 @@ function backfillUser(user) {
   user.avatarColor ??= avatarColorFor(user.login)
 }
 
-export function load(filePath = dataFile) {
-  if (!existsSync(filePath)) {
-    mkdirSync(dirname(filePath), { recursive: true })
-    writeFileSync(filePath, JSON.stringify(createSeed(), null, 2))
+function readDatabase(filePath) {
+  if (!existsSync(filePath)) return null
+  const content = readFileSync(filePath, 'utf-8')
+  if (!content.trim()) return null
+  try {
+    const database = JSON.parse(content)
+    if (database === null || typeof database !== 'object' || Array.isArray(database)) return null
+    return database
+  } catch {
+    return null
   }
-  const database = JSON.parse(readFileSync(filePath, 'utf-8'))
+}
+
+export function load(filePath = dataFile) {
+  let database = readDatabase(filePath)
+  if (database === null) {
+    database = createSeed()
+    mkdirSync(dirname(filePath), { recursive: true })
+    writeFileSync(filePath, JSON.stringify(database, null, 2))
+  }
   const seed = createSeed()
   for (const key of Object.keys(seed)) {
     database[key] ??= seed[key]

@@ -620,6 +620,14 @@
   Browser E2E (`description-comment-limits`, `legacy-db-boot`) é dívida
   anterior, fora do escopo (candidata a item próprio). PR #151, release
   `v0.32.1`.
+- **KAN-153** — dívidas de E2E da `main` fechadas: o spec de limites mira o
+  composer (`.comments-body > button.button`) em vez do rótulo da aba
+  `Comments`; o boot legado aceita `avatar`/`avatarColor` no PATCH; o
+  `run-e2e.sh` calcula o teto por spec (`120 + 60 × specs`, 960s hoje); e
+  `fake-backend.load()` refaz o seed quando `.data/db.json` está vazio ou
+  truncado — o Vite não cai mais no boot (5173) depois de uma rodada
+  interrompida. Verificação: Chrome 85/85, vitest 200/200, `node --test`
+  197/197 e build verdes. PR #154.
 
 ## Next
 
