@@ -7,6 +7,8 @@ import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
 import AppCopilot from './components/AppCopilot.vue'
 import AppConsole from './components/AppConsole.vue'
+import DialogHost from './components/DialogHost.vue'
+import ToastHost from './components/ToastHost.vue'
 import { boardStore } from './store/board.js'
 import { CONSOLE_HEIGHT_STEP, DEFAULT_CONSOLE_HEIGHT, clampHeight } from './store/consoleHeight.js'
 import { session } from './store/session.js'
@@ -218,6 +220,8 @@ function toggleSimulation() {
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />
+    <DialogHost />
+    <ToastHost />
   </div>
   <div class="session-ended" v-else>
     <div class="session-ended-box">
