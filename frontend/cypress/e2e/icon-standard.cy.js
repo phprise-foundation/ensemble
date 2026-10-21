@@ -1,9 +1,28 @@
 Cypress.Screenshot.defaults({ screenshotOnRunFailure: false })
 
+const TETO_CAPTURA_MS = 20000
+let capturaEmAndamento = null
+let capturasQuebradas = false
+
 const capture = (name) => {
-  if (Cypress.expose().visualAudit !== '1') return
-  cy.screenshot(name)
+  if (Cypress.expose('visualAudit') !== '1') return
+  if (capturasQuebradas) {
+    throw new Error(
+      `capturas indisponíveis nesta rodada (primeira falha: "${capturaEmAndamento}")`,
+    )
+  }
+  capturaEmAndamento = name
+  cy.screenshot(name, { timeout: TETO_CAPTURA_MS })
 }
+
+Cypress.on('fail', (erro) => {
+  if (String(erro).includes('cy.screenshot()')) {
+    capturasQuebradas = true
+    throw new Error(
+      `cy.screenshot da captura "${capturaEmAndamento}" estourou o teto de ${TETO_CAPTURA_MS}ms`,
+    )
+  }
+})
 
 const collectErrors = (win, errors) => {
   win.addEventListener('error', (event) => errors.push(`error: ${event.message}`))
