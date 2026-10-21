@@ -628,6 +628,14 @@
   truncado — o Vite não cai mais no boot (5173) depois de uma rodada
   interrompida. Verificação: Chrome 85/85, vitest 200/200, `node --test`
   197/197 e build verdes. PR #154.
+- **KAN-126 — perfil completo:** a pilha pousou na ordem revisada — fundação
+  de diálogos/toasts (refundação KAN-127, #145), Fase 2 (guarda one-shot +
+  toasts, #152), Fase 3 (avatar no topbar, #153), contrato/BDD (KAN-132,
+  #144) e E2E (KAN-133, #159, alinhamento #160). Verificação da revisão em
+  worktree da árvore integrada: build verde, vitest 210/210, `node --test`
+  206/206, drawer-a11y 17/17 e E2E 91/91. Entregas duplicadas fechadas sem
+  merge (#141, #142, #148, #156, #157; o spec da #158 foi superseded pela
+  #159). Veredicto: aprovado; release `v0.33.0`.
 
 ## Next
 
