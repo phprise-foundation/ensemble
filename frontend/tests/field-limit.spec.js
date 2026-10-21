@@ -1,75 +1,62 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import FieldLimit from '../src/components/FieldLimit.vue'
 
-// Mockando a API
-vi.mock('../src/api/index.js', () => ({
-  api: {
-    // Mock para testes
-  }
-}))
+const mountLimit = (text, limit = 1023, props = {}) =>
+  mount(FieldLimit, {
+    props: { id: 'test-limit', text, limit, field: 'comment', ...props },
+  })
 
 describe('FieldLimit', () => {
-  it('exibe contador de caracteres para descrição', () => {
-    const wrapper = mount(FieldLimit, {
-      props: {
-        modelValue: 'Texto de teste',
-        limit: 4095
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="character-count"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('14/4095')
+  it('exibe contador de caracteres para o campo', () => {
+    const wrapper = mountLimit('Test text')
+
+    expect(wrapper.find('.field-limit-count').text()).toBe('9/1023')
   })
 
-  it('exibe contador de caracteres para comentário', () => {
-    const wrapper = mount(FieldLimit, {
-      props: {
-        modelValue: 'Texto de teste',
-        limit: 1023
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="character-count"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('14/1023')
+  it('conta code points de emoji, não unidades UTF-16', () => {
+    const wrapper = mountLimit('a\u{1F680}b')
+
+    expect(wrapper.find('.field-limit-count').text()).toBe('3/1023')
   })
 
-  it('mostra warning quando atinge 90% do limite', () => {
-    const text90Percent = 'a'.repeat(3685) // 90% de 4095
-    
-    const wrapper = mount(FieldLimit, {
-      props: {
-        modelValue: text90Percent,
-        limit: 4095
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="warning"]').exists()).toBe(true)
+  it('mostra warning a partir de 90% do limite', () => {
+    const nearThreshold = mountLimit('a'.repeat(921))
+    const beforeThreshold = mountLimit('a'.repeat(920))
+
+    expect(nearThreshold.find('.field-limit-warning').exists()).toBe(true)
+    expect(beforeThreshold.find('.field-limit-warning').exists()).toBe(false)
   })
 
-  it('mostra erro quando excede o limite', () => {
-    const textExceed = 'a'.repeat(4096) // excedendo o limite
-    
-    const wrapper = mount(FieldLimit, {
-      props: {
-        modelValue: textExceed,
-        limit: 4095
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="error"]').exists()).toBe(true)
+  it('mantém o warning no limite exato', () => {
+    const wrapper = mountLimit('a'.repeat(1023))
+
+    expect(wrapper.find('.field-limit-warning').exists()).toBe(true)
   })
 
-  it('atualiza ARIA quando o limite é atingido', () => {
-    const wrapper = mount(FieldLimit, {
-      props: {
-        modelValue: 'Texto de teste',
-        limit: 4095
-      }
-    })
-    
-    const element = wrapper.find('[data-testid="character-count"]')
-    expect(element.attributes('aria-valuenow')).toBe('14')
-    expect(element.attributes('aria-valuemax')).toBe('4095')
+  it('mostra erro calculado quando excede o limite', () => {
+    const wrapper = mountLimit('a'.repeat(1024))
+
+    expect(wrapper.find('.field-limit-error').text()).toContain('1023')
+    expect(wrapper.find('.field-limit-error').text()).toContain('1024')
+  })
+
+  it('exibe o erro vindo do prop mesmo abaixo do limite', () => {
+    const wrapper = mountLimit('ok', 1023, { error: 'Falha registrada pelo servidor' })
+
+    expect(wrapper.find('.field-limit-error').text()).toBe('Falha registrada pelo servidor')
+    expect(wrapper.find('.field-limit-warning').exists()).toBe(false)
+  })
+
+  it('expõe role="status" na mensagem de erro', () => {
+    const wrapper = mountLimit('a'.repeat(1024))
+
+    expect(wrapper.find('.field-limit-error').attributes('role')).toBe('status')
+  })
+
+  it('marca o contêiner com a classe over acima do limite', () => {
+    const wrapper = mountLimit('a'.repeat(1024))
+
+    expect(wrapper.find('.field-limit').classes()).toContain('over')
   })
 })

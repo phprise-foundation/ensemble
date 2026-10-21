@@ -1,149 +1,153 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import IssueLimits from '../src/components/IssueLimits.vue'
+import { nextTick } from 'vue'
 
-// Mockando a API
-vi.mock('../src/api/index.js', () => ({
-  api: {
-    // Mock para testes
+const { state, updateIssue, addComment, boardStore } = await vi.hoisted(async () => {
+  const { reactive, computed } = await import('vue')
+  const updateIssue = vi.fn().mockResolvedValue(null)
+  const addComment = vi.fn().mockResolvedValue(null)
+  const state = reactive({
+    issues: [],
+    selectedIssueId: null,
+    agents: [],
+    statuses: [],
+    boardId: null,
+  })
+  const boardStore = {
+    state,
+    selectedIssue: computed(
+      () => state.issues.find((issue) => issue.id === state.selectedIssueId) ?? null,
+    ),
+    status: () => ({ name: 'Coding', type: 'active' }),
+    agent: () => null,
+    role: () => null,
+    userTargets: () => [],
+    isOverdue: () => false,
+    simulated: () => false,
+    clearSelection: () => {
+      state.selectedIssueId = null
+    },
+    updateIssue,
+    addComment,
   }
-}))
+  return { state, updateIssue, addComment, boardStore }
+})
 
-// Mockando AppIcon
-vi.mock('../src/components/AppIcon.vue', () => ({
-  default: {
-    name: 'AppIcon',
-    template: '<span>Icon</span>'
-  }
-}))
+vi.mock('../src/store/board.js', () => ({ boardStore }))
+vi.mock('../src/api/index.js', () => ({ api: { updateIssue, addComment } }))
 
-describe('IssueLimits', () => {
-  beforeEach(() => {
-    // Resetando os mocks antes de cada teste
-    vi.clearAllMocks()
+import IssuePanel from '../src/components/IssuePanel.vue'
+
+const buildIssue = (overrides = {}) => ({
+  id: 'KAN-1',
+  summary: 'Issue limites',
+  statusId: 's1',
+  assigneeId: null,
+  description: 'Original description',
+  comments: [],
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  ...overrides,
+})
+
+const select = (issue) => {
+  state.issues = [issue]
+  state.selectedIssueId = issue.id
+}
+
+const mountPanel = () =>
+  mount(IssuePanel, {
+    global: { stubs: { AppIcon: true } },
   })
 
-  it('exibe contador de caracteres para descrição', () => {
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: 'Texto de teste',
-        limit: 4095,
-        type: 'description'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="description-counter"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('14/4095')
+const buttonByText = (wrapper, label) =>
+  wrapper.findAll('button').find((button) => button.text() === label)
+
+const editDescription = async (wrapper, value) => {
+  await buttonByText(wrapper, 'Edit').trigger('click')
+  await wrapper.find('textarea[aria-label="Description"]').setValue(value)
+}
+
+describe('IssuePanel limites', () => {
+  it('Edit abre com a descrição atual', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    await buttonByText(wrapper, 'Edit').trigger('click')
+
+    const textarea = wrapper.find('textarea[aria-label="Description"]')
+    expect(textarea.exists()).toBe(true)
+    expect(textarea.element.value).toBe('Original description')
+    expect(wrapper.find('#issue-description-limit .field-limit-count').text()).toBe('20/4095')
   })
 
-  it('exibe contador de caracteres para comentário', () => {
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: 'Texto de teste',
-        limit: 1023,
-        type: 'comment'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="comment-counter"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('14/1023')
+  it('acima do limite mostra erro e desabilita Save', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    await editDescription(wrapper, 'a'.repeat(4096))
+
+    expect(wrapper.find('#issue-description-limit .field-limit-error').text()).toContain('4095')
+    expect(buttonByText(wrapper, 'Save').attributes('disabled')).toBeDefined()
   })
 
-  it('mostra warning ao atingir 90% do limite para descrição', () => {
-    const text90Percent = 'a'.repeat(3685) // 90% de 4095
-    
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: text90Percent,
-        limit: 4095,
-        type: 'description'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="description-warning"]').exists()).toBe(true)
+  it('Cancel descarta o rascunho', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    await editDescription(wrapper, 'a'.repeat(4096))
+    await buttonByText(wrapper, 'Cancel').trigger('click')
+
+    expect(wrapper.find('textarea[aria-label="Description"]').exists()).toBe(false)
+    expect(wrapper.find('.body').text()).toBe('Original description')
   })
 
-  it('mostra warning ao atingir 90% do limite para comentário', () => {
-    const text90Percent = 'a'.repeat(920) // 90% de 1023
-    
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: text90Percent,
-        limit: 1023,
-        type: 'comment'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="comment-warning"]').exists()).toBe(true)
+  it('salvar abaixo do limite chama updateIssue com o texto novo', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    await editDescription(wrapper, 'New text')
+    await buttonByText(wrapper, 'Save').trigger('click')
+
+    expect(updateIssue).toHaveBeenCalledWith('KAN-1', { description: 'New text' })
+    expect(wrapper.find('textarea[aria-label="Description"]').exists()).toBe(false)
   })
 
-  it('mostra erro ao exceder o limite para descrição', () => {
-    const textExceed = 'a'.repeat(4096) // excedendo o limite
-    
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: textExceed,
-        limit: 4095,
-        type: 'description'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="description-error"]').exists()).toBe(true)
+  it('comentário acima do limite não chama addComment', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    const textarea = wrapper.find('textarea[aria-label="Comment"]')
+    expect(wrapper.find('#issue-comment-limit .field-limit-error').text()).toBe('')
+    await textarea.setValue('a'.repeat(1024))
+    await buttonByText(wrapper, 'Comment').trigger('click')
+
+    expect(buttonByText(wrapper, 'Comment').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('#issue-comment-limit .field-limit-error').text()).toContain('1023')
+    expect(addComment).not.toHaveBeenCalled()
   })
 
-  it('mostra erro ao exceder o limite para comentário', () => {
-    const textExceed = 'a'.repeat(1024) // excedendo o limite
-    
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: textExceed,
-        limit: 1023,
-        type: 'comment'
-      }
-    })
-    
-    expect(wrapper.find('[data-testid="comment-error"]').exists()).toBe(true)
+  it('comentário válido é enviado com trim()', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+
+    await wrapper.find('textarea[aria-label="Comment"]').setValue('  Valid text  ')
+    await buttonByText(wrapper, 'Comment').trigger('click')
+
+    expect(addComment).toHaveBeenCalledWith('KAN-1', 'Valid text')
   })
 
-  it('bloqueia comentário ao exceder limite', () => {
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: 'a'.repeat(1024), // excedendo o limite
-        limit: 1023,
-        type: 'comment'
-      }
-    })
-    
-    const button = wrapper.find('[data-testid="comment-submit"]')
-    expect(button.attributes('disabled')).toBe('')
-  })
+  it('trocar de issue sai do modo de edição', async () => {
+    select(buildIssue())
+    const wrapper = mountPanel()
+    await buttonByText(wrapper, 'Edit').trigger('click')
+    expect(wrapper.find('textarea[aria-label="Description"]').exists()).toBe(true)
 
-  it('permite edição e salvar/cancelar', () => {
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: 'Texto inicial',
-        limit: 4095,
-        type: 'description'
-      }
-    })
-    
-    // Testando interação de edição
-    expect(wrapper.find('[data-testid="edit-button"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="save-button"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="cancel-button"]').exists()).toBe(true)
-  })
+    const other = buildIssue({ id: 'KAN-2', summary: 'Issue Doutro', description: 'Another issue' })
+    state.issues = [buildIssue(), other]
+    state.selectedIssueId = other.id
+    await nextTick()
 
-  it('atualiza ARIA quando o limite é atingido', () => {
-    const wrapper = mount(IssueLimits, {
-      props: {
-        value: 'Texto de teste',
-        limit: 4095,
-        type: 'description'
-      }
-    })
-    
-    const counter = wrapper.find('[data-testid="description-counter"]')
-    expect(counter.attributes('aria-valuenow')).toBe('14')
-    expect(counter.attributes('aria-valuemax')).toBe('4095')
+    expect(wrapper.find('textarea[aria-label="Description"]').exists()).toBe(false)
+    expect(wrapper.find('.body').text()).toBe('Another issue')
   })
 })
