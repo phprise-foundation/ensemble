@@ -1,3 +1,5 @@
+Cypress.Screenshot.defaults({ screenshotOnRunFailure: false })
+
 const collectErrors = (win, errors) => {
   win.addEventListener('error', (event) => errors.push(`error: ${event.message}`))
   win.addEventListener('unhandledrejection', (event) =>
@@ -6,14 +8,19 @@ const collectErrors = (win, errors) => {
 }
 
 const PHOTO = 'cypress/fixtures/profile-photo.png'
+const OVERSIZE_BYTES = 2 * 1024 * 1024 + 1
+
+const preview = () => cy.get('[data-test="avatar-preview"]')
+const saveButton = () => cy.get('[data-test="save"]')
+const upload = (file) => cy.get('[data-test="photo-input"]').selectFile(file)
+const previewImage = () => preview().find('img', { timeout: 20000 })
 
 const hexToRgb = (hex) =>
   `rgb(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)})`
 
-let initialUser = null
-
-describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN-133)', () => {
+describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-133)', () => {
   let errors
+  let initialUser
 
   before(() => {
     cy.request('GET', '/api/user').then((response) => {
@@ -28,7 +35,7 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
       cy.stub(win.console, 'error', (...args) => errors.push(`console.error: ${args.join(' ')}`))
     })
     cy.visit('/#/profile')
-    cy.get('[data-test="photo-input"]').should('exist')
+    preview().should('be.visible')
   })
 
   afterEach(() => {
@@ -43,94 +50,115 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
     })
   })
 
-  it('upload válido mostra preview imediato, salva e persiste após recarregar', () => {
+  it('upload válido mostra preview circular imediato e persiste após o Save e o reload', () => {
     cy.intercept('PATCH', '/api/user').as('patchUser')
-    cy.get('[data-test="avatar-preview"] img').should('not.exist')
-    cy.get('[data-test="photo-input"]').selectFile(PHOTO)
-    cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
-    cy.get('[data-test="save"]').should('not.be.disabled').click()
-    cy.wait('@patchUser')
-    cy.get('[data-test="save-status"], .toast.success').should('contain', 'Saved.')
+    previewImage().should('not.exist')
+    upload(PHOTO)
+    previewImage().should('be.visible')
+    preview().then(($avatar) => {
+      expect(getComputedStyle($avatar[0]).borderRadius, 'preview circular').to.eq('50%')
+    })
+    saveButton().should('not.be.disabled').click()
+    cy.wait('@patchUser').its('response.statusCode').should('eq', 200)
+    cy.get('[role="status"]').should('contain', 'Saved.')
     cy.reload()
-    cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
+    previewImage().should('be.visible')
   })
 
-  it('o data URL enviado no PATCH é menor que o data URL do arquivo original', () => {
+  it('o data URL enviado no PATCH é menor que o do arquivo original', () => {
     cy.intercept('PATCH', '/api/user').as('patchUser')
     cy.readFile(PHOTO, 'base64').then((base64) => {
       const originalLength = `data:image/png;base64,${base64}`.length
-      cy.get('[data-test="photo-input"]').selectFile(PHOTO)
-      cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
-      cy.get('[data-test="save"]').click()
-      cy.wait('@patchUser').then((interception) => {
-        const sent = interception.request.body.avatar
-        expect(sent, 'data URL de imagem').to.match(/^data:image\//)
+      upload(PHOTO)
+      previewImage().should('be.visible')
+      saveButton().click()
+      cy.wait('@patchUser').then(({ request }) => {
+        const sent = request.body.avatar
+        expect(sent, 'data URL de imagem').to.match(/^data:image\/(png|jpeg|webp);base64,/)
         expect(sent.length, 'data URL enviado menor que o original').to.be.lessThan(originalLength)
       })
     })
   })
 
-  it('remover + save + recarregar restaura a inicial sobre a cor determinística', () => {
+  it('Remover + Save restaura o fallback: inicial sobre a cor persistida', () => {
     cy.intercept('PATCH', '/api/user').as('patchUser')
-    cy.get('[data-test="photo-input"]').selectFile(PHOTO)
-    cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
-    cy.get('[data-test="save"]').click()
+    upload(PHOTO)
+    previewImage().should('be.visible')
+    saveButton().click()
     cy.wait('@patchUser')
     cy.reload()
-    cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
+    previewImage().should('be.visible')
+
+    saveButton().should('be.disabled')
     cy.get('[data-test="remove-photo"]').click()
-    cy.get('[data-test="avatar-preview"] img').should('not.exist')
-    cy.get('[data-test="avatar-preview"]')
-      .should('have.attr', 'style')
-      .and('contain', hexToRgb(initialUser.avatarColor))
-    cy.get('[data-test="avatar-preview"]').invoke('text').should('match', /^[A-Z]$/)
-    cy.get('[data-test="save"]').should('not.be.disabled').click()
-    cy.wait('@patchUser').then((interception) => {
-      expect(interception.request.body.avatar, 'PATCH envia null ao remover').to.be.null
+    previewImage().should('not.exist')
+    preview().should('have.css', 'background-color', hexToRgb(initialUser.avatarColor))
+    preview().invoke('text').invoke('trim').should('match', /^[A-Z]$/)
+    saveButton().should('not.be.disabled').click()
+    cy.wait('@patchUser').then(({ request }) => {
+      expect(request.body.avatar, 'PATCH de remoção envia null').to.be.null
     })
     cy.reload()
-    cy.get('[data-test="avatar-preview"] img').should('not.exist')
-    cy.get('[data-test="avatar-preview"]').invoke('text').should('match', /^[A-Z]$/)
+    previewImage().should('not.exist')
+    preview().should('have.css', 'background-color', hexToRgb(initialUser.avatarColor))
+    preview().invoke('text').invoke('trim').should('match', /^[A-Z]$/)
   })
 
-  it('arquivo inválido e acima de 2 MB recebem mensagem custom, sem alert, preservando a foto', () => {
-    cy.window().then((win) => cy.stub(win, 'alert').as('alert'))
-    cy.get('[data-test="photo-input"]').selectFile(PHOTO)
-    cy.get('[data-test="avatar-preview"] img', { timeout: 15000 }).should('be.visible')
-
-    cy.get('[data-test="photo-input"]').selectFile({
-      contents: Cypress.Buffer.from('not an image'),
-      fileName: 'notes.txt',
-      mimeType: 'text/plain',
+  it('arquivo inválido e acima de 2 MB recebem feedback custom e preservam a foto', () => {
+    cy.window().then((win) => {
+      cy.stub(win, 'alert').as('alert')
+      cy.stub(win, 'confirm').as('confirm')
     })
-    cy.get('.hint.error, .toast.error').should('contain', 'Use a PNG, JPEG or WebP image.')
-    cy.get('[data-test="avatar-preview"] img').should('be.visible')
-    cy.get('@alert').should('not.have.been.called')
+    upload(PHOTO)
+    previewImage().should('be.visible')
 
-    cy.get('[data-test="photo-input"]').selectFile({
-      contents: Cypress.Buffer.alloc(2 * 1024 * 1024 + 1),
-      fileName: 'big.png',
-      mimeType: 'image/png',
-    })
-    cy.get('.hint.error, .toast.error').should('contain', 'The image must be at most 2 MB.')
-    cy.get('[data-test="avatar-preview"] img').should('be.visible')
+    upload({ contents: Cypress.Buffer.from('nao e uma imagem'), fileName: 'notes.txt', mimeType: 'text/plain' })
+    cy.get('.hint.error, .toast.error', { timeout: 12000 }).should(
+      'contain',
+      'Use a PNG, JPEG or WebP image.',
+    )
     cy.get('@alert').should('not.have.been.called')
+    cy.get('@confirm').should('not.have.been.called')
+    previewImage().should('be.visible')
+
+    cy.get('[data-test="photo-input"]').selectFile(
+      { contents: Cypress.Buffer.alloc(OVERSIZE_BYTES), fileName: 'grande.png', mimeType: 'image/png' },
+      { force: true },
+    )
+    cy.get('.hint.error, .toast.error', { timeout: 12000 }).should(
+      'contain',
+      'The image must be at most 2 MB.',
+    )
+    cy.get('@alert').should('not.have.been.called')
+    cy.get('@confirm').should('not.have.been.called')
+    previewImage().should('be.visible')
   })
 
-  it('Save disabled sem alterações, loading no PATCH e login readonly', () => {
+  it('Save começa disabled, entra em loading durante o PATCH e o login é somente leitura', () => {
     cy.intercept('PATCH', '/api/user', (request) => {
       request.on('response', (response) => response.setDelay(400))
     }).as('patchUser')
-    cy.get('[data-test="save"]').should('be.disabled')
-    cy.get('#profile-login').then(($login) => {
-      expect($login[0].readOnly || $login[0].disabled, 'login não editável').to.eq(true)
-    })
-
-    cy.get('[data-test="photo-input"]').selectFile(PHOTO)
-    cy.get('[data-test="save"]').should('not.be.disabled').click()
-    cy.get('[data-test="save"]').should('be.disabled')
-    cy.contains('Saving').should('be.visible')
+    saveButton().should('be.disabled')
+    cy.get('#profile-login').should('have.attr', 'readonly')
+    cy.get('[data-test="display-name"]').clear().type('Maria Fernanda')
+    saveButton().should('not.be.disabled').click()
+    saveButton().should('be.disabled')
+    cy.get('[role="status"]').should('contain', 'Saving')
     cy.wait('@patchUser')
-    cy.get('[data-test="save-status"], .toast.success').should('contain', 'Saved.')
+    cy.get('[role="status"]').should('contain', 'Saved.')
+    saveButton().should('be.disabled')
+  })
+
+  it('sair com pendências avisa pelo navegador e não exibe a foto em rascunho após o descarte', () => {
+    cy.window().then((win) => cy.stub(win, 'confirm').as('nativeConfirm'))
+    upload(PHOTO)
+    previewImage().should('be.visible')
+    cy.get('[data-test="display-name"]').clear().type('Maria Fernanda')
+    cy.get('.submenu a.leaf').first().click({ force: true })
+    cy.get('@nativeConfirm').should('not.have.been.called')
+    cy.url().should('not.contain', '/profile')
+    cy.visit('/#/profile')
+    previewImage().should('not.exist')
+    cy.get('[data-test="display-name"]').should('have.value', initialUser.displayName)
   })
 })

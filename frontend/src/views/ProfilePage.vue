@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useAttrs, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../store/session.js'
 import { toast } from '../store/toast.js'
@@ -9,6 +9,7 @@ import AppIcon from '../components/AppIcon.vue'
 import Avatar from '../components/Avatar.vue'
 import { useDirtyGuard } from '../composables/useDirtyGuard.js'
 
+const attributes = useAttrs()
 const router = useRouter()
 const displayName = ref(session.displayName)
 const draftAvatar = ref(session.avatar)
@@ -78,6 +79,7 @@ async function save() {
       <div class="field-row">
         <p class="profile-preview" aria-live="polite">
           <Avatar
+            v-bind="attributes"
             :name="session.label"
             :image="preview"
             :color="session.avatarColor"
