@@ -11,6 +11,7 @@ export const FEATURES = [
   { key: 'roles', label: 'Roles' },
   { key: 'profiles', label: 'Profiles' },
   { key: 'experiences', label: 'Experiences' },
+  { key: 'history', label: 'History' },
 ]
 
 function persisted(key, fallback) {

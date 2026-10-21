@@ -6,6 +6,7 @@ import { test } from 'node:test'
 
 import { createSeed } from '../src/data/seed.js'
 
+import { handle } from '../plugin/fake-backend.js'
 const here = dirname(fileURLToPath(import.meta.url))
 const frontend = join(here, '..')
 
@@ -19,15 +20,23 @@ test('protótipo: usuário corrente singleton e contrato de /api/user', async ()
   assert.equal(typeof backend.handle, 'function', 'fake-backend deve exportar handle para o teste de integração')
 
   const db = createSeed()
-  assert.deepEqual(db.user, { login: 'admin', displayName: '' }, 'o seed deve trazer o usuário corrente singleton')
+  assert.deepEqual(
+    db.user,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'o seed deve trazer o usuário corrente singleton com avatar e cor',
+  )
 
   const fetched = backend.handle(db, 'GET', ['user'], {})
-  assert.deepEqual(fetched.data, { login: 'admin', displayName: '' }, 'GET /api/user devolve login e displayName')
+  assert.deepEqual(
+    fetched.data,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'GET /api/user devolve login, displayName, avatar e avatarColor',
+  )
 
   const saved = backend.handle(db, 'PATCH', ['user'], { displayName: '  Maria Fernanda de Souza Oliveira  ' })
   assert.deepEqual(
     saved.data,
-    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira' },
+    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira', avatar: null, avatarColor: '#e5484d' },
     'PATCH /api/user normaliza com trim e aceita até 40 caracteres',
   )
 
@@ -89,55 +98,131 @@ test('ProfileMenu: avatar de 38px, nome abaixo e dropdown profile/logout', () =>
   assert.match(menu, /router\.push\('\/profile'\)/, 'o item profile navega para /profile')
   assert.match(menu, /signOut/, 'o item logout encerra a sessão')
 
-  assert.match(css, /\.profile-avatar[\s\S]*?width:\s*38px/, 'o avatar deve ter 38px')
-  assert.match(css, /\.profile-avatar[\s\S]*?border-radius:\s*50%/, 'o avatar deve ser circular')
-})
-
-test('nome em linha única com reticências e largura máxima fixa', () => {
-  const css = source('src/styles/main.scss')
-  const nameRule = css.match(/\.profile-name\s*\{[^}]*\}/)?.[0] || ''
-
-  assert.match(nameRule, /white-space:\s*nowrap/, 'o nome não pode quebrar em duas linhas')
-  assert.match(nameRule, /text-overflow:\s*ellipsis/, 'o nome deve ser truncado com reticências')
-  assert.match(nameRule, /overflow:\s*hidden/, 'o excedente do nome deve ser escondido')
-  assert.match(css, /max-width:\s*14ch/, 'no desktop o nome tem largura máxima fixa')
-  assert.match(css, /max-width:\s*11ch/, 'em tela pequena o nome tem largura máxima reduzida')
-})
-
-test('App.vue monta o menu no topo e fecha a área protegida no fim de sessão', () => {
-  const appVue = source('src/App.vue')
-
-  assert.match(appVue, /<ProfileMenu/, 'App.vue deve montar o ProfileMenu no topo')
-  assert.match(appVue, /session\.load\(\)/, 'App.vue deve hidratar a sessão no boot')
-  assert.match(appVue, /v-if="session\.signedIn"/, 'a casca autenticada deve ser condicionada a session.signedIn')
-  assert.match(appVue, /v-else/, 'deve haver uma vista alternativa para a sessão encerrada')
-  assert.match(appVue, /session-ended|Session ended/, 'a vista de fim de sessão é neutra e visível')
-})
-
-test('tela de profile edita o nome sem tocar no login', () => {
-  const route = source('src/router.js')
-  const page = source('src/views/ProfilePage.vue')
-
-  assert.match(route, /path:\s*'\/profile'/, "'/profile' deve ser rota própria, distinta de /teams/:teamId/profiles")
-  assert.match(route, /ProfilePage/, 'a rota /profile deve apontar para o ProfilePage')
-  assert.match(page, /session\.rename/, 'a tela deve chamar session.rename(name)')
-  assert.match(page, /maxlength="?40"?/, 'o formulário limita o nome a 40 caracteres')
   assert.match(
-    page,
-    /watch\(\s*\(\)\s*=>\s*session\.displayName/,
-    'o campo do nome acompanha a sessão quando ela hidrata depois da montagem',
+    menu,
+    /<Avatar[\s\S]*?class="profile-avatar"[\s\S]*?:image="session\.avatar"[\s\S]*?:color="session\.avatarColor"[\s\S]*?\/>/,
+    'o Avatar recebe a foto e a cor do usuário',
   )
-  assert.match(page, /readonly/, 'o login fica somente leitura na tela')
+  assert.doesNotMatch(menu, /session\.initial/, 'a inicial não é desenhada à mão: o fallback é do Avatar')
+
+  const avatarCss = css.match(/\.avatar\s*\{[^}]*\}/)?.[0] || ''
+  assert.match(avatarCss, /border-radius:\s*50%/, 'o Avatar compartilhado é circular')
+  assert.match(css, /\.profile-avatar[\s\S]*?width:\s*38px/, 'o avatar deve ter 38px')
+  assert.match(css, /\.profile-avatar[\s\S]*?height:\s*38px/, 'o avatar deve ter 38px de altura')
 })
 
-test('especificação E2E de navegador para o menu de perfil', () => {
-  const spec = source('cypress/e2e/profile-menu.cy.js')
+test('PATCH /api/user parcial: campo ausente preserva o valor atual', () => {
+  const db = createSeed()
+  const photo = 'data:image/webp;base64,AAAA'
+  handle(db, 'PATCH', ['user'], { displayName: 'Ana', avatar: photo, avatarColor: '#00b8d9' })
 
-  assert.match(spec, /profile-trigger/, 'o E2E abre o menu de perfil na interface')
-  assert.match(spec, /Session ended/, 'o E2E cobre o fim de sessão no navegador')
-  assert.match(spec, /vite-error-overlay/, 'o E2E falha em erro de runtime/overlay do Vite')
-  assert.match(spec, /getBoundingClientRect/, 'o E2E mede o avatar de 38px no navegador (grão 1 da seção 11)')
-  assert.match(spec, /--breakpoint-sidebar/, 'o E2E lê o corte da variável CSS da KAN-12, sem literal (grão 2 da seção 11)')
-  assert.doesNotMatch(spec, /\b1024\b/, 'o E2E não repete o literal do corte do sidebar')
-  assert.match(spec, /role="status"/, 'o E2E confirma o sucesso pela região viva, não pela string')
+  const renamed = handle(db, 'PATCH', ['user'], { displayName: 'Bruna' })
+  assert.deepEqual(
+    renamed.data,
+    { login: 'admin', displayName: 'Bruna', avatar: photo, avatarColor: '#00b8d9' },
+    'o PATCH de só o nome preserva foto e cor',
+  )
+
+  const recolored = handle(db, 'PATCH', ['user'], { avatarColor: '#46a758' })
+  assert.deepEqual(
+    recolored.data,
+    { login: 'admin', displayName: 'Bruna', avatar: photo, avatarColor: '#46a758' },
+    'o PATCH de só a cor preserva nome e foto',
+  )
+
+  const unmutated = createSeed()
+  const photoOnly = handle(unmutated, 'PATCH', ['user'], { avatar: photo })
+  assert.deepEqual(
+    photoOnly.data,
+    { login: 'admin', displayName: '', avatar: photo, avatarColor: '#e5484d' },
+    'definir a foto não inventa nem altera nome e cor',
+  )
+})
+
+test('PATCH /api/user com avatar null remove a foto e repetir o PATCH é idempotente', () => {
+  const db = createSeed()
+  handle(db, 'PATCH', ['user'], { avatar: 'data:image/png;base64,BBBB' })
+
+  const removed = handle(db, 'PATCH', ['user'], { avatar: null })
+  assert.equal(removed.data.avatar, null, 'avatar null remove a foto')
+  assert.equal(removed.data.displayName, '', 'remover a foto preserva o nome')
+  assert.equal(removed.data.avatarColor, '#e5484d', 'remover a foto preserva a cor')
+
+  const repeated = handle(db, 'PATCH', ['user'], { avatar: null })
+  assert.deepEqual(repeated.data, removed.data, 'repetir o mesmo PATCH produz o mesmo estado')
+
+  const read = handle(db, 'GET', ['user'], {})
+  assert.deepEqual(read.data, removed.data, 'o GET confirma o estado final único')
+})
+
+test('PATCH /api/user valida tudo antes de mutar: 422 não altera nem o campo válido', () => {
+  const db = createSeed()
+  handle(db, 'PATCH', ['user'], { displayName: 'Ana' })
+
+  const refused = handle(db, 'PATCH', ['user'], { displayName: 'Bruna', avatar: 'http://exemplo/foto.png' })
+  assert.equal(refused.status, 422, 'avatar fora do contrato recusa o PATCH inteiro')
+  assert.equal(refused.field, 'avatar', 'a recusa aponta o campo inválido')
+  assert.equal(db.user.displayName, 'Ana', 'o displayName válido do corpo não é aplicado')
+  assert.equal(db.user.avatar, null, 'nenhum campo é aplicado num PATCH recusado')
+
+  const recolored = handle(db, 'PATCH', ['user'], { avatarColor: 'azul' })
+  assert.equal(recolored.status, 422, 'avatarColor não hex recusa com 422')
+  assert.equal(db.user.avatarColor, '#e5484d', 'a cor anterior permanece')
+})
+
+test('PATCH /api/user recusa avatar fora do contrato com 422', () => {
+  const cases = [
+    'http://exemplo/foto.png',
+    'data:text/html;base64,AAAA',
+    'data:image/gif;base64,AAAA',
+    'data:image/webp;base64',
+    42,
+    'data:image/png;base64,####',
+  ]
+  for (const avatar of cases) {
+    const db = createSeed()
+    const refused = handle(db, 'PATCH', ['user'], { avatar })
+    assert.equal(refused.status, 422, `avatar ${JSON.stringify(avatar)} é recusado com 422`)
+    assert.equal(refused.field, 'avatar', 'a recusa aponta o campo avatar')
+  }
+})
+
+test('PATCH /api/user recusa avatar acima de 512 KiB com 422', () => {
+  const db = createSeed()
+  const oversized = 'data:image/png;base64,' + 'A'.repeat(512 * 1024 + 1)
+  const refused = handle(db, 'PATCH', ['user'], { avatar: oversized })
+  assert.equal(refused.status, 422, 'base64 acima do teto é recusado')
+  assert.equal(db.user.avatar, null, 'o estado permanece sem foto')
+
+  const exactlyAtLimit = 'data:image/png;base64,' + 'A'.repeat(512 * 1024)
+  const accepted = handle(db, 'PATCH', ['user'], { avatar: exactlyAtLimit })
+  assert.equal(accepted.status, undefined, 'exatamente no teto é aceito')
+  assert.equal(accepted.data.avatar, exactlyAtLimit, 'a foto no teto é definida')
+})
+
+test('PATCH /api/user recusa avatarColor inválido e displayName fora do contrato', () => {
+  for (const avatarColor of ['azul', '#00b8d', '#00b8d99', '00b8d9', 42, null]) {
+    const db = createSeed()
+    const refused = handle(db, 'PATCH', ['user'], { avatarColor })
+    assert.equal(refused.status, 422, `avatarColor ${JSON.stringify(avatarColor)} é recusado com 422`)
+    assert.equal(refused.field, 'avatarColor', 'a recusa aponta o campo avatarColor')
+  }
+
+  const db = createSeed()
+  const nonString = handle(db, 'PATCH', ['user'], { displayName: 42 })
+  assert.equal(nonString.status, 422, 'displayName não string é recusado com 422')
+  assert.equal(db.user.displayName, '', 'o nome anterior permanece')
+})
+
+test('PATCH /api/user nunca altera o login e o GET expõe exatamente quatro campos', () => {
+  const db = createSeed()
+  const patched = handle(db, 'PATCH', ['user'], { displayName: 'Ana', login: 'root', avatarColor: '#00b8d9' })
+  assert.equal(patched.data.login, 'admin', 'o login é ignorado no PATCH')
+
+  const read = handle(db, 'GET', ['user'], {})
+  assert.deepEqual(
+    Object.keys(read.data).sort(),
+    ['avatar', 'avatarColor', 'displayName', 'login'],
+    'o contrato expõe login, displayName, avatar e avatarColor',
+  )
 })

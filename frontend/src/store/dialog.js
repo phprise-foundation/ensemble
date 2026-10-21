@@ -7,49 +7,73 @@ const state = reactive({
   confirmLabel: 'Confirm',
   cancelLabel: 'Cancel',
   variant: 'info',
-  danger: false,
-  hasCancel: false,
   scrimCloses: false,
   resolve: null,
 })
 
-function close(result) {
-  const resolve = state.resolve
-  state.open = false
-  state.resolve = null
-  if (resolve) resolve(result)
-}
-
-function openBox(options, defaults) {
-  if (state.open) return Promise.resolve(defaults.refusal)
-  return new Promise((resolve) => {
-    state.title = options.title ?? ''
-    state.message = options.message ?? ''
-    state.confirmLabel = options.confirmLabel ?? 'Confirm'
-    state.cancelLabel = options.cancelLabel ?? 'Cancel'
-    state.danger = options.danger === true
-    state.variant = state.danger ? 'danger' : (options.variant ?? defaults.variant)
-    state.hasCancel = defaults.hasCancel
-    state.scrimCloses = options.scrimCloses ?? defaults.scrimCloses
-    state.resolve = resolve
-    state.open = true
-  })
-}
-
 export const dialog = {
-  get state() {
-    return state
+  get open() {
+    return state.open
   },
+  get title() {
+    return state.title
+  },
+  get message() {
+    return state.message
+  },
+  get confirmLabel() {
+    return state.confirmLabel
+  },
+  get cancelLabel() {
+    return state.cancelLabel
+  },
+  get variant() {
+    return state.variant
+  },
+  get scrimCloses() {
+    return state.scrimCloses
+  },
+
   confirm(options = {}) {
-    return openBox(options, { variant: 'info', hasCancel: true, scrimCloses: false, refusal: false })
+    if (state.open) {
+      return Promise.resolve(false)
+    }
+
+    return new Promise((resolve) => {
+      state.title = options.title
+      state.message = options.message || ''
+      state.confirmLabel = options.confirmLabel || 'Confirm'
+      state.cancelLabel = options.cancelLabel || 'Cancel'
+      state.variant = options.danger ? 'danger' : 'info'
+      state.scrimCloses = options.scrimCloses !== undefined ? options.scrimCloses : false
+      state.resolve = resolve
+      state.open = true
+    })
   },
+
   alert(options = {}) {
-    return openBox(options, { variant: 'info', hasCancel: false, scrimCloses: true, refusal: undefined })
+    if (state.open) {
+      return Promise.resolve(undefined)
+    }
+
+    return new Promise((resolve) => {
+      state.title = options.title
+      state.message = options.message || ''
+      state.confirmLabel = options.confirmLabel || 'OK'
+      state.cancelLabel = ''
+      state.variant = (options && options.variant) || 'info'
+      state.scrimCloses = true
+      state.resolve = resolve
+      state.open = true
+    })
   },
-  accept() {
-    close(true)
-  },
-  cancel() {
-    close(state.hasCancel ? false : undefined)
+
+  finish(value) {
+    if (state.resolve) {
+      const settle = state.resolve
+      state.resolve = null
+      state.open = false
+      settle(value)
+    }
   },
 }

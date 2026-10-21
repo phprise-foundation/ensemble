@@ -60,7 +60,11 @@ async function save() {
     const label = draft.value.name ?? draft.value.id ?? props.schema.singular
     toast.success(`${label} saved.`)
   } catch (problem) {
-    error.value = problem.message
+    if (problem.field) {
+      error.value = problem.message
+      return
+    }
+    toast.error(problem.message)
   }
 }
 

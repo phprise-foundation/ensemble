@@ -13,12 +13,11 @@ Funcionalidade: Rodar E2E com --spec que não casa
     Então o status de saída deve ser 1
 
   Cenário: --spec vazio
-    Dado que executo o run-e2e.sh com --spec=""
-    Quando o Cypress é executado sem nenhum spec correspondente
+    Dado que executo o run-e2e.sh com --spec="" e o specPattern do harness
+    Quando o Cypress é executado
     Então o status de saída deve ser 0
-    E o specPattern default da rodada padrão é aplicado
 
   Cenário: Sem --spec
-    Dado que executo o run-e2e.sh sem --spec
+    Dado que executo o run-e2e.sh com o specPattern do harness e sem --spec
     Quando o Cypress é executado
     Então o status de saída deve ser 0

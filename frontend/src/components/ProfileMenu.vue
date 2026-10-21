@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../store/session.js'
+import Avatar from './Avatar.vue'
 
 const router = useRouter()
 const open = ref(false)
@@ -57,7 +58,14 @@ onUnmounted(() => {
       :title="`${session.label} (${session.login})`"
       @click="toggle"
     >
-      <span class="profile-avatar">{{ session.initial }}</span>
+      <Avatar
+        class="profile-avatar"
+        :name="session.label"
+        :image="session.avatar"
+        :color="session.avatarColor"
+        size="sm"
+        decorative
+      />
       <span class="profile-name" :title="session.label">{{ session.label }}</span>
     </button>
     <div v-if="open" class="profile-dropdown" role="menu">

@@ -6,5 +6,8 @@ export default defineConfig({
     supportFile: 'cypress/support/e2e.js',
     video: false,
     screenshotOnRunFailure: false,
+    expose: {
+      visualAudit: process.env.E2E_VISUAL_AUDIT || '0',
+    },
   },
 })

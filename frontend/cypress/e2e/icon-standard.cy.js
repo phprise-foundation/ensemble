@@ -1,5 +1,29 @@
 Cypress.Screenshot.defaults({ screenshotOnRunFailure: false })
 
+const TETO_CAPTURA_MS = 20000
+let capturaEmAndamento = null
+let capturasQuebradas = false
+
+const capture = (name) => {
+  if (Cypress.expose('visualAudit') !== '1') return
+  if (capturasQuebradas) {
+    throw new Error(
+      `capturas indisponíveis nesta rodada (primeira falha: "${capturaEmAndamento}")`,
+    )
+  }
+  capturaEmAndamento = name
+  cy.screenshot(name, { timeout: TETO_CAPTURA_MS })
+}
+
+Cypress.on('fail', (erro) => {
+  if (String(erro).includes('cy.screenshot()')) {
+    capturasQuebradas = true
+    throw new Error(
+      `cy.screenshot da captura "${capturaEmAndamento}" estourou o teto de ${TETO_CAPTURA_MS}ms`,
+    )
+  }
+})
+
 const collectErrors = (win, errors) => {
   win.addEventListener('error', (event) => errors.push(`error: ${event.message}`))
   win.addEventListener('unhandledrejection', (event) =>
@@ -87,7 +111,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
   })
 
   it('topbar: ícones do menu, console e copilot com tamanho, traço e nome acessível', () => {
-    cy.screenshot('topbar-padrao')
+    capture('topbar-padrao')
     cy.get('.topbar .icon-btn').then(($botoes) => {
       expect($botoes.length, 'botões de ícone no topo').to.be.greaterThan(0)
       $botoes.each((index, botao) => {
@@ -128,7 +152,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
     cy.get('.sidebar .lucide-chevron-right').first().then(($chevron) => {
       expect($chevron[0].getAttribute('width')).to.eq('14')
     })
-    cy.screenshot('sidebar-padrao')
+    capture('sidebar-padrao')
   })
 
   it('CRUD de agents: editar é lápis, excluir é lixeira e os glifos são distintos', () => {
@@ -152,7 +176,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
         )
       })
     })
-    cy.screenshot('crud-agents-lista')
+    capture('crud-agents-lista')
     cy.get('[aria-label="Edit"]').first().click()
     cy.get('svg.lucide-x').then(($fechar) => {
       classeLucide($fechar, GLIFOS.close)
@@ -169,7 +193,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
         )
       })
     })
-    cy.screenshot('crud-agents-modal')
+    capture('crud-agents-modal')
   })
 
   it('CRUD de issue types: mesmo padrão de editar/excluir, remover e adicionar campo', () => {
@@ -177,12 +201,12 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
     cy.url().should('include', 'issue-types')
     cy.get('[aria-label="Edit"] svg').then(($lapis) => classeLucide($lapis, GLIFOS.edit))
     cy.get('[aria-label="Delete"] svg').then(($lixeira) => classeLucide($lixeira, GLIFOS.delete))
-    cy.screenshot('crud-issue-types-lista')
+    capture('crud-issue-types-lista')
     cy.get('[aria-label="Edit"]').first().click()
     cy.get('svg.lucide-x').closest('button').should('have.attr', 'aria-label', 'Close')
     cy.get('[aria-label="Remove"] svg').then(($remover) => classeLucide($remover, GLIFOS.delete))
     cy.get('button:contains("Add field") svg').then(($plus) => classeLucide($plus, GLIFOS.plus))
-    cy.screenshot('crud-issue-types-modal')
+    capture('crud-issue-types-modal')
   })
 
   it('board e painel do issue: plus do New task e fechar do painel', () => {
@@ -199,7 +223,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
       expect($fechar.closest('button').attr('aria-label')).to.eq('Close')
     })
     cy.get('.issue-panel .lucide').then(($svgs) => auditaIcones($svgs, 'painel do issue'))
-    cy.screenshot('painel-issue')
+    capture('painel-issue')
   })
 
   it('1024x800: sem layout quebrado no corte do sidebar', () => {
@@ -209,6 +233,6 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
     cy.document().then((doc) => {
       expect(doc.documentElement.scrollWidth, 'sem barra horizontal').to.be.lessThan(1100)
     })
-    cy.screenshot('corte-1024')
+    capture('corte-1024')
   })
 })

@@ -7,6 +7,151 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.33.0 — 2026-10-21
+
+### Added
+
+- **KAN-126 — perfil completo (foto do usuário, save com estados, remoção do
+  voltar).** A pilha pousou na ordem revisada: fundação de diálogos e toasts
+  (refundação da KAN-127, PR #145), Fase 2 — guarda de saída one-shot
+  (`useDirtyGuard`) com confirm custom `Discard changes?` focado no cancelar,
+  botão voltar removido e feedback do save e das fotos rejeitadas por toasts
+  (PR #152), Fase 3 — `ProfileMenu` do topbar via o `Avatar` compartilhado
+  (PR #153), testes de contrato/BDD/backfill (KAN-132, PR #144) e o E2E do
+  perfil com prova de payload (PR #159, alinhamento de contrato no PR #160).
+  Verificação da revisão na árvore integrada: build verde, vitest 210/210,
+  node:test 206/206, drawer-a11y 17/17, E2E 91/91.
+
+### Fixed
+
+- Deduplicado o `Info` do `AppIcon.vue` (import e mapa), que quebraria o build
+  na integração das duas fundações de diálogos (KAN-127/KAN-136).
+- O spec do perfil pousado asservia o contrato pré-Fase 2/3 (`[role="status"]`
+  persistente, avatar de 38px, confirm nativo); alinhado a toast/22px/confirm
+  custom no PR #160.
+
+## v0.32.1 — 2026-10-21
+
+### Fixed
+
+- **KAN-125** — corrida no harness de contratos E2E (`run-e2e.sh`) quebrava o
+  CI em qualquer PR: cada invocação do harness agora usa porta livre
+  (`E2E_PORT`) e arquivo de dados próprio (`E2E_DATA_FILE`, gravação/restauração
+  atômicas; o `.data/db.json` do desenvolvedor nunca é tocado e o arquivo
+  efêmero não é removido pelo cleanup — KAN-145), o fake-backend também respeita
+  `E2E_DATA_FILE` e só persiste em mutações, e sem `DISPLAY` o Cypress roda em
+  Xvfb próprio derivado da porta (sem disputa do `:99`). Esqueletos de aceite
+  em repositório (`run-e2e-parallel`/`isolation`/`data-file`/`fallback` e
+  `writes.cy.js`); `run-e2e-port` migrado para dados efêmeros (KAN-144). PR
+  #151, release `v0.32.1`.
+
+## v0.32.0 — 2026-10-21
+
+### Added
+
+- **KAN-131** — perfil, fase 1: foto como rascunho, `updateProfile` e Save com
+  estados no perfil (PR #146).
+
+## v0.31.0 — 2026-10-21
+
+### Added
+
+- **KAN-127** — diálogos acessíveis: serviço central promise-based
+  `store/dialog.js` (`confirm` → bool, `alert` → void, uma caixa por vez) com
+  `DialogHost.vue` global (`alertdialog` em danger, foco inicial no Cancelar,
+  Escape/Enter/Tab, `inert` no `#app` + scroll lock, retorno de foco ao
+  gatilho) e toasts não bloqueantes `store/toast.js` + `ToastHost.vue` (máx.
+  3, 4s/6s, `aria-live`, `role=alert` no erro). Os quatro `window.confirm`
+  nativos (CrudPage, AgentsPage, IssueTypesPage, AppSidebar) migraram para
+  `dialog.confirm` danger com toasts de sucesso/erro: erro com `field` segue
+  inline, erro sem campo (rede/422 genérico) vai para `toast.error`. Zero
+  diálogos nativos em `src/**`. PR #138, release `v0.31.0`.
+
+## v0.30.1 — 2026-10-21
+
+### Testing
+
+- **KAN-118** — limites de descrição e comentário: testes BDD, node:test e
+  vitest conforme o guia `docs/KAN-93-guide.md`. Cenários de 90% verificam o
+  aviso a partir de 3686/921 (não 3685/920); o contrato congelado de
+  `frontend/tests/description-comment-limits.feature` preservado intacto.
+  PR #147, release `v0.30.1`.
+
+## v0.29.2 — 2026-10-20
+
+### Testing
+
+- **KAN-114** — E2E e auditoria visual da aba `History`: novo spec
+  `frontend/cypress/e2e/issue-history.cy.js` cobrindo o guia
+  `docs/KAN-90-guide.md` §7.4–§7.5 (abas padrão e contador restrito a
+  Comments, cinco tipos de evento com ícone/autor/`<time datetime>`/resumo,
+  ordem cronológica inversa, empty state em KANB-6, reset ao trocar de issue,
+  navegação por teclado com wrap/Home/End e roving tabindex, selo
+  `?sim=1`/`?sim=0` via `collectErrors` e zero erros de `vite-error-overlay`).
+  Suíte E2E 52/53 com a única falha em `sidebar-rail` atribuída a defeito
+  pré-existente (KAN-91/PR #128); auditoria visual em 1280×800, 1024px, dark e
+  light com 12 screenshots registrados em
+  `var/kanban.local/artifacts/kan-114-auditoria-visual/`. PR #140, release
+  `v0.29.2`.
+
+## v0.30.0 — 2026-10-21
+
+### Added
+
+- **KAN-129** — perfil no fake backend: `PATCH /api/user` parcial e idempotente
+  (§3 do guia `docs/KAN-126-guide.md`). Merge por campo — ausente preserva,
+  `avatar: null` remove a foto, `displayName` mantém trim ≤ 40 com 422,
+  `avatarColor` exige hex `#[0-9a-fA-F]{6}` (422) e `avatar` aceita só `null`
+  ou data URL `data:image/(png|jpeg|webp);base64,` com base64 ≤ 512 KiB (422).
+  A validação (`userChanges`) acontece **antes** de qualquer mutação
+  (`applyUserChanges`); PATCH inválido loga no console do plugin. GET e PATCH
+  respondem `{ login, displayName, avatar, avatarColor }`; o boot completa
+  bancos legados com `avatar ??= null` e `avatarColor ??= avatarColorFor(login)`
+  e o seed nasce com os campos novos. Nova lib pura
+  `frontend/src/lib/avatar-color.js` (`avatarColorFor`, FNV-1a sobre o login
+  com paleta fixa de 8 cores, §4.2 do guia). Cobertura em
+  `frontend/tests/profile-contract.test.mjs` (parcial, remoção, três mídias,
+  idempotência, 422s na borda do limite, valida-antes-de-mutar e backfill) e
+  ajustes em `profile-menu`/`seed-backfill`; `npm run build` verde e as 6
+  falhas restantes da suíte são pré-existentes em `main` (ambiente). Sem
+  alteração em `ProfilePage.vue`, `session.js` ou KAN-108. PR #143, release
+  `v0.30.0`.
+
+## v0.29.1 — 2026-10-20
+
+### Documentation
+
+- **KAN-112/91** — publicação do guia de implementação da KAN-83
+  (`docs/KAN-83-guide.md`): objetivo do rail colapsado, decisões que governam a
+  fatia (folha = rota navegável, Experiences no rail, fonte única de folhas,
+  corte desktop, tooltip `title` + `aria-label`, rota ativa via
+  `router-link-active`/`aria-current`) e o contrato de nomes compartilhado por
+  guia e testes (modelo, seletores, larguras e foco). A produção já estava na
+  `main`; o PR #139 levou apenas o guia (diff só de documentação). PR #139,
+  release `v0.29.1`.
+
+## v0.29.0 — 2026-10-20
+
+### Added
+
+- **KAN-113** — abas `Comments | History` no painel da issue com timeline mock:
+  feature `history` adicionada a `frontend/src/api/simulation.js` (default
+  ligado); seed com eventos de `history` cobrindo os cinco tipos
+  (`created`/`status`/`assignee`/`summary`/`description`), com rework em
+  KANB-2/KANB-5 e `history: []` em KANB-6/KANB-7 para o empty state; fake
+  backend com backfill aditivo idempotente `issue.history ??= []` em `load()`
+  e `history: []` no `POST /issues` (move/PATCH/comentários não geram
+  eventos); novo componente `IssueHistory.vue` com ordenação cronológica
+  inversa sem mutar a prop, ícone por tipo via `AppIcon`, resolução de
+  status/agente no store com fallbacks, `<time :datetime>` e empty state
+  `No history yet`; abas em `IssuePanel.vue` com ARIA completo
+  (tablist/tab/tabpanel, roving tabindex, setas com wrap, Home/End,
+  Enter/Espaço), reset a Comments ao trocar de issue e selo `Prototype` via
+  `boardStore.simulated('history')`; estilos de abas e timeline em
+  `main.scss`. Guia `docs/KAN-90-guide.md` commitado. Barra de revisão:
+  vitest 121/121, `node --test` 138/138, build ok, E2E 47/47. PR #129,
+  release `v0.29.0`.
+
 ## v0.27.0 — 2026-10-19
 
 ### Fixed

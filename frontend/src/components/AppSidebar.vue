@@ -300,7 +300,11 @@ async function saveEditor() {
     await boardStore.saveEntity(collectionOf(current.kind), current.draft)
     editor.value = null
   } catch (problem) {
-    current.error = problem.message
+    if (problem.field) {
+      current.error = problem.message
+      return
+    }
+    toast.error(problem.message)
   }
 }
 
