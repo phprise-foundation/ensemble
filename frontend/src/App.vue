@@ -220,6 +220,7 @@ function toggleSimulation() {
     </div>
 
     <AppCopilot v-if="!isMobile && copilotOpen" />
+
     <DialogHost />
     <ToastHost />
   </div>
