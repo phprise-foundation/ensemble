@@ -51,8 +51,8 @@ test('só AppIcon.vue contém svg de UI em frontend/src', () => {
 
 test('todo name estático existe no mapa', () => {
   for (const file of vueFiles()) {
-    for (const match of sourceOf(file).matchAll(/name="\w+"/g)) {
-      const name = match[0].slice(6, -1)
+    for (const match of sourceOf(file).matchAll(/ name="\w+"/g)) {
+      const name = match[0].slice(7, -1)
       if (name === 'smartboard') continue
       assert.ok(name in MAPPING, `nome sem mapa: ${match[0]} (${file})`)
     }

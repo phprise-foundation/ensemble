@@ -13,7 +13,6 @@ const router = useRouter()
 const displayName = ref(session.displayName)
 const draftAvatar = ref(session.avatar)
 const saving = ref(false)
-const error = ref('')
 
 watch(
   () => [session.displayName, session.avatar],
@@ -35,7 +34,6 @@ const preview = computed(() =>
 )
 
 async function pickPhoto(event) {
-  error.value = ''
   const file = event.target.files?.[0]
   event.target.value = ''
   const problem = imageFileError(file)
@@ -51,7 +49,6 @@ async function pickPhoto(event) {
 }
 
 function removePhoto() {
-  error.value = ''
   draftAvatar.value = null
 }
 
@@ -97,9 +94,7 @@ async function save() {
           @change="pickPhoto"
         />
         <button type="button" data-test="remove-photo" @click="removePhoto">Remove photo</button>
-        <p class="hint" :class="{ error: Boolean(error) }" data-test="file-error">
-          {{ error || 'PNG, JPEG or WebP up to 2 MB.' }}
-        </p>
+        <p class="hint">PNG, JPEG or WebP up to 2 MB.</p>
       </div>
       <div class="field-row">
         <label for="profile-name">Name</label>
