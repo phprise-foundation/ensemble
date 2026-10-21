@@ -378,7 +378,8 @@ function middleware(data, req, res, next) {
     } catch (error) {
       result = { error: error.message, status: 500 }
     }
-    if (!result.error) {
+    const changesPersistence = !['GET', 'HEAD', 'OPTIONS'].includes(req.method)
+    if (!result.error && changesPersistence) {
       save(data.db)
     }
     res.statusCode = result.status ?? 200
