@@ -149,11 +149,12 @@ onBeforeUnmount(() => {
       <div
         ref="dialogCard"
         class="dialog-card"
+        tabindex="-1"
         :role="dialog.variant === 'danger' ? 'alertdialog' : 'dialog'"
         :aria-modal="true"
         aria-labelledby="dialog-title"
         :aria-describedby="dialog.message ? 'dialog-message' : undefined"
-        tabindex="-1"
+        @keydown.tab="handleFocusTrap"
       >
         <div class="dialog-header">
           <span class="dialog-icon" :class="'variant-' + dialog.variant">

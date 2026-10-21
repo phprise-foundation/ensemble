@@ -51,7 +51,7 @@ export const dialog = {
     })
   },
 
-  alert(options) {
+  alert(options = {}) {
     if (state.open) {
       return Promise.resolve(undefined)
     }

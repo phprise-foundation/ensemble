@@ -1,15 +1,14 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
-
-const toastRefs = ref([])
 
 const VARIANT_ICONS = {
   info: 'info',
   success: 'check',
   warning: 'warning',
   danger: 'warning',
+  error: 'warning',
 }
 
 const items = computed(() => toast.toasts)
@@ -17,7 +16,7 @@ const items = computed(() => toast.toasts)
 const variantIcon = (kind) => VARIANT_ICONS[kind] || 'info'
 
 function handleClose(id) {
-  toast.removeToast(id)
+  toast.dismiss(id)
 }
 </script>
 
@@ -27,7 +26,6 @@ function handleClose(id) {
       <div
         v-for="(item, index) in items"
         :key="item.id"
-        ref="toastRefs"
         class="toast"
         :class="item.kind"
         :role="item.kind === 'error' ? 'alert' : undefined"
