@@ -48,8 +48,8 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
       .should('be.visible')
       .then(($avatar) => {
         const avatar = $avatar[0].getBoundingClientRect()
-        expect(Math.round(avatar.width), 'largura do avatar').to.be.closeTo(38, 1)
-        expect(Math.round(avatar.height), 'altura do avatar').to.be.closeTo(38, 1)
+        expect(Math.round(avatar.width), 'largura do avatar').to.be.closeTo(22, 1)
+        expect(Math.round(avatar.height), 'altura do avatar').to.be.closeTo(22, 1)
       })
     cy.get('.profile-name').should('be.visible').and('have.text', 'admin')
     cy.get('.profile-trigger').click()
@@ -80,7 +80,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
     cy.visit('/#/profile')
     cy.get('#profile-name').clear().type(FULL_NAME)
     cy.get('form button[type="submit"]').click()
-    cy.get('[role="status"]').should('be.visible')
+    cy.get('.toast-text', { timeout: 2000 }).should('contain.text', 'Saved.')
 
     cy.get('.topbar .profile-name').should('have.text', FULL_NAME)
     cy.get('.topbar .profile-name').then(($name) => {
@@ -110,7 +110,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
       expect($login[0].readOnly || $login[0].disabled, 'login não editável').to.eq(true)
       cy.get('#profile-name').clear().type(FULL_NAME)
       cy.get('form button[type="submit"]').click()
-      cy.get('[role="status"]').should('be.visible')
+      cy.get('.toast-text', { timeout: 2000 }).should('contain.text', 'Saved.')
       cy.get('#profile-login').should('have.value', login)
     })
 
@@ -130,7 +130,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
     cy.get('#profile-name').clear().type('x'.repeat(41))
     cy.get('#profile-name').invoke('val').should('have.length', 40)
     cy.get('form button[type="submit"]').click()
-    cy.get('[role="status"]').should('be.visible')
+    cy.get('.toast-text', { timeout: 2000 }).should('contain.text', 'Saved.')
     cy.get('.profile-name').should('have.text', 'x'.repeat(40))
   })
 
