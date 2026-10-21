@@ -136,8 +136,28 @@ async function submitComment() {
   commentError.value = ''
 }
 
-function format(value) {
-  return new Date(value).toLocaleString()
+function formatCommentTimestamp(value) {
+  return new Date(value).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function resolveAuthor(author) {
+  // Resolução do autor de comentários
+  if (author === 'user') {
+    // Usuário normal (login) - pode ser resolvido com session.user
+    return boardStore.session?.user?.displayName || 'user'
+  } else if (author === 'admin') {
+    return 'admin'
+  } else {
+    // Pode ser um agente (ID ou nome)
+    const agent = boardStore.agent(author)
+    return agent ? agent.name : author
+  }
 }
 </script>
 
@@ -267,8 +287,19 @@ function format(value) {
       >
         <div class="comments-body">
           <div class="comment" v-for="entry in issue.comments" :key="entry.id">
-            <span class="comment-author">{{ entry.author }}</span>
-            <span class="muted small">{{ format(entry.at) }}</span>
+            <div class="comment-header">
+              <Avatar 
+                size="sm" 
+                :name="resolveAuthor(entry.author)"
+                :image="boardStore.agent(entry.author)?.portrait ?? null"
+                :color="boardStore.agent(entry.author)?.avatarColor" 
+                :decorative="true"
+              />
+              <div class="comment-author-info">
+                <span class="comment-author">{{ resolveAuthor(entry.author) }}</span>
+                <span class="muted small">{{ formatCommentTimestamp(entry.at) }}</span>
+              </div>
+            </div>
             <p>{{ entry.body }}</p>
           </div>
           <p v-if="!issue.comments.length" class="muted small">No comments yet</p>

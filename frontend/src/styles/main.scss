@@ -1855,3 +1855,29 @@ textarea[aria-invalid='true'] {
     animation: none;
   }
 }
+/* Comentários com avatar */
+.comment-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.comment-author-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.comment-author-info .comment-author {
+  flex: 0 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.comment-author-info .muted.small {
+  flex: 0 0 auto;
+}
