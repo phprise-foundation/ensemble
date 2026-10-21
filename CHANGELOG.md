@@ -7,6 +7,23 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.34.0 — 2026-10-22
+
+### Added
+
+- **KAN-128 — avatares circulares e comentários com autor (PR #168).** O
+  assignee do card usa o `Avatar` compartilhado da KAN-108 (circular, fallback
+  inicial/cor; `?` com cor neutra quando o card não tem assignee). Os
+  comentários da aba `Comments` exibem miniatura circular + nome + timestamp
+  absoluto `dd/mm/aaaa hh:mm`. A autoria é resolvida pela fundação
+  `frontend/src/lib/comment-author.js` (PR #150, KAN-140): agente por `id`,
+  depois por `name`; user por `login`/`displayName`; autor desconhecido cai na
+  inicial da string original com cor determinística (FNV-1a). O POST de
+  comentários envia `session.login` em vez do literal `'user'`. O seed cobre os
+  quatro ramos do mapeamento (`admin`, `vivy` por id, `Kaio` por nome, `user`)
+  e inclui um retrato data URL de ~1 KB. E2E/visual dos comentários nas ondas
+  seguintes (KAN-142/143).
+
 ## v0.33.0 — 2026-10-21
 
 ### Added

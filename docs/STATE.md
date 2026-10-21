@@ -637,6 +637,18 @@
   merge (#141, #142, #148, #156, #157; o spec da #158 foi superseded pela
   #159). Veredicto: aprovado; release `v0.33.0`.
 
+- **KAN-128 — avatares circulares e comentários com autor:** a fundação pousou
+  via PR #150 (`lib/comment-author.js` com `resolveAuthor` — agente por id →
+  nome, user por `login`/`displayName`, desconhecido com cor determinística —,
+  `formatCommentTimestamp` em `dd/mm/aaaa hh:mm` e `addComment` enviando
+  `session.login`); a aplicação (PR #168) consome o `Avatar` compartilhado da
+  KAN-108 no assignee do card (fallback `?` com cor neutra quando sem
+  assignee) e nos comentários (miniatura + nome + timestamp). Seed com os
+  quatro ramos do mapeamento (`admin`, `vivy`, `Kaio`, `user`) e retrato data
+  URL de 1 KB. Verificação: CI verde (vitest 210/210, `node --test` 206/206,
+  build). E2E/visual dos comentários nas ondas 3–4 (KAN-142/143). Veredicto:
+  aprovado (r6); release `v0.34.0`.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in

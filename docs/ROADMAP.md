@@ -153,7 +153,13 @@ marking what is still a prototype.
    bloqueantes (`store/toast.js` + `ToastHost.vue`, máx. 3, 4s/6s,
    `aria-live`); os quatro fluxos de save migram erro com campo para inline e
    erro sem campo (rede/422) para `toast.error` (KAN-127, PR #138, release
-   `v0.31.0`; guarda estática e E2E dedicados seguem em KAN-138/139).
+   `v0.31.0`; guarda estática e E2E dedicados seguem em KAN-138/139). Os
+   avatares ficaram circulares e os comentários ganharam autor: assignee do
+   card via o `Avatar` compartilhado (fallback `?`/cor neutra sem assignee) e
+   comentários com miniatura + nome + timestamp absoluto, mapeando o `author`
+   pela fundação `lib/comment-author.js` — agente por id → nome, user por
+   `login`/`displayName`, desconhecido com cor determinística — e o POST
+   enviando `session.login` (KAN-128, PRs #150/#168, release `v0.34.0`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.

@@ -130,6 +130,17 @@ PR #145) — e o feedback do save e das fotos rejeitadas é por toast, sem
 save/reload, fallback e a prova de payload — data URL enviado menor que o
 arquivo original (KAN-133).
 
+A autoria dos comentários é resolvida por `frontend/src/lib/comment-author.js`
+(`resolveAuthor`, PR #150/KAN-140): agente por `id`, depois por `name`; user
+por `login`/`displayName`; autor desconhecido cai na inicial da string
+original com cor determinística via `avatarColorFor` (FNV-1a). O
+`IssuePanel.vue` monta `commentRows` com esse mapeamento e exibe o `Avatar`
+compartilhado (size `sm`, `decorative`) + nome + timestamp absoluto
+`dd/mm/aaaa hh:mm` (`formatCommentTimestamp`); o `IssueCard.vue` usa o mesmo
+`Avatar` no assignee, com fallback `?`/cor neutra quando o card não tem
+agente. O POST de comentários envia `session.login` como `author` no lugar do
+literal `'user'` (KAN-128, PR #168).
+
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
 pela classe `body.drawer-locked` e expõe o botão dedicado
