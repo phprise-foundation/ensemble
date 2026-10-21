@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import assert from 'node:assert/strict'
@@ -77,6 +77,27 @@ test('sem arquivo, o seed completo continua sendo criado', () => {
     { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
     'o banco novo nasce com o seed completo',
   )
+})
+
+test('banco vazio, truncado ou não-objeto volta ao seed em vez de derrubar o boot', () => {
+  const empty = join(root, 'banco-vazio.json')
+  writeFileSync(empty, '')
+  const fromEmpty = load(empty)
+  assert.equal(fromEmpty.user.login, 'admin', 'arquivo vazio é refeito com o seed')
+  assert.ok(fromEmpty.issues.length > 0, 'o seed traz issues para a interface abrir')
+
+  const truncated = join(root, 'banco-truncado.json')
+  writeFileSync(truncated, '{"issues": [')
+  const fromTruncated = load(truncated)
+  assert.equal(fromTruncated.user.login, 'admin', 'JSON inválido não derruba o carregamento')
+  assert.ok(
+    JSON.parse(readFileSync(truncated, 'utf-8')).issues.length > 0,
+    'o arquivo corrompido é reescrito com o seed',
+  )
+
+  const nonObject = join(root, 'banco-nulo.json')
+  writeFileSync(nonObject, 'null')
+  assert.equal(load(nonObject).user.login, 'admin', 'JSON válido que não é objeto também é refeito')
 })
 
 test('backfill: user já existente preserva o displayName definido', () => {
