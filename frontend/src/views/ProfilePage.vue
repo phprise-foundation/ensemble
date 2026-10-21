@@ -5,6 +5,7 @@ import { session } from '../store/session.js'
 import { imageFileError } from '../lib/image-upload.js'
 import { normalizeImageFile } from '../lib/image-normalize.js'
 import Avatar from '../components/Avatar.vue'
+import AppIcon from '../components/AppIcon.vue'
 
 const router = useRouter()
 const displayName = ref(session.displayName)
