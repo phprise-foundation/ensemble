@@ -1,6 +1,7 @@
 import { computed, reactive } from 'vue'
 import { api } from '../api/index.js'
 import { isSimulated } from '../api/simulation.js'
+import { session } from './session.js'
 
 const OVERDUE_MS = 24 * 60 * 60 * 1000
 const find = (list, id) => list.find((item) => item.id === id) ?? null
@@ -153,7 +154,7 @@ export const boardStore = {
   },
 
   async addComment(issueId, body) {
-    const updated = await api.addComment(issueId, { author: 'user', body })
+    const updated = await api.addComment(issueId, { author: session.login, body })
     const index = state.issues.findIndex((issue) => issue.id === issueId)
     if (index >= 0) {
       state.issues.splice(index, 1, updated)
