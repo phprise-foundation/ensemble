@@ -10,6 +10,7 @@ const spec = readFileSync(
   join(aqui, '..', 'cypress', 'e2e', 'icon-standard.cy.js'),
   'utf8',
 )
+const runE2E = readFileSync(join(aqui, '..', 'run-e2e.sh'), 'utf8')
 
 test('o portão visualAudit é publicado em expose com E2E_VISUAL_AUDIT', () => {
   assert.match(config, /expose:\s*\{\s*visualAudit:\s*process\.env\.E2E_VISUAL_AUDIT \|\| '0'/)
@@ -33,4 +34,9 @@ test('existe a guarda de não-repetição da etapa C', () => {
   assert.match(spec, /capturasQuebradas\)\s*\{\s*\n\s*throw new Error\(/)
   assert.match(spec, /Cypress\.on\('fail', \(erro\) => \{/)
   assert.match(spec, /estourou o teto de \$\{TETO_CAPTURA_MS\}ms/)
+})
+
+test('o audit visual usa Chrome quando nenhum browser é passado', () => {
+  assert.match(runE2E, /E2E_VISUAL_AUDIT:-0\}" = "1"/)
+  assert.match(runE2E, /set -- --browser chrome "\$@"/)
 })
