@@ -102,7 +102,7 @@ export function createSeed() {
         flags: [], comments: [
           { id: 'c1', author: 'admin', body: 'We lose users in the first step.', at: new Date(now - hours(26)).toISOString() },
           { id: 'c2', author: 'vivy', body: 'Let me investigate this.', at: new Date(now - hours(25)).toISOString() },
-          { id: 'c3', author: 'kaio', body: 'Have a look at the data flow.', at: new Date(now - hours(24)).toISOString() },
+          { id: 'c3', author: 'Kaio', body: 'Have a look at the data flow.', at: new Date(now - hours(24)).toISOString() },
           { id: 'c4', author: 'user', body: 'Great progress so far.', at: new Date(now - hours(23)).toISOString() },
         ],
         history: [

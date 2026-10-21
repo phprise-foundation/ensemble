@@ -36,12 +36,12 @@ function onDragStart(event) {
     @click="boardStore.select(issue.id)"
   >
     <div class="card-top">
-      <Avatar 
-        size="sm" 
-        :name="agent?.name ?? 'Unassigned'"
-        :image="agent?.portrait ?? null" 
-        :color="agent?.avatarColor" 
-        :title="agent ? agent.name : 'Unassigned'"
+      <Avatar
+        size="sm"
+        :name="agent?.name ?? '?'"
+        :image="agent?.portrait ?? null"
+        :color="agent?.avatarColor ?? '#d4d4d4'"
+        :title="agent?.name"
       />
       <span class="card-id muted">{{ issue.id }}</span>
       <span class="spacer"></span>
