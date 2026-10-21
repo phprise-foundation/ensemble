@@ -5,6 +5,8 @@ import AppIcon from './AppIcon.vue'
 import Avatar from './Avatar.vue'
 import FieldLimit from './FieldLimit.vue'
 import IssueHistory from './IssueHistory.vue'
+import { formatCommentTimestamp, resolveAuthor } from '../lib/comment-author.js'
+import { session } from '../store/session.js'
 import {
   COMMENT_LIMIT,
   DESCRIPTION_LIMIT,
@@ -34,6 +36,24 @@ const commentPayload = computed(() => comment.value.trim())
 const commentLength = computed(() => countCharacters(commentPayload.value))
 const commentOver = computed(() => limitExceeded(commentLength.value, COMMENT_LIMIT))
 const commentError = ref('')
+
+const commentRows = computed(() =>
+  issue.value.comments.map((entry) => ({
+    id: entry.id,
+    author: resolveAuthor({
+      agents: boardStore.state.agents,
+      user: {
+        login: session.login,
+        displayName: session.displayName,
+        avatar: session.avatar,
+        avatarColor: session.avatarColor,
+      },
+      author: entry.author,
+    }),
+    at: formatCommentTimestamp(entry.at),
+    body: entry.body,
+  })),
+)
 
 const status = computed(() => (issue.value ? boardStore.status(issue.value.statusId) : null))
 const agent = computed(() => (issue.value ? boardStore.agent(issue.value.assigneeId) : null))
@@ -136,29 +156,6 @@ async function submitComment() {
   commentError.value = ''
 }
 
-function formatCommentTimestamp(value) {
-  return new Date(value).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-function resolveAuthor(author) {
-  // Resolução do autor de comentários
-  if (author === 'user') {
-    // Usuário normal (login) - pode ser resolvido com session.user
-    return boardStore.session?.user?.displayName || 'user'
-  } else if (author === 'admin') {
-    return 'admin'
-  } else {
-    // Pode ser um agente (ID ou nome)
-    const agent = boardStore.agent(author)
-    return agent ? agent.name : author
-  }
-}
 </script>
 
 <template>
@@ -286,21 +283,21 @@ function resolveAuthor(author) {
         v-show="activeTab === 'comments'"
       >
         <div class="comments-body">
-          <div class="comment" v-for="entry in issue.comments" :key="entry.id">
+          <div class="comment" v-for="row in commentRows" :key="row.id">
             <div class="comment-header">
-              <Avatar 
-                size="sm" 
-                :name="resolveAuthor(entry.author)"
-                :image="boardStore.agent(entry.author)?.portrait ?? null"
-                :color="boardStore.agent(entry.author)?.avatarColor" 
-                :decorative="true"
+              <Avatar
+                size="sm"
+                :name="row.author.name"
+                :image="row.author.image ?? null"
+                :color="row.author.color"
+                decorative
               />
               <div class="comment-author-info">
-                <span class="comment-author">{{ resolveAuthor(entry.author) }}</span>
-                <span class="muted small">{{ formatCommentTimestamp(entry.at) }}</span>
+                <span class="comment-author">{{ row.author.name }}</span>
+                <span class="muted small">{{ row.at }}</span>
               </div>
             </div>
-            <p>{{ entry.body }}</p>
+            <p>{{ row.body }}</p>
           </div>
           <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
           <textarea
