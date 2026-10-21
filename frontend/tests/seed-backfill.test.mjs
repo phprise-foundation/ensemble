@@ -112,3 +112,27 @@ test('backfill: user já existente preserva o displayName definido', () => {
     'a chave presente não é sobrescrita pelo seed; só os campos novos são completados',
   )
 })
+test('backfill: foto e cor salvas no user nunca são sobrescritas pelo boot', () => {
+  const photo = 'data:image/webp;base64,AAAA'
+  const legacy = legacyDatabase()
+  legacy.user = { login: 'admin', displayName: 'Ana', avatar: photo, avatarColor: '#00b8d9' }
+
+  const database = load(databaseFile(legacy))
+
+  assert.deepEqual(
+    database.user,
+    { login: 'admin', displayName: 'Ana', avatar: photo, avatarColor: '#00b8d9' },
+    'o backfill só completa campos ausentes; foto e cor salvas permanecem',
+  )
+})
+
+test('backfill: foto salva sem cor ganha a cor determinística do login', () => {
+  const photo = 'data:image/png;base64,BBBB'
+  const legacy = legacyDatabase()
+  legacy.user = { login: 'admin', displayName: 'Ana', avatar: photo }
+
+  const database = load(databaseFile(legacy))
+
+  assert.equal(database.user.avatar, photo, 'a foto salva permanece')
+  assert.equal(database.user.avatarColor, '#e5484d', 'só a cor ausente é completada')
+})
