@@ -124,7 +124,9 @@ navegar com pendências abre o confirm custom `Discard changes?` com foco
 inicial no cancelar — fundação de diálogos/toasts da KAN-127 (`store/dialog.js`
 + `DialogHost.vue`, `store/toast.js` + `ToastHost.vue`; refundação pousada via
 PR #145) — e o feedback do save e das fotos rejeitadas é por toast, sem
-`alert`/`confirm` nativos (KAN-134). A Fase 3 pinta a identidade do usuário no
+`alert`/`confirm` nativos (KAN-134). O E2E real-browser do §8.4 do guia
+fixou o comportamento em `cypress/e2e/dialogs.cy.js` (KAN-139, PR #169,
+release `v0.34.1`). A Fase 3 pinta a identidade do usuário no
 `ProfileMenu` via o `Avatar` compartilhado, size `sm` (KAN-135). O E2E
 (`cypress/e2e/profile-avatar.cy.js`) cobre upload, validação, remoção,
 save/reload, fallback e a prova de payload — data URL enviado menor que o

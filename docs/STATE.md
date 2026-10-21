@@ -649,6 +649,23 @@
   build). E2E/visual dos comentários nas ondas 3–4 (KAN-142/143). Veredicto:
   aprovado (r6); release `v0.34.0`.
 
+- **KAN-139 — E2E dos diálogos e toasts (§8.4 do guia KAN-127):** spec
+  `cypress/e2e/dialogs.cy.js` prova os fluxos no navegador real: exclusão
+  cancelada via Cancelar e Escape (registro permanece) e confirmada via Enter
+  e clique (registro some + toast de sucesso com classe de variante correta),
+  nas quatro superfícies migradas (CrudPage via roles e issue-types,
+  AgentsPage, IssueTypesPage e AppSidebar com sources criadas via API). Foco
+  inicial no Cancelar do danger (`:focus` asserido), retorno ao gatilho após
+  fechar, `alertdialog`/`aria-modal`/`aria-labelledby` no confirm, scrim
+  clicado sem fechar, toast de erro com `role="alert"` (intercept 500) e
+  overlay com card menor que a viewport em 390×844. Lição registrada: a
+  primeira revisão reprovou por asserção de classe inexistente
+  (`toast-success`) após a base evoluir (fix #168 renomeou a classe) — asserção
+  sempre contra a integração, nunca contra a base antiga. Verificação: CI
+  verde (run 39686755172) e revisão independente contra a `main`, asserções
+  confrontadas com `ToastHost.vue`/`DialogHost.vue`. Veredicto: aprovado;
+  PR #169, release `v0.34.1`.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in
