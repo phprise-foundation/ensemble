@@ -132,6 +132,10 @@ if [ -z "${DISPLAY:-}" ] && command -v Xvfb >/dev/null 2>&1; then
   fi
 fi
 
+if [ "${E2E_VISUAL_AUDIT:-0}" = "1" ] && [[ " $* " != *" --browser "* ]]; then
+  set -- --browser chrome "$@"
+fi
+
 CYPRESS_BASE_URL="$BASE" timeout -k 10 "$TIMEOUT" ./node_modules/.bin/cypress run "$@" 2>&1 | tee "$CYPRESS_LOG" &
 CYPRESS_PID=$!
 wait "$CYPRESS_PID"
