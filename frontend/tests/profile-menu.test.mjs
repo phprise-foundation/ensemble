@@ -19,15 +19,23 @@ test('protótipo: usuário corrente singleton e contrato de /api/user', async ()
   assert.equal(typeof backend.handle, 'function', 'fake-backend deve exportar handle para o teste de integração')
 
   const db = createSeed()
-  assert.deepEqual(db.user, { login: 'admin', displayName: '' }, 'o seed deve trazer o usuário corrente singleton')
+  assert.deepEqual(
+    db.user,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'o seed deve trazer o usuário corrente singleton com avatar e cor',
+  )
 
   const fetched = backend.handle(db, 'GET', ['user'], {})
-  assert.deepEqual(fetched.data, { login: 'admin', displayName: '' }, 'GET /api/user devolve login e displayName')
+  assert.deepEqual(
+    fetched.data,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'GET /api/user devolve login, displayName, avatar e avatarColor',
+  )
 
   const saved = backend.handle(db, 'PATCH', ['user'], { displayName: '  Maria Fernanda de Souza Oliveira  ' })
   assert.deepEqual(
     saved.data,
-    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira' },
+    { login: 'admin', displayName: 'Maria Fernanda de Souza Oliveira', avatar: null, avatarColor: '#e5484d' },
     'PATCH /api/user normaliza com trim e aceita até 40 caracteres',
   )
 

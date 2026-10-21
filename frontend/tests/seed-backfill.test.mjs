@@ -33,21 +33,21 @@ test('backfill: banco antigo sem user ganha a chave e /api/user volta a responde
 
   assert.deepEqual(
     database.user,
-    { login: 'admin', displayName: '' },
-    'a chave ausente do seed é acrescentada na leitura',
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'a chave ausente do seed é acrescentada na leitura, já com avatar e cor',
   )
 
   const fetched = handle(database, 'GET', ['user'], {})
   assert.deepEqual(
     fetched,
-    { data: { login: 'admin', displayName: '' } },
-    'GET /api/user responde 200 com login e displayName vazio depois do backfill',
+    { data: { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' } },
+    'GET /api/user responde 200 com os quatro campos depois do backfill',
   )
 
   const patched = handle(database, 'PATCH', ['user'], { displayName: '  Ana  ' })
   assert.deepEqual(
     patched.data,
-    { login: 'admin', displayName: 'Ana' },
+    { login: 'admin', displayName: 'Ana', avatar: null, avatarColor: '#e5484d' },
     'PATCH /api/user volta a gravar o nome e mantém o login',
   )
 })
@@ -72,7 +72,11 @@ test('sem arquivo, o seed completo continua sendo criado', () => {
   const database = load(file)
 
   assert.ok(existsSync(file), 'o arquivo é criado quando ainda não existe')
-  assert.deepEqual(database.user, { login: 'admin', displayName: '' }, 'o banco novo nasce com o seed completo')
+  assert.deepEqual(
+    database.user,
+    { login: 'admin', displayName: '', avatar: null, avatarColor: '#e5484d' },
+    'o banco novo nasce com o seed completo',
+  )
 })
 
 test('backfill: user já existente preserva o displayName definido', () => {
@@ -83,7 +87,7 @@ test('backfill: user já existente preserva o displayName definido', () => {
 
   assert.deepEqual(
     database.user,
-    { login: 'admin', displayName: 'Ana' },
-    'a chave presente não é sobrescrita pelo seed',
+    { login: 'admin', displayName: 'Ana', avatar: null, avatarColor: '#e5484d' },
+    'a chave presente não é sobrescrita pelo seed; só os campos novos são completados',
   )
 })
