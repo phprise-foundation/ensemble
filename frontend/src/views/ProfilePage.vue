@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useAttrs, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../store/session.js'
 import { imageFileError } from '../lib/image-upload.js'
@@ -7,6 +7,7 @@ import { normalizeImageFile } from '../lib/image-normalize.js'
 import Avatar from '../components/Avatar.vue'
 import AppIcon from '../components/AppIcon.vue'
 
+const attributes = useAttrs()
 const router = useRouter()
 const displayName = ref(session.displayName)
 const draftAvatar = ref(session.avatar)
@@ -84,6 +85,7 @@ function back() {
       <div class="field-row">
         <p class="profile-preview" aria-live="polite">
           <Avatar
+            v-bind="attributes"
             :name="session.label"
             :image="preview"
             :color="session.avatarColor"
