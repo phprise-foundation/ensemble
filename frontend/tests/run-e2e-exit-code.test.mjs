@@ -1,3 +1,5 @@
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { connect, createServer } from 'node:net'
 import { dirname, join } from 'node:path'
@@ -8,11 +10,14 @@ import { test } from 'node:test'
 const here = dirname(fileURLToPath(import.meta.url))
 const frontendRoot = join(here, '..')
 const harnessConfig = 'specPattern=cypress/harness/*.cy.js,screenshotOnRunFailure=false'
+const ephemeralDirectories = []
 
 function runHarness(command, args, port, extraEnv = {}) {
+  const dataDirectory = mkdtempSync(join(tmpdir(), 'run-e2e-harness-'))
+  ephemeralDirectories.push(dataDirectory)
   return spawnSync(command, args, {
     cwd: frontendRoot,
-    env: { ...process.env, E2E_PORT: String(port), ...extraEnv },
+    env: { ...process.env, E2E_PORT: String(port), E2E_DATA_FILE: join(dataDirectory, 'db.json'), ...extraEnv },
     encoding: 'utf8',
     timeout: 240000,
   })
@@ -93,4 +98,18 @@ test('timeout do Cypress reprova o comando', async () => {
     0,
     `Cypress interrompido por timeout precisa reprovar o comando; saiu com ${run.status}:\n${output}`
   )
+})
+
+test('cada rodada usa dados efemeros: o .data do desenvolvedor nao e tocado', async () => {
+  const developerDatabase = join(frontendRoot, '.data', 'db.json')
+  const existedBefore = existsSync(developerDatabase)
+  const port = await freePort()
+  runHarness('bash', ['run-e2e.sh', '--config', harnessConfig, '--spec', 'cypress/harness/passing.cy.js'], port)
+  assert.equal(existsSync(developerDatabase), existedBefore)
+})
+
+process.on('exit', () => {
+  for (const directory of ephemeralDirectories) {
+    rmSync(directory, { recursive: true, force: true })
+  }
 })
