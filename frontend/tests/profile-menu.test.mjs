@@ -6,6 +6,7 @@ import { test } from 'node:test'
 
 import { createSeed } from '../src/data/seed.js'
 
+import { handle } from '../plugin/fake-backend.js'
 const here = dirname(fileURLToPath(import.meta.url))
 const frontend = join(here, '..')
 
@@ -108,4 +109,120 @@ test('ProfileMenu: avatar de 38px, nome abaixo e dropdown profile/logout', () =>
   assert.match(avatarCss, /border-radius:\s*50%/, 'o Avatar compartilhado é circular')
   assert.match(css, /\.profile-avatar[\s\S]*?width:\s*38px/, 'o avatar deve ter 38px')
   assert.match(css, /\.profile-avatar[\s\S]*?height:\s*38px/, 'o avatar deve ter 38px de altura')
+})
+
+test('PATCH /api/user parcial: campo ausente preserva o valor atual', () => {
+  const db = createSeed()
+  const photo = 'data:image/webp;base64,AAAA'
+  handle(db, 'PATCH', ['user'], { displayName: 'Ana', avatar: photo, avatarColor: '#00b8d9' })
+
+  const renamed = handle(db, 'PATCH', ['user'], { displayName: 'Bruna' })
+  assert.deepEqual(
+    renamed.data,
+    { login: 'admin', displayName: 'Bruna', avatar: photo, avatarColor: '#00b8d9' },
+    'o PATCH de só o nome preserva foto e cor',
+  )
+
+  const recolored = handle(db, 'PATCH', ['user'], { avatarColor: '#46a758' })
+  assert.deepEqual(
+    recolored.data,
+    { login: 'admin', displayName: 'Bruna', avatar: photo, avatarColor: '#46a758' },
+    'o PATCH de só a cor preserva nome e foto',
+  )
+
+  const unmutated = createSeed()
+  const photoOnly = handle(unmutated, 'PATCH', ['user'], { avatar: photo })
+  assert.deepEqual(
+    photoOnly.data,
+    { login: 'admin', displayName: '', avatar: photo, avatarColor: '#e5484d' },
+    'definir a foto não inventa nem altera nome e cor',
+  )
+})
+
+test('PATCH /api/user com avatar null remove a foto e repetir o PATCH é idempotente', () => {
+  const db = createSeed()
+  handle(db, 'PATCH', ['user'], { avatar: 'data:image/png;base64,BBBB' })
+
+  const removed = handle(db, 'PATCH', ['user'], { avatar: null })
+  assert.equal(removed.data.avatar, null, 'avatar null remove a foto')
+  assert.equal(removed.data.displayName, '', 'remover a foto preserva o nome')
+  assert.equal(removed.data.avatarColor, '#e5484d', 'remover a foto preserva a cor')
+
+  const repeated = handle(db, 'PATCH', ['user'], { avatar: null })
+  assert.deepEqual(repeated.data, removed.data, 'repetir o mesmo PATCH produz o mesmo estado')
+
+  const read = handle(db, 'GET', ['user'], {})
+  assert.deepEqual(read.data, removed.data, 'o GET confirma o estado final único')
+})
+
+test('PATCH /api/user valida tudo antes de mutar: 422 não altera nem o campo válido', () => {
+  const db = createSeed()
+  handle(db, 'PATCH', ['user'], { displayName: 'Ana' })
+
+  const refused = handle(db, 'PATCH', ['user'], { displayName: 'Bruna', avatar: 'http://exemplo/foto.png' })
+  assert.equal(refused.status, 422, 'avatar fora do contrato recusa o PATCH inteiro')
+  assert.equal(refused.field, 'avatar', 'a recusa aponta o campo inválido')
+  assert.equal(db.user.displayName, 'Ana', 'o displayName válido do corpo não é aplicado')
+  assert.equal(db.user.avatar, null, 'nenhum campo é aplicado num PATCH recusado')
+
+  const recolored = handle(db, 'PATCH', ['user'], { avatarColor: 'azul' })
+  assert.equal(recolored.status, 422, 'avatarColor não hex recusa com 422')
+  assert.equal(db.user.avatarColor, '#e5484d', 'a cor anterior permanece')
+})
+
+test('PATCH /api/user recusa avatar fora do contrato com 422', () => {
+  const cases = [
+    'http://exemplo/foto.png',
+    'data:text/html;base64,AAAA',
+    'data:image/gif;base64,AAAA',
+    'data:image/webp;base64',
+    42,
+    'data:image/png;base64,####',
+  ]
+  for (const avatar of cases) {
+    const db = createSeed()
+    const refused = handle(db, 'PATCH', ['user'], { avatar })
+    assert.equal(refused.status, 422, `avatar ${JSON.stringify(avatar)} é recusado com 422`)
+    assert.equal(refused.field, 'avatar', 'a recusa aponta o campo avatar')
+  }
+})
+
+test('PATCH /api/user recusa avatar acima de 512 KiB com 422', () => {
+  const db = createSeed()
+  const oversized = 'data:image/png;base64,' + 'A'.repeat(512 * 1024 + 1)
+  const refused = handle(db, 'PATCH', ['user'], { avatar: oversized })
+  assert.equal(refused.status, 422, 'base64 acima do teto é recusado')
+  assert.equal(db.user.avatar, null, 'o estado permanece sem foto')
+
+  const exactlyAtLimit = 'data:image/png;base64,' + 'A'.repeat(512 * 1024)
+  const accepted = handle(db, 'PATCH', ['user'], { avatar: exactlyAtLimit })
+  assert.equal(accepted.status, undefined, 'exatamente no teto é aceito')
+  assert.equal(accepted.data.avatar, exactlyAtLimit, 'a foto no teto é definida')
+})
+
+test('PATCH /api/user recusa avatarColor inválido e displayName fora do contrato', () => {
+  for (const avatarColor of ['azul', '#00b8d', '#00b8d99', '00b8d9', 42, null]) {
+    const db = createSeed()
+    const refused = handle(db, 'PATCH', ['user'], { avatarColor })
+    assert.equal(refused.status, 422, `avatarColor ${JSON.stringify(avatarColor)} é recusado com 422`)
+    assert.equal(refused.field, 'avatarColor', 'a recusa aponta o campo avatarColor')
+  }
+
+  const db = createSeed()
+  const nonString = handle(db, 'PATCH', ['user'], { displayName: 42 })
+  assert.equal(nonString.status, 422, 'displayName não string é recusado com 422')
+  assert.equal(db.user.displayName, '', 'o nome anterior permanece')
+})
+
+test('PATCH /api/user nunca altera o login e o GET expõe exatamente quatro campos', () => {
+  const db = createSeed()
+  const patched = handle(db, 'PATCH', ['user'], { displayName: 'Ana', login: 'root', avatarColor: '#00b8d9' })
+  assert.equal(patched.data.login, 'admin', 'o login é ignorado no PATCH')
+
+  const read = handle(db, 'GET', ['user'], {})
+  assert.deepEqual(
+    Object.keys(read.data).sort(),
+    ['avatar', 'avatarColor', 'displayName', 'login'],
+    'o contrato expõe login, displayName, avatar e avatarColor',
+  )
 })

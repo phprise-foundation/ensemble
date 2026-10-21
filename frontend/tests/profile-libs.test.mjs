@@ -53,3 +53,36 @@ test('o login é hasheado por inteiro (comportamento FNV-1a)', () => {
   assert.notEqual(avatarColorFor('a'), avatarColorFor('ab'))
   assert.notEqual(avatarColorFor('ab'), avatarColorFor('ba'))
 })
+
+test('fitWithin nunca passa do teto e preserva a proporção nos dois sentidos', () => {
+  assert.deepEqual(fitWithin(2048, 1024, 512), { width: 512, height: 256 })
+  assert.deepEqual(fitWithin(1024, 2048, 512), { width: 256, height: 512 })
+  assert.deepEqual(fitWithin(3000, 3000, 512), { width: 512, height: 512 })
+  assert.deepEqual(fitWithin(200, 100, 512), { width: 200, height: 100 })
+  assert.deepEqual(fitWithin(512, 300, 512), { width: 512, height: 300 })
+})
+
+test('fitWithin arredonda para cima o lado proporcional', () => {
+  assert.deepEqual(fitWithin(1000, 683, 512), { width: 512, height: 350 })
+  assert.deepEqual(fitWithin(683, 1000, 512), { width: 350, height: 512 })
+  assert.deepEqual(fitWithin(1023, 2049, 512), { width: 256, height: 512 })
+})
+
+test('avatarColorFor dá a cor exata da paleta para logins conhecidos', () => {
+  assert.equal(avatarColorFor('admin'), '#e5484d')
+  assert.equal(avatarColorFor('alice'), '#8a7249')
+  assert.equal(avatarColorFor('carol'), '#8777d9')
+})
+
+test('avatarColorFor é estável entre logins distintos: cada login tem sempre a mesma cor', () => {
+  const logins = ['admin', 'alice', 'bob', 'carol', 'dave', 'User_42']
+  const firstPass = logins.map((login) => avatarColorFor(login))
+  const secondPass = logins.map((login) => avatarColorFor(login))
+  assert.deepEqual(secondPass, firstPass, 'duas passadas dão as mesmas cores')
+  for (const color of firstPass) {
+    assert.ok(
+      ['#4c9aff', '#00b8d9', '#8777d9', '#ff991f', '#e5484d', '#46a758', '#c95dd8', '#8a7249'].includes(color),
+      `${color} vem da paleta fixa`,
+    )
+  }
+})
