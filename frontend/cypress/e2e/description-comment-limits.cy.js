@@ -247,12 +247,15 @@ E2E-SAVED`)
       cy.get('.issue-panel .body').invoke('text').then((text) => {
         expect(text).to.contain('LEGACY-DESCRIPTION-END')
       })
+      cy.intercept('PATCH', '/api/issues/KANB-7').as('patchAssignee')
       cy.get('.issue-panel select').eq(1).select(targetAssignee)
+      cy.wait('@patchAssignee')
       cy.get('#issue-comment-limit').should('exist')
       cy.request('GET', '/api/issues/KANB-7').then((moved) => {
         expect(moved.body.assigneeId).to.equal(otherAssignee)
       })
       cy.get('.issue-panel select').eq(1).select(originalAssignee)
+      cy.wait('@patchAssignee')
       cy.request('GET', '/api/issues/KANB-7').then((after) => {
         expect(after.body.assigneeId).to.equal(originalAssignee)
         expect(after.body.description).to.equal(original)
