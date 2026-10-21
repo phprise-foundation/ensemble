@@ -136,7 +136,13 @@ async function submitComment() {
 }
 
 function format(value) {
-  return new Date(value).toLocaleString()
+  return new Date(value).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 </script>
 
@@ -262,8 +268,15 @@ function format(value) {
       >
         <div class="comments-body">
           <div class="comment" v-for="entry in issue.comments" :key="entry.id">
-            <span class="comment-author">{{ entry.author }}</span>
-            <span class="muted small">{{ format(entry.at) }}</span>
+            <div class="comment-header">
+              <div class="comment-author-avatar" :style="{ background: '#333333' }">
+                {{ entry.author.charAt(0).toUpperCase() }}
+              </div>
+              <div class="comment-author-info">
+                <span class="comment-author">{{ entry.author }}</span>
+                <span class="muted small">{{ format(entry.at) }}</span>
+              </div>
+            </div>
             <p>{{ entry.body }}</p>
           </div>
           <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
