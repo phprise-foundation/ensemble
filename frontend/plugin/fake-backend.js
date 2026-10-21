@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { createSeed } from '../src/data/seed.js'
+import { avatarColorFor } from '../src/lib/avatar-color.js'
 import { COMMENT_LIMIT, DESCRIPTION_LIMIT, countCharacters, limitError } from '../shared/limits.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -13,6 +14,16 @@ const COLLECTIONS = [
   'workspaces', 'workflows', 'statuses', 'transitions', 'issueTypes',
   'boards', 'teams', 'roles', 'profiles', 'agents', 'experiences', 'sources',
 ]
+
+const DISPLAY_NAME_LIMIT = 40
+const AVATAR_PATTERN = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/
+const AVATAR_BASE64_LIMIT = 512 * 1024
+const AVATAR_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
+
+function backfillUser(user) {
+  user.avatar ??= null
+  user.avatarColor ??= avatarColorFor(user.login)
+}
 
 export function load(filePath = dataFile) {
   if (!existsSync(filePath)) {
@@ -27,7 +38,57 @@ export function load(filePath = dataFile) {
   for (const issue of database.issues ?? []) {
     issue.history ??= []
   }
+  backfillUser(database.user)
   return database
+}
+
+function userResponse(user) {
+  return { login: user.login, displayName: user.displayName, avatar: user.avatar, avatarColor: user.avatarColor }
+}
+
+function displayNameProblem(value) {
+  if (typeof value !== 'string') return { error: 'display name must be a string', field: 'displayName', status: 422 }
+  if (value.trim().length > DISPLAY_NAME_LIMIT) {
+    return { error: 'display name must be at most 40 characters', field: 'displayName', status: 422 }
+  }
+  return null
+}
+
+function avatarProblem(value) {
+  if (value === null) return null
+  const match = typeof value === 'string' ? AVATAR_PATTERN.exec(value) : null
+  if (!match) return { error: 'avatar must be null or a png, jpeg or webp base64 data URL', field: 'avatar', status: 422 }
+  if (match[2].length > AVATAR_BASE64_LIMIT || Buffer.from(match[2], 'base64').length > AVATAR_BASE64_LIMIT) {
+    return { error: 'avatar exceeds 512 KiB', field: 'avatar', status: 422 }
+  }
+  return null
+}
+
+function avatarColorProblem(value) {
+  if (AVATAR_COLOR_PATTERN.test(String(value))) return null
+  return { error: 'avatarColor must be a hex color like #4c9aff', field: 'avatarColor', status: 422 }
+}
+
+function userChanges(body) {
+  if (body.displayName !== undefined) {
+    const problem = displayNameProblem(body.displayName)
+    if (problem) return problem
+  }
+  if (body.avatar !== undefined) {
+    const problem = avatarProblem(body.avatar)
+    if (problem) return problem
+  }
+  if (body.avatarColor !== undefined) {
+    const problem = avatarColorProblem(body.avatarColor)
+    if (problem) return problem
+  }
+  return null
+}
+
+function applyUserChanges(user, body) {
+  if (body.displayName !== undefined) user.displayName = body.displayName.trim()
+  if (body.avatar !== undefined) user.avatar = body.avatar
+  if (body.avatarColor !== undefined) user.avatarColor = body.avatarColor
 }
 
 function save(db) {
@@ -251,12 +312,15 @@ export function handle(db, method, segments, body) {
   }
 
   if (head === 'user') {
-    if (method === 'GET') return { data: { login: db.user.login, displayName: db.user.displayName } }
+    if (method === 'GET') return { data: userResponse(db.user) }
     if (method === 'PATCH') {
-      const displayName = String(body.displayName ?? '').trim()
-      if (displayName.length > 40) return { error: 'display name must be at most 40 characters', status: 422 }
-      db.user.displayName = displayName
-      return { data: { login: db.user.login, displayName: db.user.displayName } }
+      const problem = userChanges(body)
+      if (problem) {
+        console.warn(`[fake-backend] PATCH /api/user recusado: ${problem.error}`)
+        return problem
+      }
+      applyUserChanges(db.user, body)
+      return { data: userResponse(db.user) }
     }
   }
 

@@ -498,6 +498,15 @@
   truncar. Contrato: `docs/KAN-93-guide.md` §2–§7. Provas: 16/16 nos testes
   de contrato do item, vitest 79/79, build ok e CI verde no head
   reconciliado com `main` (PR #110, release `v0.26.0`).
+- **Limites: testes BDD, node:test e vitest (KAN-118):** a suíte do contrato
+  de limites (§8 do guia `docs/KAN-93-guide.md`) fechada em três arquivos
+  `node:test` (`limits.test.mjs`, `limits-backend.test.mjs`,
+  `client-error.test.mjs`: 30/30) e dois specs vitest (`field-limit.spec.js`,
+  `issue-limits.spec.js`: 15/15), com `test:unit` 18 arquivos / 200 testes
+  verdes. Os cenários de 90% verificam o aviso a partir de 3686/921, o
+  contrato BDD congelado de `description-comment-limits.feature` segue
+  intacto (hash igual ao de `main`) e `test-kan-94.md` fora de escopo foi
+  removido. PR #147, release `v0.30.1`.
 - **Abas Comments | History com timeline mock no painel (KAN-90-A/KAN-113,
   produção):** o painel de issue do protótipo ganha abas **Comments** (padrão)
   e **History** conforme o guia `docs/KAN-90-guide.md` (§3–§6): feature
@@ -515,9 +524,76 @@
   nos dois painéis). Guia commitado junto. Barra de revisão: vitest 121/121,
   `node --test` 138/138, build ok, E2E completo 47/47 na `main` reconciliada.
   PR #129, release `v0.29.0`.
+- **Guia do rail colapsado publicado (KAN-91/KAN-112, documentação):** a
+  sub-task KAN-112 existiu para liberar a produção da KAN-91, que morava sem
+  commit no worktree de um agente. O primeiro PR (#128) foi rejeitado: além de
+  CI vermelho (`sidebar-navigation`/`sidebar-rail-active`), o diff apagava
+  produção já mesclada (`.topbar-actions`, `.console-toggle`,
+  `body.drawer-locked`, `aria-label`s). Na revisão do PR #139 constatou-se que
+  `navigation.js`, `AppSidebar.vue` e `main.scss` já estavam idênticos na
+  `main` (entrados no PR #118 e no QA do v0.25.0); o PR levou só o guia
+  `docs/KAN-83-guide.md` (+213/−0, arquivo novo), com objetivo, decisões e o
+  contrato de nomes do rail. Revisão: diff só de `.md`; os 16 vitest dos specs
+  que reprovaram o #128 passam (`sidebar-navigation` +
+  `sidebar-rail-active`); a falha de CI de `run-e2e-exit-code.test.mjs` é
+  infra (dev server morre com `JSON.parse` de JSON vazio no runner), sem
+  relação com o diff. Ressalva registrada na KAN-92: o guia escreve
+  `showRail = computed(() => props.collapsed && !props.isMobile)`, a produção
+  tem `Boolean(...)` em volta — equivalentes, reconciliar no texto quando a
+  KAN-92 tocar os testes. PR #139, release `v0.29.1`.
 - Pendências do copilot seguem fora desta rodada: chat real (mock × provedor),
   persistência da conversa e comportamento ao colapsar; lembrar a escolha
   expandido/colapsado entre recarregamentos é item futuro de UI.
+- **E2E e auditoria visual da aba History (KAN-114, verificação):** novo spec
+  `frontend/cypress/e2e/issue-history.cy.js` com `collectErrors` e sem
+  `vite-error-overlay`, cobrindo o guia `docs/KAN-90-guide.md` §7.4–§7.5:
+  aba padrão Comments com contador restrito, timeline de KANB-1/KANB-2 com os
+  cinco tipos de evento (ícone, autor, `<time datetime>`, resumo) em ordem
+  inversa, History sem comentários, empty state em KANB-6 e reset ao trocar de
+  issue, teclado completo (setas com wrap, Home/End, Enter/Espaço, roving
+  tabindex, `aria-selected`/`aria-controls`, foco visível) e selo
+  `Prototype` sob `?sim=1` oculto sob `?sim=0`. `icon-standard.cy.js` não
+  existe nesta base (Saída 2 legalmente vazia), auditoria visual em
+  1280×800/1024px dark e light com 12 screenshots em
+  `var/kanban.local/artifacts/kan-114-auditoria-visual/`, e suíte E2E 52/53
+  verde com a única falha (`sidebar-rail`) sendo defeito pré-existente
+  reproduzido na base pura e atribuído à KAN-91/PR #128. Ressalvas não
+  bloqueantes registradas: segmento `?sim=0` sem asserção de zero erros e
+  quirk `{end}`/`{home}` coberto via `cy.focused`. PR #140, release `v0.29.2`.
+- **PATCH `/api/user` parcial e idempotente + backfill do perfil (KAN-129):** o
+  §3 de `docs/KAN-126-guide.md` pousou no fake backend. Merge por campo com
+  validação integral **antes** de qualquer mutação (`userChanges` →
+  `applyUserChanges`): ausente preserva, `avatar: null` remove a foto,
+  `displayName` mantém trim ≤ 40 (422), `avatarColor` exige hex
+  `#[0-9a-fA-F]{6}` (422) e `avatar` aceita `null` ou data URL
+  `data:image/(png|jpeg|webp);base64,` ≤ 512 KiB (422); PATCH repetido produz o
+  mesmo estado. GET/PATCH respondem `{ login, displayName, avatar, avatarColor }`;
+  boot com backfill `??=` (banco legado ganha `avatar: null` e cor
+  determinística) e seed já nasce completo. Nova lib pura
+  `frontend/src/lib/avatar-color.js` (`avatarColorFor`, FNV-1a + paleta de 8
+  cores, §4.2). Cobertura: `profile-contract.test.mjs` (novo) mais os ajustes
+  em `profile-menu`/`seed-backfill`; 20 testes de perfil verdes, build verde,
+  e as 6 falhas restantes da suíte são pré-existentes em `main` (ambiente).
+  Escopo respeitado: nada em `ProfilePage.vue`, `session.js` ou KAN-108. A
+  revisão registrou três imprecisões não bloqueantes (cheque inalcançável de
+  `Buffer.from` em `avatarProblem`, `String(value)` antes do `typeof` e o
+  `'#e5484d'` hardcode no seed). PR #143, release `v0.30.0`.
+- **Diálogos acessíveis: serviço central de confirm/alert e toasts (KAN-127):**
+  o §7 de `docs/KAN-127-guide.md` substituiu os diálogos nativos da SPA.
+  `store/dialog.js` promise-based (`confirm` → bool, `alert` → void, uma
+  caixa por vez) com `DialogHost.vue` global no `App.vue` (`alertdialog` em
+  danger, foco inicial no Cancelar, Escape/Enter/Tab, `inert` no `#app` +
+  scroll lock, retorno de foco ao gatilho) e toasts não bloqueantes
+  `store/toast.js` + `ToastHost.vue` (máx. 3, 4s/6s, `aria-live`,
+  `role=alert` no erro, tokens `--success`/`--warning`). Os quatro
+  `window.confirm` (CrudPage, AgentsPage, IssueTypesPage, AppSidebar) migraram
+  para `dialog.confirm` danger com toasts de sucesso/erro: erro com `field`
+  segue inline, erro sem campo (rede/422 genérico) vai para `toast.error`.
+  Zero diálogos nativos em `src/**`. Verificação independente da revisão:
+  build, vitest 162/162, node:test e varredura PCRE2 verdes. Observações em
+  dívida: falso positivo da guarda da KAN-138 nas definições de
+  `store/dialog.js` e rótulo default do `alert` ambíguo no guia §3. PR #138,
+  release `v0.31.0`.
 
 ## Next
 

@@ -2,6 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { boardStore } from '../store/board.js'
+import { dialog } from '../store/dialog.js'
+import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
 import { isSimulated } from '../api/index.js'
 
@@ -57,16 +59,30 @@ async function save() {
   try {
     await boardStore.saveEntity('agents', draft.value)
     editing.value = false
+    toast.success(`${draft.value.name} saved.`)
   } catch (problem) {
-    error.value = problem.message
+    if (problem.field) {
+      error.value = problem.message
+      return
+    }
+    toast.error(problem.message)
   }
 }
 
 async function remove(agent) {
-  if (!window.confirm(`Delete "${agent.name}"?`)) {
-    return
+  const ok = await dialog.confirm({
+    title: 'Delete?',
+    message: `"${agent.name}" will be removed.`,
+    confirmLabel: 'Delete',
+    danger: true,
+  })
+  if (!ok) return
+  try {
+    await boardStore.removeEntity('agents', agent.id)
+    toast.success(`"${agent.name}" deleted.`)
+  } catch (problem) {
+    toast.error(problem.message)
   }
-  await boardStore.removeEntity('agents', agent.id)
 }
 
 onMounted(() => {

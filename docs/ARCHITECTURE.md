@@ -50,7 +50,8 @@ the collapsed rail (`nav.nav.rail` in `AppSidebar.vue`) render from the same
 source; with no workspace the model is empty. The collapsed rail keeps only
 navigable leaves (`a.leaf.rail-leaf`, 36×36, 18px icon, `title`/`aria-label`
 from the unique `railTitle`); brand, group headers, badges, edit buttons and
-Sources stay outside it. O modal de nova task (`BoardPage.vue`) cria issues
+Sources stay outside it. O contrato de implementação do rail está publicado em
+`docs/KAN-83-guide.md` (PR #139, release `v0.29.1`). O modal de nova task (`BoardPage.vue`) cria issues
 pela porta da frente: o seletor de status lista apenas os `initial` do
 workflow (default: o primeiro; sem `initial`, o modal bloqueia com aviso em
 pt-BR) e o `POST /api/issues` valida tudo **antes** de qualquer mutação —
@@ -71,7 +72,10 @@ cronologia inversa sem mutar a prop, resolve nomes de status/agente no store
 (com fallbacks bruto/`—`/`Unassigned`), renderiza `<time :datetime>` e um
 empty state `No history yet`; um selo `Prototype` depende de
 `boardStore.simulated('history')`. O seed e o fake backend fornecem os
-eventos mock (`docs/KAN-90-guide.md`, KAN-113).
+`boardStore.simulated('history')`. O seed e o fake backend fornecem os
+eventos mock (`docs/KAN-90-guide.md`, KAN-113). A cobertura E2E dessa junção
+(prova teclado/ARIA, empty state, reset e selo `?sim`) está em
+`cypress/e2e/issue-history.cy.js` (KAN-114, PR #140, release `v0.29.2`).
 
 Os limites do canal dos agentes vivem em `frontend/shared/limits.js`, módulo
 ESM puro sem DOM nem dependência de Vue — importável pelo bundle, pelo fake
@@ -85,7 +89,23 @@ comentário), `FieldLimit.vue` rende contador `x/limite`, aviso aos 90% e
 erro, e o campo liga-se por `aria-describedby`/`aria-invalid`, com
 `Save`/`Create`/`Comment` desabilitados acima do limite. Conteúdo legado
 (fixture `KANB-7`, só em `createSeed()`) é exibido integralmente. Contrato de
-aceite: `docs/KAN-93-guide.md`.
+aceite: `docs/KAN-93-guide.md`. A cobertura: BDD congelado em
+`tests/description-comment-limits.feature`, contrato em `node:test`
+(`limits.test.mjs`, `limits-backend.test.mjs`, `client-error.test.mjs`) e UI
+em vitest (`field-limit.spec.js`, `issue-limits.spec.js`) — KAN-118, PR #147,
+release `v0.30.1`.
+
+O perfil do usuário é servido pelo fake backend em `GET/PATCH /api/user` com
+resposta única de quatro campos `{ login, displayName, avatar, avatarColor }`
+(`avatar: null` quando sem foto). O `PATCH` é **parcial e idempotente**: campo
+ausente preserva, `avatar: null` remove a foto, `displayName` mantém trim ≤ 40
+(422), `avatarColor` exige hex `#[0-9a-fA-F]{6}` (422) e `avatar` aceita só
+`null` ou data URL `data:image/(png|jpeg|webp);base64,` com base64 ≤ 512 KiB
+(422). Toda a validação (`userChanges`) precede qualquer mutação
+(`applyUserChanges`) e o boot faz backfill com `??=` (`avatar: null`,
+`avatarColor = avatarColorFor(login)`), lib pura em
+`frontend/src/lib/avatar-color.js` (FNV-1a sobre o login, paleta fixa de 8
+cores). Contrato de aceite: `docs/KAN-126-guide.md` §3 (KAN-129).
 
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
@@ -95,9 +115,22 @@ pela classe `body.drawer-locked` e expõe o botão dedicado
 token `$mobile-breakpoint: 768px` (exportado como `--breakpoint-mobile`) e é
 consumido pelo SCSS como `max-width: $mobile-breakpoint - 1` e pelo JS via
 `mediaQueryFor('--breakpoint-mobile', -1)`. O contrato é provado em três
-níveis: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
+nívels: BDD em pt-BR (`tests/mobile-drawer-fullscreen.feature`), contrato na
 fonte e integração (`tests/mobile-drawer-fullscreen.test.mjs`/`.spec.js`) e
 navegador real (`cypress/e2e/mobile-drawer-fullscreen.cy.js`).
+
+Os diálogos da SPA são centralizados: `store/dialog.js` expõe a API
+promise-based (`confirm` → bool, `alert` → void, uma caixa por vez) e
+`DialogHost.vue` — montado no `App.vue` junto de `ToastHost.vue` — renderiza o
+modal acessível (`role=dialog`/`alertdialog` em danger, `aria-modal`, foco
+inicial no Cancelar, Escape/Enter/Tab, `inert` no `#app` + scroll lock e
+retorno de foco ao gatilho). `store/toast.js` + `ToastHost.vue` entregam
+notificações não bloqueantes (máx. 3 simultâneas, 4s/6s, `aria-live`,
+`role=alert` no erro, tokens `--success`/`--warning`). Nenhum fluxo usa
+`window.confirm`/`alert`/`prompt`: os quatro saves (CrudPage, AgentsPage,
+IssueTypesPage, AppSidebar) chamam `dialog.confirm` danger e roteiam o erro
+pelo `problem.field` do `client.js` — com campo, inline; sem campo (rede/422
+genérico), `toast.error` (KAN-127, PR #138, release `v0.31.0`).
 
 ## Layers
 
