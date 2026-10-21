@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
+import Avatar from './Avatar.vue'
 
 const props = defineProps({
   issue: { type: Object, required: true },
@@ -35,9 +36,15 @@ function onDragStart(event) {
     @click="boardStore.select(issue.id)"
   >
     <div class="card-top">
-      <span class="avatar sm" :style="{ background: agent?.avatarColor || 'var(--surface-3)' }">
-        {{ agent ? agent.name.charAt(0) : '?' }}
-      </span>
+      <Avatar
+        v-if="agent"
+        class="avatar sm"
+        :name="agent.name"
+        :image="agent.avatar"
+        :color="agent.avatarColor"
+        size="sm"
+      />
+      <span v-else class="avatar sm" :style="{ background: 'var(--surface-3)' }">?</span>
       <span class="card-id muted">{{ issue.id }}</span>
       <span class="spacer"></span>
       <AppIcon v-if="overdue" name="warning" size="14" class="overdue-flag" />
