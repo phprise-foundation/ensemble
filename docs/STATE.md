@@ -594,6 +594,23 @@
   dívida: falso positivo da guarda da KAN-138 nas definições de
   `store/dialog.js` e rótulo default do `alert` ambíguo no guia §3. PR #138,
   release `v0.31.0`.
+- **Perfil, Fase 1: foto como rascunho, `updateProfile` e Save com estados
+  (KAN-131):** o §5 de `docs/KAN-126-guide.md` pousou no front-end.
+  `store/session.js` ganhou `avatar`/`avatarColor` no estado e trocou `rename()`
+  por `updateProfile({ displayName, avatar })` (avatar `null` remove, ausente
+  preserva), com `load()` sincronizando tudo; `ProfilePage.vue` passou a editar
+  um rascunho local `{ displayName, avatar }` — seleção de arquivo valida por
+  `imageFileError` (mensagem inline, sem diálogo nativo), `normalizeImageFile`
+  vira draft, Remover marca `draft.avatar = null` — e o Save emite **um único
+  PATCH** de nome+foto, com botão desabilitado sem alterações (`null` explícito
+  conta), loading e sucesso `role="status"`; preview circular via `<Avatar>` com
+  fallback na inicial sobre `session.avatarColor` (determinística pelo login);
+  login readonly e os quatro `data-test` do micro-contrato. Verificação da
+  revisão: node:test de perfil 29/29, vitest 185/185 e build verdes no worktree
+  do head; CI vermelho (`legacy-db-boot.cy.js`) é dívida pré-existente da
+  `main` (KAN-129). Ressalvas não bloqueantes: erro do PATCH aparece no hint do
+  arquivo (migra para toasts na Fase 2) e a branch empilhada repetia fundações
+  já na `main`. PR #146, release `v0.32.0`.
 - **KAN-125** — corrida no harness de contratos E2E (`run-e2e.sh`) extinta:
   dados efêmeros por invocação (`E2E_DATA_FILE`, atômicos, nunca tocam nem
   removem o db do desenvolvedor), porta livre em todos os contratos (KAN-144) e

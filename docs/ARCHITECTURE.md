@@ -111,7 +111,14 @@ ausente preserva, `avatar: null` remove a foto, `displayName` mantém trim ≤ 4
 (`applyUserChanges`) e o boot faz backfill com `??=` (`avatar: null`,
 `avatarColor = avatarColorFor(login)`), lib pura em
 `frontend/src/lib/avatar-color.js` (FNV-1a sobre o login, paleta fixa de 8
-cores). Contrato de aceite: `docs/KAN-126-guide.md` §3 (KAN-129).
+cores). Contrato de aceite: `docs/KAN-126-guide.md` §3 (KAN-129). No
+front-end, o estado da sessão (`store/session.js`) carrega `avatar` e
+`avatarColor` e expõe `updateProfile({ displayName, avatar })` — campo
+ausente preserva, `avatar: null` remove — no lugar do antigo `rename()`. A
+página de perfil (`ProfilePage.vue`) edita um rascunho local `{ displayName,
+avatar }` e emite **um único PATCH** de nome+foto no Save, com preview
+circular via `<Avatar>` e fallback na inicial sobre `avatarColor`
+(Contrato de aceite: `docs/KAN-126-guide.md` §5, KAN-131).
 
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
