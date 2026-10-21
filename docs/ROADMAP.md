@@ -18,6 +18,10 @@
 8. **Scale the model** — multiple boards, relationships between agents, triggers
    and automation.
 9. **Hardening** — SSE/streaming, token instead of raw password, polish.
+   - **Dívida QA conhecida (candidata a item):** os specs de browser
+     `description-comment-limits` e `legacy-db-boot` falham no CI (etapa
+     Browser E2E) também no `main` puro — repro de 2026-10-21 no 9418d86.
+     Não é dívida da KAN-125 (PR #151).
 
 ## Active plan — board-driven agents & dynamic workflow (single container)
 
@@ -94,6 +98,9 @@ marking what is still a prototype.
    (`frontend/src/navigation.js`) e, colapsada em desktop, um rail de 48px só
    com folhas navegáveis (KAN-83, release `v0.18.0`); Sources continuam fora do
    rail, e a adaptação de `sidebar-collapse.cy.js` segue na sub-task de testes.
+   O guia de implementação do rail (`docs/KAN-83-guide.md`, com o contrato de
+   nomes e as decisões da RFC) está publicado na `main` (KAN-112, PR #139,
+   release `v0.29.1`).
    O modelo ficou uniforme em `{ entity, leaves }` e o spec da fronteira de
    1024px aceita o toggle ausente do DOM em modo mobile (KAN-87 prevalece;
    KAN-91, release `v0.25.0`).
@@ -107,7 +114,13 @@ marking what is still a prototype.
 6. ~~**Profile menu + session (KAN-15, MVE)** — user avatar/name in the top bar
    with a `profile`/`logout` dropdown, a profile page that edits only the display
    name, and a session gate (logout → neutral "Session ended" view).~~ **Done
-   (prototype).**
+   (prototype).** O backend do perfil evoluiu: `PATCH /api/user` parcial e
+   idempotente com `avatar`/`avatarColor` validados antes de qualquer mutação,
+   backfill no boot e lib `avatarColorFor` (KAN-129, release `v0.30.0`);
+   a foto no front-end segue o guia `docs/KAN-126-guide.md`: a Fase 1 pousou —
+   rascunho local de nome+foto, `updateProfile` e Save com estados
+   (KAN-131, release `v0.32.0`) — e a guarda de saída com toasts segue nas
+   fases seguintes.
 7. **Board polish** — open an issue on its own page; make board filters affect the
    cards; surface Experiences in the new menu; WIP hints; remove the off-canvas
    drawer from the Tab order when closed on mobile (`inert` on the `<aside>`
@@ -123,11 +136,22 @@ marking what is still a prototype.
    (≤4095/≤1023 code points): contador com aviso aos 90%, bloqueio de
    salvar/enviar acima do limite, `422 { error, field }` antes de qualquer
    mutação no fake backend e conteúdo legado exibido integralmente
-   (KAN-93, PR #110, release `v0.26.0`). O painel de issue ganhou abas
+   (KAN-93, PR #110, release `v0.26.0`); a suíte de testes do contrato
+   (BDD/node:test/vitest) fechou com KAN-118, PR #147, release `v0.30.1`.
+   O painel de issue ganhou abas
    `Comments | History` com timeline mock acessível (tablist, roving
    tabindex, setas com wrap, reset ao trocar de issue, selo `Prototype`),
    componente `IssueHistory.vue`, eventos no seed/fake backend e guia
-   `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`).
+   `docs/KAN-90-guide.md` (KAN-113, PR #129, release `v0.29.0`). A aba History
+   foi verificada com o spec E2E `frontend/cypress/e2e/issue-history.cy.js`
+   (KAN-114, PR #140, release `v0.29.2`). Os diálogos nativos do navegador
+   saíram do código: serviço central promise-based (`store/dialog.js` +
+   `DialogHost.vue`, `alertdialog` em danger, foco inicial no Cancelar,
+   Escape/Enter, `inert` + scroll lock, retorno de foco) e toasts não
+   bloqueantes (`store/toast.js` + `ToastHost.vue`, máx. 3, 4s/6s,
+   `aria-live`); os quatro fluxos de save migram erro com campo para inline e
+   erro sem campo (rede/422) para `toast.error` (KAN-127, PR #138, release
+   `v0.31.0`; guarda estática e E2E dedicados seguem em KAN-138/139).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.

@@ -23,10 +23,10 @@ import {
   Menu,
   MessageSquare,
   TriangleAlert,
+  Info,
   PanelLeft,
   PanelRight,
   SquareTerminal,
-  Info,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -57,10 +57,10 @@ const icons = {
   menu: Menu,
   comment: MessageSquare,
   warning: TriangleAlert,
+  info: Info,
   sidebar: PanelLeft,
   copilot: PanelRight,
   console: SquareTerminal,
-  info: Info,
 }
 
 const component = computed(() => icons[props.name])
