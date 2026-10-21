@@ -27,7 +27,6 @@ import {
   PanelLeft,
   PanelRight,
   SquareTerminal,
-  Info,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -62,7 +61,6 @@ const icons = {
   sidebar: PanelLeft,
   copilot: PanelRight,
   console: SquareTerminal,
-  info: Info,
 }
 
 const component = computed(() => icons[props.name])
