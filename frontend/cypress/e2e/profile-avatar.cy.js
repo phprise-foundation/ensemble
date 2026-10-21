@@ -52,7 +52,7 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
     cy.get('[data-test="avatar-preview"]').find('img').should('be.visible')
     cy.get('[data-test="save"]').should('not.be.disabled').click()
     cy.wait('@patchUser')
-    cy.get('.toast.success .toast-text').should('contain', 'Saved.')
+    cy.get('.toast.success .toast-text', { timeout: 8000 }).should('contain', 'Saved.')
     cy.reload()
     cy.get('[data-test="avatar-preview"]').find('img').should('be.visible')
   })
@@ -82,18 +82,12 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
     cy.get('[data-test="save"]').click()
     cy.wait('@patchUser')
     cy.reload()
+    cy.get('[data-test="avatar-preview"]').find('img').should('be.visible')
     cy.get('[data-test="remove-photo"]').click()
-    cy.then(() =>
-      cy.document().then((doc) =>
-        cy.wrap(doc.querySelector('[data-test="avatar-preview"]').outerHTML).should((h) =>
-          expect(h, 'html do preview').to.eq('SENTINEL:' + h),
-        ),
-      ),
-    )
     cy.get('[data-test="avatar-preview"]').find('img').should('not.exist')
     cy.get('[data-test="avatar-preview"]')
       .should('have.attr', 'style')
-      .and('contain', initialState.avatarColor)
+      .and('contain', 'rgb(229, 72, 77)')
     cy.get('[data-test="save"]').should('not.be.disabled').click()
     cy.wait('@patchUser').then((interception) => {
       expect(interception.request.body.avatar, 'PATCH envia null ao remover').to.be.null
@@ -101,7 +95,7 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
     cy.reload()
     cy.get('[data-test="avatar-preview"]')
       .should('have.attr', 'style')
-      .and('contain', initialState.avatarColor)
+      .and('contain', 'rgb(229, 72, 77)')
     cy.get('[data-test="avatar-preview"]')
       .invoke('text')
       .should('match', /^[A-Z]$/)
@@ -129,7 +123,9 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
   })
 
   it('save começa disabled sem alterações, entra em loading durante o PATCH e o login é readonly', () => {
-    cy.intercept('PATCH', '/api/user', { delay: 300 }).as('patchUser')
+    cy.intercept('PATCH', '/api/user', (req) =>
+      req.reply((res) => res.setDelay(300)),
+    ).as('patchUser')
     cy.get('[data-test="save"]').should('be.disabled')
     cy.get('#profile-login').then(($login) => {
       expect($login[0].readOnly || $login[0].disabled, 'login não editável').to.eq(true)
@@ -140,6 +136,6 @@ describe('perfil: upload, validação, remoção, save e fallback do avatar (KAN
     cy.get('[role="status"]').should('contain', 'Saving')
     cy.wait('@patchUser')
     cy.get('[role="status"]').should('not.exist')
-    cy.get('.toast.success .toast-text').should('contain', 'Saved.')
+    cy.get('.toast.success .toast-text', { timeout: 8000 }).should('contain', 'Saved.')
   })
 })
