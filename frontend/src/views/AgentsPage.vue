@@ -5,6 +5,8 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
+import Avatar from '../components/Avatar.vue'
+import { imageFileError, readImageFile } from '../lib/image-upload.js'
 import { isSimulated } from '../api/index.js'
 
 const route = useRoute()
@@ -38,16 +40,26 @@ function roleNames(agent) {
   return (agent.roleIds || []).map((id) => boardStore.role(id)?.name).filter(Boolean).join(', ') || 'No role'
 }
 
-function onPortrait(event) {
-  const file = event.target.files?.[0]
-  if (!file) {
+async function onPortrait(event) {
+  const input = event.target
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  const problem = imageFileError(file)
+  if (problem) {
+    error.value = problem
     return
   }
-  const reader = new FileReader()
-  reader.onload = () => {
-    draft.value.portrait = reader.result
+  try {
+    draft.value.portrait = await readImageFile(file)
+    error.value = ''
+  } catch (failure) {
+    error.value = failure.message
   }
-  reader.readAsDataURL(file)
+}
+
+function removePortrait() {
+  draft.value.portrait = ''
 }
 
 async function save() {
@@ -103,9 +115,7 @@ onMounted(() => {
 
     <div class="grid">
       <article class="agent-card" v-for="agent in agents" :key="agent.id">
-        <div class="portrait lg" :style="agent.portrait ? { backgroundImage: `url(${agent.portrait})`, backgroundSize: 'cover' } : { background: agent.avatarColor }">
-          <template v-if="!agent.portrait">{{ agent.name.charAt(0) }}</template>
-        </div>
+        <Avatar size="lg" :name="agent.name" :image="agent.portrait" :color="agent.avatarColor" decorative />
         <div class="agent-info">
           <strong>{{ agent.name }}</strong>
           <div class="muted small">{{ roleNames(agent) }}</div>
@@ -128,13 +138,12 @@ onMounted(() => {
 
         <div class="modal-body">
           <div class="agent-preview">
-            <div class="portrait lg" :style="draft.portrait ? { backgroundImage: `url(${draft.portrait})`, backgroundSize: 'cover' } : { background: draft.avatarColor }">
-              <template v-if="!draft.portrait">{{ (draft.name || '?').charAt(0) }}</template>
-            </div>
+            <Avatar size="lg" :name="draft.name || '?'" :image="draft.portrait" :color="draft.avatarColor" />
             <label class="field">
-              <span>Portrait (3x4)</span>
-              <input type="file" accept="image/*" @change="onPortrait" />
+              <span>Portrait</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" @change="onPortrait" />
             </label>
+            <button v-if="draft.portrait" type="button" class="button ghost" @click="removePortrait">Remove photo</button>
           </div>
 
           <label class="field"><span>Name</span><input type="text" v-model="draft.name" /></label>

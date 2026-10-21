@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
+import Avatar from './Avatar.vue'
 import FieldLimit from './FieldLimit.vue'
 import IssueHistory from './IssueHistory.vue'
 import {
@@ -153,9 +154,13 @@ function format(value) {
     <h2 class="panel-title">{{ issue.summary }}</h2>
 
     <div class="panel-meta">
-      <div class="portrait" :style="{ background: agent?.avatarColor || 'var(--surface-3)' }">
-        {{ agent ? agent.name.charAt(0) : '?' }}
-      </div>
+      <Avatar
+        size="md"
+        :name="agent ? agent.name : '?'"
+        :image="agent?.portrait"
+        :color="agent?.avatarColor || 'var(--surface-3)'"
+        decorative
+      />
       <div>
         <div class="panel-assignee">{{ agent ? agent.name : 'Unassigned' }}</div>
         <div class="muted small">{{ role || 'No role' }}</div>
