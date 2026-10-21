@@ -551,6 +551,24 @@
   reproduzido na base pura e atribuído à KAN-91/PR #128. Ressalvas não
   bloqueantes registradas: segmento `?sim=0` sem asserção de zero erros e
   quirk `{end}`/`{home}` coberto via `cy.focused`. PR #140, release `v0.29.2`.
+- **PATCH `/api/user` parcial e idempotente + backfill do perfil (KAN-129):** o
+  §3 de `docs/KAN-126-guide.md` pousou no fake backend. Merge por campo com
+  validação integral **antes** de qualquer mutação (`userChanges` →
+  `applyUserChanges`): ausente preserva, `avatar: null` remove a foto,
+  `displayName` mantém trim ≤ 40 (422), `avatarColor` exige hex
+  `#[0-9a-fA-F]{6}` (422) e `avatar` aceita `null` ou data URL
+  `data:image/(png|jpeg|webp);base64,` ≤ 512 KiB (422); PATCH repetido produz o
+  mesmo estado. GET/PATCH respondem `{ login, displayName, avatar, avatarColor }`;
+  boot com backfill `??=` (banco legado ganha `avatar: null` e cor
+  determinística) e seed já nasce completo. Nova lib pura
+  `frontend/src/lib/avatar-color.js` (`avatarColorFor`, FNV-1a + paleta de 8
+  cores, §4.2). Cobertura: `profile-contract.test.mjs` (novo) mais os ajustes
+  em `profile-menu`/`seed-backfill`; 20 testes de perfil verdes, build verde,
+  e as 6 falhas restantes da suíte são pré-existentes em `main` (ambiente).
+  Escopo respeitado: nada em `ProfilePage.vue`, `session.js` ou KAN-108. A
+  revisão registrou três imprecisões não bloqueantes (cheque inalcançável de
+  `Buffer.from` em `avatarProblem`, `String(value)` antes do `typeof` e o
+  `'#e5484d'` hardcode no seed). PR #143, release `v0.30.0`.
 
 ## Next
 

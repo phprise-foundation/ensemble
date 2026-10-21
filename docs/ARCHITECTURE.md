@@ -91,6 +91,18 @@ erro, e o campo liga-se por `aria-describedby`/`aria-invalid`, com
 (fixture `KANB-7`, só em `createSeed()`) é exibido integralmente. Contrato de
 aceite: `docs/KAN-93-guide.md`.
 
+O perfil do usuário é servido pelo fake backend em `GET/PATCH /api/user` com
+resposta única de quatro campos `{ login, displayName, avatar, avatarColor }`
+(`avatar: null` quando sem foto). O `PATCH` é **parcial e idempotente**: campo
+ausente preserva, `avatar: null` remove a foto, `displayName` mantém trim ≤ 40
+(422), `avatarColor` exige hex `#[0-9a-fA-F]{6}` (422) e `avatar` aceita só
+`null` ou data URL `data:image/(png|jpeg|webp);base64,` com base64 ≤ 512 KiB
+(422). Toda a validação (`userChanges`) precede qualquer mutação
+(`applyUserChanges`) e o boot faz backfill com `??=` (`avatar: null`,
+`avatarColor = avatarColorFor(login)`), lib pura em
+`frontend/src/lib/avatar-color.js` (FNV-1a sobre o login, paleta fixa de 8
+cores). Contrato de aceite: `docs/KAN-126-guide.md` §3 (KAN-129).
+
 O drawer da sidebar tem duas faixas governadas por um único corte: abaixo de
 768px ele ocupa a tela (`inset: 0; width: 100%`, sem `100vw`), trava o scroll
 pela classe `body.drawer-locked` e expõe o botão dedicado

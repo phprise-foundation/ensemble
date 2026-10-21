@@ -24,6 +24,29 @@ https://github.com/phprise-foundation/multi-agent/releases
   `var/kanban.local/artifacts/kan-114-auditoria-visual/`. PR #140, release
   `v0.29.2`.
 
+## v0.30.0 — 2026-10-21
+
+### Added
+
+- **KAN-129** — perfil no fake backend: `PATCH /api/user` parcial e idempotente
+  (§3 do guia `docs/KAN-126-guide.md`). Merge por campo — ausente preserva,
+  `avatar: null` remove a foto, `displayName` mantém trim ≤ 40 com 422,
+  `avatarColor` exige hex `#[0-9a-fA-F]{6}` (422) e `avatar` aceita só `null`
+  ou data URL `data:image/(png|jpeg|webp);base64,` com base64 ≤ 512 KiB (422).
+  A validação (`userChanges`) acontece **antes** de qualquer mutação
+  (`applyUserChanges`); PATCH inválido loga no console do plugin. GET e PATCH
+  respondem `{ login, displayName, avatar, avatarColor }`; o boot completa
+  bancos legados com `avatar ??= null` e `avatarColor ??= avatarColorFor(login)`
+  e o seed nasce com os campos novos. Nova lib pura
+  `frontend/src/lib/avatar-color.js` (`avatarColorFor`, FNV-1a sobre o login
+  com paleta fixa de 8 cores, §4.2 do guia). Cobertura em
+  `frontend/tests/profile-contract.test.mjs` (parcial, remoção, três mídias,
+  idempotência, 422s na borda do limite, valida-antes-de-mutar e backfill) e
+  ajustes em `profile-menu`/`seed-backfill`; `npm run build` verde e as 6
+  falhas restantes da suíte são pré-existentes em `main` (ambiente). Sem
+  alteração em `ProfilePage.vue`, `session.js` ou KAN-108. PR #143, release
+  `v0.30.0`.
+
 ## v0.29.1 — 2026-10-20
 
 ### Documentation

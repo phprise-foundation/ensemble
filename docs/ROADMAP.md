@@ -110,7 +110,10 @@ marking what is still a prototype.
 6. ~~**Profile menu + session (KAN-15, MVE)** — user avatar/name in the top bar
    with a `profile`/`logout` dropdown, a profile page that edits only the display
    name, and a session gate (logout → neutral "Session ended" view).~~ **Done
-   (prototype).**
+   (prototype).** O backend do perfil evoluiu: `PATCH /api/user` parcial e
+   idempotente com `avatar`/`avatarColor` validados antes de qualquer mutação,
+   backfill no boot e lib `avatarColorFor` (KAN-129, release `v0.30.0`);
+   a foto no front-end segue o guia `docs/KAN-126-guide.md`.
 7. **Board polish** — open an issue on its own page; make board filters affect the
    cards; surface Experiences in the new menu; WIP hints; remove the off-canvas
    drawer from the Tab order when closed on mobile (`inert` on the `<aside>`
