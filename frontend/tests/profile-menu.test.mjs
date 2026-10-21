@@ -128,12 +128,12 @@ test('tela de profile edita o nome sem tocar no login', () => {
 
   assert.match(route, /path:\s*'\/profile'/, "'/profile' deve ser rota própria, distinta de /teams/:teamId/profiles")
   assert.match(route, /ProfilePage/, 'a rota /profile deve apontar para o ProfilePage')
-  assert.match(page, /session\.rename/, 'a tela deve chamar session.rename(name)')
+  assert.match(page, /session\.updateProfile/, 'a tela deve chamar session.updateProfile({ displayName, avatar })')
   assert.match(page, /maxlength="?40"?/, 'o formulário limita o nome a 40 caracteres')
   assert.match(
     page,
-    /watch\(\s*\(\)\s*=>\s*session\.displayName/,
-    'o campo do nome acompanha a sessão quando ela hidrata depois da montagem',
+    /watch\(\s*\(\)\s*=>\s*\[session\.displayName,\s*session\.avatar\]/,
+    'os campos do perfil acompanham a sessão quando ela hidrata depois da montagem',
   )
   assert.match(page, /readonly/, 'o login fica somente leitura na tela')
 })
