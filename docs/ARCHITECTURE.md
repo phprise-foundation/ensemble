@@ -227,8 +227,13 @@ Writes (`POST`/`PATCH`/`DELETE`) require workspace owner or global admin; reads
 require membership. Every lookup includes the workspace, so an id from another
 workspace is `404`. Issue types do not change type through a transition:
 creating tasks from an approved RFC is a future user-configured trigger.
-Boards will reference one workflow and filter issue types/statuses; issues
-belong to the workspace, never to a board.
+Statuses (`Domain/Kanban/Status`) belong to an issue type and carry a fixed
+kind (`initial`/`transitional`/`final`); the first status of a type must be
+initial and there is exactly one initial per type. Transitions
+(`Domain/Kanban/Transition`) are workflow-scoped, connect statuses of the same
+issue type and never change the type; they carry an actor (`user`/`agent`/`both`)
+and an optional outcome. Boards will reference one workflow and filter issue
+types/statuses; issues belong to the workspace, never to a board.
 
 ## Domain packages
 

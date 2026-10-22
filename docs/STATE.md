@@ -32,6 +32,17 @@
   `/fields` (plus direct update/delete by id). Keys are unique in their scope;
   writes require workspace owner/admin, reads require membership.
   70 PHPUnit tests and Psalm level 1 are green.
+- **P1b — statuses and transitions (branch `feat/p1-workflow-chain`):**
+  statuses belong to an issue type and use the fixed kinds `initial`,
+  `transitional` and `final`; the first status of a type must be initial and
+  there is exactly one initial per type. Transitions are workflow-scoped,
+  connect statuses of the same issue type (never changing the type), support
+  `user`/`agent`/`both` and an optional outcome. Endpoints:
+  `GET/POST /api/workspaces/{ws}/workflows/{wf}/statuses`,
+  `GET/PATCH/DELETE /api/workspaces/{ws}/statuses/{id}`,
+  `GET/POST /api/workspaces/{ws}/workflows/{wf}/transitions`,
+  `GET/PATCH/DELETE /api/workspaces/{ws}/transitions/{id}`. 78 PHPUnit tests
+  and Psalm level 1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

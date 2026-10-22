@@ -42,8 +42,8 @@ Order and exit criteria:
    validation of those screens.
    - **P1a — workflows, issue types and fields: Done** (branch
      `feat/p1-workflow-chain`; ADR-002).
-   - P1b: statuses and transitions (fixed status kind; no cross-issue-type
-     transition).
+   - **P1b — statuses and transitions: Done** (fixed status kind; no
+     cross-issue-type transition).
    - P1c: boards and columns (board references one workflow; issues have no
      `boardId`).
    - P1d: issues (workspace prefix key sequence, move, comments, history).

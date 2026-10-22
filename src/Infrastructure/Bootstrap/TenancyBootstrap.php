@@ -5,18 +5,28 @@ declare(strict_types=1);
 namespace App\Infrastructure\Bootstrap;
 
 use App\Application\Kanban\CreateFieldDefinition;
+use App\Application\Kanban\CreateStatus;
+use App\Application\Kanban\CreateTransition;
 use App\Application\Kanban\CreateIssueType;
 use App\Application\Kanban\CreateWorkflow;
 use App\Application\Kanban\DeleteFieldDefinition;
+use App\Application\Kanban\DeleteStatus;
+use App\Application\Kanban\DeleteTransition;
 use App\Application\Kanban\DeleteIssueType;
 use App\Application\Kanban\DeleteWorkflow;
 use App\Application\Kanban\ListFieldDefinitions;
+use App\Application\Kanban\ListStatuses;
+use App\Application\Kanban\ListTransitions;
 use App\Application\Kanban\ListIssueTypes;
 use App\Application\Kanban\ListWorkflows;
 use App\Application\Kanban\ReadFieldDefinition;
+use App\Application\Kanban\ReadStatus;
+use App\Application\Kanban\ReadTransition;
 use App\Application\Kanban\ReadIssueType;
 use App\Application\Kanban\ReadWorkflow;
 use App\Application\Kanban\UpdateFieldDefinition;
+use App\Application\Kanban\UpdateStatus;
+use App\Application\Kanban\UpdateTransition;
 use App\Application\Kanban\UpdateIssueType;
 use App\Application\Kanban\UpdateWorkflow;
 use App\Application\Security\AuthenticateUser;
@@ -37,6 +47,8 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\FieldDefinitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\SessionRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\UserRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
@@ -44,6 +56,8 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRe
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineSessionRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
@@ -52,6 +66,10 @@ use App\Interface\Http\Kanban\FieldDefinitionController;
 use App\Interface\Http\Kanban\FieldDefinitionPresenter;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\IssueTypePresenter;
+use App\Interface\Http\Kanban\StatusController;
+use App\Interface\Http\Kanban\StatusPresenter;
+use App\Interface\Http\Kanban\TransitionController;
+use App\Interface\Http\Kanban\TransitionPresenter;
 use App\Interface\Http\Kanban\WorkflowController;
 use App\Interface\Http\Kanban\WorkflowPresenter;
 use App\Interface\Http\Tenancy\MemberPresenter;
@@ -90,6 +108,10 @@ final readonly class TenancyBootstrap
         $workflowPresenter = new WorkflowPresenter();
         $issueTypePresenter = new IssueTypePresenter();
         $fieldPresenter = new FieldDefinitionPresenter();
+        $statuses = new DoctrineStatusRepository($entityManager, new StatusRecordMapper());
+        $transitions = new DoctrineTransitionRepository($entityManager, new TransitionRecordMapper());
+        $statusPresenter = new StatusPresenter();
+        $transitionPresenter = new TransitionPresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -151,6 +173,26 @@ final readonly class TenancyBootstrap
                 new UpdateFieldDefinition($fields, $guard),
                 new DeleteFieldDefinition($fields, $guard),
                 $fieldPresenter,
+                $this->responder,
+            ),
+            new StatusController(
+                $currentUser,
+                new ListStatuses($workflows, $issueTypes, $statuses, $guard),
+                new CreateStatus($workflows, $issueTypes, $statuses, $guard),
+                new ReadStatus($statuses, $guard),
+                new UpdateStatus($statuses, $guard),
+                new DeleteStatus($statuses, $transitions, $guard),
+                $statusPresenter,
+                $this->responder,
+            ),
+            new TransitionController(
+                $currentUser,
+                new ListTransitions($workflows, $transitions, $guard),
+                new CreateTransition($workflows, $statuses, $transitions, $guard),
+                new ReadTransition($transitions, $guard),
+                new UpdateTransition($transitions, $guard),
+                new DeleteTransition($transitions, $guard),
+                $transitionPresenter,
                 $this->responder,
             ),
             new TenancyErrorResponder($this->responder),

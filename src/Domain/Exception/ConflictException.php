@@ -32,4 +32,14 @@ final class ConflictException extends RuntimeException
     {
         return new self($resource . ' still has children');
     }
+
+    public static function initialStatus(): self
+    {
+        return new self('issue type already has an initial status');
+    }
+
+    public static function transitionExists(): self
+    {
+        return new self('transition already exists');
+    }
 }

@@ -37,4 +37,14 @@ final class NotFoundException extends RuntimeException
     {
         return new self('field not found');
     }
+
+    public static function status(): self
+    {
+        return new self('status not found');
+    }
+
+    public static function transition(): self
+    {
+        return new self('transition not found');
+    }
 }
