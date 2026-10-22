@@ -684,6 +684,25 @@
   absoluto (sem flake de fuso). Verificação: vitest 247/247 (25 arquivos),
   `node --test` 11/11, build verde. Veredicto: aprovado; release `v0.34.3`.
 
+- **KAN-143 — E2E de comentários e avatares no navegador (§5 do guia KAN-128):**
+  spec `frontend/cypress/e2e/comments-avatars.cy.js` (11 testes BDD em pt-BR,
+  coletor `collectErrors`) prova no navegador real: avatar do card circular de
+  22px com `:title`/`aria-label` do agente e fallback `Unassigned` sem
+  assignee; no painel, os quatro ramos do seed — `admin` com a identidade do
+  user (sem foto: inicial + cor determinística), `vivy` com a miniatura do
+  data URL, `Kaio` pelo autor e o `user` antigo com inicial `U` — legenda com
+  nome + `timestamp` validando apenas o formato `dd/MM/yyyy HH:mm` (sem flake
+  de fuso), publicação logada interceptada (`POST` com `author: 'admin'`) com
+  ordem cronológica preservada e nenhuma `<img>` quebrada (`naturalWidth >
+  0`). Seed restaurado no `afterEach` e `E2E_PORT` exclusiva do harness em
+  worktree. A primeira revisão reprovou o PR #178 por imprecisão de título do
+  `it` (dizia 24px, o corpo media 22px — documentação executável não pode
+  contradizer a própria asserção); corrigido no commit `fc36e1d` e o branch
+  purgado de um relatório de trabalho staged (`ab4d1c4`). Mudança
+  exclusivamente de teste, nada de produção. Verificação: bateria completa
+  117/117 no head (`E2E_PORT=5197`, 19 specs, 11/11 da suíte nova). Veredicto:
+  aprovado; PR #178, release `v0.34.4`.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in
