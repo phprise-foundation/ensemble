@@ -7,6 +7,7 @@ namespace App\Interface\Http\Tenancy;
 use App\Domain\Kanban\BoardColumnId;
 use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\FieldDefinitionId;
+use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\TransitionId;
@@ -17,6 +18,7 @@ use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\ColumnController;
 use App\Interface\Http\Kanban\FieldDefinitionController;
+use App\Interface\Http\Kanban\IssueController;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
 use App\Interface\Http\Kanban\TransitionController;
@@ -38,6 +40,7 @@ final readonly class TenancyRouter
         private TransitionController $transitions,
         private BoardController $boards,
         private ColumnController $columns,
+        private IssueController $issues,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
     ) {
@@ -110,6 +113,12 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isColumn($segments) => $this->columns->show($request, $this->workspaceId($segments), $this->columnId($segments)),
             $method === 'PATCH' && $this->isColumn($segments) => $this->columns->update($request, $this->workspaceId($segments), $this->columnId($segments)),
             $method === 'DELETE' && $this->isColumn($segments) => $this->columns->delete($request, $this->workspaceId($segments), $this->columnId($segments)),
+            $method === 'GET' && $this->isIssues($segments) => $this->issues->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isIssues($segments) => $this->issues->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isIssue($segments) => $this->issues->show($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'PATCH' && $this->isIssue($segments) => $this->issues->update($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueMove($segments) => $this->issues->move($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -282,6 +291,44 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isIssues(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssue(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueMove(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'move';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueComments(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'comments';
+    }
+
+    /** @param list<string> $segments */
     private function workspaceId(array $segments): WorkspaceId
     {
         return new WorkspaceId($segments[2] ?? '');
@@ -327,5 +374,11 @@ final readonly class TenancyRouter
     private function columnId(array $segments): BoardColumnId
     {
         return new BoardColumnId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function issueKey(array $segments): IssueKey
+    {
+        return new IssueKey($segments[4] ?? '');
     }
 }

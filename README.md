@@ -49,8 +49,21 @@ GET/PATCH/DELETE /fields/{id}
 ```
 
 Issue types only change through their own workflow; transitions never change
-the type (an RFC stays an RFC). Boards will reference one workflow and filter
-issue types/statuses; an issue belongs to the workspace, not to a board. The legacy SQLite board and agent-watcher
+the type (an RFC stays an RFC). Boards reference one workflow and filter issue
+types/statuses; an issue belongs to the workspace, not to a board.
+
+The issue slice adds:
+
+```
+GET/POST  /issues
+GET/PATCH /issues/{key}
+POST      /issues/{key}/move
+POST      /issues/{key}/comments
+GET       /issues?boardId={board}
+```
+
+Issues use the workspace prefix (`ALP-1`, `ALP-2`), start in the issue type's
+initial status and carry custom field values, comments and status history. The legacy SQLite board and agent-watcher
 surfaces still exist in this branch but are not used by the new routes; they are
 removed in the productization phases described in `docs/ROADMAP.md` and
 `docs/ADR-001-tenancy-postgres-doctrine.md`.

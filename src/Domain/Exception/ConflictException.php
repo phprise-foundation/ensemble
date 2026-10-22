@@ -42,4 +42,9 @@ final class ConflictException extends RuntimeException
     {
         return new self('transition already exists');
     }
+
+    public static function transitionNotAllowed(): self
+    {
+        return new self('transition not allowed for the current status');
+    }
 }

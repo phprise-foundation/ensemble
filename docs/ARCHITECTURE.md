@@ -237,7 +237,11 @@ and reference exactly one workflow; they carry issue-type/status filters and
 ordered `BoardColumn`s that group statuses from that workflow. A column status
 must belong to the board workflow and to only one column in that board. Issues
 never carry a `boardId`; a board displays issues by status and filters. `wip`
-on a column is optional.
+on a column is optional. Issues (`Domain/Kanban/Issue`) use a workspace key
+sequence (`PREFIX-N`), validate custom field values against the issue type's
+definitions, and append status history on every move. Comments are separate
+records; the issue detail returns both. `DoctrineIssueKeyGenerator` locks the
+workspace sequence row before issuing the next key.
 
 ## Domain packages
 

@@ -57,4 +57,9 @@ final class NotFoundException extends RuntimeException
     {
         return new self('column not found');
     }
+
+    public static function issue(): self
+    {
+        return new self('issue not found');
+    }
 }

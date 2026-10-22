@@ -46,7 +46,8 @@ Order and exit criteria:
      cross-issue-type transition).
    - **P1c — boards and columns: Done** (board references one workflow;
      issues have no `boardId`).
-   - P1d: issues (workspace prefix key sequence, move, comments, history).
+   - **P1d — issues: Done** (workspace prefix key sequence, move, comments,
+     history).
 3. **P2 — teams and agents** — teams, roles (unblock/interactive/filters),
    profiles, agents (identity + runtime + roles + source), sources/repositories
    (`local` for dev, `git` for cloud); full CRUD.

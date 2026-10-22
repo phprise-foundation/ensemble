@@ -6,7 +6,9 @@ namespace App\Infrastructure\Bootstrap;
 
 use App\Application\Kanban\CreateBoard;
 use App\Application\Kanban\CreateColumn;
+use App\Application\Kanban\CommentIssue;
 use App\Application\Kanban\CreateFieldDefinition;
+use App\Application\Kanban\CreateIssue;
 use App\Application\Kanban\CreateStatus;
 use App\Application\Kanban\CreateTransition;
 use App\Application\Kanban\CreateIssueType;
@@ -21,13 +23,18 @@ use App\Application\Kanban\DeleteWorkflow;
 use App\Application\Kanban\ListBoards;
 use App\Application\Kanban\ListColumns;
 use App\Application\Kanban\ListFieldDefinitions;
+use App\Application\Kanban\ListIssueComments;
+use App\Application\Kanban\ListIssueEvents;
+use App\Application\Kanban\ListIssues;
 use App\Application\Kanban\ListStatuses;
 use App\Application\Kanban\ListTransitions;
 use App\Application\Kanban\ListIssueTypes;
 use App\Application\Kanban\ListWorkflows;
 use App\Application\Kanban\ReadBoard;
 use App\Application\Kanban\ReadColumn;
+use App\Application\Kanban\MoveIssue;
 use App\Application\Kanban\ReadFieldDefinition;
+use App\Application\Kanban\ReadIssue;
 use App\Application\Kanban\ReadStatus;
 use App\Application\Kanban\ReadTransition;
 use App\Application\Kanban\ReadIssueType;
@@ -35,12 +42,14 @@ use App\Application\Kanban\ReadWorkflow;
 use App\Application\Kanban\UpdateBoard;
 use App\Application\Kanban\UpdateColumn;
 use App\Application\Kanban\UpdateFieldDefinition;
+use App\Application\Kanban\UpdateIssue;
 use App\Application\Kanban\UpdateStatus;
 use App\Application\Kanban\UpdateTransition;
 use App\Application\Kanban\UpdateIssueType;
 use App\Application\Kanban\UpdateWorkflow;
 use App\Application\Kanban\ValidateBoardFilters;
 use App\Application\Kanban\ValidateColumnStatuses;
+use App\Application\Kanban\ValidateFieldValues;
 use App\Application\Security\AuthenticateUser;
 use App\Application\Security\ReadCurrentUser;
 use App\Application\Tenancy\AddWorkspaceMember;
@@ -55,9 +64,13 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Authentication\RandomTokenGenerator;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\FieldDefinitionRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueCommentRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueEventRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\SessionRecordMapper;
@@ -69,6 +82,9 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueCommentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueEventRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineSessionRepository;
@@ -84,6 +100,10 @@ use App\Interface\Http\Kanban\ColumnController;
 use App\Interface\Http\Kanban\ColumnPresenter;
 use App\Interface\Http\Kanban\FieldDefinitionController;
 use App\Interface\Http\Kanban\FieldDefinitionPresenter;
+use App\Interface\Http\Kanban\IssueCommentPresenter;
+use App\Interface\Http\Kanban\IssueController;
+use App\Interface\Http\Kanban\IssueEventPresenter;
+use App\Interface\Http\Kanban\IssuePresenter;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\IssueTypePresenter;
 use App\Interface\Http\Kanban\StatusController;
@@ -138,6 +158,14 @@ final readonly class TenancyBootstrap
         $validateColumnStatuses = new ValidateColumnStatuses($statuses);
         $boardPresenter = new BoardPresenter();
         $columnPresenter = new ColumnPresenter();
+        $issueRepository = new DoctrineIssueRepository($entityManager, new IssueRecordMapper());
+        $issueComments = new DoctrineIssueCommentRepository($entityManager, new IssueCommentRecordMapper());
+        $issueEvents = new DoctrineIssueEventRepository($entityManager, new IssueEventRecordMapper());
+        $issueKeys = new DoctrineIssueKeyGenerator($entityManager);
+        $validateFieldValues = new ValidateFieldValues();
+        $issuePresenter = new IssuePresenter();
+        $issueCommentPresenter = new IssueCommentPresenter();
+        $issueEventPresenter = new IssueEventPresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -241,6 +269,22 @@ final readonly class TenancyBootstrap
                 new UpdateColumn($boards, $boardColumns, $validateColumnStatuses, $guard),
                 new DeleteColumn($boardColumns, $guard),
                 $columnPresenter,
+                $this->responder,
+            ),
+            new IssueController(
+                $currentUser,
+                new ReadWorkspace($guard),
+                new ListIssues($issueRepository, $boards, $boardColumns, $guard),
+                new CreateIssue($issueRepository, $issueTypes, $statuses, $fields, $issueEvents, $issueKeys, $validateFieldValues, $guard),
+                new ReadIssue($issueRepository, $guard),
+                new UpdateIssue($issueRepository, $fields, $validateFieldValues, $guard),
+                new MoveIssue($issueRepository, $statuses, $transitions, $issueEvents, $guard),
+                new CommentIssue($issueRepository, $issueComments, $guard),
+                new ListIssueComments($issueRepository, $issueComments, $guard),
+                new ListIssueEvents($issueRepository, $issueEvents, $guard),
+                $issuePresenter,
+                $issueCommentPresenter,
+                $issueEventPresenter,
                 $this->responder,
             ),
             new TenancyErrorResponder($this->responder),

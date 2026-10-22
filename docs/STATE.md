@@ -52,6 +52,16 @@
   `GET/POST/PATCH/DELETE` on `/api/workspaces/{ws}/boards`,
   `/boards/{id}/columns` and `/columns/{id}`. 69 PHPUnit tests and Psalm
   level 1 are green.
+- **P1d — issues (branch `feat/p1-workflow-chain`):** issues are
+  workspace-scoped (no `boardId`), use the workspace prefix key sequence
+  (`ALP-1`, `ALP-2`) and carry type, status, summary, description, reporter,
+  assignee, worker, blocked, custom field values, comments and status history.
+  Creation defaults to the issue type's initial status; moves only follow a
+  user/both transition and never change the issue type; board listing filters by
+  the board columns and issue-type/status filters. Endpoints:
+  `GET/POST /issues`, `GET/PATCH /issues/{key}`,
+  `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
+  74 PHPUnit tests and Psalm level 1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.
