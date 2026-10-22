@@ -35,3 +35,45 @@ test('avatar: seed traz o retrato de Vivy em PNG', () => {
   assert.match(seed, /portrait:\s*VIVY_PORTRAIT/)
   assert.match(portrait, /^export const VIVY_PORTRAIT = 'data:image\/png;base64,[A-Za-z0-9+/=]+'\s*$/m)
 })
+
+test('avatar: nenhuma dependência nova no package.json', () => {
+  const packageJson = JSON.parse(read('package.json'))
+  const deps = Object.keys(packageJson.dependencies || {})
+  const devDeps = Object.keys(packageJson.devDependencies || {})
+  
+  // Verifica que não há novas dependências (deve ser um subconjunto do conjunto original)
+  const expectedDeps = [
+    '@vitejs/plugin-vue',
+    'autoprefixer',
+    'cypress',
+    'postcss',
+    'prettier',
+    'tailwindcss',
+    'vitest',
+    'vue',
+    'vue-router',
+    'ws'
+  ]
+  
+  const expectedDevDeps = [
+    '@types/node',
+    '@vitejs/plugin-vue',
+    '@vue/test-utils',
+    'cypress',
+    'jsdom',
+    'msw',
+    'postcss',
+    'tailwindcss',
+    'typescript',
+    'vitest'
+  ]
+  
+  // Não devem existir dependências novas
+  for (const dep of deps) {
+    assert.ok(expectedDeps.includes(dep), `Dependência nova detectada: ${dep}`)
+  }
+  
+  for (const dep of devDeps) {
+    assert.ok(expectedDevDeps.includes(dep), `Dependência de desenvolvimento nova detectada: ${dep}`)
+  }
+})

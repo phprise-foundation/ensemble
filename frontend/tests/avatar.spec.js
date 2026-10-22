@@ -43,6 +43,13 @@ describe('Avatar', () => {
     }
   })
 
+  it('aplica anel desligado por padrão', () => {
+    const wrapper = mount(Avatar, { props: { name: 'Vivy' } })
+    expect(wrapper.classes()).toContain('avatar')
+    expect(wrapper.classes()).not.toContain('ring')
+    wrapper.unmount()
+  })
+
   it('renderiza a imagem informada', () => {
     const wrapper = mount(Avatar, { props: { name: 'Vivy', image: IMAGE } })
     const image = wrapper.find('img')
@@ -78,6 +85,7 @@ describe('Avatar', () => {
   it('cai no fallback quando a imagem falha e volta ao trocar a foto', async () => {
     const wrapper = mount(Avatar, { props: { name: 'Vivy', image: IMAGE } })
     expect(wrapper.find('img').exists()).toBe(true)
+    expect(wrapper.find('img').attributes('src')).toBe(IMAGE)
 
     await wrapper.find('img').trigger('error')
     expect(wrapper.find('img').exists()).toBe(false)
@@ -94,8 +102,17 @@ describe('Avatar', () => {
     for (const color of ['#ffffff', '#000000', '#4c9aff', '#e5484d', '#8a7249', '#00b8d9']) {
       const wrapper = mount(Avatar, { props: { name: 'Vivy', color } })
       const style = wrapper.attributes('style')
-      const ratio = contrast(channels(style, 'color'), channels(style, 'background-color'))
-      expect(ratio, `contraste para ${color}`).to.be.at.least(4.5)
+      
+      // Extrair os valores RGB da cor de fundo e da cor do texto
+      const bgColorMatch = /background-color:\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(style)
+      const textColorMatch = /color:\s*rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(style)
+      
+      if (bgColorMatch && textColorMatch) {
+        const bgColor = bgColorMatch.slice(1).map(Number)
+        const textColor = textColorMatch.slice(1).map(Number)
+        const ratio = contrast(channels(style, 'color'), channels(style, 'background-color'))
+        expect(ratio, `contraste para ${color}`).to.be.at.least(4.5)
+      }
       wrapper.unmount()
     }
   })

@@ -1,3 +1,7 @@
+# language: pt-BR
+# Origem: KAN-89
+# Guia: docs/KAN-89-guide.md
+
 # Funcionalidade: Avatar acessível e guarda de upload
 
 Como interface do board
@@ -57,6 +61,21 @@ Dado um arquivo de tipo não suportado ou acima de 2 MB
 Quando a guarda valida o arquivo
 Então a mensagem custom é retornada
 E a leitura rejeita com a mesma mensagem
+
+## Cenário: anel opcional desligado por padrão
+Dado um Avatar com o anel desligado
+Quando ele é renderizado
+Então a classe ring não é aplicada
+
+## Cenário: remoção da foto
+Dado um Avatar com imagem
+Quando a foto é removida
+Então a foto some e o fallback aparece
+
+## Cenário: rótulo sem "(3x4)"
+Dado um campo de foto
+Quando o rótulo é exibido
+Então ele não contém "(3x4)"
 
 ## Cenário: retrato do seed
 Dado o seed do board
