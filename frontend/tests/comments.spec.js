@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 
+import IssueCard from '../src/components/IssueCard.vue'
 import IssuePanel from '../src/components/IssuePanel.vue'
 import { session } from '../src/store/session.js'
 import { api } from '../src/api/index.js'
@@ -27,7 +28,7 @@ vi.mock('../src/store/board.js', async () => {
       },
       selectedIssue: ref(issue),
       status: () => ({ id: 'in-progress', name: 'In Progress', color: '#0052cc' }),
-      agent: () => ({ id: 'vivy', name: 'Vivy', roleIds: [], avatarColor: '#4c9aff', portrait: 'data:image/png;base64,iVBORw0KGgo=' }),
+      agent: (id) => (id === 'vivy' ? { id: 'vivy', name: 'Vivy', roleIds: [], avatarColor: '#4c9aff', portrait: 'data:image/png;base64,iVBORw0KGgo=' } : null),
       role: () => ({ name: 'Product Owner' }),
       userTargets: () => [],
       isOverdue: () => false,
@@ -36,6 +37,7 @@ vi.mock('../src/store/board.js', async () => {
       moveIssue: vi.fn(),
       updateIssue: vi.fn(),
       addComment: vi.fn(),
+      select: vi.fn(),
       clearSelection: vi.fn(),
     },
   }
@@ -64,6 +66,26 @@ describe('IssuePanel: comentarios com autor e avatares (KAN-128)', () => {
     expect(rows[1].get('.comment-author').text()).toBe('user', 'o author legado "user" mantem a string original e cai no fallback')
     expect(panel.find('img[src=""]').exists()).toBe(false, 'nenhuma img com src vazio (imagem quebrada impedida)')
     expect(panel.findAll('.avatar').length).toBeGreaterThan(0, 'o painel deve renderizar miniaturas via Avatar')
+  })
+})
+
+describe('IssueCard: assignee renderiza via Avatar (KAN-128)', () => {
+  const issue = { id: 'KANB-2', statusId: 'in-progress', assigneeId: 'vivy', summary: 'Card com agente' }
+
+  it('[RED] assignee atribuido renderiza o Avatar circular com tooltip do nome do agente', () => {
+    const card = mount(IssueCard, { props: { issue } })
+    const avatar = card.find('.avatar')
+    expect(avatar.exists(), 'o card deve renderizar o assignee via componente Avatar').toBe(true)
+    expect(avatar.classes()).toContain('sm')
+    expect(avatar.attributes('title'), 'o tooltip deve carregar o nome do agente').toBe('Vivy')
+    expect(avatar.attributes('aria-label'), 'o Avatar nao-decorativo rotula por aria-label').toBe('Avatar de Vivy')
+  })
+
+  it('[RED] card sem assignee cai no fallback neutro com tooltip Unassigned', () => {
+    const card = mount(IssueCard, { props: { issue: { ...issue, id: 'KANB-3', assigneeId: null } } })
+    const avatar = card.find('.avatar')
+    expect(avatar.attributes('title'), 'sem agente, o tooltip e o termo do painel').toBe('Unassigned')
+    expect(avatar.text(), 'o fallback neutro mostra "?" como conteudo').toBe('?')
   })
 })
 
