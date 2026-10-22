@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    "lucide-vue-next",
+    "vue",
+    "vue-router"
+  ],
+  "devDependencies": [
+    "@vitejs/plugin-vue",
+    "@vue/test-utils",
+    "cypress",
+    "jsdom",
+    "sass",
+    "vite",
+    "vitest"
+  ]
+}

@@ -10,6 +10,12 @@ Quando ele é renderizado em cada tamanho
 Então o elemento tem a classe do tamanho e borda circular
 E as medidas vêm do CSS, não de estilo inline
 
+## Cenário: anel opcional desligado por padrão
+Dado um Avatar padrão
+Quando ele é renderizado
+Então ele não tem a classe ring
+E com ring o anel de 2px é exibido
+
 ## Cenário: recorte central da foto
 Dado um Avatar com imagem
 Quando a imagem é exibida
@@ -57,8 +63,20 @@ Dado um arquivo de tipo não suportado ou acima de 2 MB
 Quando a guarda valida o arquivo
 Então a mensagem custom é retornada
 E a leitura rejeita com a mesma mensagem
+E a foto atual não é alterada
 
 ## Cenário: retrato do seed
 Dado o seed do board
 Quando ele é carregado
 Então Vivy nasce com um portrait PNG em data URL
+
+## Cenário: remoção da foto
+Dado um Avatar com foto
+Quando o usuário remove a foto
+Então o draft é limpo e o fallback é exibido
+
+## Cenário: rótulo sem "(3x4)"
+Dado um Avatar na aplicação
+Quando o rótulo é renderizado
+Então ele não contém "(3x4)"
+E qualquer proporção é aceita
