@@ -163,7 +163,11 @@ marking what is still a prototype.
    enviando `session.login` (KAN-128, PRs #150/#168, release `v0.34.0`); os
    contratos de teste fecharam a rodada: BDD (`comments.feature`, pt-BR),
    node:test sem DOM sobre a lib e vitest montando `IssuePanel`/`IssueCard`
-   via `Avatar` com o POST espiado (KAN-142, PR #175, release `v0.34.3`).
+   via `Avatar` com o POST espiado (KAN-142, PR #175, release `v0.34.3`); o
+   E2E fechou a rodada no navegador real: 11 testes BDD em pt-BR cobrindo os
+   quatro ramos do seed, o fallback `Unassigned`, o formato do timestamp, a
+   publicação logada com ordem preservada e nenhuma imagem quebrada (KAN-143,
+   PR #178, release `v0.34.4`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.

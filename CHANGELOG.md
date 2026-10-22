@@ -7,6 +7,23 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.34.4 — 2026-10-22
+
+### Testing
+
+- **KAN-143 — E2E de comentários e avatares no navegador (§5 do guia KAN-128):**
+  spec `frontend/cypress/e2e/comments-avatars.cy.js` com 11 testes BDD em
+  pt-BR, coletor padrão `collectErrors` e zero erro de console/runtime: avatar
+  do card circular (22px, `border-radius: 50%`) com `:title`/`aria-label` do
+  agente e fallback `Unassigned`; no painel, os quatro ramos do seed
+  (`admin` com a identidade do user, `vivy` com a miniatura do data URL, Kaio
+  pelo autor e o `user` antigo com inicial + cor determinística); legenda nome +
+  timestamp validando só o formato `dd/MM/yyyy HH:mm` (nunca valor absoluto);
+  comentário publicado logado surge com o autor `admin` com a ordem
+  cronológica preservada; e nenhuma `<img>` quebrada (`naturalWidth > 0`).
+  Seed restaurado no `afterEach` e porta exclusiva do harness. Mudança
+  exclusivamente de teste; nada de produção. PR #178, release `v0.34.4`.
+
 ## v0.34.3 — 2026-10-22
 
 ### Testing
