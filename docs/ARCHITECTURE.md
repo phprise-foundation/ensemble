@@ -212,6 +212,24 @@ bootstrap. Development PostgreSQL is provisioned by `docker-compose.dev.yml`
 (never used in production). The legacy SQLite board remains isolated and will
 be removed when the workspace workflow API and the frontend cutover land.
 
+## Kanban workflow model (P1)
+
+The product workflow lives in `Domain/Kanban`: `Workflow`, `IssueType`,
+`FieldDefinition` and their value objects (`Slug`, `Level`, `Position`,
+`FieldType`, `FieldOptions`). A workflow belongs to a workspace and owns its
+issue types; each issue type owns its field definitions. Configuration
+entities have an opaque 32-hex `id` and a human-readable `key` slug unique in
+their scope. The Doctrine records in `Infrastructure/Persistence/Doctrine/Entity`
+map to the `workflows`, `issue_types` and `field_definitions` tables; mappers
+translate to/from the domain and repositories use QueryBuilder/DQL only.
+
+Writes (`POST`/`PATCH`/`DELETE`) require workspace owner or global admin; reads
+require membership. Every lookup includes the workspace, so an id from another
+workspace is `404`. Issue types do not change type through a transition:
+creating tasks from an approved RFC is a future user-configured trigger.
+Boards will reference one workflow and filter issue types/statuses; issues
+belong to the workspace, never to a board.
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`

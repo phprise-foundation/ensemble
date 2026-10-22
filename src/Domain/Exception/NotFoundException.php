@@ -22,4 +22,19 @@ final class NotFoundException extends RuntimeException
     {
         return new self('membership not found');
     }
+
+    public static function workflow(): self
+    {
+        return new self('workflow not found');
+    }
+
+    public static function issueType(): self
+    {
+        return new self('issue type not found');
+    }
+
+    public static function field(): self
+    {
+        return new self('field not found');
+    }
 }

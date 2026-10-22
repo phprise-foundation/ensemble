@@ -18,6 +18,20 @@
   board, agent-watcher and static UI remain temporarily and are not used by the
   new routes. 63 PHPUnit tests and Psalm level 1 are green. Decisions in
   `docs/ADR-001-tenancy-postgres-doctrine.md`.
+- **P1a — workflow chain (branch `feat/p1-workflow-chain`):** workflows,
+  issue types and custom field definitions are now workspace-scoped and
+  persisted with Doctrine. Decisions in
+  `docs/ADR-002-workflow-model.md`: issues belong to the workspace (no
+  `boardId`); a board references one workflow; statuses will belong to an issue
+  type with a fixed kind (`initial`/`transitional`/`final`); transitions never
+  change the issue type; RFC → task is a future user-configured trigger, not a
+  transition. Fields support `text`, `textarea`, `number`, `date`, `boolean`,
+  `single_select` and `multi_select`; select options live on the definition.
+  Endpoints: `GET/POST/PATCH/DELETE` on
+  `/api/workspaces/{ws}/workflows`, nested `/issue-types` and nested
+  `/fields` (plus direct update/delete by id). Keys are unique in their scope;
+  writes require workspace owner/admin, reads require membership.
+  70 PHPUnit tests and Psalm level 1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

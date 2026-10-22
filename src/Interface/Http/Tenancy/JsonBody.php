@@ -28,4 +28,32 @@ final class JsonBody
     {
         return is_bool($body[$key] ?? null) ? (bool) ($body[$key] ?? false) : null;
     }
+
+    /** @param array<array-key, mixed> $body */
+    public static function integer(array $body, string $key): ?int
+    {
+        return is_int($body[$key] ?? null) ? (int) ($body[$key] ?? 0) : null;
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
+     * @return list<string>|null
+     */
+    public static function stringList(array $body, string $key): ?array
+    {
+        $value = $body[$key] ?? null;
+        if (!is_array($value)) {
+            return null;
+        }
+
+        $strings = [];
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                return null;
+            }
+            $strings[] = $item;
+        }
+
+        return $strings;
+    }
 }

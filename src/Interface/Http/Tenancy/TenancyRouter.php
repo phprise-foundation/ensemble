@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace App\Interface\Http\Tenancy;
 
+use App\Domain\Kanban\FieldDefinitionId;
+use App\Domain\Kanban\IssueTypeId;
+use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\FieldDefinitionController;
+use App\Interface\Http\Kanban\IssueTypeController;
+use App\Interface\Http\Kanban\WorkflowController;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -17,6 +23,9 @@ final readonly class TenancyRouter
         private SessionController $sessions,
         private UserController $users,
         private WorkspaceController $workspaces,
+        private WorkflowController $workflows,
+        private IssueTypeController $issueTypes,
+        private FieldDefinitionController $fields,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
     ) {
@@ -54,6 +63,21 @@ final readonly class TenancyRouter
                 $this->workspaceId($segments),
                 new UserId($segments[4] ?? ''),
             ),
+            $method === 'GET' && $this->isWorkflows($segments) => $this->workflows->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isWorkflows($segments) => $this->workflows->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isWorkflow($segments) => $this->workflows->show($request, $this->workspaceId($segments), $this->workflowId($segments)),
+            $method === 'PATCH' && $this->isWorkflow($segments) => $this->workflows->update($request, $this->workspaceId($segments), $this->workflowId($segments)),
+            $method === 'DELETE' && $this->isWorkflow($segments) => $this->workflows->delete($request, $this->workspaceId($segments), $this->workflowId($segments)),
+            $method === 'GET' && $this->isWorkflowIssueTypes($segments) => $this->issueTypes->list($request, $this->workspaceId($segments), $this->workflowId($segments)),
+            $method === 'POST' && $this->isWorkflowIssueTypes($segments) => $this->issueTypes->create($request, $this->workspaceId($segments), $this->workflowId($segments)),
+            $method === 'GET' && $this->isIssueType($segments) => $this->issueTypes->show($request, $this->workspaceId($segments), $this->issueTypeId($segments)),
+            $method === 'PATCH' && $this->isIssueType($segments) => $this->issueTypes->update($request, $this->workspaceId($segments), $this->issueTypeId($segments)),
+            $method === 'DELETE' && $this->isIssueType($segments) => $this->issueTypes->delete($request, $this->workspaceId($segments), $this->issueTypeId($segments)),
+            $method === 'GET' && $this->isIssueTypeFields($segments) => $this->fields->list($request, $this->workspaceId($segments), $this->issueTypeId($segments)),
+            $method === 'POST' && $this->isIssueTypeFields($segments) => $this->fields->create($request, $this->workspaceId($segments), $this->issueTypeId($segments)),
+            $method === 'GET' && $this->isField($segments) => $this->fields->show($request, $this->workspaceId($segments), $this->fieldId($segments)),
+            $method === 'PATCH' && $this->isField($segments) => $this->fields->update($request, $this->workspaceId($segments), $this->fieldId($segments)),
+            $method === 'DELETE' && $this->isField($segments) => $this->fields->delete($request, $this->workspaceId($segments), $this->fieldId($segments)),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -95,8 +119,82 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isWorkflows(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'workflows';
+    }
+
+    /** @param list<string> $segments */
+    private function isWorkflow(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'workflows';
+    }
+
+    /** @param list<string> $segments */
+    private function isWorkflowIssueTypes(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'workflows'
+            && $segments[5] === 'issue-types';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueType(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issue-types';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueTypeFields(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issue-types'
+            && $segments[5] === 'fields';
+    }
+
+    /** @param list<string> $segments */
+    private function isField(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'fields';
+    }
+
+    /** @param list<string> $segments */
     private function workspaceId(array $segments): WorkspaceId
     {
         return new WorkspaceId($segments[2] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function workflowId(array $segments): WorkflowId
+    {
+        return new WorkflowId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function issueTypeId(array $segments): IssueTypeId
+    {
+        return new IssueTypeId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function fieldId(array $segments): FieldDefinitionId
+    {
+        return new FieldDefinitionId($segments[4] ?? '');
     }
 }

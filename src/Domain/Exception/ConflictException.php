@@ -22,4 +22,14 @@ final class ConflictException extends RuntimeException
     {
         return new self('a workspace must keep at least one owner');
     }
+
+    public static function duplicateKey(): self
+    {
+        return new self('key already in use');
+    }
+
+    public static function inUse(string $resource): self
+    {
+        return new self($resource . ' still has children');
+    }
 }
