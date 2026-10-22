@@ -57,7 +57,7 @@ describe('comments avatars e2e', () => {
     })
   })
 
-  it('o avatar do card é circular e mede 24px', () => {
+  it('o avatar do card é circular e mede 22px', () => {
     cardById('KANB-2')
       .find('.avatar')
       .should('have.length', 1)
