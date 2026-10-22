@@ -40,8 +40,8 @@ function onDragStart(event) {
         size="sm"
         :name="agent?.name ?? '?'"
         :image="agent?.portrait ?? null"
-        :color="agent?.avatarColor ?? '#d4d4d4'"
-        :title="agent?.name"
+        :color="agent?.avatarColor ?? 'var(--text)'"
+        :title="agent?.name ?? 'Unassigned'"
       />
       <span class="card-id muted">{{ issue.id }}</span>
       <span class="spacer"></span>
