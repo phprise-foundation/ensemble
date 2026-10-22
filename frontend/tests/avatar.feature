@@ -70,18 +70,22 @@ Funcionalidade: Avatar circular de agentes
     Dado que o componente Avatar está sendo montado com uma imagem
     Quando o botão "Remove photo" é clicado
     Então deve retornar ao fallback com a inicial maiúscula
+    E deve limpar o draft
 
   Cenário: Upload de arquivo inválido ou acima do limite
     Dado que o componente Avatar está sendo montado
     Quando um tipo de arquivo inválido é selecionado
     Então deve mostrar a mensagem de erro
     E manter a imagem atual
+    E não deve alterar a foto
 
     Quando um arquivo acima de 2 MB é selecionado
     Então deve mostrar a mensagem de erro
     E manter a imagem atual
+    E não deve alterar a foto
 
   Cenário: Rótulo sem "(3x4)"
     Dado que o componente Avatar está sendo montado
     Quando o campo de foto tem rótulo mostrado
     Então o rótulo não deve conter "(3x4)"
+    E qualquer proporção é aceita

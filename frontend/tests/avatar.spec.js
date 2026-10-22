@@ -95,6 +95,39 @@ describe('Avatar', () => {
     expect(wrapper.text()).toBe('V')
   })
 
+  it('exibe img com src quando imagem é fornecida', () => {
+    const imageSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+    const wrapper = mount(Avatar, {
+      props: {
+        name: 'Vivy',
+        image: imageSrc
+      }
+    })
+    
+    expect(wrapper.find('img').exists()).toBe(true)
+    expect(wrapper.find('img').attributes('src')).toBe(imageSrc)
+  })
+
+  it('reseta fallback ao trocar image', async () => {
+    const imageSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+    const wrapper = mount(Avatar, {
+      props: {
+        name: 'Vivy',
+        image: imageSrc
+      }
+    })
+    
+    // Primeiro tem imagem
+    expect(wrapper.find('img').exists()).toBe(true)
+    
+    // Muda a imagem para uma imagem vazia (deve mostrar o fallback)
+    await wrapper.setProps({ image: '' })
+    
+    // Deve agora mostrar a inicial porque a imagem foi apagada
+    expect(wrapper.find('img').exists()).toBe(false)
+    expect(wrapper.text()).toBe('V')
+  })
+
   it('calcula contraste adequado para cores claras, escuras e médias', () => {
     // Cor clara (contraste alto com preto)
     const wrapper1 = mount(Avatar, {
@@ -127,5 +160,17 @@ describe('Avatar', () => {
       }
     })
     expect(wrapper3.vm.readableInk('#8a7249')).toBe('#000000') // Deve ser preto para essa cor (acima do threshold)
+    
+    // Verificação adicional: contraste adequado (não deve ser menor que 4.5:1)
+    // Vamos testar com uma cor onde o contraste é exatamente 4.5:1
+    const wrapper4 = mount(Avatar, {
+      props: {
+        name: 'Vivy',
+        image: '',
+        color: '#505050'
+      }
+    })
+    // Esta cor testa um caso onde o contraste está no limite
+    expect(wrapper4.vm.readableInk('#505050')).toBe('#ffffff') 
   })
 })

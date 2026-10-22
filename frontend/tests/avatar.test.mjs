@@ -47,7 +47,7 @@ test('Avatar: seed-portrait.js contém data URL PNG', () => {
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'))
 
 test('Avatar: nenhuma dependência nova', () => {
-  // Lista de dependências esperadas (exatamente igual ao package.json)
+  // Lista de dependências esperadas exatamente igual ao package.json real
   const expectedDeps = [
     'vue',
     'vue-router',
