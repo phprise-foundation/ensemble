@@ -167,7 +167,11 @@ marking what is still a prototype.
    E2E fechou a rodada no navegador real: 11 testes BDD em pt-BR cobrindo os
    quatro ramos do seed, o fallback `Unassigned`, o formato do timestamp, a
    publicação logada com ordem preservada e nenhuma imagem quebrada (KAN-143,
-   PR #178, release `v0.34.4`).
+   PR #178, release `v0.34.4`); o contrato de testes do `Avatar` fechou o
+   circuito do KAN-89: `avatar.feature` com 14 cenários em pt-BR, spec provando
+   ARIA e contraste ≥ 4,5:1 calculado no teste, guardas estáticas de
+   recorte/tamanhos/seed e guarda de dependências por snapshot versionado
+   (KAN-110, PR #180, release `v0.34.5`).
 8. **i18n** — the UI starts in English; localisation comes after the flow is set.
 9. **Wire the real backend** — replace the fake JSON backend with the PHP REST API
    feature by feature, flipping the per-feature prototype flags.

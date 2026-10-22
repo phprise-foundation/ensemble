@@ -703,6 +703,27 @@
   117/117 no head (`E2E_PORT=5197`, 19 specs, 11/11 da suíte nova). Veredicto:
   aprovado; PR #178, release `v0.34.4`.
 
+- **KAN-110 — BDD e testes do `Avatar` e da guarda de upload (§3, §5 e §7 do
+  guia KAN-89):** diff restrito a `frontend/tests/` sobre a fundação KAN-108:
+  14 cenários BDD em pt-BR no `avatar.feature`; `avatar.spec.js` provando
+  classes `sm`/`md`/`lg`/`ring` (anel desligado por padrão), inicial maiúscula,
+  `?` para nome vazio, ARIA decorativo vs identificado, fallback em `@error` e
+  troca de `image`, e contraste ≥ 4,5:1 calculado no próprio teste com
+  asserção incondicional; `image-upload.spec.js` cobrindo PNG/JPEG/WebP ≤ 2 MB,
+  recusas e data URL; guardas estáticas de recorte/tamanhos/seed e guarda de
+  dependências por snapshot versionado (`tests/deps-baseline.json`, falha em
+  adições e remoções). As rodadas 3 e 4 reprovaram o caminho por imprecisão
+  evitável: guarda com lista hardcoded que não batia com o `package.json` real,
+  asserção de contraste dentro de `if` com variáveis mortas, cláusulas do §7.1
+  ausentes no BDD e branch baseado ~9 PRs atrás da main (o merge reverteria
+  conteúdo alheio); sem PR aberto não houve o que revisar. A rodada 5 seguiu o
+  caminho único: branch da main (19d1221), snapshot derivado do repositório,
+  asserção incondicional e PR #180 aberto. Verificação do revisor em worktree
+  limpo: vitest 247/247; `node --test` 232 com uma instabilidade pré-existente
+  em `run-e2e-parallel` (infra de E2E, fora de escopo e intocada pelo PR) que
+  passa isolada; prova negativa da guarda (dependência fantasma → falha).
+  Veredicto: aprovado; PR #180, release `v0.34.5`.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in
