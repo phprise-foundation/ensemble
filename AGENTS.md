@@ -1,5 +1,26 @@
 # AGENTS.md
 
+## Nome e caminho canônico (INVIOLÁVEL)
+
+- O projeto se chama **PHPRise** — composição de **PHP + Rise** — e se escreve
+  com **dois P**.
+- O único caminho válido é `/home/esdras/src/phprise/multi-agent` (dois `p`:
+  `phprise`).
+- `/home/esdras/src/phrise` (sem o segundo `p`) **não é um caminho deste
+  projeto**. Nenhum documento humano o define; ele só existe por erro de
+  agentes anteriores.
+- Nunca crie, clone, mova, copie, gere worktree ou grave qualquer arquivo em
+  `/home/esdras/src/phrise` ou em caminho que comece com ele.
+- Antes de qualquer comando de shell, git, leitura ou escrita, confirme `pwd`
+  (ou use caminho absoluto) e garanta que começa com
+  `/home/esdras/src/phprise/`.
+- Se o ambiente abrir em `phrise` ou em qualquer variante sem o segundo `p`,
+  **pare** e reporte ao humano; não tente “consertar” permissões nem recriar
+  diretórios.
+- Referências antigas a `phrise` em docs/issues são dívida histórica: corrija
+  para `phprise` quando o item pedir, nunca como justificativa para trabalhar no
+  caminho errado.
+
 > **Before you start:** read [`docs/STATE.md`](docs/STATE.md) to know where the
 > project stands, what was decided and the next steps. For what hasn't started
 > yet, see [`docs/ROADMAP.md`](docs/ROADMAP.md). The code layout is in
