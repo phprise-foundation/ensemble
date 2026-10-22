@@ -7,6 +7,33 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.34.3 — 2026-10-22
+
+### Testing
+
+- **KAN-142 — contratos de comentários (BDD, node:test, vitest):** adoção dos
+  REDs da KAN-128: `frontend/tests/comments.feature` (pt-BR) mapeando os ramos
+  do contrato de autoria (agente por id/nome, user por login/displayName,
+  colisão com id vencendo, desconhecido com cor determinística, timestamp
+  `dd/MM/yyyy HH:mm`, POST com o login da sessão, render no card e no painel);
+  `frontend/tests/comment-author.test.mjs` (node:test, sem DOM) exercitando a
+  lib como um chamador real, com ISO em `Z` e com offset; e
+  `frontend/tests/comments.spec.js` (vitest) montando `IssuePanel` **e**
+  `IssueCard` via `Avatar` (tooltip, `aria-label`, fallback `Unassigned`)
+  além do contrato do POST com store real e `api` mockado. Branch rebasado na
+  onda 2; nenhum teste enfraquecido, nenhuma mudança de produção, nenhuma
+  dependência nova. PR #175, release `v0.34.3`.
+
+## v0.34.2 — 2026-10-22
+
+### Fixed
+
+- **KAN-141 — aplicação (onda 2) fecha a revisão:** tooltips do assignee com
+  fallback (`agent?.name ?? 'Unassigned'`), cor neutra do fallback derivada de
+  token (`var(--text)`) em vez de literal mágico e comentário de código removido
+  do `main.scss`; classe `comment-avatar` no `Avatar` da seção Comments do
+  `IssuePanel.vue` (PRs #174 e #176, release `v0.34.2`).
+
 ## v0.34.1 — 2026-10-22
 
 ### Testing

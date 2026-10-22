@@ -666,6 +666,24 @@
   confrontadas com `ToastHost.vue`/`DialogHost.vue`. Veredicto: aprovado;
   PR #169, release `v0.34.1`.
 
+- **KAN-142 — testes dos contratos de comentários (§5 do guia KAN-128):** a
+  adoção dos REDs pousou via PR #175: `frontend/tests/comments.feature` (BDD
+  pt-BR) com o mapa completo da autoria; `frontend/tests/comment-author.test.mjs`
+  (node:test, sem DOM, determinístico) exercitando
+  `resolveAuthor`/`formatCommentTimestamp` como um chamador real — ISO com `Z`
+  e com offset, formato com pad 2, colisão de id vencendo login, desconhecido
+  com cor determinística estável; `frontend/tests/comments.spec.js` (vitest) montando
+  `IssuePanel` e `IssueCard` via `Avatar` com store mockado e contrato do POST
+  com store real (`vi.importActual`) e `api` espiado, sem rede. Imprecisão
+  corrigida na adoção: o escopo pedia card **e** painel via `Avatar`, mas só o
+  painel estava montado — dois testes do `IssueCard` (tooltip/`aria-label` do
+  agente; fallback neutro `Unassigned`/`?` sem assignee) entraram no commit
+  36db13d. Branch sincronizado com a onda 2 (classe `comment-avatar` do PR
+  #176 fecha o último RED sem editar teste). Nenhuma mudança de produção,
+  nenhuma dependência nova; asserts de timestamp validam formato, nunca valor
+  absoluto (sem flake de fuso). Verificação: vitest 247/247 (25 arquivos),
+  `node --test` 11/11, build verde. Veredicto: aprovado; release `v0.34.3`.
+
 ## Next
 
 - **Model-performance measurement — decisions formalised** in
