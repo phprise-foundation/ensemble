@@ -44,8 +44,8 @@ Order and exit criteria:
      `feat/p1-workflow-chain`; ADR-002).
    - **P1b — statuses and transitions: Done** (fixed status kind; no
      cross-issue-type transition).
-   - P1c: boards and columns (board references one workflow; issues have no
-     `boardId`).
+   - **P1c — boards and columns: Done** (board references one workflow;
+     issues have no `boardId`).
    - P1d: issues (workspace prefix key sequence, move, comments, history).
 3. **P2 — teams and agents** — teams, roles (unblock/interactive/filters),
    profiles, agents (identity + runtime + roles + source), sources/repositories

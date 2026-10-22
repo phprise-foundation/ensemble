@@ -43,6 +43,15 @@
   `GET/POST /api/workspaces/{ws}/workflows/{wf}/transitions`,
   `GET/PATCH/DELETE /api/workspaces/{ws}/transitions/{id}`. 78 PHPUnit tests
   and Psalm level 1 are green.
+- **P1c — boards and columns (branch `feat/p1-workflow-chain`):** a board
+  belongs to a workspace and references exactly one workflow; it carries
+  issue-type/status filters and has ordered columns, each grouping statuses
+  from that workflow. An issue will be displayed by a board based on status and
+  filters, never by a `boardId`. Column statuses must belong to the board
+  workflow and to only one column per board; `wip` is optional. Endpoints:
+  `GET/POST/PATCH/DELETE` on `/api/workspaces/{ws}/boards`,
+  `/boards/{id}/columns` and `/columns/{id}`. 69 PHPUnit tests and Psalm
+  level 1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

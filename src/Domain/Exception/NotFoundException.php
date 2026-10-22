@@ -47,4 +47,14 @@ final class NotFoundException extends RuntimeException
     {
         return new self('transition not found');
     }
+
+    public static function board(): self
+    {
+        return new self('board not found');
+    }
+
+    public static function column(): self
+    {
+        return new self('column not found');
+    }
 }

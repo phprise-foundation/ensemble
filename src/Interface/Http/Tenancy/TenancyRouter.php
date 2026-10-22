@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Interface\Http\Tenancy;
 
+use App\Domain\Kanban\BoardColumnId;
+use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\FieldDefinitionId;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
@@ -12,6 +14,8 @@ use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\BoardController;
+use App\Interface\Http\Kanban\ColumnController;
 use App\Interface\Http\Kanban\FieldDefinitionController;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
@@ -32,6 +36,8 @@ final readonly class TenancyRouter
         private FieldDefinitionController $fields,
         private StatusController $statuses,
         private TransitionController $transitions,
+        private BoardController $boards,
+        private ColumnController $columns,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
     ) {
@@ -94,6 +100,16 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isTransition($segments) => $this->transitions->show($request, $this->workspaceId($segments), $this->transitionId($segments)),
             $method === 'PATCH' && $this->isTransition($segments) => $this->transitions->update($request, $this->workspaceId($segments), $this->transitionId($segments)),
             $method === 'DELETE' && $this->isTransition($segments) => $this->transitions->delete($request, $this->workspaceId($segments), $this->transitionId($segments)),
+            $method === 'GET' && $this->isBoards($segments) => $this->boards->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isBoards($segments) => $this->boards->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isBoard($segments) => $this->boards->show($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'PATCH' && $this->isBoard($segments) => $this->boards->update($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'DELETE' && $this->isBoard($segments) => $this->boards->delete($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'GET' && $this->isBoardColumns($segments) => $this->columns->list($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'POST' && $this->isBoardColumns($segments) => $this->columns->create($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'GET' && $this->isColumn($segments) => $this->columns->show($request, $this->workspaceId($segments), $this->columnId($segments)),
+            $method === 'PATCH' && $this->isColumn($segments) => $this->columns->update($request, $this->workspaceId($segments), $this->columnId($segments)),
+            $method === 'DELETE' && $this->isColumn($segments) => $this->columns->delete($request, $this->workspaceId($segments), $this->columnId($segments)),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -229,6 +245,43 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isBoards(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'boards';
+    }
+
+    /** @param list<string> $segments */
+    private function isBoard(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'boards';
+    }
+
+    /** @param list<string> $segments */
+    private function isBoardColumns(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'boards'
+            && $segments[5] === 'columns';
+    }
+
+    /** @param list<string> $segments */
+    private function isColumn(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'columns';
+    }
+
+    /** @param list<string> $segments */
     private function workspaceId(array $segments): WorkspaceId
     {
         return new WorkspaceId($segments[2] ?? '');
@@ -262,5 +315,17 @@ final readonly class TenancyRouter
     private function transitionId(array $segments): TransitionId
     {
         return new TransitionId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function boardId(array $segments): BoardId
+    {
+        return new BoardId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function columnId(array $segments): BoardColumnId
+    {
+        return new BoardColumnId($segments[4] ?? '');
     }
 }

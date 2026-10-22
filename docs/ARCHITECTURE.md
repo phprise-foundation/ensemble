@@ -232,8 +232,12 @@ kind (`initial`/`transitional`/`final`); the first status of a type must be
 initial and there is exactly one initial per type. Transitions
 (`Domain/Kanban/Transition`) are workflow-scoped, connect statuses of the same
 issue type and never change the type; they carry an actor (`user`/`agent`/`both`)
-and an optional outcome. Boards will reference one workflow and filter issue
-types/statuses; issues belong to the workspace, never to a board.
+and an optional outcome. Boards (`Domain/Kanban/Board`) belong to a workspace
+and reference exactly one workflow; they carry issue-type/status filters and
+ordered `BoardColumn`s that group statuses from that workflow. A column status
+must belong to the board workflow and to only one column in that board. Issues
+never carry a `boardId`; a board displays issues by status and filters. `wip`
+on a column is optional.
 
 ## Domain packages
 

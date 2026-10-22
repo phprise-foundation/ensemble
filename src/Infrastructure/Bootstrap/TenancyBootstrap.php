@@ -4,31 +4,43 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Bootstrap;
 
+use App\Application\Kanban\CreateBoard;
+use App\Application\Kanban\CreateColumn;
 use App\Application\Kanban\CreateFieldDefinition;
 use App\Application\Kanban\CreateStatus;
 use App\Application\Kanban\CreateTransition;
 use App\Application\Kanban\CreateIssueType;
 use App\Application\Kanban\CreateWorkflow;
+use App\Application\Kanban\DeleteBoard;
+use App\Application\Kanban\DeleteColumn;
 use App\Application\Kanban\DeleteFieldDefinition;
 use App\Application\Kanban\DeleteStatus;
 use App\Application\Kanban\DeleteTransition;
 use App\Application\Kanban\DeleteIssueType;
 use App\Application\Kanban\DeleteWorkflow;
+use App\Application\Kanban\ListBoards;
+use App\Application\Kanban\ListColumns;
 use App\Application\Kanban\ListFieldDefinitions;
 use App\Application\Kanban\ListStatuses;
 use App\Application\Kanban\ListTransitions;
 use App\Application\Kanban\ListIssueTypes;
 use App\Application\Kanban\ListWorkflows;
+use App\Application\Kanban\ReadBoard;
+use App\Application\Kanban\ReadColumn;
 use App\Application\Kanban\ReadFieldDefinition;
 use App\Application\Kanban\ReadStatus;
 use App\Application\Kanban\ReadTransition;
 use App\Application\Kanban\ReadIssueType;
 use App\Application\Kanban\ReadWorkflow;
+use App\Application\Kanban\UpdateBoard;
+use App\Application\Kanban\UpdateColumn;
 use App\Application\Kanban\UpdateFieldDefinition;
 use App\Application\Kanban\UpdateStatus;
 use App\Application\Kanban\UpdateTransition;
 use App\Application\Kanban\UpdateIssueType;
 use App\Application\Kanban\UpdateWorkflow;
+use App\Application\Kanban\ValidateBoardFilters;
+use App\Application\Kanban\ValidateColumnStatuses;
 use App\Application\Security\AuthenticateUser;
 use App\Application\Security\ReadCurrentUser;
 use App\Application\Tenancy\AddWorkspaceMember;
@@ -43,6 +55,8 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Authentication\RandomTokenGenerator;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\BoardRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\FieldDefinitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
@@ -52,6 +66,8 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\UserRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
@@ -62,6 +78,10 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\BoardController;
+use App\Interface\Http\Kanban\BoardPresenter;
+use App\Interface\Http\Kanban\ColumnController;
+use App\Interface\Http\Kanban\ColumnPresenter;
 use App\Interface\Http\Kanban\FieldDefinitionController;
 use App\Interface\Http\Kanban\FieldDefinitionPresenter;
 use App\Interface\Http\Kanban\IssueTypeController;
@@ -112,6 +132,12 @@ final readonly class TenancyBootstrap
         $transitions = new DoctrineTransitionRepository($entityManager, new TransitionRecordMapper());
         $statusPresenter = new StatusPresenter();
         $transitionPresenter = new TransitionPresenter();
+        $boards = new DoctrineBoardRepository($entityManager, new BoardRecordMapper());
+        $boardColumns = new DoctrineBoardColumnRepository($entityManager, new BoardColumnRecordMapper());
+        $validateBoardFilters = new ValidateBoardFilters($issueTypes, $statuses);
+        $validateColumnStatuses = new ValidateColumnStatuses($statuses);
+        $boardPresenter = new BoardPresenter();
+        $columnPresenter = new ColumnPresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -193,6 +219,28 @@ final readonly class TenancyBootstrap
                 new UpdateTransition($transitions, $guard),
                 new DeleteTransition($transitions, $guard),
                 $transitionPresenter,
+                $this->responder,
+            ),
+            new BoardController(
+                $currentUser,
+                new ListBoards($boards, $guard),
+                new CreateBoard($workflows, $boards, $validateBoardFilters, $guard),
+                new ReadBoard($boards, $guard),
+                new UpdateBoard($boards, $validateBoardFilters, $guard),
+                new DeleteBoard($boards, $boardColumns, $guard),
+                new ListColumns($boards, $boardColumns, $guard),
+                $boardPresenter,
+                $columnPresenter,
+                $this->responder,
+            ),
+            new ColumnController(
+                $currentUser,
+                new ListColumns($boards, $boardColumns, $guard),
+                new CreateColumn($boards, $boardColumns, $validateColumnStatuses, $guard),
+                new ReadColumn($boardColumns, $guard),
+                new UpdateColumn($boards, $boardColumns, $validateColumnStatuses, $guard),
+                new DeleteColumn($boardColumns, $guard),
+                $columnPresenter,
                 $this->responder,
             ),
             new TenancyErrorResponder($this->responder),
