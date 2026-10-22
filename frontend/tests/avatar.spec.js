@@ -34,6 +34,10 @@ function contrast(foreground, background) {
 
 describe('Avatar', () => {
   it('aplica as classes de tamanho e o anel', () => {
+    const plain = mount(Avatar, { props: { name: 'Vivy' } })
+    expect(plain.classes()).not.toContain('ring')
+    plain.unmount()
+
     for (const size of ['sm', 'md', 'lg']) {
       const wrapper = mount(Avatar, { props: { name: 'Vivy', size, ring: true } })
       expect(wrapper.classes()).toContain('avatar')

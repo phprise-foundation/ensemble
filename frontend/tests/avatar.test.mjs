@@ -35,3 +35,15 @@ test('avatar: seed traz o retrato de Vivy em PNG', () => {
   assert.match(seed, /portrait:\s*VIVY_PORTRAIT/)
   assert.match(portrait, /^export const VIVY_PORTRAIT = 'data:image\/png;base64,[A-Za-z0-9+/=]+'\s*$/m)
 })
+
+test('avatar: nenhuma dependência nova no package.json', () => {
+  const baseline = JSON.parse(read('tests/deps-baseline.json'))
+  const pkg = JSON.parse(read('package.json'))
+  const names = (section) => Object.keys(pkg[section] ?? {})
+  for (const section of ['dependencies', 'devDependencies']) {
+    const added = names(section).filter((name) => !baseline[section].includes(name))
+    assert.deepEqual(added, [], `${section}: dependência nova detectada: ${added.join(', ')}`)
+    const removed = baseline[section].filter((name) => !names(section).includes(name))
+    assert.deepEqual(removed, [], `${section}: dependência removida: ${removed.join(', ')}`)
+  }
+})
