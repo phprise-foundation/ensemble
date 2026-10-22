@@ -7,6 +7,27 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/multi-agent/releases
 
+## v0.34.5 — 2026-10-22
+
+### Testing
+
+- **KAN-110 — BDD e testes do componente `Avatar` e da guarda de upload (§3, §5
+  e §7 do guia KAN-89):** diff restrito a `frontend/tests/` (PR #180): 14
+  cenários BDD em pt-BR no `avatar.feature` (três tamanhos circulares, recorte
+  central, fallback/contraste, ARIA, erro de imagem, anel opcional desligado
+  por padrão, upload válido, remoção limpando o draft, upload inválido
+  preservando a foto e rótulo sem "(3x4)"); `avatar.spec.js` provando classes
+  `sm`/`md`/`lg`, inicial maiúscula, `?` para nome vazio,
+  `aria-label="Avatar de {nome}"` vs `aria-hidden` decorativo, troca de
+  `image`/`@error` caindo no fallback e contraste ≥ 4,5:1 calculado no próprio
+  teste; `image-upload.spec.js` cobrindo PNG/JPEG/WebP ≤ 2 MB, recusa de tipo
+  e tamanho e data URL; `avatar.test.mjs` com guardas estáticas
+  (`border-radius: 50%`, `object-fit: cover`/`center`, tamanhos 22/42/64,
+  retrato de Vivy no seed, data URL PNG) e guarda de dependências por snapshot
+  versionado (`tests/deps-baseline.json`), que falha em adições e remoções.
+  Mudança exclusivamente de teste; nada de produção. PR #180, release
+  `v0.34.5`.
+
 ## v0.34.4 — 2026-10-22
 
 ### Testing
