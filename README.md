@@ -10,6 +10,36 @@ in the UI, so each step of the process can be observed and improved on its own.
 Every stage change is recorded, and the UI flags items that age beyond the
 board's threshold — the first step towards bottleneck and failure detection.
 
+## Development backend (P0)
+
+The new product API uses PostgreSQL and Doctrine. Docker Compose is used
+**only for the local database**; it is never a production dependency.
+
+```bash
+cp .env.example .env
+bin/dev-up          # starts PostgreSQL, creates the test DB, runs bin/install
+```
+
+`bin/install` applies the schema with Doctrine and bootstraps the master admin
+from `BOOTSTRAP_ADMIN_LOGIN` / `BOOTSTRAP_ADMIN_PASSWORD` (only when the
+database has no users) and the first workspace from
+`BOOTSTRAP_WORKSPACE_NAME` / `BOOTSTRAP_WORKSPACE_PREFIX`.
+
+```bash
+php -S 127.0.0.1:8081 -t public public/router.php
+curl -X POST localhost:8081/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"login":"admin","password":"admin1234"}'
+```
+
+The first slice exposes `POST /api/auth/login`, `POST /api/auth/logout`,
+`GET /api/me`, admin-only `GET/POST /api/users`, and
+`GET/POST/PATCH/DELETE /api/workspaces` with members. Non-members receive
+`404`; workspaces are fully isolated. The legacy SQLite board and agent-watcher
+surfaces still exist in this branch but are not used by the new routes; they are
+removed in the productization phases described in `docs/ROADMAP.md` and
+`docs/ADR-001-tenancy-postgres-doctrine.md`.
+
 ## Components
 
 - **board** — the PHP application in this repository: a REST API plus a static,

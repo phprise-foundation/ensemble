@@ -1,0 +1,40 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Application\Tenancy\Install;
+use App\Domain\Security\PlainPassword;
+use App\Domain\Tenancy\Login;
+use App\Domain\Tenancy\WorkspacePrefix;
+use App\Infrastructure\Authentication\ArgonPasswordHasher;
+use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\UserRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$entityManager = DoctrineEntityManagerFactory::fromEnvironment()->createWithSchema();
+$login = getenv('BOOTSTRAP_ADMIN_LOGIN') ?: 'admin';
+$password = getenv('BOOTSTRAP_ADMIN_PASSWORD') ?: 'admin1234';
+$workspaceName = getenv('BOOTSTRAP_WORKSPACE_NAME') ?: 'Default';
+$prefix = getenv('BOOTSTRAP_WORKSPACE_PREFIX') ?: 'KAN';
+
+$install = new Install(
+    new DoctrineUserRepository($entityManager, new UserRecordMapper()),
+    new DoctrineWorkspaceRepository($entityManager, new WorkspaceRecordMapper()),
+    new DoctrineMembershipRepository($entityManager, new MembershipRecordMapper()),
+    new ArgonPasswordHasher(),
+);
+$install->execute(
+    new Login($login),
+    new PlainPassword($password),
+    $workspaceName,
+    new WorkspacePrefix($prefix),
+);
+
+echo "install ok\n";

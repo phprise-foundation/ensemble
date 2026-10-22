@@ -2,6 +2,22 @@
 
 ## Done
 
+- **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
+  `feat/p0-tenancy-api`):** users and workspaces are N:N through
+  `workspace_members`; a global admin is bootstrapped from
+  `BOOTSTRAP_ADMIN_LOGIN`/`BOOTSTRAP_ADMIN_PASSWORD` only on a fresh database
+  and creates the other users via `POST /api/users`; sessions are opaque
+  bearer tokens stored as SHA-256 hashes. New API routes:
+  `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/me`,
+  `GET/POST /api/users` (admin), `GET/POST /api/workspaces`,
+  `GET/PATCH /api/workspaces/{id}` and members. Non-members receive `404`;
+  `PATCH` is used for updates, never `PUT`. Persistence is PostgreSQL via
+  Doctrine ORM 3/DBAL 4 behind domain contracts; the domain does not know
+  Doctrine. Dev-only PostgreSQL lives in `docker-compose.dev.yml`; `bin/dev-up`
+  starts it, creates `phprise_test` and runs `bin/install`. The legacy SQLite
+  board, agent-watcher and static UI remain temporarily and are not used by the
+  new routes. 63 PHPUnit tests and Psalm level 1 are green. Decisions in
+  `docs/ADR-001-tenancy-postgres-doctrine.md`.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

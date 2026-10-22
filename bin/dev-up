@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml exec -T postgres createdb -U phprise phprise_test 2>/dev/null || true
+
+export DATABASE_URL="${DATABASE_URL:-pgsql://phprise:phprise@127.0.0.1:5432/phprise}"
+export BOOTSTRAP_ADMIN_LOGIN="${BOOTSTRAP_ADMIN_LOGIN:-admin}"
+export BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-admin1234}"
+export BOOTSTRAP_WORKSPACE_NAME="${BOOTSTRAP_WORKSPACE_NAME:-Default}"
+export BOOTSTRAP_WORKSPACE_PREFIX="${BOOTSTRAP_WORKSPACE_PREFIX:-KAN}"
+
+php bin/install

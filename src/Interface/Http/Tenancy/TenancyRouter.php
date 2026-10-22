@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Interface\Http\Tenancy;
+
+use App\Domain\Tenancy\UserId;
+use App\Domain\Tenancy\WorkspaceId;
+use App\Interface\Http\JsonResponder;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
+
+final readonly class TenancyRouter
+{
+    public function __construct(
+        private SessionController $sessions,
+        private UserController $users,
+        private WorkspaceController $workspaces,
+        private TenancyErrorResponder $errors,
+        private JsonResponder $responder,
+    ) {
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        try {
+            return $this->dispatch($request);
+        } catch (Throwable $error) {
+            return $this->errors->respond($error);
+        }
+    }
+
+    private function dispatch(ServerRequestInterface $request): ResponseInterface
+    {
+        $path = (string) parse_url($request->getUri()->getPath(), PHP_URL_PATH);
+        $method = $request->getMethod();
+        $segments = array_values(array_filter(explode('/', $path)));
+
+        return match (true) {
+            $method === 'POST' && $path === '/api/auth/login' => $this->sessions->login($request),
+            $method === 'POST' && $path === '/api/auth/logout' => $this->sessions->logout($request),
+            $method === 'GET' && $path === '/api/me' => $this->sessions->me($request),
+            $method === 'GET' && $this->isUsersRoot($segments) => $this->users->list($request),
+            $method === 'POST' && $this->isUsersRoot($segments) => $this->users->create($request),
+            $method === 'GET' && $this->isWorkspacesRoot($segments) => $this->workspaces->list($request),
+            $method === 'POST' && $this->isWorkspacesRoot($segments) => $this->workspaces->create($request),
+            $method === 'GET' && $this->isWorkspace($segments) => $this->workspaces->show($request, $this->workspaceId($segments)),
+            $method === 'PATCH' && $this->isWorkspace($segments) => $this->workspaces->update($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isMembers($segments) => $this->workspaces->members($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isMembers($segments) => $this->workspaces->addMember($request, $this->workspaceId($segments)),
+            $method === 'DELETE' && $this->isMember($segments) => $this->workspaces->removeMember(
+                $request,
+                $this->workspaceId($segments),
+                new UserId($segments[4] ?? ''),
+            ),
+            default => $this->responder->error('not found', 404),
+        };
+    }
+
+    /** @param list<string> $segments */
+    private function isUsersRoot(array $segments): bool
+    {
+        return $segments === ['api', 'users'];
+    }
+
+    /** @param list<string> $segments */
+    private function isWorkspacesRoot(array $segments): bool
+    {
+        return $segments === ['api', 'workspaces'];
+    }
+
+    /** @param list<string> $segments */
+    private function isWorkspace(array $segments): bool
+    {
+        return count($segments) === 3 && $segments[0] === 'api' && $segments[1] === 'workspaces';
+    }
+
+    /** @param list<string> $segments */
+    private function isMembers(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'members';
+    }
+
+    /** @param list<string> $segments */
+    private function isMember(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'members';
+    }
+
+    /** @param list<string> $segments */
+    private function workspaceId(array $segments): WorkspaceId
+    {
+        return new WorkspaceId($segments[2] ?? '');
+    }
+}

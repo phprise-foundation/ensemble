@@ -23,6 +23,44 @@
      Browser E2E) também no `main` puro — repro de 2026-10-21 no 9418d86.
      Não é dívida da KAN-125 (PR #151).
 
+## Active plan — productization: API-first, multi-tenant, open-warden, Cloudflare
+
+Goal: turn the validated UX prototype into a real multi-tenant product. The
+workspace is the tenant boundary; everything configurable is persisted and
+served by the API; agents run on open-warden; the image runs with one
+`docker run` locally and on Cloudflare Containers with an external PostgreSQL.
+The console and copilot stay disconnected until their own planning round.
+
+Order and exit criteria:
+
+1. **P0 — tenancy and API base** — users/workspaces N:N, admin bootstrap,
+   bearer sessions, tenant guard, PostgreSQL + Doctrine, dev compose,
+   `bin/install`. **Done (branch `feat/p0-tenancy-api`).**
+2. **P1 — workflow chain** — workspace-scoped boards, columns, statuses per
+   issue type, transitions, issue types, fields per issue type, issues minimal
+   create/list/move/comment; CRUD with `GET/POST/PATCH/DELETE`; frontend
+   validation of those screens.
+3. **P2 — teams and agents** — teams, roles (unblock/interactive/filters),
+   profiles, agents (identity + runtime + roles + source), sources/repositories
+   (`local` for dev, `git` for cloud); full CRUD.
+4. **P3 — runtime** — PHP CLI runner, `bin/kanban`, open-warden execution,
+   claim/lease/reclaim, prompt composition, outcomes, triggers (spawn, voting,
+   `subtasks-done`), usage/cost, logs, worktrees.
+5. **P4 — frontend cutover** — login/token, workspace switcher, snapshot +
+   resource writes, feature flags flipped in dependency order, fake backend out
+   of production, Vite build served by PHP, real-backend E2E; console and
+   copilot untouched; i18n later.
+6. **P5 — Cloudflare single image** — image roles (`web`/`runner`/`all`),
+   external PostgreSQL, R2 for artifacts, cron/queue-triggered runner with
+   resumable leases, secrets, health, no compose in production.
+7. **P6 — migration and dogfooding** — import the 161 local issues and agent
+   configuration, run the project on the real board, archive `kanban.local`,
+   clean historical `phrise` references.
+
+Superseded/absorbed: the old board-driven agent-watcher plan is historical;
+the open-warden runner replaces it. UX items 7–9 are folded into P4/later; the
+RFC triggers are P3 and the metrics read model comes after P5.
+
 ## Active plan — board-driven agents & dynamic workflow (single container)
 
 Goal: the board becomes the single source of truth for **both** the workflow

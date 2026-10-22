@@ -192,6 +192,26 @@ Infrastructure            Sqlite/* (persistence), JsonChatRepository,
 Dependencies point inward: `Interface → Application → Domain`, and
 `Infrastructure → Domain` (implementing the contracts).
 
+## Tenancy and PostgreSQL (P0)
+
+The new product surface starts at `/api/auth`, `/api/me`, `/api/users` and
+`/api/workspaces`. It is multi-tenant: `users` and `workspaces` are N:N through
+`workspace_members`; a global admin is bootstrapped from environment variables;
+sessions are opaque bearer tokens stored as SHA-256 hashes. Every workspace
+resource is checked by `WorkspaceGuard`; a non-member receives `404`, so the
+existence of another workspace is not leaked.
+
+Persistence uses PostgreSQL through Doctrine ORM 3/DBAL 4. The domain stays
+free of Doctrine: `Infrastructure/Persistence/Doctrine/Entity` holds mapped
+records, mappers translate them to/from `Domain/Tenancy`, and the repositories
+implement the contracts in `Domain/Contract/Tenancy` with the EntityManager,
+QueryBuilder or DQL. No hand-written SQL is executed by the application.
+`DoctrineEntityManagerFactory` builds the EntityManager from `DATABASE_URL`;
+`bin/install` applies the schema through Doctrine's `SchemaTool` and runs the
+bootstrap. Development PostgreSQL is provisioned by `docker-compose.dev.yml`
+(never used in production). The legacy SQLite board remains isolated and will
+be removed when the workspace workflow API and the frontend cutover land.
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`
