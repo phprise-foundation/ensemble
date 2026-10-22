@@ -286,6 +286,7 @@ async function submitComment() {
           <div class="comment" v-for="row in commentRows" :key="row.id">
             <div class="comment-header">
               <Avatar
+                class="comment-avatar"
                 size="sm"
                 :name="row.author.name"
                 :image="row.author.image ?? null"
