@@ -20,6 +20,11 @@ final class JsonResponder
         return $this->respond(['error' => $message], $status);
     }
 
+    public function validationError(string $field, string $message): ResponseInterface
+    {
+        return $this->respond(['error' => $message, 'field' => $field], 422);
+    }
+
     private function encode(array $payload): string
     {
         return (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

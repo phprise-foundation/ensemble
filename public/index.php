@@ -27,9 +27,11 @@ use App\Application\UpdateBoard;
 use App\Application\UpdateColumn;
 use App\Application\UpdateItem;
 use App\Infrastructure\Authentication\PasswordAuthenticator;
+use App\Infrastructure\Bootstrap\TenancyBootstrap;
 use App\Infrastructure\Chat\CurlHttpTransport;
 use App\Infrastructure\Chat\EchoChatAgent;
 use App\Infrastructure\Chat\HttpChatAgent;
+use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\JsonChatRepository;
 use App\Infrastructure\Persistence\JsonFile;
 use App\Infrastructure\Persistence\MessageMapper;
@@ -56,6 +58,7 @@ use App\Interface\Http\InfractionController;
 use App\Interface\Http\InfractionPresenter;
 use App\Interface\Http\ItemArrayPresenter;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\ResponseEmitter;
 use App\Interface\Http\WorkflowController;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
@@ -64,13 +67,34 @@ require __DIR__ . '/../vendor/autoload.php';
 
 set_time_limit(120);
 
+$responder = new JsonResponder();
+$request = ServerRequest::fromGlobals();
+$path = $request->getUri()->getPath();
+
+if ($path === '/api/health') {
+    ResponseEmitter::emit($responder->respond(['ok' => true]));
+
+    return;
+}
+
+$isTenancy = str_starts_with($path, '/api/auth/')
+    || $path === '/api/me'
+    || str_starts_with($path, '/api/users')
+    || str_starts_with($path, '/api/workspaces');
+
+if ($isTenancy) {
+    $router = (new TenancyBootstrap(DoctrineEntityManagerFactory::fromEnvironment(), $responder))->router();
+    ResponseEmitter::emit($router->handle($request));
+
+    return;
+}
+
 $password = getenv('BOARD_PASSWORD');
 $password = $password === false ? 'admin' : $password;
 $databaseFile = getenv('BOARD_DB_FILE');
 $databaseFile = $databaseFile === false ? __DIR__ . '/../var/board.sqlite' : $databaseFile;
 
 $authenticator = new PasswordAuthenticator($password);
-$responder = new JsonResponder();
 $pdo = (new SqliteDatabase($databaseFile))->connection();
 
 $items = new SqliteItemRepository($pdo, new ItemMapper());
@@ -148,11 +172,7 @@ $chatController = new ChatController(
     $responder,
 );
 
-$request = ServerRequest::fromGlobals();
-$path = $request->getUri()->getPath();
-
 $response = match (true) {
-    $path === '/api/health' => $responder->respond(['ok' => true]),
     $path === '/api/login' => $authController->login($request),
     $path === '/api/chat' => $chatController->handle($request),
     str_starts_with($path, '/api/infractions') => $infractionController->handle($request),
@@ -163,12 +183,4 @@ $response = match (true) {
     default => new Response(404, [], 'not found'),
 };
 
-http_response_code($response->getStatusCode());
-/** @var array<string, list<string>> $headers */
-$headers = $response->getHeaders();
-foreach ($headers as $name => $values) {
-    foreach ($values as $value) {
-        header(sprintf('%s: %s', $name, $value), false);
-    }
-}
-echo (string) $response->getBody();
+ResponseEmitter::emit($response);
