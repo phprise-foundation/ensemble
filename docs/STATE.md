@@ -1,5 +1,117 @@
 # STATE
 
+## Current status — 2026-10-23
+
+- **P0 and P1 are merged into `main` and pushed to origin.** Branches
+  `feat/p0-tenancy-api` and `feat/p1-workflow-chain` were deleted.
+- Latest bar: **74 PHPUnit tests / 426 assertions**, Psalm level 1 with **0
+  errors**.
+- The new backend is **API-only**: the Vue frontend still runs on the fake
+  backend and is **not wired** to the new endpoints yet.
+- The locked production target is **Cloudflare Containers + external
+  PostgreSQL**; the single-image/Cloudflare work is P5. Local development uses
+  the dev-only `docker-compose.dev.yml`.
+- The legacy SQLite board, agent-watcher runner, static UI and fake frontend
+  still exist and are isolated from the new routes; their removal belongs to
+  P3/P4.
+- P2 has **not started**. The decisions below are deliberately preserved as WIP
+  so the next session can resume without re-deriving them.
+
+## WIP — P2 decisions (2026-10-23)
+
+### Confirmed by the product owner
+
+1. **Teams are a layer:** `agents`, `roles` and `profiles` live inside a
+   `team` that belongs to a workspace.
+2. **`status.roleIds`** is the ownership model (as in the frontend); a status can
+   be owned by more than one role. The role keeps `unblock` and `interactive`;
+   action filtering comes from the statuses the role owns.
+3. **Profile:** initial version with the frontend fields (name, style, tone,
+   emoji usage) plus an `advanced` section for deeper psychological attributes
+   and references. The advanced shape will be revised later; it is not final.
+4. **No `sourceId` on the agent.** The issue is what references the execution
+   target. The watcher reads statuses, finds issues whose status is owned by the
+   agent's role, and starts the agent in the workdir referenced by the issue.
+5. **Naming:** `sources` = local folders (dev/self-hosted volumes);
+   `repositories` = provider-connected git (GitHub/GitLab/Bitbucket).
+6. **Per-workspace secrets are desired.** The production target is Cloudflare
+   Containers with ephemeral disk, so source code must be cloned from a remote
+   repository at execution time; local sources are only a dev/self-hosted
+   feature.
+
+### Proposed design (not implemented)
+
+- A unified **`Workdir`** concept with `kind=source|repository`; the API still
+  exposes `/sources` and `/repositories` separately, and an issue references
+  one `workdirId`.
+- **`workspace_secrets`** table with libsodium ciphertext (`APP_ENCRYPTION_KEY`
+  in the environment); the API only exposes names/metadata, never plaintext.
+  Start with per-workspace PATs and keep a `RepositoryProvider` contract ready
+  for GitHub App / GitLab OAuth / Bitbucket OAuth.
+- **Repositories** store provider, URL, base branch and `secretId`.
+- **Issues** gain `workdirId`; the proposed rule is optional on creation but
+  required when entering a status that has `roleIds` (an agent-owned stage).
+- **Statuses** gain a `status_roles` join table (not JSON) so the runner can
+  query statuses by role efficiently with DQL.
+- The runner clones into an ephemeral `/tmp/<workspace>/<issue>`, creates a
+  branch, runs open-warden, pushes the branch/PR and stores artifacts in R2.
+
+Full Cloudflare/source-vs-repository reasoning is in
+[`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md)
+(status: Proposed).
+
+### Open decisions for the next session
+
+1. Unified `Workdir` with `issue.workdirId`, or two separate fields
+   (`sourceId`/`repositoryId`)?
+2. Is `workdirId` required only when entering a status with `roleIds`
+   (recommended), or already required on any task/subtask creation?
+3. Start the per-workspace encrypted secret vault now (PAT first), or keep a
+   single environment-level provider token for the first runner slice?
+4. Start the frontend integration now for the P0/P1 screens (separate branch;
+   console/copilot still fake), or finish P2 before the cutover?
+
+### P2 slicing proposed
+
+- **P2a:** teams, roles, profiles; `status_roles`; `roleIds` on status CRUD.
+- **P2b:** sources, repositories, `workspace_secrets`, `Issue.workdirId` and
+  the executable-stage rule.
+- **P2c:** agents (identity + runtime, **without sourceId**), `teamId`,
+  `roleIds`, `profileId`.
+- **P3:** runner resolves `issue.workdirId`, clones/opens the workdir, runs
+  open-warden, records usage and applies the outcome.
+
+### Frontend status and next step
+
+The frontend still uses `frontend/plugin/fake-backend.js`. To wire it to the
+real API we need: login/token + workspace selection, a workspace snapshot (or
+per-collection fetches), issue detail fetching for comments/history, and
+adapters for the new IDs/field names. The console and copilot remain fake and
+must not start polling the real API until their own planning round. The
+recommended first integration slice is auth → workspace → board read, in a
+separate branch.
+
+### Environment and housekeeping
+
+- `/home/esdras/src/phrise` was removed. The 38 artifacts that existed only in
+  that wrong clone were copied to
+  `var/kanban.local/artifacts/recuperado-phrise/` (gitignored).
+- A local snapshot is at
+  `var/kanban.local/backups/kanban.local-snapshot-2026-10-22.tgz` (18 MB,
+  gitignored).
+- The canonical-path rule is in the project `AGENTS.md` and in the global
+  `~/.config/opencode/AGENTS.md`.
+- To make the wrong path root-owned and immutable, the pending command is
+  `sudo /home/esdras/src/phprise/multi-agent/bin/lock-wrong-path.sh`.
+- Untracked WIP that predates P0/P1 and was **not** committed:
+  `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
+  `frontend/src/components/Comment.vue`,
+  `frontend/tests/comment-author.spec.js`,
+  `frontend/tests/icon-standard-capture.feature`,
+  `frontend/tests/viewport-boundary.test.mjs`, `kanban-outcome.md`,
+  `tmp-kan-112-comentario.txt`, plus root `node_modules/` and
+  `package-lock.json`. Review before adopting or deleting.
+
 ## Done
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch

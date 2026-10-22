@@ -35,22 +35,29 @@ Order and exit criteria:
 
 1. **P0 — tenancy and API base** — users/workspaces N:N, admin bootstrap,
    bearer sessions, tenant guard, PostgreSQL + Doctrine, dev compose,
-   `bin/install`. **Done (branch `feat/p0-tenancy-api`).**
+   `bin/install`. **Done and merged into `main`.**
 2. **P1 — workflow chain** — workspace-scoped boards, columns, statuses per
    issue type, transitions, issue types, fields per issue type, issues minimal
    create/list/move/comment; CRUD with `GET/POST/PATCH/DELETE`; frontend
    validation of those screens.
-   - **P1a — workflows, issue types and fields: Done** (branch
-     `feat/p1-workflow-chain`; ADR-002).
-   - **P1b — statuses and transitions: Done** (fixed status kind; no
-     cross-issue-type transition).
-   - **P1c — boards and columns: Done** (board references one workflow;
-     issues have no `boardId`).
-   - **P1d — issues: Done** (workspace prefix key sequence, move, comments,
-     history).
-3. **P2 — teams and agents** — teams, roles (unblock/interactive/filters),
-   profiles, agents (identity + runtime + roles + source), sources/repositories
-   (`local` for dev, `git` for cloud); full CRUD.
+   - **P1a — workflows, issue types and fields: Done and merged** (ADR-002).
+   - **P1b — statuses and transitions: Done and merged** (fixed status kind;
+     no cross-issue-type transition).
+   - **P1c — boards and columns: Done and merged** (board references one
+     workflow; issues have no `boardId`).
+   - **P1d — issues: Done and merged** (workspace prefix key sequence, move,
+     comments, history).
+3. **P2 — teams, roles, profiles, workdirs and agents** — not started.
+   - **P2a:** teams, roles (`unblock`/`interactive`), profiles (initial +
+     advanced), `status_roles` and `roleIds` on status CRUD.
+   - **P2b:** sources (local) and repositories (GitHub/GitLab/Bitbucket),
+     per-workspace `workspace_secrets`, `Issue.workdirId` and the
+     executable-stage rule.
+   - **P2c:** agents (identity + runtime, **without `sourceId`**), team,
+     roleIds and profileId.
+   The proposed execution-target design and the open decisions are in
+   [`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md) and
+   `docs/STATE.md` (“WIP — P2 decisions”).
 4. **P3 — runtime** — PHP CLI runner, `bin/kanban`, open-warden execution,
    claim/lease/reclaim, prompt composition, outcomes, triggers (spawn, voting,
    `subtasks-done`), usage/cost, logs, worktrees.
