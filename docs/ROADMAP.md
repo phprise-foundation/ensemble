@@ -40,6 +40,14 @@ Order and exit criteria:
    issue type, transitions, issue types, fields per issue type, issues minimal
    create/list/move/comment; CRUD with `GET/POST/PATCH/DELETE`; frontend
    validation of those screens.
+   - **P1a — workflows, issue types and fields: Done** (branch
+     `feat/p1-workflow-chain`; ADR-002).
+   - **P1b — statuses and transitions: Done** (fixed status kind; no
+     cross-issue-type transition).
+   - **P1c — boards and columns: Done** (board references one workflow;
+     issues have no `boardId`).
+   - **P1d — issues: Done** (workspace prefix key sequence, move, comments,
+     history).
 3. **P2 — teams and agents** — teams, roles (unblock/interactive/filters),
    profiles, agents (identity + runtime + roles + source), sources/repositories
    (`local` for dev, `git` for cloud); full CRUD.

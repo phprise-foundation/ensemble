@@ -18,6 +18,50 @@
   board, agent-watcher and static UI remain temporarily and are not used by the
   new routes. 63 PHPUnit tests and Psalm level 1 are green. Decisions in
   `docs/ADR-001-tenancy-postgres-doctrine.md`.
+- **P1a — workflow chain (branch `feat/p1-workflow-chain`):** workflows,
+  issue types and custom field definitions are now workspace-scoped and
+  persisted with Doctrine. Decisions in
+  `docs/ADR-002-workflow-model.md`: issues belong to the workspace (no
+  `boardId`); a board references one workflow; statuses will belong to an issue
+  type with a fixed kind (`initial`/`transitional`/`final`); transitions never
+  change the issue type; RFC → task is a future user-configured trigger, not a
+  transition. Fields support `text`, `textarea`, `number`, `date`, `boolean`,
+  `single_select` and `multi_select`; select options live on the definition.
+  Endpoints: `GET/POST/PATCH/DELETE` on
+  `/api/workspaces/{ws}/workflows`, nested `/issue-types` and nested
+  `/fields` (plus direct update/delete by id). Keys are unique in their scope;
+  writes require workspace owner/admin, reads require membership.
+  70 PHPUnit tests and Psalm level 1 are green.
+- **P1b — statuses and transitions (branch `feat/p1-workflow-chain`):**
+  statuses belong to an issue type and use the fixed kinds `initial`,
+  `transitional` and `final`; the first status of a type must be initial and
+  there is exactly one initial per type. Transitions are workflow-scoped,
+  connect statuses of the same issue type (never changing the type), support
+  `user`/`agent`/`both` and an optional outcome. Endpoints:
+  `GET/POST /api/workspaces/{ws}/workflows/{wf}/statuses`,
+  `GET/PATCH/DELETE /api/workspaces/{ws}/statuses/{id}`,
+  `GET/POST /api/workspaces/{ws}/workflows/{wf}/transitions`,
+  `GET/PATCH/DELETE /api/workspaces/{ws}/transitions/{id}`. 78 PHPUnit tests
+  and Psalm level 1 are green.
+- **P1c — boards and columns (branch `feat/p1-workflow-chain`):** a board
+  belongs to a workspace and references exactly one workflow; it carries
+  issue-type/status filters and has ordered columns, each grouping statuses
+  from that workflow. An issue will be displayed by a board based on status and
+  filters, never by a `boardId`. Column statuses must belong to the board
+  workflow and to only one column per board; `wip` is optional. Endpoints:
+  `GET/POST/PATCH/DELETE` on `/api/workspaces/{ws}/boards`,
+  `/boards/{id}/columns` and `/columns/{id}`. 69 PHPUnit tests and Psalm
+  level 1 are green.
+- **P1d — issues (branch `feat/p1-workflow-chain`):** issues are
+  workspace-scoped (no `boardId`), use the workspace prefix key sequence
+  (`ALP-1`, `ALP-2`) and carry type, status, summary, description, reporter,
+  assignee, worker, blocked, custom field values, comments and status history.
+  Creation defaults to the issue type's initial status; moves only follow a
+  user/both transition and never change the issue type; board listing filters by
+  the board columns and issue-type/status filters. Endpoints:
+  `GET/POST /issues`, `GET/PATCH /issues/{key}`,
+  `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
+  74 PHPUnit tests and Psalm level 1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

@@ -80,7 +80,10 @@ final class TenancyTestApp
             $headers['Authorization'] = 'Bearer ' . $token;
         }
 
-        return new ServerRequest($method, $path, $headers, (string) json_encode($body));
+        $request = new ServerRequest($method, $path, $headers, (string) json_encode($body));
+        parse_str($request->getUri()->getQuery(), $query);
+
+        return $request->withQueryParams($query);
     }
 
     /** @return array<array-key, mixed> */
