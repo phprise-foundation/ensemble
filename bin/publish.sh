@@ -50,7 +50,7 @@ Options:
   -h, --help             Show this message.
 
 Example:
-  ${SCRIPT_NAME} --tag v0.1.0 --repo phprise-foundation/multi-agent --public
+  ${SCRIPT_NAME} --tag v0.1.0 --repo phprise-foundation/ensemble --public
 HELP
 }
 

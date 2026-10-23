@@ -1,6 +1,6 @@
-# multi-agent frontend
+# Ensemble frontend
 
-Reactive SPA for the multi-agent board (Vue 3 + Vite). It is **independent from
+Reactive SPA for the Ensemble board (Vue 3 + Vite). It is **independent from
 the backend**: it talks to a REST API at `/api`. For this prototype the API is a
 **fake backend** — a Vite middleware (`plugin/fake-backend.js`) that stores
 everything in `frontend/.data/db.json`. Agents are **not** triggered yet.

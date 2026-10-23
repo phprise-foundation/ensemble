@@ -2,7 +2,7 @@
 
 ## Overview
 
-`multi-agent` is an OTAKU Application repository. Its heart is a configurable
+`Ensemble` is an OTAKU Application repository. Its heart is a configurable
 kanban board that mirrors the agent-watcher data model (`column`, `agent`,
 `worker`, `blocked`, `blocked_by`, comments, stage history) so that agents can be
 pointed at it.
