@@ -51,7 +51,7 @@ Order and exit criteria:
    - **P2a — teams, roles, profiles and status roles: Done** (PR #182;
      `roles`/`profiles` are team-scoped, statuses own `roleIds` through
      `status_roles`).
-   - **P2b-1 — secrets and repositories: Done** (workspace secrets with
+   - **P2b-1 — secrets and repositories: Done** (PR #184; workspace secrets with
      libsodium, PAT first; repositories with provider, https URL, base branch
      and optional secret).
    - **P2b-2 (next):** the internal `Workdir` (scratch or repository),
