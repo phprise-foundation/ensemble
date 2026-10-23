@@ -77,4 +77,14 @@ final class NotFoundException extends RuntimeException
     {
         return new self('profile not found');
     }
+
+    public static function secret(): self
+    {
+        return new self('secret not found');
+    }
+
+    public static function repository(): self
+    {
+        return new self('repository not found');
+    }
 }

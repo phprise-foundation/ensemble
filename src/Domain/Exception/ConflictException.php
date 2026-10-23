@@ -28,6 +28,11 @@ final class ConflictException extends RuntimeException
         return new self('key already in use');
     }
 
+    public static function duplicateName(string $resource): self
+    {
+        return new self($resource . ' name already in use');
+    }
+
     public static function inUse(string $resource): self
     {
         return new self($resource . ' still has children');

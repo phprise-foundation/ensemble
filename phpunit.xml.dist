@@ -12,4 +12,7 @@
             <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <env name="APP_ENCRYPTION_KEY" value="MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=" force="true"/>
+    </php>
 </phpunit>
