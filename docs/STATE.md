@@ -2,10 +2,11 @@
 
 ## Current status — 2026-10-23
 
-- **P0 and P1 are merged into `main` and pushed to origin.** Branches
-  `feat/p0-tenancy-api` and `feat/p1-workflow-chain` were deleted.
-- **P2a is implemented on `feat/p2-teams-roles`** and awaits review/merge:
-  teams, roles, profiles, `status_roles` and `roleIds` on status CRUD.
+- **P0, P1 and P2a are merged into `main` and pushed to origin.** Branches
+  `feat/p0-tenancy-api`, `feat/p1-workflow-chain` and `feat/p2-teams-roles` were
+  deleted.
+- **P2b (workdirs, repositories, secrets) is the next slice.** Decisions in the
+  section below and in ADR-003.
 - Latest bar: **83 PHPUnit tests / 505 assertions**, Psalm level 1 with **0
   errors**.
 - The new backend is **API-only**: the Vue frontend still runs on the fake
@@ -16,8 +17,6 @@
 - The legacy SQLite board, agent-watcher runner, static UI and fake frontend
   still exist and are isolated from the new routes; their removal belongs to
   P3/P4.
-- **P2b is next:** workdirs, repositories, per-workspace secrets, `parentKey`
-  and the executable-stage rule. The decisions below are final.
 
 ## P2 decisions (confirmed 2026-10-23)
 
@@ -193,7 +192,7 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
-- **P2a — teams, roles and profiles (branch `feat/p2-teams-roles`):** new
+- **P2a — teams, roles and profiles (PR #182):** new
   `Domain/Team` aggregate (`Team`, `Role` with `unblock`/`interactive`, `Profile`
   with the prototype fields plus an opaque `advanced` JSON object, and the
   `RoleIds` collection). Persisted as `teams`, `roles`, `profiles` and the

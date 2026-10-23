@@ -48,9 +48,9 @@ Order and exit criteria:
    - **P1d — issues: Done and merged** (workspace prefix key sequence, move,
      comments, history).
 3. **P2 — teams, roles, profiles, workdirs and agents** — in progress.
-   - **P2a — teams, roles, profiles and status roles: Done** (branch
-     `feat/p2-teams-roles`; `roles`/`profiles` are team-scoped, statuses own
-     `roleIds` through `status_roles`).
+   - **P2a — teams, roles, profiles and status roles: Done** (PR #182;
+     `roles`/`profiles` are team-scoped, statuses own `roleIds` through
+     `status_roles`).
    - **P2b:** `repositories` (GitHub/GitLab/Bitbucket) and per-workspace
      `workspace_secrets`, the internal `Workdir` (scratch or repository),
      `Issue.workdirId` (always set, inherited through `parentKey`) and
