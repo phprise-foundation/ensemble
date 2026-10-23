@@ -8,6 +8,7 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\IssueTypeRepository;
 use App\Domain\Contract\Kanban\StatusRepository;
 use App\Domain\Contract\Kanban\WorkflowRepository;
+use App\Domain\Contract\Team\RoleRepository;
 use App\Domain\Exception\ConflictException;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Exception\ValidationException;
@@ -18,6 +19,7 @@ use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Team\RoleIds;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 
@@ -27,6 +29,7 @@ final readonly class CreateStatus
         private WorkflowRepository $workflows,
         private IssueTypeRepository $issueTypes,
         private StatusRepository $statuses,
+        private RoleRepository $roles,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -41,6 +44,7 @@ final readonly class CreateStatus
         StatusType $type,
         string $color,
         Position $position,
+        RoleIds $roleIds,
     ): Status {
         $this->guard->assertManager($actor, $workspaceId);
         $this->workflows->find($workspaceId, $workflowId) ?? throw NotFoundException::workflow();
@@ -52,6 +56,7 @@ final readonly class CreateStatus
             throw ConflictException::duplicateKey();
         }
         $this->guardInitial($issueTypeId, $type);
+        $this->guardRoles($workspaceId, $roleIds);
 
         $status = new Status(
             StatusId::generate(),
@@ -63,10 +68,18 @@ final readonly class CreateStatus
             $type,
             $color,
             $position,
+            roleIds: $roleIds,
         );
         $this->statuses->add($status);
 
         return $status;
+    }
+
+    private function guardRoles(WorkspaceId $workspaceId, RoleIds $roleIds): void
+    {
+        if ($this->roles->findMany($workspaceId, $roleIds)->count() !== $roleIds->count()) {
+            throw new ValidationException('roleIds', 'Every role must belong to this workspace.');
+        }
     }
 
     private function guardInitial(IssueTypeId $issueTypeId, StatusType $type): void

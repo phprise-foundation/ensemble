@@ -4,7 +4,9 @@
 
 - **P0 and P1 are merged into `main` and pushed to origin.** Branches
   `feat/p0-tenancy-api` and `feat/p1-workflow-chain` were deleted.
-- Latest bar: **74 PHPUnit tests / 426 assertions**, Psalm level 1 with **0
+- **P2a is implemented on `feat/p2-teams-roles`** and awaits review/merge:
+  teams, roles, profiles, `status_roles` and `roleIds` on status CRUD.
+- Latest bar: **83 PHPUnit tests / 505 assertions**, Psalm level 1 with **0
   errors**.
 - The new backend is **API-only**: the Vue frontend still runs on the fake
   backend and is **not wired** to the new endpoints yet.
@@ -14,10 +16,10 @@
 - The legacy SQLite board, agent-watcher runner, static UI and fake frontend
   still exist and are isolated from the new routes; their removal belongs to
   P3/P4.
-- P2 has **not started**. The decisions below are deliberately preserved as WIP
-  so the next session can resume without re-deriving them.
+- **P2b is next:** workdirs, repositories, per-workspace secrets, `parentKey`
+  and the executable-stage rule. The decisions below are final.
 
-## WIP — P2 decisions (2026-10-23)
+## P2 decisions (confirmed 2026-10-23)
 
 ### Confirmed by the product owner
 
@@ -39,47 +41,64 @@
    repository at execution time; local sources are only a dev/self-hosted
    feature.
 
-### Proposed design (not implemented)
+### Settled design
 
-- A unified **`Workdir`** concept with `kind=source|repository`; the API still
-  exposes `/sources` and `/repositories` separately, and an issue references
-  one `workdirId`.
-- **`workspace_secrets`** table with libsodium ciphertext (`APP_ENCRYPTION_KEY`
-  in the environment); the API only exposes names/metadata, never plaintext.
-  Start with per-workspace PATs and keep a `RepositoryProvider` contract ready
-  for GitHub App / GitLab OAuth / Bitbucket OAuth.
+- **One internal reference, one user-facing reference.** `issues.workdir_id` is
+  the single persisted link and is **always** set. The API never exposes the
+  workdir; it exposes `repositoryId` (nullable), derived from the workdir.
+- **`Workdir`** is workspace-scoped with `kind` (`scratch` or `repository`); the
+  `scratch` kind owns a per-issue directory, the `repository` kind references a
+  repository plus a branch (`agent/<root-issue-key>`).
+- **Inheritance.** An issue without a parent and without a repository gets its
+  own `scratch` workdir; an issue with a parent inherits the parent's workdir;
+  an issue created with a repository gets a repository workdir. `parentKey` is
+  added to the issue in P2b.
+- **Attaching a repository is a workdir operation routed through an issue:**
+  `POST /issues/{key}/repository` affects the whole family, because siblings and
+  children share the workdir.
+- **Binding states:** `scratch → pending → bound | conflict`. P2 defines the
+  state machine and the user choice (`remote_wins`, `local_wins`, `merge`); the
+  runner detects and resolves the conflict in P3, since that needs git and
+  network.
+- **`sources` is not a product resource.** The new API has no `/sources`; local
+  folders remain a future dev/self-hosted adapter behind `kind`. The prototype
+  Sources screen is removed in P4.
+- **`scratch` workdir content is run-scoped.** Nothing survives a container
+  replacement until a repository is bound; the UI warns. `WorkdirStorage` lands
+  with P3 and R2 with P5.
+- **`workspace_secrets`** stores name, libsodium ciphertext (`APP_ENCRYPTION_KEY`)
+  and provider metadata; the API only exposes names/metadata. Start with
+  per-workspace PATs and keep a `RepositoryProvider` contract ready for GitHub
+  App / GitLab OAuth / Bitbucket OAuth.
 - **Repositories** store provider, URL, base branch and `secretId`.
-- **Issues** gain `workdirId`; the proposed rule is optional on creation but
-  required when entering a status that has `roleIds` (an agent-owned stage).
-- **Statuses** gain a `status_roles` join table (not JSON) so the runner can
-  query statuses by role efficiently with DQL.
+- **Statuses** own roles through a `status_roles` join table (not JSON) so the
+  runner can query statuses by role with DQL.
 - The runner clones into an ephemeral `/tmp/<workspace>/<issue>`, creates a
   branch, runs open-warden, pushes the branch/PR and stores artifacts in R2.
 
-Full Cloudflare/source-vs-repository reasoning is in
-[`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md)
-(status: Proposed).
+The full reasoning is in
+[`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md) (status:
+Accepted).
 
-### Open decisions for the next session
+### Decisions resolved
 
-1. Unified `Workdir` with `issue.workdirId`, or two separate fields
-   (`sourceId`/`repositoryId`)?
-2. Is `workdirId` required only when entering a status with `roleIds`
-   (recommended), or already required on any task/subtask creation?
-3. Start the per-workspace encrypted secret vault now (PAT first), or keep a
-   single environment-level provider token for the first runner slice?
-4. Start the frontend integration now for the P0/P1 screens (separate branch;
-   console/copilot still fake), or finish P2 before the cutover?
+1. Unified `Workdir` with `issue.workdirId`; `repositoryId` in the payload is
+   derived, never a second column.
+2. The workdir is always set internally; a repository is optional for the user
+   and is not required to create an issue.
+3. The per-workspace encrypted secret vault starts in P2b with a PAT first.
+4. The frontend cutover starts after P2 is closed.
 
-### P2 slicing proposed
+### P2 slicing
 
-- **P2a:** teams, roles, profiles; `status_roles`; `roleIds` on status CRUD.
-- **P2b:** sources, repositories, `workspace_secrets`, `Issue.workdirId` and
-  the executable-stage rule.
+- **P2a (done):** teams, roles and profiles; `status_roles`; `roleIds` on status
+  CRUD.
+- **P2b (next):** `repositories`, `workspace_secrets`, `workdirs`,
+  `issues.workdir_id`, `issues.parent_key` and `POST /issues/{key}/repository`.
 - **P2c:** agents (identity + runtime, **without sourceId**), `teamId`,
   `roleIds`, `profileId`.
-- **P3:** runner resolves `issue.workdirId`, clones/opens the workdir, runs
-  open-warden, records usage and applies the outcome.
+- **P3:** runner resolves the workdir, clones/opens it, detects and resolves
+  binding conflicts, runs open-warden, records usage and applies the outcome.
 
 ### Frontend status and next step
 
@@ -174,6 +193,17 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
+- **P2a — teams, roles and profiles (branch `feat/p2-teams-roles`):** new
+  `Domain/Team` aggregate (`Team`, `Role` with `unblock`/`interactive`, `Profile`
+  with the prototype fields plus an opaque `advanced` JSON object, and the
+  `RoleIds` collection). Persisted as `teams`, `roles`, `profiles` and the
+  `status_roles` join table; `Status` now carries `roleIds`. Endpoints:
+  `GET/POST/PATCH/DELETE` on `/api/workspaces/{ws}/teams`,
+  `/teams/{id}/roles` (plus `/roles/{id}`) and `/teams/{id}/profiles` (plus
+  `/profiles/{id}`). Writes require owner/admin, reads require membership; a
+  role from another workspace is `422 roleIds`, a role assigned to a status or a
+  team with children cannot be deleted (`409`). 83 PHPUnit tests and Psalm level
+  1 are green.
 - OTAKU Application skeleton (Domain / Application / Infrastructure / Interface).
 - Single-password authentication (Bearer).
 - REST API + static Jira-like board UI.

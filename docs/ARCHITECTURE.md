@@ -243,6 +243,30 @@ definitions, and append status history on every move. Comments are separate
 records; the issue detail returns both. `DoctrineIssueKeyGenerator` locks the
 workspace sequence row before issuing the next key.
 
+## Teams, roles and profiles (P2a)
+
+`Domain/Team` owns the team layer. A `Team` belongs to a workspace and groups
+`Role`s and `Profile`s; both reference their team and workspace. A role carries
+`unblock` and `interactive` only — what it can act on comes from the statuses it
+owns. A profile carries the prototype fields (`name`, `style`, `tone`,
+`emojiUsage`) plus an `advanced` JSON object whose shape is still provisional and
+stored verbatim. Ids are opaque 32-hex values; there is no key slug.
+
+Statuses own roles through the `status_roles` join table (`status_id`,
+`role_id`), not JSON, so the runner can query the statuses of a role with DQL.
+`Domain/Team/RoleIds` is the first-class collection; it deduplicates and
+preserves order. A status may reference roles from any team in the workspace,
+which matches the product model where the team is a grouping layer, not a
+permission boundary.
+
+Persistence follows the P0/P1 pattern: `teams`, `roles`, `profiles` and
+`status_roles` records, mappers, and repositories behind
+`Domain/Contract/Team`. Writes require workspace owner/admin; reads require
+membership. Every lookup includes the workspace, so an id from another workspace
+is `404`; assigning a foreign role to a status is `422 roleIds`. A role assigned
+to a status and a team that still has roles or profiles cannot be deleted
+(`409`).
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`
@@ -256,6 +280,9 @@ workspace sequence row before issuing the next key.
   timestamps), `ItemEvent` (a stage transition) and `ItemId`. `item.role` is a
   manual override; the stage's role lives on the column.
 - `Domain/Chat` — `Conversation`, `Message`, `MessageRole`.
+- `Domain/Team` — `Team` (workspace layer), `Role` (`unblock`/`interactive`),
+  `Profile` (style, tone, emoji usage and the provisional `advanced` object) and
+  the `RoleIds` collection. `Domain/Kanban/Status` references it by id.
 - `Domain/Contract` — repository and gateway interfaces.
 
 ## Persistence (SQLite)

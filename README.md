@@ -62,6 +62,21 @@ POST      /issues/{key}/comments
 GET       /issues?boardId={board}
 ```
 
+P2a adds the team layer:
+
+```
+GET/POST         /teams
+GET/PATCH/DELETE /teams/{id}
+GET/POST         /teams/{id}/roles
+GET/PATCH/DELETE /roles/{id}
+GET/POST         /teams/{id}/profiles
+GET/PATCH/DELETE /profiles/{id}
+```
+
+Statuses accept and return `roleIds`; a role from another workspace is `422`.
+A repository is the user-facing execution target; the workdir stays internal
+(ADR-003).
+
 Issues use the workspace prefix (`ALP-1`, `ALP-2`), start in the issue type's
 initial status and carry custom field values, comments and status history. The legacy SQLite board and agent-watcher
 surfaces still exist in this branch but are not used by the new routes; they are

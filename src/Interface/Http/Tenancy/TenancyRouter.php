@@ -12,6 +12,9 @@ use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Team\ProfileId;
+use App\Domain\Team\RoleId;
+use App\Domain\Team\TeamId;
 use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\JsonResponder;
@@ -23,6 +26,9 @@ use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
 use App\Interface\Http\Kanban\TransitionController;
 use App\Interface\Http\Kanban\WorkflowController;
+use App\Interface\Http\Team\ProfileController;
+use App\Interface\Http\Team\RoleController;
+use App\Interface\Http\Team\TeamController;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -41,6 +47,9 @@ final readonly class TenancyRouter
         private BoardController $boards,
         private ColumnController $columns,
         private IssueController $issues,
+        private TeamController $teams,
+        private RoleController $roles,
+        private ProfileController $profiles,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
     ) {
@@ -119,6 +128,21 @@ final readonly class TenancyRouter
             $method === 'PATCH' && $this->isIssue($segments) => $this->issues->update($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMove($segments) => $this->issues->move($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isTeams($segments) => $this->teams->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isTeam($segments) => $this->teams->show($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'PATCH' && $this->isTeam($segments) => $this->teams->update($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'DELETE' && $this->isTeam($segments) => $this->teams->delete($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'GET' && $this->isTeamRoles($segments) => $this->roles->list($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'POST' && $this->isTeamRoles($segments) => $this->roles->create($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'GET' && $this->isRole($segments) => $this->roles->show($request, $this->workspaceId($segments), $this->roleId($segments)),
+            $method === 'PATCH' && $this->isRole($segments) => $this->roles->update($request, $this->workspaceId($segments), $this->roleId($segments)),
+            $method === 'DELETE' && $this->isRole($segments) => $this->roles->delete($request, $this->workspaceId($segments), $this->roleId($segments)),
+            $method === 'GET' && $this->isTeamProfiles($segments) => $this->profiles->list($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'POST' && $this->isTeamProfiles($segments) => $this->profiles->create($request, $this->workspaceId($segments), $this->teamId($segments)),
+            $method === 'GET' && $this->isProfile($segments) => $this->profiles->show($request, $this->workspaceId($segments), $this->profileId($segments)),
+            $method === 'PATCH' && $this->isProfile($segments) => $this->profiles->update($request, $this->workspaceId($segments), $this->profileId($segments)),
+            $method === 'DELETE' && $this->isProfile($segments) => $this->profiles->delete($request, $this->workspaceId($segments), $this->profileId($segments)),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -329,6 +353,62 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isTeams(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'teams';
+    }
+
+    /** @param list<string> $segments */
+    private function isTeam(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'teams';
+    }
+
+    /** @param list<string> $segments */
+    private function isTeamRoles(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'teams'
+            && $segments[5] === 'roles';
+    }
+
+    /** @param list<string> $segments */
+    private function isRole(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'roles';
+    }
+
+    /** @param list<string> $segments */
+    private function isTeamProfiles(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'teams'
+            && $segments[5] === 'profiles';
+    }
+
+    /** @param list<string> $segments */
+    private function isProfile(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'profiles';
+    }
+
+    /** @param list<string> $segments */
     private function workspaceId(array $segments): WorkspaceId
     {
         return new WorkspaceId($segments[2] ?? '');
@@ -380,5 +460,23 @@ final readonly class TenancyRouter
     private function issueKey(array $segments): IssueKey
     {
         return new IssueKey($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function teamId(array $segments): TeamId
+    {
+        return new TeamId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function roleId(array $segments): RoleId
+    {
+        return new RoleId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function profileId(array $segments): ProfileId
+    {
+        return new ProfileId($segments[4] ?? '');
     }
 }

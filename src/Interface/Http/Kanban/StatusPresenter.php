@@ -20,6 +20,7 @@ final class StatusPresenter
             'type' => $status->type()->value,
             'color' => $status->color(),
             'position' => $status->position()->value(),
+            'roleIds' => $status->roleIds()->values(),
             'createdAt' => $status->createdAt()->format(DATE_ATOM),
             'updatedAt' => $status->updatedAt()->format(DATE_ATOM),
         ];

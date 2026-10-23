@@ -52,6 +52,21 @@ use App\Application\Kanban\ValidateColumnStatuses;
 use App\Application\Kanban\ValidateFieldValues;
 use App\Application\Security\AuthenticateUser;
 use App\Application\Security\ReadCurrentUser;
+use App\Application\Team\CreateProfile;
+use App\Application\Team\CreateRole;
+use App\Application\Team\CreateTeam;
+use App\Application\Team\DeleteProfile;
+use App\Application\Team\DeleteRole;
+use App\Application\Team\DeleteTeam;
+use App\Application\Team\ListProfiles;
+use App\Application\Team\ListRoles;
+use App\Application\Team\ListTeams;
+use App\Application\Team\ReadProfile;
+use App\Application\Team\ReadRole;
+use App\Application\Team\ReadTeam;
+use App\Application\Team\UpdateProfile;
+use App\Application\Team\UpdateRole;
+use App\Application\Team\UpdateTeam;
 use App\Application\Tenancy\AddWorkspaceMember;
 use App\Application\Tenancy\CreateWorkspace;
 use App\Application\Tenancy\ListWorkspaceMembers;
@@ -79,6 +94,9 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\UserRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRepository;
@@ -93,6 +111,9 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionReposit
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
@@ -120,6 +141,12 @@ use App\Interface\Http\Tenancy\UserController;
 use App\Interface\Http\Tenancy\UserPresenter;
 use App\Interface\Http\Tenancy\WorkspaceController;
 use App\Interface\Http\Tenancy\WorkspacePresenter;
+use App\Interface\Http\Team\ProfileController;
+use App\Interface\Http\Team\ProfilePresenter;
+use App\Interface\Http\Team\RoleController;
+use App\Interface\Http\Team\RolePresenter;
+use App\Interface\Http\Team\TeamController;
+use App\Interface\Http\Team\TeamPresenter;
 
 final readonly class TenancyBootstrap
 {
@@ -166,6 +193,12 @@ final readonly class TenancyBootstrap
         $issuePresenter = new IssuePresenter();
         $issueCommentPresenter = new IssueCommentPresenter();
         $issueEventPresenter = new IssueEventPresenter();
+        $teams = new DoctrineTeamRepository($entityManager, new TeamRecordMapper());
+        $roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
+        $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
+        $teamPresenter = new TeamPresenter();
+        $rolePresenter = new RolePresenter();
+        $profilePresenter = new ProfilePresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -232,9 +265,9 @@ final readonly class TenancyBootstrap
             new StatusController(
                 $currentUser,
                 new ListStatuses($workflows, $issueTypes, $statuses, $guard),
-                new CreateStatus($workflows, $issueTypes, $statuses, $guard),
+                new CreateStatus($workflows, $issueTypes, $statuses, $roles, $guard),
                 new ReadStatus($statuses, $guard),
-                new UpdateStatus($statuses, $guard),
+                new UpdateStatus($statuses, $roles, $guard),
                 new DeleteStatus($statuses, $transitions, $guard),
                 $statusPresenter,
                 $this->responder,
@@ -285,6 +318,36 @@ final readonly class TenancyBootstrap
                 $issuePresenter,
                 $issueCommentPresenter,
                 $issueEventPresenter,
+                $this->responder,
+            ),
+            new TeamController(
+                $currentUser,
+                new ListTeams($teams, $guard),
+                new CreateTeam($teams, $guard),
+                new ReadTeam($teams, $guard),
+                new UpdateTeam($teams, $guard),
+                new DeleteTeam($teams, $roles, $profiles, $guard),
+                $teamPresenter,
+                $this->responder,
+            ),
+            new RoleController(
+                $currentUser,
+                new ListRoles($teams, $roles, $guard),
+                new CreateRole($teams, $roles, $guard),
+                new ReadRole($roles, $guard),
+                new UpdateRole($roles, $guard),
+                new DeleteRole($roles, $guard),
+                $rolePresenter,
+                $this->responder,
+            ),
+            new ProfileController(
+                $currentUser,
+                new ListProfiles($teams, $profiles, $guard),
+                new CreateProfile($teams, $profiles, $guard),
+                new ReadProfile($profiles, $guard),
+                new UpdateProfile($profiles, $guard),
+                new DeleteProfile($profiles, $guard),
+                $profilePresenter,
                 $this->responder,
             ),
             new TenancyErrorResponder($this->responder),
