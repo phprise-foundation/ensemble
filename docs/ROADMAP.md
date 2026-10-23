@@ -47,17 +47,21 @@ Order and exit criteria:
      workflow; issues have no `boardId`).
    - **P1d — issues: Done and merged** (workspace prefix key sequence, move,
      comments, history).
-3. **P2 — teams, roles, profiles, workdirs and agents** — not started.
-   - **P2a:** teams, roles (`unblock`/`interactive`), profiles (initial +
-     advanced), `status_roles` and `roleIds` on status CRUD.
-   - **P2b:** sources (local) and repositories (GitHub/GitLab/Bitbucket),
-     per-workspace `workspace_secrets`, `Issue.workdirId` and the
-     executable-stage rule.
+3. **P2 — teams, roles, profiles, workdirs and agents** — in progress.
+   - **P2a — teams, roles, profiles and status roles: Done** (branch
+     `feat/p2-teams-roles`; `roles`/`profiles` are team-scoped, statuses own
+     `roleIds` through `status_roles`).
+   - **P2b:** `repositories` (GitHub/GitLab/Bitbucket) and per-workspace
+     `workspace_secrets`, the internal `Workdir` (scratch or repository),
+     `Issue.workdirId` (always set, inherited through `parentKey`) and
+     `POST /issues/{key}/repository`. `sources` is not a product resource; the
+     execution target is a remote repository, local folders stay a dev-only
+     adapter.
    - **P2c:** agents (identity + runtime, **without `sourceId`**), team,
      roleIds and profileId.
-   The proposed execution-target design and the open decisions are in
+   The settled design lives in
    [`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md) and
-   `docs/STATE.md` (“WIP — P2 decisions”).
+   `docs/STATE.md` (“P2 decisions”).
 4. **P3 — runtime** — PHP CLI runner, `bin/kanban`, open-warden execution,
    claim/lease/reclaim, prompt composition, outcomes, triggers (spawn, voting,
    `subtasks-done`), usage/cost, logs, worktrees.
