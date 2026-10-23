@@ -1,6 +1,6 @@
 {
-    "name": "phprise/multi-agent",
-    "description": "Multi-agent kanban board with authentication, based on The OTAKU Manifesto.",
+    "name": "phprise/ensemble",
+    "description": "Agents as a real development team: a self-hosted kanban board with authentication, based on The OTAKU Manifesto.",
     "type": "project",
     "require": {
         "php": "^8.4",

@@ -1,11 +1,20 @@
 # Changelog
 
-Notable user-facing changes of `multi-agent`. Versions follow SemVer while the
+Notable user-facing changes of `Ensemble`. Versions follow SemVer while the
 API is in `0.y.z` (development); see `docs/GITFLOW.md` for the tagging and
 release policy.
 
 History before this file existed lives in the GitHub releases:
-https://github.com/phprise-foundation/multi-agent/releases
+https://github.com/phprise-foundation/ensemble/releases
+
+## Unreleased
+
+### Changed
+
+- The project is now **Ensemble** (formerly `multi-agent`): the product is a
+  team of agents, each with a role, a profile and a stage to own. Repository,
+  Composer package, frontend package, Docker image and documentation follow the
+  new name; the old GitHub URLs redirect.
 
 ## v0.34.5 — 2026-10-22
 

@@ -8,7 +8,7 @@ Funcionalidade: Tema escuro alinhado à paleta do VSCode Dark+
   - ADR (David): valores exatos do Dark+ nos quatro aspectos (fundo, bordas,
     syntax, seleção); tema é 100% frontend, tokens CSS em
     ":root[data-theme='dark']" em frontend/src/styles/main.css; nenhum contrato
-    REST muda; o tema persiste em localStorage ("multi-agent-theme").
+    REST muda; o tema persiste em localStorage ("ensemble-theme").
   - Guia de implementação (Lucy): tabela de tokens alvo e regra de ::selection.
   - Fases MVE (Jarvis): Fase 1 = fundo + bordas; Fase 2 = seleção + syntax.
     As fases podem aterrissar separadas; o contrato final cobre as duas.

@@ -2,10 +2,15 @@
 
 ## Nome e caminho canônico (INVIOLÁVEL)
 
-- O projeto se chama **PHPRise** — composição de **PHP + Rise** — e se escreve
-  com **dois P**.
-- O único caminho válido é `/home/esdras/src/phprise/multi-agent` (dois `p`:
+- O guarda-chuva se chama **PHPRise** — composição de **PHP + Rise** — e se
+  escreve com **dois P**.
+- O produto deste repositório se chama **Ensemble**: agentes organizados como
+  uma equipe de desenvolvimento real, cada um com papel, perfil e etapa, num
+  board que os orquestra do problema de negócio ao resultado.
+- O único caminho válido é `/home/esdras/src/phprise/ensemble` (dois `p`:
   `phprise`).
+- O caminho antigo `/home/esdras/src/phprise/multi-agent` foi aposentado no
+  rename para Ensemble; **não** o recrie.
 - `/home/esdras/src/phrise` (sem o segundo `p`) **não é um caminho deste
   projeto**. Nenhum documento humano o define; ele só existe por erro de
   agentes anteriores.
@@ -39,9 +44,11 @@
 
 ## What this project is
 
-**multi-agent** orchestrates [agent-watcher](https://github.com/phprise-foundation/agent-watcher)
-and provides a self-hosted kanban board with authentication. It is not a
-full-stack framework: it is a lean application, built with DDD and Clean
+**Ensemble** orchestrates [agent-watcher](https://github.com/phprise-foundation/agent-watcher)
+and provides a self-hosted kanban board with authentication. Agents are treated
+as a real development team: each one has a role, a profile and a stage to own,
+and the board orchestrates them from the business problem to the outcome. It is
+not a full-stack framework: it is a lean application, built with DDD and Clean
 Architecture following The OTAKU Manifesto.
 
 Read `composer.json` for the exact PHP and dependency versions. The main

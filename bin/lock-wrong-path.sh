@@ -18,7 +18,7 @@ printf '%s\n' \
     'Caminho inválido.' \
     '' \
     'O projeto é PHPRise (PHP + Rise, dois P):' \
-    '/home/esdras/src/phprise/multi-agent' \
+    '/home/esdras/src/phprise/ensemble' \
     '' \
     'Não crie, clone, mova nem grave nada aqui.' \
     > "${target}/LEIA-ME.md"

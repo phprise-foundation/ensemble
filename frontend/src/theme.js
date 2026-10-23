@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 
-const KEY = 'multi-agent-theme'
+const KEY = 'ensemble-theme'
 const initial = localStorage.getItem(KEY) || 'dark'
 
 export const theme = reactive({ mode: initial })

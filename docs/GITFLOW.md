@@ -1,6 +1,6 @@
 # GITFLOW.md — Git workflow
 
-> Guide to the Git flows of multi-agent: how to create branches, commit, open a
+> Guide to the Git flows of Ensemble: how to create branches, commit, open a
 > PR, merge, version and publish. **Follow this document** when contributing.
 >
 > In case of conflict with the [PHILOSOPHY.md](PHILOSOPHY.md), the philosophy wins.
@@ -176,7 +176,7 @@ verified; the tag only feeds the semver release below).
 
 ```bash
 # local image
-docker build -t esdrasschonevald/multi-agent:latest .
+docker build -t esdrasschonevald/ensemble:latest .
 
 # tag + release
 git tag v0.1.1 && git push origin v0.1.1

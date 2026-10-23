@@ -9,6 +9,10 @@
   section below and in ADR-003.
 - Latest bar: **83 PHPUnit tests / 505 assertions**, Psalm level 1 with **0
   errors**.
+- **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
+  package, frontend package, Docker image and docs follow the new name; the old
+  GitHub URLs redirect. The canonical local path is
+  `/home/esdras/src/phprise/ensemble`.
 - The new backend is **API-only**: the Vue frontend still runs on the fake
   backend and is **not wired** to the new endpoints yet.
 - The locked production target is **Cloudflare Containers + external
@@ -120,7 +124,7 @@ separate branch.
 - The canonical-path rule is in the project `AGENTS.md` and in the global
   `~/.config/opencode/AGENTS.md`.
 - To make the wrong path root-owned and immutable, the pending command is
-  `sudo /home/esdras/src/phprise/multi-agent/bin/lock-wrong-path.sh`.
+  `sudo /home/esdras/src/phprise/ensemble/bin/lock-wrong-path.sh`.
 - Untracked WIP that predates P0/P1 and was **not** committed:
   `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
   `frontend/src/components/Comment.vue`,

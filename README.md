@@ -1,9 +1,13 @@
-# multi-agent
+# Ensemble
 
-Orchestration project that consumes
-[agent-watcher](https://github.com/phprise-foundation/agent-watcher) and provides
-a self-hosted kanban board with authentication, built following
-[The OTAKU Manifesto](docs/PHILOSOPHY.md) (Clean Architecture + DDD).
+Agents as a real development team. Ensemble orchestrates
+[agent-watcher](https://github.com/phprise-foundation/agent-watcher) on a
+self-hosted kanban board with authentication, built following
+[The OTAKU Manifesto](docs/PHILOSOPHY.md) (Clean Architecture + DDD). Every
+agent has a role, a profile and a stage to own; the board takes the work from
+the business problem to the outcome.
+
+Formerly published as `multi-agent`; the old GitHub URLs redirect.
 
 The board is configurable: you define the **columns** (stages) and the **agents**
 in the UI, so each step of the process can be observed and improved on its own.
@@ -135,21 +139,21 @@ standalone image:
 
 ```bash
 docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
-docker build -f Dockerfile.standalone -t esdrasschonevald/multi-agent:standalone .
+docker build -f Dockerfile.standalone -t esdrasschonevald/ensemble:standalone .
 ```
 
 Run it:
 
 ```bash
-docker run -d --name multi-agent \
+docker run -d --name ensemble \
   -p 8080:80 \
   -v "$PWD/workspace:/workspace" \
-  -v multi-agent-var:/var/www/html/var \
+  -v ensemble-var:/var/www/html/var \
   -e BOARD_PASSWORD=change-me \
   -e DEEPSEEK_API_KEY=... \
   -e SILICONFLOW_API_KEY=... \
   -e GOOGLE_API_KEY=... \
-  esdrasschonevald/multi-agent:standalone
+  esdrasschonevald/ensemble:standalone
 ```
 
 Open <http://localhost:8080>. Agents, roles and transitions are configured in the
@@ -165,28 +169,28 @@ Environment: `BOARD_PASSWORD` (board login and runner token), `BOARD_DB_FILE`
 
 ```bash
 docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
-docker build -f Dockerfile.standalone -t esdrasschonevald/multi-agent:standalone .
+docker build -f Dockerfile.standalone -t esdrasschonevald/ensemble:standalone .
 
-docker run -d --name multi-agent -p 8080:80 \
-  -v "$PWD/workspace:/workspace" -v multi-agent-var:/var/www/html/var \
-  -e BOARD_PASSWORD=change-me esdrasschonevald/multi-agent:standalone
+docker run -d --name ensemble -p 8080:80 \
+  -v "$PWD/workspace:/workspace" -v ensemble-var:/var/www/html/var \
+  -e BOARD_PASSWORD=change-me esdrasschonevald/ensemble:standalone
 
 curl -s localhost:8080/api/health            # {"ok":true}
 curl -s -o /dev/null -w '%{http_code}\n' localhost:8080/   # 200 (board UI)
-docker logs -f multi-agent                   # board + runner logs
+docker logs -f ensemble                   # board + runner logs
 ```
 
 Then, in the UI: set a `model` on an agent (`Agents`), pick its role on a column
 (`Boards`), create a task in that column and watch the runner pick it up
-(`docker logs -f multi-agent`).
+(`docker logs -f ensemble`).
 
 Publish to Docker Hub once it looks good:
 
 ```bash
 docker tag esdrasschonevald/agent-watcher:latest esdrasschonevald/agent-watcher:<tag>
 docker push esdrasschonevald/agent-watcher:<tag>
-docker tag esdrasschonevald/multi-agent:standalone esdrasschonevald/multi-agent:<tag>
-docker push esdrasschonevald/multi-agent:<tag>
+docker tag esdrasschonevald/ensemble:standalone esdrasschonevald/ensemble:<tag>
+docker push esdrasschonevald/ensemble:<tag>
 ```
 
 ## API
