@@ -6,6 +6,7 @@ namespace App\Infrastructure\Bootstrap;
 
 use App\Application\Kanban\CreateBoard;
 use App\Application\Kanban\CreateColumn;
+use App\Application\Kanban\AttachRepository;
 use App\Application\Kanban\CommentIssue;
 use App\Application\Kanban\CreateFieldDefinition;
 use App\Application\Kanban\CreateIssue;
@@ -13,6 +14,8 @@ use App\Application\Kanban\CreateStatus;
 use App\Application\Kanban\CreateTransition;
 use App\Application\Kanban\CreateIssueType;
 use App\Application\Kanban\CreateWorkflow;
+use App\Application\Kanban\BackfillIssueWorkdirs;
+use App\Application\Kanban\ResolveWorkdirs;
 use App\Application\Kanban\DeleteBoard;
 use App\Application\Kanban\DeleteColumn;
 use App\Application\Kanban\DeleteFieldDefinition;
@@ -109,6 +112,7 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceSecretRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\GitRepositoryRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRepository;
@@ -128,6 +132,7 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
 use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
@@ -148,6 +153,7 @@ use App\Interface\Http\Kanban\TransitionController;
 use App\Interface\Http\Kanban\TransitionPresenter;
 use App\Interface\Http\Kanban\WorkflowController;
 use App\Interface\Http\Kanban\WorkflowPresenter;
+use App\Interface\Http\Kanban\WorkdirPresenter;
 use App\Interface\Http\Tenancy\MemberPresenter;
 use App\Interface\Http\Tenancy\SessionController;
 use App\Interface\Http\Tenancy\TenancyErrorResponder;
@@ -220,9 +226,11 @@ final readonly class TenancyBootstrap
         $profilePresenter = new ProfilePresenter();
         $workspaceSecrets = new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper());
         $gitRepositories = new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper());
+        $workdirs = new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMapper());
         $secretCipher = SodiumSecretCipher::fromEnvironment();
         $secretPresenter = new SecretPresenter();
         $repositoryPresenter = new RepositoryPresenter();
+        $workdirPresenter = new WorkdirPresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -332,14 +340,17 @@ final readonly class TenancyBootstrap
                 $currentUser,
                 new ReadWorkspace($guard),
                 new ListIssues($issueRepository, $boards, $boardColumns, $guard),
-                new CreateIssue($issueRepository, $issueTypes, $statuses, $fields, $issueEvents, $issueKeys, $validateFieldValues, $guard),
+                new CreateIssue($issueRepository, $issueTypes, $statuses, $fields, $issueEvents, $issueKeys, $workdirs, $gitRepositories, $validateFieldValues, $guard),
                 new ReadIssue($issueRepository, $guard),
                 new UpdateIssue($issueRepository, $fields, $validateFieldValues, $guard),
                 new MoveIssue($issueRepository, $statuses, $transitions, $issueEvents, $guard),
                 new CommentIssue($issueRepository, $issueComments, $guard),
                 new ListIssueComments($issueRepository, $issueComments, $guard),
                 new ListIssueEvents($issueRepository, $issueEvents, $guard),
+                new AttachRepository($issueRepository, $workdirs, $gitRepositories, $guard),
+                new ResolveWorkdirs($workdirs, $guard),
                 $issuePresenter,
+                $workdirPresenter,
                 $issueCommentPresenter,
                 $issueEventPresenter,
                 $this->responder,

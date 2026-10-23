@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Interface\Http\Kanban;
 
 use App\Domain\Kanban\Issue;
+use App\Domain\Kanban\Workdir;
 
 final class IssuePresenter
 {
     /** @return array<string, mixed> */
-    public function present(Issue $issue): array
+    public function present(Issue $issue, ?Workdir $workdir = null): array
     {
         return [
             'id' => $issue->id()->value(),
@@ -24,6 +25,8 @@ final class IssuePresenter
             'worker' => $issue->worker(),
             'blocked' => $issue->blocked(),
             'fields' => $issue->fieldValues()->all(),
+            'parentKey' => $issue->parentKey()?->value(),
+            'repositoryId' => $workdir?->repositoryId()?->value(),
             'createdAt' => $issue->createdAt()->format(DATE_ATOM),
             'updatedAt' => $issue->updatedAt()->format(DATE_ATOM),
             'enteredAt' => $issue->enteredAt()->format(DATE_ATOM),
@@ -32,10 +35,18 @@ final class IssuePresenter
 
     /**
      * @param list<Issue> $issues
+     * @param array<string, Workdir> $workdirs
      * @return list<array<string, mixed>>
      */
-    public function presentMany(array $issues): array
+    public function presentMany(array $issues, array $workdirs = []): array
     {
-        return array_map(fn(Issue $issue): array => $this->present($issue), $issues);
+        return array_map(
+            function (Issue $issue) use ($workdirs): array {
+                $workdirId = $issue->workdirId()?->value();
+
+                return $this->present($issue, $workdirId === null ? null : ($workdirs[$workdirId] ?? null));
+            },
+            $issues,
+        );
     }
 }

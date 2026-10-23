@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence\Doctrine\Repository;
 
 use App\Domain\Contract\Kanban\IssueRepository;
 use App\Domain\Kanban\Issue;
+use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Infrastructure\Persistence\Doctrine\Entity\IssueRecord;
@@ -56,6 +57,39 @@ final readonly class DoctrineIssueRepository implements IssueRepository
             ->getOneOrNullResult();
 
         return $record === null ? null : $this->mapper->toDomain($record);
+    }
+
+    #[Override]
+    public function findById(WorkspaceId $workspaceId, IssueId $id): ?Issue
+    {
+        /** @var IssueRecord|null $record */
+        $record = $this->entityManager
+            ->createQueryBuilder()
+            ->select('i')
+            ->from(IssueRecord::class, 'i')
+            ->where('i.id = :id')
+            ->andWhere('i.workspaceId = :workspaceId')
+            ->setParameter('id', $id->value())
+            ->setParameter('workspaceId', $workspaceId->value())
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $record === null ? null : $this->mapper->toDomain($record);
+    }
+
+    #[Override]
+    public function withoutWorkdir(): array
+    {
+        /** @var list<IssueRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('i')
+            ->from(IssueRecord::class, 'i')
+            ->where('i.workdirId IS NULL')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(fn(IssueRecord $record): Issue => $this->mapper->toDomain($record), $records);
     }
 
     #[Override]

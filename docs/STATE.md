@@ -5,9 +5,9 @@
 - **P0, P1, P2a and P2b-1 are merged into `main` and pushed to origin.**
   Branches `feat/p0-tenancy-api`, `feat/p1-workflow-chain`,
   `feat/p2-teams-roles` and `feat/p2b-secrets-repositories` were deleted.
-- **P2b-2 (workdirs and issue links) is the next slice.** Decisions in the
-  section below and in ADR-003.
-- Latest bar: **97 PHPUnit tests / 592 assertions**, Psalm level 1 with **0
+- **P2b-2 (workdirs and issue links) is implemented on `feat/p2b-workdirs`**
+  and awaits review/merge. **P2c (agents) is the next slice.**
+- Latest bar: **108 PHPUnit tests / 666 assertions**, Psalm level 1 with **0
   errors**.
 - **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
   package, frontend package, Docker image and docs follow the new name; the old
@@ -99,9 +99,12 @@ Accepted).
 - **P2b-1 (done):** per-workspace `workspace_secrets` (libsodium, value never
   exposed) and `repositories` (provider, https URL, base branch, optional
   secret).
-- **P2b-2 (next):** `workdirs`, `issues.workdir_id`, `issues.parent_key` and
-  `POST /issues/{key}/repository`.
-- **P2c:** agents (identity + runtime, **without sourceId**), `teamId`,
+- **P2b-2 (done):** internal `workdirs` (scratch or repository, state machine
+  `scratch → pending → bound | conflict`), `issues.workdir_id`,
+  `issues.parent_key` with workdir inheritance, and
+  `POST /issues/{key}/repository`. The issue payload exposes `repositoryId`
+  derived from the workdir, never a second column.
+- **P2c (next):** agents (identity + runtime, **without sourceId**), `teamId`,
   `roleIds`, `profileId`.
 - **P3:** runner resolves the workdir, clones/opens it, detects and resolves
   binding conflicts, runs open-warden, records usage and applies the outcome.
@@ -136,6 +139,14 @@ separate branch.
   transactional sender (Resend) are being evaluated; not decided.
 - To make the wrong `phrise` path root-owned and immutable, the pending command
   is `sudo /home/esdras/src/phprise/ensemble/bin/lock-wrong-path.sh`.
+- The dev Postgres now runs as the `ensemble` compose project (fresh volume);
+  the old dev data lives in the orphaned `multi-agent-postgres-1` container and
+  its volume. Dev data is throwaway; delete the orphan when confident.
+- **Frontend test revisit (remembered):** the untracked WIP specs — notably
+  `frontend/tests/comment-author.spec.js` — make the local vitest run red while
+  CI never sees them. Decide in a future round: adopt, move out of the suite or
+  delete the files, and stop `node --test` from racing (`run-e2e-parallel` is
+  flaky under high parallelism).
 - Untracked WIP that predates P0/P1 and was **not** committed:
   `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
   `frontend/src/components/Comment.vue`,
@@ -207,6 +218,17 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
+- **P2b-2 — workdirs and issue links (branch `feat/p2b-workdirs`):** every issue
+  now carries an internal `workdirId`. Creation rules: with `parentKey` the
+  issue inherits the parent's workdir; with `repositoryId` it gets a repository
+  workdir on branch `agent/<issue-key>` (state `pending`); otherwise a scratch
+  workdir owned by the issue. `POST /issues/{key}/repository` binds the family
+  workdir to a repository (idempotent for the same repository, `409` for a
+  different one) and the issue payload exposes `repositoryId` derived from the
+  workdir — never a second column. `Domain/Kanban/Workdir` guards the state
+  machine (`scratch → pending`, bound/conflict reserved for the runner);
+  `bin/install` backfills scratch workdirs for pre-P2b issues. 108 PHPUnit
+  tests and Psalm level 1 are green.
 - **P2b-1 — workspace secrets and repositories (PR #184):** `Domain/Security` gains
   `WorkspaceSecret` (name + libsodium ciphertext) and `Domain/Vcs` gains
   `GitRepository` (provider, https URL without credentials, base branch and an

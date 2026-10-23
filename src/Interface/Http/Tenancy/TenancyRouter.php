@@ -134,6 +134,7 @@ final readonly class TenancyRouter
             $method === 'PATCH' && $this->isIssue($segments) => $this->issues->update($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMove($segments) => $this->issues->move($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isTeams($segments) => $this->teams->create($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isTeam($segments) => $this->teams->show($request, $this->workspaceId($segments), $this->teamId($segments)),
@@ -366,6 +367,16 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'issues'
             && $segments[5] === 'comments';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueRepository(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'repository';
     }
 
     /** @param list<string> $segments */
