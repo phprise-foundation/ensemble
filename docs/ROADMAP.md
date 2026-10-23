@@ -70,6 +70,13 @@ Order and exit criteria:
 4. **P3 — runtime** — PHP CLI runner, `bin/kanban`, open-warden execution,
    claim/lease/reclaim, prompt composition, outcomes, triggers (spawn, voting,
    `subtasks-done`), usage/cost, logs, worktrees.
+   - **P3a — runner core: Done** (`bin/runner` single pass: reclaim expired
+     leases, match active agents to the statuses their roles own, enforce the
+     executable-stage rule with visible `skipped` reasons, execute through the
+     `AgentExecutor` contract (`OpenCodeExecutor`
+     `opencode run` + fallback model), record outcomes in `runs` claims/leases;
+     history via `GET /issues/{key}/runs`). Real clone/push, issue status moves
+     and the open-warden execution binary are still P3b.
 5. **P4 — frontend cutover** — login/token, workspace switcher, snapshot +
    resource writes, feature flags flipped in dependency order, fake backend out
    of production, Vite build served by PHP, real-backend E2E; console and

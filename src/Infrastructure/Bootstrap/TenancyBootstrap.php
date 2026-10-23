@@ -66,6 +66,9 @@ use App\Application\Vcs\ListRepositories;
 use App\Application\Vcs\ReadRepository;
 use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
+use App\Application\Runner\ExecuteSweep;
+use App\Application\Runner\PromptComposer;
+use App\Application\Runner\ResolveProfile;
 use App\Application\Team\CreateAgent;
 use App\Application\Team\DeleteAgent;
 use App\Application\Team\ListAgents;
@@ -135,7 +138,9 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceReposito
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
 use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RunRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
@@ -155,6 +160,8 @@ use App\Interface\Http\Kanban\IssuePresenter;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\IssueTypePresenter;
 use App\Interface\Http\Kanban\StatusController;
+use App\Interface\Http\Kanban\RunController;
+use App\Interface\Http\Kanban\RunPresenter;
 use App\Interface\Http\Kanban\StatusPresenter;
 use App\Interface\Http\Kanban\TransitionController;
 use App\Interface\Http\Kanban\TransitionPresenter;
@@ -230,6 +237,8 @@ final readonly class TenancyBootstrap
         $teams = new DoctrineTeamRepository($entityManager, new TeamRecordMapper());
         $roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
         $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
+        $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
+        $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
         $teamPresenter = new TeamPresenter();
         $rolePresenter = new RolePresenter();
@@ -404,6 +413,13 @@ final readonly class TenancyBootstrap
                 new UpdateAgent($agents, $teams, $roles, $profiles, $guard),
                 new DeleteAgent($agents, $guard),
                 $agentPresenter,
+                $this->responder,
+            ),
+            new RunController(
+                $currentUser,
+                new ReadIssue($issueRepository, $guard),
+                $runs,
+                $runHistoryPresenter,
                 $this->responder,
             ),
             new SecretController(

@@ -323,6 +323,29 @@ reads member-visible. References are by id (`/agents/{id}`), the aggregate has
 no `sourceId`: the execution target comes from the issue's workdir (P2b-2,
 ADR-003) and the P3 runner starts agents there.
 
+## The runner (P3a)
+
+`Domain/Runner` owns the run lifecycle. A `Run` (id, workspace, agent, issue)
+is claimed with a lease (`claimed → running`; `succeeded`/`failed` keep the
+outcome message, `skipped` keeps a visible reason) and carries `prompt` and
+`attempt`. Leases expire after 30 minutes; `reclaim` bumps the attempt and
+fails the run at the ceiling of 3 attempts (`runs` table, `RunRepository`
+contract, `DoctrineRunRepository`). `AgentExecutor` (contract) runs the
+composed prompt in a workdir path; `Infrastructure/Runner/OpenCodeExecutor`
+executes `opencode run --model <model>` there and falls back once to
+`fallbackModel`; `VarWorkdirPaths` derives workdir paths from
+`ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`). `Application/Runner/
+ExecuteSweep` is one deterministic pass: reclaim expired leases, then for every
+active agent find the statuses owned by the agent's roles, find the issues in
+those statuses and, when the issue's workdir is `bound`, claim → run → record
+the outcome. The executable-stage rule is enforced (ADR-003): an unbound,
+missing or vanished workdir produces a `skipped` run whose reason is the
+visible signal (`the issue workdir is not bound yet (pending)`), and a repeated
+identical reason does not create duplicate runs; a `succeeded`/`failed` run is
+not re-executed. `bin/runner` (single pass; install-schema first) and the
+`GET /issues/{key}/runs` endpoint expose the history. P3b will add the real
+clone/push, issue status moves and triggers.
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`

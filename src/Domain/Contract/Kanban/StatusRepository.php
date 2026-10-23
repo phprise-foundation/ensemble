@@ -10,6 +10,7 @@ use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Team\RoleIds;
 use App\Domain\Tenancy\WorkspaceId;
 
 interface StatusRepository
@@ -33,4 +34,10 @@ interface StatusRepository
     public function countForIssueType(IssueTypeId $issueTypeId): int;
 
     public function countByType(IssueTypeId $issueTypeId, StatusType $type): int;
+
+    /**
+     * @param RoleIds $roleIds
+     * @return list<Status>
+     */
+    public function ownedByRoles(WorkspaceId $workspaceId, RoleIds $roleIds): array;
 }

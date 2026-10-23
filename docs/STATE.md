@@ -1,13 +1,13 @@
 # STATE
 
-## Current status — 2026-10-23
+## Current status — 2026-10-24
 
-- **P0, P1 and P2 are merged into `main` and pushed to origin.** Branches
-  `feat/p0-tenancy-api`, `feat/p1-workflow-chain`, `feat/p2-teams-roles`,
-  `feat/p2b-secrets-repositories` and `feat/p2b-workdirs` were deleted; the
-  P2c branch `feat/p2c-agents` awaits review/merge.
-- **P3 (the runner) is the next slice** — see `docs/ROADMAP.md`.
-- Latest bar: **113 PHPUnit tests / 744 assertions**, Psalm level 1 with **0
+- **P0, P1 and P2 are merged into `main` and pushed to origin.** All previous
+  slice branches were deleted after merge.
+- **P3a (the runner core) is implemented on `feat/p3a-runner`** awaiting
+  review/merge — see `docs/ROADMAP.md` and `docs/ARCHITECTURE.md`
+  (“The runner (P3a)”).
+- Latest bar: **123 PHPUnit tests / 794 assertions**, Psalm level 1 with **0
   errors**.
 - **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
   package, frontend package, Docker image and docs follow the new name; the old
@@ -160,6 +160,21 @@ separate branch.
   `package-lock.json`. Review before adopting or deleting.
 
 ## Done
+
+- **P3a — the runner core (branch `feat/p3a-runner`):** `Domain/Runner` with the
+  `Run` lifecycle (claimed → running → succeeded/failed/skipped, lease of 30
+  minutes, reclaim ceiling of 3 attempts), the `RunRepository` contract and the
+  `runs` table. `AgentExecutor` contract + `OpenCodeExecutor` (runs
+  `opencode run --model <model>` in the workdir, one fallback attempt) +
+  `VarWorkdirPaths` (`ENSEMBLE_WORKDIR_ROOT`). `Application/Runner/ExecuteSweep`
+  is one pass: reclaim expired leases, match active agents to the statuses their
+  roles own, and run issues whose workdir is `bound` — otherwise a `skipped` run
+  records the visible reason (ADR-003 executable-stage rule) and identical
+  reasons are not duplicated; a succeeded/failed run is never re-run. Prompt
+  composition (`PromptComposer`) includes identity, profile and the issue's
+  summary/description. `bin/runner` is the CLI single pass; the run history is
+  exposed by `GET /workspaces/{ws}/issues/{key}/runs`. The real clone/push,
+  issue status moves and the open-warden execution path are P3b.
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
   `feat/p0-tenancy-api`):** users and workspaces are N:N through
