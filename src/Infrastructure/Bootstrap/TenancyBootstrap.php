@@ -51,7 +51,17 @@ use App\Application\Kanban\ValidateBoardFilters;
 use App\Application\Kanban\ValidateColumnStatuses;
 use App\Application\Kanban\ValidateFieldValues;
 use App\Application\Security\AuthenticateUser;
+use App\Application\Security\CreateSecret;
+use App\Application\Security\DeleteSecret;
+use App\Application\Security\ListSecrets;
+use App\Application\Security\ReadSecret;
+use App\Application\Security\RotateSecret;
 use App\Application\Security\ReadCurrentUser;
+use App\Application\Vcs\CreateRepository;
+use App\Application\Vcs\DeleteRepository;
+use App\Application\Vcs\ListRepositories;
+use App\Application\Vcs\ReadRepository;
+use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
 use App\Application\Team\CreateRole;
 use App\Application\Team\CreateTeam;
@@ -97,6 +107,8 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceSecretRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\GitRepositoryRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineFieldDefinitionRepository;
@@ -114,6 +126,9 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceReposito
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
+use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
@@ -141,12 +156,16 @@ use App\Interface\Http\Tenancy\UserController;
 use App\Interface\Http\Tenancy\UserPresenter;
 use App\Interface\Http\Tenancy\WorkspaceController;
 use App\Interface\Http\Tenancy\WorkspacePresenter;
+use App\Interface\Http\Security\SecretController;
+use App\Interface\Http\Security\SecretPresenter;
 use App\Interface\Http\Team\ProfileController;
 use App\Interface\Http\Team\ProfilePresenter;
 use App\Interface\Http\Team\RoleController;
 use App\Interface\Http\Team\RolePresenter;
 use App\Interface\Http\Team\TeamController;
 use App\Interface\Http\Team\TeamPresenter;
+use App\Interface\Http\Vcs\RepositoryController;
+use App\Interface\Http\Vcs\RepositoryPresenter;
 
 final readonly class TenancyBootstrap
 {
@@ -199,6 +218,11 @@ final readonly class TenancyBootstrap
         $teamPresenter = new TeamPresenter();
         $rolePresenter = new RolePresenter();
         $profilePresenter = new ProfilePresenter();
+        $workspaceSecrets = new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper());
+        $gitRepositories = new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper());
+        $secretCipher = SodiumSecretCipher::fromEnvironment();
+        $secretPresenter = new SecretPresenter();
+        $repositoryPresenter = new RepositoryPresenter();
 
         return new TenancyRouter(
             new SessionController(
@@ -348,6 +372,26 @@ final readonly class TenancyBootstrap
                 new UpdateProfile($profiles, $guard),
                 new DeleteProfile($profiles, $guard),
                 $profilePresenter,
+                $this->responder,
+            ),
+            new SecretController(
+                $currentUser,
+                new ListSecrets($workspaceSecrets, $guard),
+                new CreateSecret($workspaceSecrets, $secretCipher, $guard),
+                new ReadSecret($workspaceSecrets, $guard),
+                new RotateSecret($workspaceSecrets, $secretCipher, $guard),
+                new DeleteSecret($workspaceSecrets, $gitRepositories, $guard),
+                $secretPresenter,
+                $this->responder,
+            ),
+            new RepositoryController(
+                $currentUser,
+                new ListRepositories($gitRepositories, $guard),
+                new CreateRepository($gitRepositories, $workspaceSecrets, $guard),
+                new ReadRepository($gitRepositories, $guard),
+                new UpdateRepository($gitRepositories, $workspaceSecrets, $guard),
+                new DeleteRepository($gitRepositories, $guard),
+                $repositoryPresenter,
                 $this->responder,
             ),
             new TenancyErrorResponder($this->responder),

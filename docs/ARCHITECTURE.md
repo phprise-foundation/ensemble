@@ -267,6 +267,25 @@ is `404`; assigning a foreign role to a status is `422 roleIds`. A role assigned
 to a status and a team that still has roles or profiles cannot be deleted
 (`409`).
 
+## Secrets and repositories (P2b-1)
+
+`Domain/Security/WorkspaceSecret` stores a workspace-scoped name and a
+libsodium ciphertext; the plaintext exists only inside the request.
+`SodiumSecretCipher` (infrastructure) encrypts with
+`sodium_crypto_secretbox` and `APP_ENCRYPTION_KEY` (base64 of 32 bytes); the
+nonce is prepended to the ciphertext and the result is base64. The presenter
+never emits the value or the ciphertext. Rotation replaces the value and keeps
+the id, so repositories are not disturbed; deletion is blocked with `409` while
+a repository references the secret.
+
+`Domain/Vcs/GitRepository` is the user-facing execution target: provider
+(`github`, `gitlab`, `bitbucket`), an https URL without embedded credentials, a
+base branch and an optional `secretId`. Names are unique per workspace. The
+endpoints are `GET/POST /secrets`, `GET/PATCH/DELETE /secrets/{id}` and
+`GET/POST/PATCH/DELETE /repositories`, always scoped to
+`/api/workspaces/{workspace}`. The workdir that binds an issue to a repository
+is P2b-2; the API here does not touch issues yet.
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`
@@ -283,6 +302,11 @@ to a status and a team that still has roles or profiles cannot be deleted
 - `Domain/Team` — `Team` (workspace layer), `Role` (`unblock`/`interactive`),
   `Profile` (style, tone, emoji usage and the provisional `advanced` object) and
   the `RoleIds` collection. `Domain/Kanban/Status` references it by id.
+- `Domain/Security` — `WorkspaceSecret` (name + ciphertext), `SecretValue`
+  (transient input), `Ciphertext` and their ids; `Domain/Contract/Security`
+  holds `SecretCipher` and the secret repository.
+- `Domain/Vcs` — `GitRepository` (provider, URL, base branch, optional secret),
+  its value objects and `Domain/Contract/Vcs/GitRepositories`.
 - `Domain/Contract` — repository and gateway interfaces.
 
 ## Persistence (SQLite)

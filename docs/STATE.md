@@ -5,9 +5,9 @@
 - **P0, P1 and P2a are merged into `main` and pushed to origin.** Branches
   `feat/p0-tenancy-api`, `feat/p1-workflow-chain` and `feat/p2-teams-roles` were
   deleted.
-- **P2b (workdirs, repositories, secrets) is the next slice.** Decisions in the
-  section below and in ADR-003.
-- Latest bar: **83 PHPUnit tests / 505 assertions**, Psalm level 1 with **0
+- **P2b-1 (secrets and repositories) is implemented on `feat/p2b-secrets-repositories`**
+  and awaits review/merge. **P2b-2 (workdirs and issue links) is next.**
+- Latest bar: **97 PHPUnit tests / 592 assertions**, Psalm level 1 with **0
   errors**.
 - **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
   package, frontend package, Docker image and docs follow the new name; the old
@@ -96,8 +96,11 @@ Accepted).
 
 - **P2a (done):** teams, roles and profiles; `status_roles`; `roleIds` on status
   CRUD.
-- **P2b (next):** `repositories`, `workspace_secrets`, `workdirs`,
-  `issues.workdir_id`, `issues.parent_key` and `POST /issues/{key}/repository`.
+- **P2b-1 (done):** per-workspace `workspace_secrets` (libsodium, value never
+  exposed) and `repositories` (provider, https URL, base branch, optional
+  secret).
+- **P2b-2 (next):** `workdirs`, `issues.workdir_id`, `issues.parent_key` and
+  `POST /issues/{key}/repository`.
 - **P2c:** agents (identity + runtime, **without sourceId**), `teamId`,
   `roleIds`, `profileId`.
 - **P3:** runner resolves the workdir, clones/opens it, detects and resolves
@@ -204,6 +207,17 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
+- **P2b-1 — workspace secrets and repositories:** `Domain/Security` gains
+  `WorkspaceSecret` (name + libsodium ciphertext) and `Domain/Vcs` gains
+  `GitRepository` (provider, https URL without credentials, base branch and an
+  optional `secretId`). The plaintext never leaves the request: the API stores
+  `sodium_crypto_secretbox` ciphertext encrypted with `APP_ENCRYPTION_KEY`
+  (base64 of 32 bytes) and exposes only names/metadata. Endpoints:
+  `GET/POST /secrets`, `GET/PATCH /secrets/{id}` (PATCH rotates the value),
+  `DELETE /secrets/{id}` (409 while a repository references it), and
+  `GET/POST/PATCH/DELETE /repositories`. Names are unique per workspace;
+  writes require owner/admin and reads require membership. 97 PHPUnit tests and
+  Psalm level 1 are green.
 - **P2a — teams, roles and profiles (PR #182):** new
   `Domain/Team` aggregate (`Team`, `Role` with `unblock`/`interactive`, `Profile`
   with the prototype fields plus an opaque `advanced` JSON object, and the

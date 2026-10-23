@@ -51,8 +51,10 @@ Order and exit criteria:
    - **P2a — teams, roles, profiles and status roles: Done** (PR #182;
      `roles`/`profiles` are team-scoped, statuses own `roleIds` through
      `status_roles`).
-   - **P2b:** `repositories` (GitHub/GitLab/Bitbucket) and per-workspace
-     `workspace_secrets`, the internal `Workdir` (scratch or repository),
+   - **P2b-1 — secrets and repositories: Done** (workspace secrets with
+     libsodium, PAT first; repositories with provider, https URL, base branch
+     and optional secret).
+   - **P2b-2 (next):** the internal `Workdir` (scratch or repository),
      `Issue.workdirId` (always set, inherited through `parentKey`) and
      `POST /issues/{key}/repository`. `sources` is not a product resource; the
      execution target is a remote repository, local folders stay a dev-only

@@ -12,11 +12,13 @@ use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Security\WorkspaceSecretId;
 use App\Domain\Team\ProfileId;
 use App\Domain\Team\RoleId;
 use App\Domain\Team\TeamId;
 use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
+use App\Domain\Vcs\GitRepositoryId;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\ColumnController;
@@ -26,9 +28,11 @@ use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
 use App\Interface\Http\Kanban\TransitionController;
 use App\Interface\Http\Kanban\WorkflowController;
+use App\Interface\Http\Security\SecretController;
 use App\Interface\Http\Team\ProfileController;
 use App\Interface\Http\Team\RoleController;
 use App\Interface\Http\Team\TeamController;
+use App\Interface\Http\Vcs\RepositoryController;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -50,6 +54,8 @@ final readonly class TenancyRouter
         private TeamController $teams,
         private RoleController $roles,
         private ProfileController $profiles,
+        private SecretController $secrets,
+        private RepositoryController $repositories,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
     ) {
@@ -143,6 +149,16 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isProfile($segments) => $this->profiles->show($request, $this->workspaceId($segments), $this->profileId($segments)),
             $method === 'PATCH' && $this->isProfile($segments) => $this->profiles->update($request, $this->workspaceId($segments), $this->profileId($segments)),
             $method === 'DELETE' && $this->isProfile($segments) => $this->profiles->delete($request, $this->workspaceId($segments), $this->profileId($segments)),
+            $method === 'GET' && $this->isSecrets($segments) => $this->secrets->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isSecrets($segments) => $this->secrets->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isSecret($segments) => $this->secrets->show($request, $this->workspaceId($segments), $this->secretId($segments)),
+            $method === 'PATCH' && $this->isSecret($segments) => $this->secrets->rotate($request, $this->workspaceId($segments), $this->secretId($segments)),
+            $method === 'DELETE' && $this->isSecret($segments) => $this->secrets->delete($request, $this->workspaceId($segments), $this->secretId($segments)),
+            $method === 'GET' && $this->isRepositories($segments) => $this->repositories->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isRepositories($segments) => $this->repositories->create($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isRepository($segments) => $this->repositories->show($request, $this->workspaceId($segments), $this->repositoryId($segments)),
+            $method === 'PATCH' && $this->isRepository($segments) => $this->repositories->update($request, $this->workspaceId($segments), $this->repositoryId($segments)),
+            $method === 'DELETE' && $this->isRepository($segments) => $this->repositories->delete($request, $this->workspaceId($segments), $this->repositoryId($segments)),
             default => $this->responder->error('not found', 404),
         };
     }
@@ -409,6 +425,42 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isSecrets(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'secrets';
+    }
+
+    /** @param list<string> $segments */
+    private function isSecret(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'secrets';
+    }
+
+    /** @param list<string> $segments */
+    private function isRepositories(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'repositories';
+    }
+
+    /** @param list<string> $segments */
+    private function isRepository(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'repositories';
+    }
+
+    /** @param list<string> $segments */
     private function workspaceId(array $segments): WorkspaceId
     {
         return new WorkspaceId($segments[2] ?? '');
@@ -478,5 +530,17 @@ final readonly class TenancyRouter
     private function profileId(array $segments): ProfileId
     {
         return new ProfileId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function secretId(array $segments): WorkspaceSecretId
+    {
+        return new WorkspaceSecretId($segments[4] ?? '');
+    }
+
+    /** @param list<string> $segments */
+    private function repositoryId(array $segments): GitRepositoryId
+    {
+        return new GitRepositoryId($segments[4] ?? '');
     }
 }

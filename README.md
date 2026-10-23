@@ -81,6 +81,19 @@ Statuses accept and return `roleIds`; a role from another workspace is `422`.
 A repository is the user-facing execution target; the workdir stays internal
 (ADR-003).
 
+P2b-1 adds per-workspace secrets and repositories:
+
+```
+GET/POST         /secrets
+GET/PATCH/DELETE /secrets/{id}
+GET/POST         /repositories
+GET/PATCH/DELETE /repositories/{id}
+```
+
+Secrets are encrypted with `APP_ENCRYPTION_KEY` (base64 of 32 bytes, e.g.
+`php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'`); the API never returns
+the value. A secret referenced by a repository cannot be deleted (`409`).
+
 Issues use the workspace prefix (`ALP-1`, `ALP-2`), start in the issue type's
 initial status and carry custom field values, comments and status history. The legacy SQLite board and agent-watcher
 surfaces still exist in this branch but are not used by the new routes; they are
@@ -163,7 +176,8 @@ runs until you fill it in on the `Agents` screen).
 
 Environment: `BOARD_PASSWORD` (board login and runner token), `BOARD_DB_FILE`
 (default `/var/www/html/var/board.sqlite`), `BOARD_PORT` (default `80`),
-`AW_RUNNER_POLL` (default `30`) and the provider keys the agents need.
+`AW_RUNNER_POLL` (default `30`), `DATABASE_URL`/`APP_ENCRYPTION_KEY` for the new
+API and the provider keys the agents need.
 
 ### Local test checklist (before pushing to Docker Hub)
 
