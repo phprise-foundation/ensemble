@@ -66,6 +66,11 @@ use App\Application\Vcs\ListRepositories;
 use App\Application\Vcs\ReadRepository;
 use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
+use App\Application\Team\CreateAgent;
+use App\Application\Team\DeleteAgent;
+use App\Application\Team\ListAgents;
+use App\Application\Team\ReadAgent;
+use App\Application\Team\UpdateAgent;
 use App\Application\Team\CreateRole;
 use App\Application\Team\CreateTeam;
 use App\Application\Team\DeleteProfile;
@@ -129,6 +134,8 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepositor
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
@@ -167,6 +174,8 @@ use App\Interface\Http\Security\SecretPresenter;
 use App\Interface\Http\Team\ProfileController;
 use App\Interface\Http\Team\ProfilePresenter;
 use App\Interface\Http\Team\RoleController;
+use App\Interface\Http\Team\AgentController;
+use App\Interface\Http\Team\AgentPresenter;
 use App\Interface\Http\Team\RolePresenter;
 use App\Interface\Http\Team\TeamController;
 use App\Interface\Http\Team\TeamPresenter;
@@ -220,9 +229,11 @@ final readonly class TenancyBootstrap
         $issueEventPresenter = new IssueEventPresenter();
         $teams = new DoctrineTeamRepository($entityManager, new TeamRecordMapper());
         $roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
+        $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
         $teamPresenter = new TeamPresenter();
         $rolePresenter = new RolePresenter();
+        $agentPresenter = new AgentPresenter();
         $profilePresenter = new ProfilePresenter();
         $workspaceSecrets = new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper());
         $gitRepositories = new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper());
@@ -383,6 +394,16 @@ final readonly class TenancyBootstrap
                 new UpdateProfile($profiles, $guard),
                 new DeleteProfile($profiles, $guard),
                 $profilePresenter,
+                $this->responder,
+            ),
+            new AgentController(
+                $currentUser,
+                new ListAgents($agents, $guard),
+                new CreateAgent($teams, $agents, $roles, $profiles, $guard),
+                new ReadAgent($agents, $guard),
+                new UpdateAgent($agents, $teams, $roles, $profiles, $guard),
+                new DeleteAgent($agents, $guard),
+                $agentPresenter,
                 $this->responder,
             ),
             new SecretController(

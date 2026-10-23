@@ -305,6 +305,24 @@ the parent and siblings. The issue payload exposes `repositoryId` and
 `ResolveWorkdirs` batches the lookup for lists. `sources` do not exist in this
 API; the execution target is a remote repository (ADR-003).
 
+## Agents (P2c)
+
+`Domain/Team/Agent` (distinct from the retired root-board `Domain/Agent`) is a
+team member with an identity and a runtime. Identity: `whoAmI` (≤500 chars),
+optional `age` (1–120), `maritalStatus` (single/married/divorced/widowed/other,
+parsed case-insensitively), `avatarColor` (hex `#rrggbb`) and `portrait` ('' or
+a png/jpeg/webp data URL that decodes to ≤2 MiB — the same rules the frontend
+enforces when uploading). Runtime: `model`, `fallbackModel` (≤120 chars), loop
+`interval` (30–86400 seconds, default 300) and `active`.
+
+Every agent lives inside a `teamId` and owns `roleIds` (`agent_roles` join,
+same sync pattern as `status_roles`) and an optional workspace `profileId`.
+`CreateAgent`/`UpdateAgent` validate that the team, roles and profile belong to
+the workspace (`404` team, `422` roleIds/profileId); writes are manager-only,
+reads member-visible. References are by id (`/agents/{id}`), the aggregate has
+no `sourceId`: the execution target comes from the issue's workdir (P2b-2,
+ADR-003) and the P3 runner starts agents there.
+
 ## Domain packages
 
 - `Domain/Workflow` — `Board` (settings), `Column` (ordered stage with a `role`
