@@ -2,11 +2,12 @@
 
 ## Current status — 2026-10-23
 
-- **P0, P1, P2a and P2b-1 are merged into `main` and pushed to origin.**
+- **P0, P1, P2a and P2b are merged into `main` and pushed to origin.**
   Branches `feat/p0-tenancy-api`, `feat/p1-workflow-chain`,
-  `feat/p2-teams-roles` and `feat/p2b-secrets-repositories` were deleted.
-- **P2b-2 (workdirs and issue links) is implemented on `feat/p2b-workdirs`**
-  and awaits review/merge. **P2c (agents) is the next slice.**
+  `feat/p2-teams-roles`, `feat/p2b-secrets-repositories` and
+  `feat/p2b-workdirs` were deleted.
+- **P2c (agents) is the next slice.** Decisions in the section below and in
+  ADR-003.
 - Latest bar: **108 PHPUnit tests / 666 assertions**, Psalm level 1 with **0
   errors**.
 - **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
@@ -218,7 +219,7 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
-- **P2b-2 — workdirs and issue links (branch `feat/p2b-workdirs`):** every issue
+- **P2b-2 — workdirs and issue links (PR #185):** every issue
   now carries an internal `workdirId`. Creation rules: with `parentKey` the
   issue inherits the parent's workdir; with `repositoryId` it gets a repository
   workdir on branch `agent/<issue-key>` (state `pending`); otherwise a scratch

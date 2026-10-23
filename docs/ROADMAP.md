@@ -54,10 +54,10 @@ Order and exit criteria:
    - **P2b-1 — secrets and repositories: Done** (PR #184; workspace secrets with
      libsodium, PAT first; repositories with provider, https URL, base branch
      and optional secret).
-   - **P2b-2 — workdirs and issue links: Done** (internal `Workdir` with the
-     `scratch → pending` state machine, `Issue.workdirId` inherited through
-     `parentKey`, `POST /issues/{key}/repository`; `repositoryId` in the payload
-     is derived, never a second column).
+   - **P2b-2 — workdirs and issue links: Done** (PR #185; internal `Workdir`
+     with the `scratch → pending` state machine, `Issue.workdirId` inherited
+     through `parentKey`, `POST /issues/{key}/repository`; `repositoryId` in the
+     payload is derived, never a second column).
    - **P2c (next):** agents (identity + runtime, **without `sourceId`**), team,
      roleIds and profileId.
    The settled design lives in
