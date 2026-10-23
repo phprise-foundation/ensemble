@@ -11,12 +11,13 @@ use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Team\RoleIds;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Infrastructure\Persistence\Doctrine\Entity\StatusRecord;
 
 final class StatusRecordMapper
 {
-    public function toDomain(StatusRecord $record): Status
+    public function toDomain(StatusRecord $record, RoleIds $roleIds): Status
     {
         return new Status(
             new StatusId($record->id()),
@@ -30,6 +31,7 @@ final class StatusRecordMapper
             new Position($record->position()),
             $record->createdAt(),
             $record->updatedAt(),
+            $roleIds,
         );
     }
 

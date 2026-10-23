@@ -62,4 +62,19 @@ final class NotFoundException extends RuntimeException
     {
         return new self('issue not found');
     }
+
+    public static function team(): self
+    {
+        return new self('team not found');
+    }
+
+    public static function role(): self
+    {
+        return new self('role not found');
+    }
+
+    public static function profile(): self
+    {
+        return new self('profile not found');
+    }
 }

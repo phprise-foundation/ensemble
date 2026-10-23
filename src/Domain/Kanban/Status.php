@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Kanban;
 
 use App\Domain\Exception\ValidationException;
+use App\Domain\Team\RoleIds;
 use App\Domain\Tenancy\WorkspaceId;
 use DateTimeImmutable;
 use Phprise\Common\ValueObject\StringObject;
@@ -15,6 +16,7 @@ final class Status
     private StatusType $type;
     private string $color;
     private Position $position;
+    private RoleIds $roleIds;
     private ?DateTimeImmutable $updatedAt;
 
     public function __construct(
@@ -29,11 +31,13 @@ final class Status
         Position $position = new Position(0),
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
+        ?RoleIds $roleIds = null,
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->type = $type;
         $this->color = $this->validColor($color);
         $this->position = $position;
+        $this->roleIds = $roleIds ?? new RoleIds();
         $this->updatedAt = $updatedAt;
     }
 
@@ -80,6 +84,16 @@ final class Status
     public function position(): Position
     {
         return $this->position;
+    }
+
+    public function roleIds(): RoleIds
+    {
+        return $this->roleIds;
+    }
+
+    public function assignRoles(RoleIds $roleIds): void
+    {
+        $this->roleIds = $roleIds;
     }
 
     public function createdAt(): DateTimeImmutable

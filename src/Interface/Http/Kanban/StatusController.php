@@ -10,16 +10,19 @@ use App\Application\Kanban\ListStatuses;
 use App\Application\Kanban\ReadStatus;
 use App\Application\Kanban\UpdateStatus;
 use App\Application\Security\ReadCurrentUser;
+use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Position;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\WorkflowId;
+use App\Domain\Team\RoleIds;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\BearerToken;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Tenancy\JsonBody;
+use InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -72,6 +75,7 @@ final readonly class StatusController
             StatusType::fromString(JsonBody::string($body, 'type') ?? ''),
             JsonBody::string($body, 'color') ?? '#6b7280',
             new Position(JsonBody::integer($body, 'position') ?? 0),
+            $this->roleIdsFrom($body) ?? new RoleIds(),
         );
 
         return $this->responder->respond(['status' => $this->presenter->present($status)], 201);
@@ -108,6 +112,7 @@ final readonly class StatusController
                 $type === null ? null : StatusType::fromString($type),
                 JsonBody::string($body, 'color'),
                 $position === null ? null : new Position($position),
+                $this->roleIdsFrom($body),
             )),
         ]);
     }
@@ -121,5 +126,26 @@ final readonly class StatusController
         $this->deleteStatus->execute($user, $workspaceId, $id);
 
         return $this->responder->respond(['deleted' => true]);
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
+     */
+    private function roleIdsFrom(array $body): ?RoleIds
+    {
+        if (!array_key_exists('roleIds', $body)) {
+            return null;
+        }
+
+        $values = JsonBody::stringList($body, 'roleIds');
+        if ($values === null) {
+            throw new ValidationException('roleIds', 'Role ids must be a list of strings.');
+        }
+
+        try {
+            return RoleIds::fromStrings($values);
+        } catch (InvalidArgumentException) {
+            throw new ValidationException('roleIds', 'Every role id must be a 32-character hexadecimal string.');
+        }
     }
 }

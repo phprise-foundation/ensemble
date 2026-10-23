@@ -37,6 +37,33 @@ final class JsonBody
 
     /**
      * @param array<array-key, mixed> $body
+     * @return array<string, mixed>|null
+     */
+    public static function object(array $body, string $key): ?array
+    {
+        $value = $body[$key] ?? null;
+        if (!is_array($value) || !self::hasStringKeys($value)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $value */
+        return $value;
+    }
+
+    /** @param array<array-key, mixed> $value */
+    private static function hasStringKeys(array $value): bool
+    {
+        foreach (array_keys($value) as $candidate) {
+            if (!is_string($candidate)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
      * @return list<string>|null
      */
     public static function stringList(array $body, string $key): ?array
