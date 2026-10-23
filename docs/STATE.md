@@ -123,8 +123,16 @@ separate branch.
   gitignored).
 - The canonical-path rule is in the project `AGENTS.md` and in the global
   `~/.config/opencode/AGENTS.md`.
-- To make the wrong path root-owned and immutable, the pending command is
-  `sudo /home/esdras/src/phprise/ensemble/bin/lock-wrong-path.sh`.
+- **The repository is now `phprise-foundation/ensemble`.** GitHub redirects the
+  old `multi-agent` URLs; the local clone is `/home/esdras/src/phprise/ensemble`
+  and both `AGENTS.md` files were updated before the move.
+- **`phprise.org` was bought via Cloudflare Registrar** as the foundation home;
+  Cloudflare provides DNS/alias only. The product domain is still open:
+  `ensemble.com` is the target for reach, with `ensemble.phprise.org` as the
+  fallback until a premium is justified. A human inbox (Fastmail) plus a
+  transactional sender (Resend) are being evaluated; not decided.
+- To make the wrong `phrise` path root-owned and immutable, the pending command
+  is `sudo /home/esdras/src/phprise/ensemble/bin/lock-wrong-path.sh`.
 - Untracked WIP that predates P0/P1 and was **not** committed:
   `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
   `frontend/src/components/Comment.vue`,
