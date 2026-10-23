@@ -19,6 +19,7 @@ final class Issue
     private bool $blocked;
     private FieldValues $fieldValues;
     private StatusId $statusId;
+    private ?WorkdirId $workdirId;
     private DateTimeImmutable $updatedAt;
     private DateTimeImmutable $enteredAt;
 
@@ -34,6 +35,8 @@ final class Issue
         ?string $assigneeId = null,
         FieldValues $fieldValues = new FieldValues(),
         private readonly ?DateTimeImmutable $createdAt = null,
+        ?WorkdirId $workdirId = null,
+        private readonly ?IssueKey $parentKey = null,
     ) {
         $this->summary = new StringObject($this->validSummary($summary));
         $this->description = new StringObject($this->validDescription($description));
@@ -43,6 +46,7 @@ final class Issue
         $this->blocked = false;
         $this->fieldValues = $fieldValues;
         $this->statusId = $statusId;
+        $this->workdirId = $workdirId;
         $this->updatedAt = $this->createdAt();
         $this->enteredAt = $this->createdAt();
     }
@@ -70,6 +74,21 @@ final class Issue
     public function statusId(): StatusId
     {
         return $this->statusId;
+    }
+
+    public function workdirId(): ?WorkdirId
+    {
+        return $this->workdirId;
+    }
+
+    public function parentKey(): ?IssueKey
+    {
+        return $this->parentKey;
+    }
+
+    public function assignWorkdir(WorkdirId $workdirId): void
+    {
+        $this->workdirId = $workdirId;
     }
 
     public function summary(): string

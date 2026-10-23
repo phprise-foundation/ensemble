@@ -53,6 +53,12 @@ final class IssueRecord
     #[ORM\Column(name: 'field_values', type: 'json')]
     private array $fieldValues;
 
+    #[ORM\Column(name: 'workdir_id', type: 'string', length: 32, nullable: true)]
+    private ?string $workdirId;
+
+    #[ORM\Column(name: 'parent_key', type: 'string', length: 16, nullable: true)]
+    private ?string $parentKey;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -76,6 +82,8 @@ final class IssueRecord
         string $worker,
         bool $blocked,
         array $fieldValues,
+        ?string $workdirId,
+        ?string $parentKey,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
@@ -92,6 +100,8 @@ final class IssueRecord
         $this->worker = $worker;
         $this->blocked = $blocked;
         $this->fieldValues = $fieldValues;
+        $this->workdirId = $workdirId;
+        $this->parentKey = $parentKey;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
         $this->enteredAt = $enteredAt;
@@ -108,6 +118,8 @@ final class IssueRecord
     public function assigneeId(): ?string { return $this->assigneeId; }
     public function worker(): string { return $this->worker; }
     public function blocked(): bool { return $this->blocked; }
+    public function workdirId(): ?string { return $this->workdirId; }
+    public function parentKey(): ?string { return $this->parentKey; }
     /** @return array<string, mixed> */
     public function fieldValues(): array { return $this->fieldValues; }
     public function createdAt(): DateTimeImmutable { return $this->createdAt; }
@@ -123,6 +135,7 @@ final class IssueRecord
         string $worker,
         bool $blocked,
         array $fieldValues,
+        ?string $workdirId,
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
     ): void {
@@ -133,6 +146,7 @@ final class IssueRecord
         $this->worker = $worker;
         $this->blocked = $blocked;
         $this->fieldValues = $fieldValues;
+        $this->workdirId = $workdirId;
         $this->updatedAt = $updatedAt;
         $this->enteredAt = $enteredAt;
     }

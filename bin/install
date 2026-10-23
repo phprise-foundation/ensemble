@@ -3,12 +3,17 @@
 
 declare(strict_types=1);
 
+use App\Application\Kanban\BackfillIssueWorkdirs;
 use App\Application\Tenancy\Install;
 use App\Domain\Security\PlainPassword;
 use App\Domain\Tenancy\Login;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\UserRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
@@ -37,4 +42,12 @@ $install->execute(
     new WorkspacePrefix($prefix),
 );
 
+$backfilled = (new BackfillIssueWorkdirs(
+    new DoctrineIssueRepository($entityManager, new IssueRecordMapper()),
+    new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMapper()),
+))->execute();
+
 echo "install ok\n";
+if ($backfilled > 0) {
+    echo "workdirs backfilled: $backfilled\n";
+}

@@ -54,12 +54,11 @@ Order and exit criteria:
    - **P2b-1 — secrets and repositories: Done** (PR #184; workspace secrets with
      libsodium, PAT first; repositories with provider, https URL, base branch
      and optional secret).
-   - **P2b-2 (next):** the internal `Workdir` (scratch or repository),
-     `Issue.workdirId` (always set, inherited through `parentKey`) and
-     `POST /issues/{key}/repository`. `sources` is not a product resource; the
-     execution target is a remote repository, local folders stay a dev-only
-     adapter.
-   - **P2c:** agents (identity + runtime, **without `sourceId`**), team,
+   - **P2b-2 — workdirs and issue links: Done** (internal `Workdir` with the
+     `scratch → pending` state machine, `Issue.workdirId` inherited through
+     `parentKey`, `POST /issues/{key}/repository`; `repositoryId` in the payload
+     is derived, never a second column).
+   - **P2c (next):** agents (identity + runtime, **without `sourceId`**), team,
      roleIds and profileId.
    The settled design lives in
    [`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md) and

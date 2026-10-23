@@ -22,6 +22,7 @@
         <UnusedClass>
             <errorLevel type="suppress">
                 <file name="src/Application/Tenancy/Install.php" />
+                <file name="src/Application/Kanban/BackfillIssueWorkdirs.php" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>

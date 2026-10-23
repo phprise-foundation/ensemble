@@ -94,6 +94,19 @@ Secrets are encrypted with `APP_ENCRYPTION_KEY` (base64 of 32 bytes, e.g.
 `php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'`); the API never returns
 the value. A secret referenced by a repository cannot be deleted (`409`).
 
+Issues now carry an internal execution target. On creation, send `parentKey`
+(the issue inherits the parent's workdir), `repositoryId` (bound on branch
+`agent/<key>`) or neither (an issue-owned scratch workdir), and the payload
+returns the derived `repositoryId`:
+
+```
+POST /issues/{key}/repository
+```
+
+attaches a repository to the issue's workdir — the whole family (parent,
+children and siblings) shares it. Re-attaching the same repository is
+idempotent; a different one is `409` until the runner lands (P3).
+
 Issues use the workspace prefix (`ALP-1`, `ALP-2`), start in the issue type's
 initial status and carry custom field values, comments and status history. The legacy SQLite board and agent-watcher
 surfaces still exist in this branch but are not used by the new routes; they are

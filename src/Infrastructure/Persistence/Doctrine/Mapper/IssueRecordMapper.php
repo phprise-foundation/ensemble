@@ -10,6 +10,7 @@ use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\WorkdirId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Infrastructure\Persistence\Doctrine\Entity\IssueRecord;
 
@@ -17,6 +18,8 @@ final class IssueRecordMapper
 {
     public function toDomain(IssueRecord $record): Issue
     {
+        $workdirId = $record->workdirId();
+        $parentKey = $record->parentKey();
         $issue = new Issue(
             new IssueId($record->id()),
             new IssueKey($record->key()),
@@ -29,6 +32,8 @@ final class IssueRecordMapper
             $record->assigneeId(),
             new FieldValues($record->fieldValues()),
             $record->createdAt(),
+            $workdirId === null ? null : new WorkdirId($workdirId),
+            $parentKey === null ? null : new IssueKey($parentKey),
         );
         $issue->restoreTimestamps($record->updatedAt(), $record->enteredAt());
 
@@ -50,6 +55,8 @@ final class IssueRecordMapper
             $issue->worker(),
             $issue->blocked(),
             $issue->fieldValues()->all(),
+            $issue->workdirId()?->value(),
+            $issue->parentKey()?->value(),
             $issue->createdAt(),
             $issue->updatedAt(),
             $issue->enteredAt(),
@@ -66,6 +73,7 @@ final class IssueRecordMapper
             $issue->worker(),
             $issue->blocked(),
             $issue->fieldValues()->all(),
+            $issue->workdirId()?->value(),
             $issue->updatedAt(),
             $issue->enteredAt(),
         );

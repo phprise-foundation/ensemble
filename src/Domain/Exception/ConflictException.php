@@ -48,6 +48,11 @@ final class ConflictException extends RuntimeException
         return new self('transition already exists');
     }
 
+    public static function workdirBound(): self
+    {
+        return new self('workdir is already bound to another repository');
+    }
+
     public static function transitionNotAllowed(): self
     {
         return new self('transition not allowed for the current status');

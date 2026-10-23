@@ -253,11 +253,10 @@ owns. A profile carries the prototype fields (`name`, `style`, `tone`,
 stored verbatim. Ids are opaque 32-hex values; there is no key slug.
 
 Statuses own roles through the `status_roles` join table (`status_id`,
-`role_id`), not JSON, so the runner can query the statuses of a role with DQL.
-`Domain/Team/RoleIds` is the first-class collection; it deduplicates and
-preserves order. A status may reference roles from any team in the workspace,
-which matches the product model where the team is a grouping layer, not a
-permission boundary.
+`role_id`), not JSON, so the runner can query the statuses of a role with DQL. `Domain/Team/RoleIds` is
+the first-class collection; it deduplicates and preserves order. A status may
+reference roles from any team in the workspace, which matches the product model
+where the team is a grouping layer, not a permission boundary.
 
 Persistence follows the P0/P1 pattern: `teams`, `roles`, `profiles` and
 `status_roles` records, mappers, and repositories behind
@@ -285,6 +284,26 @@ endpoints are `GET/POST /secrets`, `GET/PATCH/DELETE /secrets/{id}` and
 `GET/POST/PATCH/DELETE /repositories`, always scoped to
 `/api/workspaces/{workspace}`. The workdir that binds an issue to a repository
 is P2b-2; the API here does not touch issues yet.
+
+## Workdirs (P2b-2)
+
+`Domain/Kanban/Workdir` is the internal execution target. Every issue carries a
+`workdirId` (persisted as `issues.workdir_id`, nullable only so pre-P2b rows can
+be backfilled by `bin/install`); the workdir itself lives in the `workdirs`
+table and is owned by the issue that created it. Creation rules in
+`CreateIssue`: with `parentKey` the issue inherits the parent's workdir; with
+`repositoryId` it gets a repository workdir on branch `agent/<issue-key>` in the
+`pending` state; otherwise it gets a scratch workdir. The state machine is
+`scratch → pending`, with `bound` and `conflict` reserved for the runner (P3);
+`Workdir::bind` refuses to rebind a repository workdir.
+
+`POST /issues/{key}/repository` (`AttachRepository`) binds the family workdir to
+a repository: re-attaching the same repository is idempotent, a different one is
+`409`. Because derived issues share the workdir, attaching on a child affects
+the parent and siblings. The issue payload exposes `repositoryId` and
+`parentKey`, both derived — the workdir itself is never exposed, and
+`ResolveWorkdirs` batches the lookup for lists. `sources` do not exist in this
+API; the execution target is a remote repository (ADR-003).
 
 ## Domain packages
 

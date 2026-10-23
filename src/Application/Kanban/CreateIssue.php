@@ -11,18 +11,25 @@ use App\Domain\Contract\Kanban\IssueKeyGenerator;
 use App\Domain\Contract\Kanban\IssueRepository;
 use App\Domain\Contract\Kanban\IssueTypeRepository;
 use App\Domain\Contract\Kanban\StatusRepository;
+use App\Domain\Contract\Kanban\WorkdirRepository;
+use App\Domain\Contract\Vcs\GitRepositories;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueEvent;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueId;
+use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\Workdir;
+use App\Domain\Kanban\WorkdirId;
+use App\Domain\Kanban\WorkdirKind;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Tenancy\WorkspacePrefix;
+use App\Domain\Vcs\GitRepositoryId;
 
 final readonly class CreateIssue
 {
@@ -33,6 +40,8 @@ final readonly class CreateIssue
         private FieldDefinitionRepository $fields,
         private IssueEventRepository $events,
         private IssueKeyGenerator $keys,
+        private WorkdirRepository $workdirs,
+        private GitRepositories $repositories,
         private ValidateFieldValues $validateFields,
         private WorkspaceGuard $guard,
     ) {
@@ -49,6 +58,8 @@ final readonly class CreateIssue
         string $description,
         ?string $assigneeId,
         array $fieldValues,
+        ?IssueKey $parentKey = null,
+        ?GitRepositoryId $repositoryId = null,
     ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
         $this->issueTypes->find($workspaceId, $issueTypeId) ?? throw NotFoundException::issueType();
@@ -60,9 +71,13 @@ final readonly class CreateIssue
             $fieldValues,
         );
 
+        $issueId = IssueId::generate();
+        $key = $this->keys->next($workspaceId, $prefix);
+        $workdirId = $this->resolveWorkdir($workspaceId, $issueId, $key, $parentKey, $repositoryId);
+
         $issue = new Issue(
-            IssueId::generate(),
-            $this->keys->next($workspaceId, $prefix),
+            $issueId,
+            $key,
             $workspaceId,
             $issueTypeId,
             $status->id(),
@@ -71,6 +86,8 @@ final readonly class CreateIssue
             $actor->login()->value(),
             $assigneeId,
             $values,
+            workdirId: $workdirId,
+            parentKey: $parentKey,
         );
         $this->issues->add($issue);
         $this->events->add(new IssueEvent(
@@ -83,6 +100,47 @@ final readonly class CreateIssue
         ));
 
         return $issue;
+    }
+
+    private function resolveWorkdir(
+        WorkspaceId $workspaceId,
+        IssueId $issueId,
+        IssueKey $key,
+        ?IssueKey $parentKey,
+        ?GitRepositoryId $repositoryId,
+    ): WorkdirId {
+        if ($parentKey !== null) {
+            $parent = $this->issues->find($workspaceId, $parentKey) ?? throw NotFoundException::issue();
+            $inherited = $parent->workdirId();
+            if ($inherited !== null) {
+                return $inherited;
+            }
+        }
+
+        $workdir = $repositoryId === null
+            ? new Workdir(WorkdirId::generate(), $workspaceId, $issueId, WorkdirKind::Scratch)
+            : $this->repositoryWorkdir($workspaceId, $issueId, $key, $repositoryId);
+        $this->workdirs->add($workdir);
+
+        return $workdir->id();
+    }
+
+    private function repositoryWorkdir(
+        WorkspaceId $workspaceId,
+        IssueId $issueId,
+        IssueKey $key,
+        GitRepositoryId $repositoryId,
+    ): Workdir {
+        $this->repositories->find($workspaceId, $repositoryId) ?? throw NotFoundException::repository();
+
+        return new Workdir(
+            WorkdirId::generate(),
+            $workspaceId,
+            $issueId,
+            WorkdirKind::Repository,
+            $repositoryId,
+            'agent/' . $key->value(),
+        );
     }
 
     private function initialStatus(WorkspaceId $workspaceId, IssueTypeId $issueTypeId): Status
