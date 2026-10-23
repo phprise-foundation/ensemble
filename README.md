@@ -94,6 +94,14 @@ Secrets are encrypted with `APP_ENCRYPTION_KEY` (base64 of 32 bytes, e.g.
 `php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'`); the API never returns
 the value. A secret referenced by a repository cannot be deleted (`409`).
 
+Agents are team members with an identity ("who am I", age, marital status,
+photo) and a runtime (model, fallback model, loop interval, active flag). Send
+`POST /teams/{teamId}/agents` with `name` plus any of `whoAmI`, `age`,
+`maritalStatus`, `roleIds`, `profileId`, `avatarColor`, `portrait` (a base64
+data URL, png/jpeg/webp up to 2 MiB), `model`, `fallbackModel`, `interval`
+(seconds) and `active`; `GET` lists agents of the team and
+`GET/PATCH/DELETE /agents/{id}` reads, edits and removes one.
+
 Issues now carry an internal execution target. On creation, send `parentKey`
 (the issue inherits the parent's workdir), `repositoryId` (bound on branch
 `agent/<key>`) or neither (an issue-owned scratch workdir), and the payload

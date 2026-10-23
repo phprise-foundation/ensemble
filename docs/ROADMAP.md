@@ -58,8 +58,12 @@ Order and exit criteria:
      with the `scratch → pending` state machine, `Issue.workdirId` inherited
      through `parentKey`, `POST /issues/{key}/repository`; `repositoryId` in the
      payload is derived, never a second column).
-   - **P2c (next):** agents (identity + runtime, **without `sourceId`**), team,
-     roleIds and profileId.
+   - **P2c — agents: Done** (identity `whoAmI`/`age`/`maritalStatus`/
+     `avatarColor`/`portrait` + runtime `model`/`fallbackModel`/`interval`/
+     `active`, inside `teamId` with `roleIds` and optional `profileId`; no
+     `sourceId` — the issue's workdir is the execution target).
+   - **P3 (next):** the runner reads statuses, finds issues whose status is
+     owned by the agent's role and starts the agent in the issue's workdir.
    The settled design lives in
    [`docs/ADR-003-execution-targets.md`](ADR-003-execution-targets.md) and
    `docs/STATE.md` (“P2 decisions”).

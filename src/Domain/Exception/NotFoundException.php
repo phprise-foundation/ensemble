@@ -87,4 +87,9 @@ final class NotFoundException extends RuntimeException
     {
         return new self('repository not found');
     }
+
+    public static function agent(): self
+    {
+        return new self('agent not found');
+    }
 }

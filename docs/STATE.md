@@ -2,13 +2,12 @@
 
 ## Current status — 2026-10-23
 
-- **P0, P1, P2a and P2b are merged into `main` and pushed to origin.**
-  Branches `feat/p0-tenancy-api`, `feat/p1-workflow-chain`,
-  `feat/p2-teams-roles`, `feat/p2b-secrets-repositories` and
-  `feat/p2b-workdirs` were deleted.
-- **P2c (agents) is the next slice.** Decisions in the section below and in
-  ADR-003.
-- Latest bar: **108 PHPUnit tests / 666 assertions**, Psalm level 1 with **0
+- **P0, P1 and P2 are merged into `main` and pushed to origin.** Branches
+  `feat/p0-tenancy-api`, `feat/p1-workflow-chain`, `feat/p2-teams-roles`,
+  `feat/p2b-secrets-repositories` and `feat/p2b-workdirs` were deleted; the
+  P2c branch `feat/p2c-agents` awaits review/merge.
+- **P3 (the runner) is the next slice** — see `docs/ROADMAP.md`.
+- Latest bar: **113 PHPUnit tests / 744 assertions**, Psalm level 1 with **0
   errors**.
 - **The product is now `Ensemble`** (formerly `multi-agent`): repository, Composer
   package, frontend package, Docker image and docs follow the new name; the old
@@ -105,8 +104,11 @@ Accepted).
   `issues.parent_key` with workdir inheritance, and
   `POST /issues/{key}/repository`. The issue payload exposes `repositoryId`
   derived from the workdir, never a second column.
-- **P2c (next):** agents (identity + runtime, **without sourceId**), `teamId`,
+- **P2c (done):** agents (identity + runtime, **without sourceId**), `teamId`,
   `roleIds`, `profileId`.
+- **P3 (next):** the runner reads statuses, finds issues whose status is owned
+  by the agent's role and starts the agent in the issue's workdir; conflict
+  states (`bound | conflict`) move there.
 - **P3:** runner resolves the workdir, clones/opens it, detects and resolves
   binding conflicts, runs open-warden, records usage and applies the outcome.
 
@@ -219,6 +221,17 @@ separate branch.
   `GET/POST /issues`, `GET/PATCH /issues/{key}`,
   `POST /issues/{key}/move` and `POST /issues/{key}/comments`.
   74 PHPUnit tests and Psalm level 1 are green.
+- **P2c — agents (branch `feat/p2c-agents`):** `Domain/Team/Agent` carries the
+  identity (`whoAmI`, `age`, `maritalStatus` among single/married/divorced/
+  widowed/other, `avatarColor`, `portrait` as a ≤2 MiB png/jpeg/webp data URL)
+  and the runtime (`model`, `fallbackModel`, loop `interval` 30–86400s,
+  `active`), always inside a `teamId` with `roleIds` (join `agent_roles`) and an
+  optional workspace `profileId`. Endpoints mirror roles: `GET/POST
+  /teams/{id}/agents` and `GET/PATCH/DELETE /agents/{id}` (manager writes,
+  member read); validation errors are `422` with the offending `field`.
+  The legacy `Domain/Agent` (root board) and the new agent are separate
+  packages; this P2c agent has no `sourceId` — the issue's workdir is the
+  execution target.
 - **P2b-2 — workdirs and issue links (PR #185):** every issue
   now carries an internal `workdirId`. Creation rules: with `parentKey` the
   issue inherits the parent's workdir; with `repositoryId` it gets a repository
