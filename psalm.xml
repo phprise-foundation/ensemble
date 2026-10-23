@@ -23,6 +23,9 @@
             <errorLevel type="suppress">
                 <file name="src/Application/Tenancy/Install.php" />
                 <file name="src/Application/Kanban/BackfillIssueWorkdirs.php" />
+                <file name="src/Application/Runner/ExecuteSweep.php" />
+                <file name="src/Infrastructure/Runner/OpenCodeExecutor.php" />
+                <file name="src/Infrastructure/Runner/VarWorkdirPaths.php" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>

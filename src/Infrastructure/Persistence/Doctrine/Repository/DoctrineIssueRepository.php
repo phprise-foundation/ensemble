@@ -8,6 +8,8 @@ use App\Domain\Contract\Kanban\IssueRepository;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
+use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Infrastructure\Persistence\Doctrine\Entity\IssueRecord;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
@@ -86,6 +88,30 @@ final readonly class DoctrineIssueRepository implements IssueRepository
             ->select('i')
             ->from(IssueRecord::class, 'i')
             ->where('i.workdirId IS NULL')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(fn(IssueRecord $record): Issue => $this->mapper->toDomain($record), $records);
+    }
+
+    #[Override]
+    public function forStatuses(WorkspaceId $workspaceId, StatusIds $statusIds): array
+    {
+        $ids = array_map(fn(StatusId $id): string => $id->value(), $statusIds->all());
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<IssueRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('i')
+            ->from(IssueRecord::class, 'i')
+            ->where('i.workspaceId = :workspaceId')
+            ->andWhere('i.statusId IN (:statusIds)')
+            ->setParameter('workspaceId', $workspaceId->value())
+            ->setParameter('statusIds', $ids)
+            ->orderBy('i.key', 'ASC')
             ->getQuery()
             ->getResult();
 

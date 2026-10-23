@@ -28,6 +28,7 @@ use App\Interface\Http\Kanban\IssueController;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
 use App\Interface\Http\Kanban\TransitionController;
+use App\Interface\Http\Kanban\RunController;
 use App\Interface\Http\Kanban\WorkflowController;
 use App\Interface\Http\Security\SecretController;
 use App\Interface\Http\Team\AgentController;
@@ -57,6 +58,7 @@ final readonly class TenancyRouter
         private RoleController $roles,
         private ProfileController $profiles,
         private AgentController $agents,
+        private RunController $runHistory,
         private SecretController $secrets,
         private RepositoryController $repositories,
         private TenancyErrorResponder $errors,
@@ -138,6 +140,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $this->isIssueMove($segments) => $this->issues->move($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isIssueRuns($segments) => $this->runHistory->list($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isTeams($segments) => $this->teams->create($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isTeam($segments) => $this->teams->show($request, $this->workspaceId($segments), $this->teamId($segments)),
@@ -413,6 +416,16 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'teams'
             && $segments[5] === 'roles';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueRuns(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'runs';
     }
 
     /** @param list<string> $segments */

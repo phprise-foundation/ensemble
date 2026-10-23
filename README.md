@@ -116,10 +116,29 @@ children and siblings) shares it. Re-attaching the same repository is
 idempotent; a different one is `409` until the runner lands (P3).
 
 Issues use the workspace prefix (`ALP-1`, `ALP-2`), start in the issue type's
-initial status and carry custom field values, comments and status history. The legacy SQLite board and agent-watcher
+initial status and carry custom field values, comments and status history.
+
+## The runner (P3a)
+
+`bin/runner` (after `bin/install` applied the schema) performs one deterministic
+sweep: it reclaims expired run leases, then every **active** agent looks at the
+statuses owned by its roles, takes the issues sitting in them and runs those
+whose workdir is `bound` — executing `opencode run --model <model>` (fallback
+model as second attempt) in the workdir path and recording the outcome. Each
+attempt is a `Run` with claim/lease (30 minutes) and reclaim ceiling (3
+attempts) in the `runs` table. The executable-stage rule (ADR-003) is enforced
+with visible reasons: an issue whose workdir is not `bound` gets a `skipped`
+run (`GET /issues/{key}/runs` shows the history). Repeat sweeps redrive a
+skipped issue only when the reason changes, and never re-run a succeeded or
+failed one. `ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`) is where the
+runner materializes workdirs.
+
+The legacy SQLite board and agent-watcher
 surfaces still exist in this branch but are not used by the new routes; they are
 removed in the productization phases described in `docs/ROADMAP.md` and
 `docs/ADR-001-tenancy-postgres-doctrine.md`.
+
+## Components
 
 ## Components
 

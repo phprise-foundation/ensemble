@@ -7,6 +7,7 @@ namespace App\Domain\Contract\Kanban;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Tenancy\WorkspaceId;
 
 interface IssueRepository
@@ -21,6 +22,12 @@ interface IssueRepository
 
     /** @return list<Issue> */
     public function forWorkspace(WorkspaceId $workspaceId): array;
+
+    /**
+     * @param StatusIds $statusIds
+     * @return list<Issue>
+     */
+    public function forStatuses(WorkspaceId $workspaceId, StatusIds $statusIds): array;
 
     /** @return list<Issue> */
     public function withoutWorkdir(): array;

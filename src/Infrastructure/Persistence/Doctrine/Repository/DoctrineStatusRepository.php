@@ -196,6 +196,49 @@ final readonly class DoctrineStatusRepository implements StatusRepository
         );
     }
 
+    #[Override]
+    public function ownedByRoles(WorkspaceId $workspaceId, RoleIds $roleIds): array
+    {
+        $ids = array_map(fn(RoleId $id): string => $id->value(), $roleIds->all());
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<string> $statusIds */
+        $statusIds = $this->entityManager
+            ->createQueryBuilder()
+            ->select('sr.statusId')
+            ->from(StatusRoleRecord::class, 'sr')
+            ->where('sr.roleId IN (:roleIds)')
+            ->setParameter('roleIds', $ids)
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        if ($statusIds === []) {
+            return [];
+        }
+
+        /** @var list<StatusRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('s')
+            ->from(StatusRecord::class, 's')
+            ->where('s.workspaceId = :workspaceId')
+            ->andWhere('s.id IN (:statusIds)')
+            ->setParameter('workspaceId', $workspaceId->value())
+            ->setParameter('statusIds', $statusIds)
+            ->orderBy('s.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $roles = $this->rolesFor(array_map(fn(StatusRecord $record): string => $record->id(), $records));
+
+        return array_map(
+            fn(StatusRecord $record): Status => $this->mapper->toDomain($record, $roles[$record->id()] ?? new RoleIds()),
+            $records,
+        );
+    }
+
     /**
      * @param list<string> $statusIds
      * @return array<string, RoleIds>
