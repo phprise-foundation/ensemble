@@ -107,6 +107,34 @@ final class Workdir
         $this->touch(new DateTimeImmutable());
     }
 
+    public function markBound(): void
+    {
+        if ($this->kind !== WorkdirKind::Repository) {
+            throw new ValidationException('workdir', 'Only a repository workdir can become bound.');
+        }
+
+        if ($this->state !== WorkdirState::Pending) {
+            throw new ValidationException('workdir', 'Only a pending workdir can become bound.');
+        }
+
+        $this->state = WorkdirState::Bound;
+        $this->touch(new DateTimeImmutable());
+    }
+
+    public function markConflict(): void
+    {
+        if ($this->kind !== WorkdirKind::Repository) {
+            throw new ValidationException('workdir', 'Only a repository workdir can enter conflict.');
+        }
+
+        if ($this->state !== WorkdirState::Pending) {
+            throw new ValidationException('workdir', 'Only a pending workdir can enter conflict.');
+        }
+
+        $this->state = WorkdirState::Conflict;
+        $this->touch(new DateTimeImmutable());
+    }
+
     public function touch(DateTimeImmutable $at): void
     {
         $this->updatedAt = $at;

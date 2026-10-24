@@ -25,6 +25,7 @@
                 <file name="src/Application/Kanban/BackfillIssueWorkdirs.php" />
                 <file name="src/Application/Runner/ExecuteSweep.php" />
                 <file name="src/Infrastructure/Runner/OpenCodeExecutor.php" />
+                <file name="src/Infrastructure/Runner/GitWorkdirVcs.php" />
                 <file name="src/Infrastructure/Runner/VarWorkdirPaths.php" />
             </errorLevel>
         </UnusedClass>

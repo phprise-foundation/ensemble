@@ -14,12 +14,15 @@ use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusIds;
+use App\Domain\Kanban\Workdir;
 use App\Domain\Kanban\WorkdirState;
 use App\Domain\Runner\AgentExecutor;
+use App\Domain\Runner\Outcome;
 use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
 use App\Domain\Runner\WorkdirPaths;
+use App\Domain\Runner\WorkdirVcs;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Team\Agent;
 use DateTimeImmutable;
@@ -37,6 +40,7 @@ final readonly class ExecuteSweep
         private StatusRepository $statuses,
         private IssueRepository $issues,
         private WorkdirRepository $workdirs,
+        private WorkdirVcs $vcs,
         private RunRepository $runs,
         private WorkdirPaths $paths,
         private AgentExecutor $executor,
@@ -89,13 +93,31 @@ final readonly class ExecuteSweep
             return;
         }
 
-        $reason = $this->blockReason($issue);
-        if ($reason === null) {
-            $this->executeRun($workspaceId, $agent, $issue, $now);
+        $workdir = $this->workdirFor($issue);
+        if ($workdir === null) {
+            $this->skip($workspaceId, $agent, $issue, 'the issue has no workdir', $latest, $now);
 
             return;
         }
 
+        $reason = $this->prepare($workdir);
+        if ($reason !== null) {
+            $this->skip($workspaceId, $agent, $issue, $reason, $latest, $now);
+
+            return;
+        }
+
+        $this->executeRun($workspaceId, $agent, $issue, $now);
+    }
+
+    private function skip(
+        WorkspaceId $workspaceId,
+        Agent $agent,
+        Issue $issue,
+        string $reason,
+        ?Run $latest,
+        DateTimeImmutable $now,
+    ): void {
         if ($latest instanceof Run && $latest->state() === RunState::Skipped && $latest->reason() === $reason) {
             return;
         }
@@ -105,32 +127,44 @@ final readonly class ExecuteSweep
         $this->runs->add($run);
     }
 
-    private function blockReason(Issue $issue): ?string
+    /** Null means the workdir is ready; otherwise the reason to show on the skip run. */
+    private function prepare(Workdir $workdir): ?string
     {
-        if ($issue->workdirId() === null) {
-            return 'the issue has no workdir';
+        return match ($workdir->state()) {
+            WorkdirState::Bound => null,
+            WorkdirState::Pending => $this->preparePending($workdir),
+            WorkdirState::Conflict => 'the issue workdir is in conflict',
+            WorkdirState::Scratch => 'the issue workdir is not bound yet (scratch)',
+        };
+    }
+
+    private function preparePending(Workdir $workdir): ?string
+    {
+        $path = $this->paths->ensure($workdir->workspaceId(), $workdir->id());
+        $prepared = $this->vcs->prepare($workdir, $path);
+        if ($prepared->ok) {
+            $workdir->markBound();
+            $this->workdirs->update($workdir);
+
+            return null;
         }
 
-        $workdir = $this->workdirs->find($issue->workspaceId(), $issue->workdirId());
-        if ($workdir === null) {
-            return 'the issue workdir vanished';
-        }
+        $workdir->markConflict();
+        $this->workdirs->update($workdir);
 
-        if ($workdir->state() !== WorkdirState::Bound) {
-            return 'the issue workdir is not bound yet (' . $workdir->state()->value . ')';
-        }
+        return 'workdir preparation failed: ' . $prepared->message;
+    }
 
-        return null;
+    private function workdirFor(Issue $issue): ?Workdir
+    {
+        return $issue->workdirId() === null
+            ? null
+            : $this->workdirs->find($issue->workspaceId(), $issue->workdirId());
     }
 
     private function executeRun(WorkspaceId $workspaceId, Agent $agent, Issue $issue, DateTimeImmutable $now): void
     {
-        $workdirId = $issue->workdirId();
-        if ($workdirId === null) {
-            return;
-        }
-
-        $workdir = $this->workdirs->find($workspaceId, $workdirId) ?? throw new RuntimeException('The bound workdir vanished.');
+        $workdir = $this->workdirFor($issue) ?? throw new RuntimeException('The bound workdir vanished.');
         $run = new Run(RunId::generate(), $workspaceId, $agent->id(), $issue->id());
         $workdirPath = $this->paths->ensure($workspaceId, $workdir->id());
         $prompt = $this->prompts->compose($workspaceId, $agent, $issue);
@@ -138,6 +172,13 @@ final readonly class ExecuteSweep
         $this->runs->add($run);
 
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt);
+        if ($outcome->ok) {
+            $published = $this->vcs->publish($workdir, $workdirPath);
+            if (! $published->ok) {
+                $outcome = Outcome::failed('the branch was not published: ' . $published->message);
+            }
+        }
+
         $run->complete($outcome, new DateTimeImmutable());
         $this->runs->update($run);
     }

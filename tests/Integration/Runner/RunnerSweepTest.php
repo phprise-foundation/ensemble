@@ -32,7 +32,7 @@ use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
 use App\Domain\Runner\WorkdirPaths;
-use App\Domain\Team\Agent;
+use App\Domain\Runner\WorkdirVcs;use App\Domain\Team\Agent;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\Role;
 use App\Domain\Team\RoleIds;
@@ -82,6 +82,7 @@ final class RunnerSweepTest extends TestCase
     private DoctrineWorkspaceRepository $workspaces;
     private DoctrineEntityManagerFactory $factory;
     private RecordedExecutor $executor;
+    private RecordedVcs $vcs;
     private WorkdirPathsForTest $paths;
     private WorkspaceId $workspaceId;
     private WorkdirId $workdirId;
@@ -98,6 +99,7 @@ final class RunnerSweepTest extends TestCase
 
         $this->factory = DoctrineEntityManagerFactory::fromEnvironment(true);
         $this->paths = new WorkdirPathsForTest();
+        $this->vcs = new RecordedVcs();
         $this->executor = new RecordedExecutor();
         $this->workspaceId = new WorkspaceId(bin2hex(random_bytes(16)));
 
@@ -241,6 +243,7 @@ final class RunnerSweepTest extends TestCase
             $this->statuses,
             $this->issues,
             $this->workdirs,
+            $this->vcs,
             $this->runs,
             $this->paths,
             $this->executor,
@@ -260,6 +263,107 @@ final class RunnerSweepTest extends TestCase
             WorkdirState::Bound,
         );
         $this->workdirs->update($bound);
+    }
+
+    private function attachPending(): void
+    {
+        $this->workdirs->update(new Workdir(
+            $this->workdirId,
+            $this->workspaceId,
+            $this->issue->id(),
+            WorkdirKind::Repository,
+            GitRepositoryId::generate(),
+            'agent/KAN-1',
+            WorkdirState::Pending,
+        ));
+    }
+
+    public function testPendingWorkdirIsPreparedThenRun(): void
+    {
+        $this->attachPending();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        self::assertNotNull($this->workdirs->find($this->workspaceId, $this->workdirId)?->state());
+        self::assertSame('bound', $this->workdirs->find($this->workspaceId, $this->workdirId)->state()->value);
+        self::assertSame([$this->paths->path($this->workspaceId, $this->workdirId)], $this->vcs->prepared);
+        self::assertSame([$this->paths->path($this->workspaceId, $this->workdirId)], $this->executor->executions);
+    }
+
+    public function testFailedPreparationConflictsTheWorkdirWithVisibleReason(): void
+    {
+        $this->attachPending();
+        $this->vcs->prepareFailure = 'not a git repository';
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('skipped', $runs[0]->state()->value);
+        self::assertSame('workdir preparation failed: not a git repository', $runs[0]->reason());
+        self::assertSame('conflict', $this->workdirs->find($this->workspaceId, $this->workdirId)->state()->value);
+        self::assertSame([], $this->executor->executions);
+
+        $this->vcs->prepareFailure = null;
+        $this->sweep();
+        self::assertSame([], $this->executor->executions);
+        self::assertSame('conflict', $this->workdirs->find($this->workspaceId, $this->workdirId)->state()->value);
+        self::assertSame(
+            'the issue workdir is in conflict',
+            $this->runs->forIssue($this->workspaceId, $this->issue->id())[1]->reason(),
+        );
+    }
+
+    public function testPublishFailureFailsTheRunWithReason(): void
+    {
+        $this->attachPending();
+        $this->vcs->publishFailure = 'remote rejected';
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('failed', $runs[0]->state()->value);
+        self::assertSame('the branch was not published: remote rejected', $runs[0]->reason());
+    }
+}
+
+final class RecordedVcs implements WorkdirVcs
+{
+    /** @var list<string> */
+    public array $prepared = [];
+
+    /** @var list<string> */
+    public array $published = [];
+
+    public ?string $prepareFailure = null;
+
+    public ?string $publishFailure = null;
+
+    public function __construct()
+    {
+    }
+
+    #[Override]
+    public function prepare(Workdir $workdir, string $path): Outcome
+    {
+        $this->prepared[] = $path;
+        if ($this->prepareFailure !== null) {
+            return Outcome::failed($this->prepareFailure);
+        }
+
+        return Outcome::succeeded('cloned');
+    }
+
+    #[Override]
+    public function publish(Workdir $workdir, string $path): Outcome
+    {
+        if ($this->publishFailure !== null) {
+            return Outcome::failed($this->publishFailure);
+        }
+
+        $this->published[] = $path;
+
+        return Outcome::succeeded('pushed ' . $workdir->branch()->value());
     }
 }
 
