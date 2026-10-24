@@ -7,15 +7,6 @@ use App\Application\Runner\ExecuteSweep;
 use App\Application\Runner\PromptComposer;
 use App\Application\Runner\ResolveProfile;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
-use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
-use App\Infrastructure\Runner\OpenCodeExecutor;
-use App\Infrastructure\Runner\VarWorkdirPaths;
 use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
@@ -23,6 +14,22 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\RunRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
+use App\Infrastructure\Runner\GitClient;
+use App\Infrastructure\Runner\GitWorkdirVcs;
+use App\Infrastructure\Runner\OpenCodeExecutor;
+use App\Infrastructure\Runner\VarWorkdirPaths;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceSecretRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\GitRepositoryRecordMapper;
+use App\Infrastructure\Security\SodiumSecretCipher;
 
 require 'vendor/autoload.php';
 
@@ -39,7 +46,13 @@ $issues = new DoctrineIssueRepository($entityManager, new IssueRecordMapper());
     $issues,
     $workdirs,
     new DoctrineRunRepository($entityManager, new RunRecordMapper()),
-    new VarWorkdirPaths((string) getenv('ENSEMBLE_WORKDIR_ROOT') ?: 'var/workdirs'),
+    new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: 'var/workdirs')),
+    new GitWorkdirVcs(
+        new GitClient(),
+        new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper()),
+        new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper()),
+        SodiumSecretCipher::fromEnvironment(),
+    ),
     new OpenCodeExecutor(),
     new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
 ))->execute();

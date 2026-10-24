@@ -77,6 +77,14 @@ Order and exit criteria:
      `opencode run` + fallback model), record outcomes in `runs` claims/leases;
      history via `GET /issues/{key}/runs`). Real clone/push, issue status moves
      and the open-warden execution binary are still P3b.
+   - **P3b — repository lifecycle: Done** (`WorkdirVcs`: pending workdirs are
+     prepared on the sweep with real `git clone`/`checkout -B agent/<key>` and
+     become `bound`, failures become `conflict` with the git error on the skip
+     run; successful runs are committed and pushed by the runner; workspace
+     secrets decrypt to the `Authorization: Basic x-access-token` git header).
+     `GitClient` is tested against a real local git binary. Remaining: open-warden
+     execution binary, issue status moves and the triggers (spawn, voting,
+     `subtasks-done`) — P3c.
 5. **P4 — frontend cutover** — login/token, workspace switcher, snapshot +
    resource writes, feature flags flipped in dependency order, fake backend out
    of production, Vite build served by PHP, real-backend E2E; console and

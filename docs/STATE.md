@@ -161,6 +161,23 @@ separate branch.
 
 ## Done
 
+- **P3b — the repository lifecycle (branch `feat/p3b-vcs`):** the runner now
+  drives git. `Domain/Runner/WorkdirVcs` contract + `Workdir::markBound`/
+  `markConflict` (pending only, state machine intact). `GitClient`
+  (`Infrastructure/Runner/GitClient`) runs real `git` processes: clone
+  `--no-checkout` of the base branch then `checkout -B agent/<issue-key>` on
+  prepare, `add -A` + commit + `push -u origin` on publish (empty commit
+  tolerated). `GitWorkdirVcs` resolves the repository and decrypts its
+  workspace secret into an `Authorization: Basic x-access-token:<PAT>` extra
+  header; URL credentials stay forbidden. Sweep behavior: a `pending` workdir
+  is prepared and becomes `bound` (run executes on the same pass) or `conflict`
+  when git fails — the skip reason carries the git error; a `conflict` workdir
+  skips with `the issue workdir is in conflict` until resolution (P3c); after a
+  successful execution the branch is published, and a push problem fails the
+  run instead of reporting success. `bin/runner` wires the real VCS bridge;
+  `GitClientTest` exercises clone/commit/push against a real local bare repo
+  with the `file://` transport.
+
 - **P3a — the runner core (branch `feat/p3a-runner`):** `Domain/Runner` with the
   `Run` lifecycle (claimed → running → succeeded/failed/skipped, lease of 30
   minutes, reclaim ceiling of 3 attempts), the `RunRepository` contract and the
@@ -173,8 +190,9 @@ separate branch.
   reasons are not duplicated; a succeeded/failed run is never re-run. Prompt
   composition (`PromptComposer`) includes identity, profile and the issue's
   summary/description. `bin/runner` is the CLI single pass; the run history is
-  exposed by `GET /workspaces/{ws}/issues/{key}/runs`. The real clone/push,
-  issue status moves and the open-warden execution path are P3b.
+  exposed by `GET /workspaces/{ws}/issues/{key}/runs`. The repository lifecycle
+  landed in P3b; issue status moves, triggers and the open-warden execution
+  path are P3c.
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
   `feat/p0-tenancy-api`):** users and workspaces are N:N through

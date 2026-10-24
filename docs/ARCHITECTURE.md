@@ -323,7 +323,7 @@ reads member-visible. References are by id (`/agents/{id}`), the aggregate has
 no `sourceId`: the execution target comes from the issue's workdir (P2b-2,
 ADR-003) and the P3 runner starts agents there.
 
-## The runner (P3a)
+## The runner (P3a/P3b)
 
 `Domain/Runner` owns the run lifecycle. A `Run` (id, workspace, agent, issue)
 is claimed with a lease (`claimed → running`; `succeeded`/`failed` keep the
@@ -337,14 +337,28 @@ executes `opencode run --model <model>` there and falls back once to
 `ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`). `Application/Runner/
 ExecuteSweep` is one deterministic pass: reclaim expired leases, then for every
 active agent find the statuses owned by the agent's roles, find the issues in
-those statuses and, when the issue's workdir is `bound`, claim → run → record
-the outcome. The executable-stage rule is enforced (ADR-003): an unbound,
-missing or vanished workdir produces a `skipped` run whose reason is the
-visible signal (`the issue workdir is not bound yet (pending)`), and a repeated
-identical reason does not create duplicate runs; a `succeeded`/`failed` run is
-not re-executed. `bin/runner` (single pass; install-schema first) and the
-`GET /issues/{key}/runs` endpoint expose the history. P3b will add the real
-clone/push, issue status moves and triggers.
+those statuses and run those whose workdir is ready. The executable-stage rule
+is enforced (ADR-003): an unbound, missing or vanished workdir produces a
+`skipped` run whose reason is the visible signal, and a repeated identical
+reason does not create duplicate runs; a `succeeded`/`failed` run is not
+re-executed. `bin/runner` (single pass; install-schema first) and the
+`GET /issues/{key}/runs` endpoint expose the history.
+
+Since P3b the runner also owns the repository lifecycle through the
+`WorkdirVcs` contract (`Infrastructure/Runner/GitWorkdirVcs` + `GitClient`):
+a `pending` workdir is prepared on the sweep — `git clone --no-checkout` of the
+base branch, then `checkout -B agent/<issue-key> origin/<base>` — which moves
+the workdir to `bound`, and a clone/fetch failure moves it to `conflict` with
+the git error recorded on the skip run. After a successful agent run the runner
+commits everything changed in the workdir (`git add -A`, `commit`, empty commit
+tolerated as nothing-to-do) and pushes the branch with `git push -u origin`;
+a push failure fails the run with the grep of the git output. Workspace secrets
+decrypt into an `Authorization: Basic x-access-token:<PAT>` extra header, so
+private providers authenticate without URL credentials (ADR-003 item 8 keeps
+the `RepositoryProvider` upgrade path). Conflict resolution strategies
+(`remote_wins`/`local_wins`/`merge`) remain P3c. The `GitClient` is exercised
+against a real local git binary in the tests; the https-only `RepositoryUrl`
+rule is unchanged.
 
 ## Domain packages
 
