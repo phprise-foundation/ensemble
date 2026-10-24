@@ -208,9 +208,19 @@ separate branch.
   records an issue event with the agent's name as the actor. The advancement
   waits while the issue still has subtasks that are not in a final status
   (the "Testing only after all subtasks Done" rule without configurable
-  triggers yet). **Deferred to P3d:** configurable triggers on transitions
-  (`spawn`, `voting`, `subtasks-done` as transition flags), advancing waiting
-  parents in a separate sweep pass, and the open-warden execution path.
+  triggers yet).
+
+- **P3d-1 — subtasks-done trigger driving waiting parents (branch
+  `feat/p3d-subtasks-done-trigger`):** every sweep now ends with a waiting
+  pass: issues outside the agent-owned statuses (and not in a final status)
+  advance through their single agent-actor transition when they still have
+  subtasks and at least one child has activity newer than the parent's last
+  change (`rearmed`); the event is recorded with `runner` as the actor. The
+  re-arm guard is what prevents a parent from crawling forward repeatedly — a
+  parent only fires again when a subtask is (re)completed after its own last
+  change. **Still deferred:** configurable triggers on transitions (`spawn`,
+  `voting`, `subtasks-done` as transition flags) and the open-warden
+  execution path.
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
   `feat/p0-tenancy-api`):** users and workspaces are N:N through
