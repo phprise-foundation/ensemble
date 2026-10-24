@@ -1,7 +1,39 @@
 import { computed, reactive } from 'vue'
 import { api } from '../api/index.js'
+import { token, request } from '../api/client.js'
 import { isSimulated } from '../api/simulation.js'
 import { session } from './session.js'
+
+const REAL = Boolean(import.meta.env?.VITE_API_URL)
+const realMode = () => REAL && Boolean(token()) && Boolean(session.workspaceId)
+const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
+const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
+const presented = (payload) => payload?.issue ?? payload ?? null
+const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
+
+async function moveReal(issueId, statusId) {
+  const issue = issueOf(issueId)
+  if (!issue) {
+    throw new Error('Unknown issue')
+  }
+  return presented(await request('POST', scoped(`/issues/${issue.key}/move`), { statusId }))
+}
+
+async function commentReal(issueId, body) {
+  const issue = issueOf(issueId)
+  if (!issue) {
+    throw new Error('Unknown issue')
+  }
+  return presented(await request('POST', scoped(`/issues/${issue.key}/comments`), { body }))
+}
+
+async function updateReal(issueId, patch) {
+  const issue = issueOf(issueId)
+  if (!issue) {
+    throw new Error('Unknown issue')
+  }
+  return presented(await request('PATCH', scoped(`/issues/${issue.key}`), patch))
+}
 
 const OVERDUE_MS = 24 * 60 * 60 * 1000
 const find = (list, id) => list.find((item) => item.id === id) ?? null
@@ -71,8 +103,8 @@ export const boardStore = {
       return []
     }
     return state.issues
-      .filter((issue) => issue.boardId === state.boardId && column.statusIds.includes(issue.statusId))
-      .sort((a, b) => a.order - b.order)
+      .filter((issue) => column.statusIds.includes(issue.statusId))
+      .sort((a, b) => orderKeyOf(a) - orderKeyOf(b))
   },
 
   canUserMove(fromStatusId, toStatusId) {
@@ -81,9 +113,10 @@ export const boardStore = {
     }
     return boardTransitions.value.some(
       (transition) =>
-        transition.to === toStatusId &&
-        (transition.from === '*' || transition.from === fromStatusId) &&
-        transition.type !== 'agent',
+        (transition.to ?? transition.toStatusId) === toStatusId &&
+        (transition.from ?? transition.fromStatusId ?? '*') === fromStatusId &&
+        transition.type !== 'agent' &&
+        transition.actor !== 'agent',
     )
   },
 
@@ -114,9 +147,13 @@ export const boardStore = {
     state.loading = true
     state.error = ''
     try {
-      const workspace = await api.fetchWorkspace()
-      Object.assign(state, workspace)
-      state.issues = await api.fetchIssues()
+      if (realMode()) {
+        Object.assign(state, await api.snapshot(session.workspaceId))
+      } else {
+        const workspace = await api.fetchWorkspace()
+        Object.assign(state, workspace)
+        state.issues = await api.fetchIssues()
+      }
       boardStore.setBoard(state.boardId)
     } catch (error) {
       state.error = error.message
@@ -134,18 +171,31 @@ export const boardStore = {
   },
 
   async moveIssue(issueId, target) {
+    if (realMode()) {
+      const moved = await moveReal(issueId, target)
+      const index = state.issues.findIndex((issue) => issue.id === issueId)
+      if (index >= 0) {
+        state.issues.splice(index, 1, moved)
+      }
+      return
+    }
     await api.moveIssue(issueId, target)
     state.issues = await api.fetchIssues()
   },
 
   async createIssue(payload) {
+    if (realMode()) {
+      const created = presented(await api.request('POST', scoped('/issues'), payload))
+      state.issues.push(created)
+      return created
+    }
     const created = await api.createIssue(payload)
     state.issues = await api.fetchIssues()
     return created
   },
 
   async updateIssue(id, patch) {
-    const updated = await api.updateIssue(id, patch)
+    const updated = realMode() ? await updateReal(id, patch) : await api.updateIssue(id, patch)
     const index = state.issues.findIndex((issue) => issue.id === id)
     if (index >= 0) {
       state.issues.splice(index, 1, updated)
@@ -154,6 +204,14 @@ export const boardStore = {
   },
 
   async addComment(issueId, body) {
+    if (realMode()) {
+      const updated = await commentReal(issueId, body)
+      const index = state.issues.findIndex((issue) => issue.id === issueId)
+      if (index >= 0) {
+        state.issues.splice(index, 1, updated)
+      }
+      return
+    }
     const updated = await api.addComment(issueId, { author: session.login, body })
     const index = state.issues.findIndex((issue) => issue.id === issueId)
     if (index >= 0) {

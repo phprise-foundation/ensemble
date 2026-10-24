@@ -34,6 +34,11 @@ DISPLAY_NUMBER=""
 CYPRESS_LOG="$(mktemp)"
 cd "$DIR"
 
+# The suite always runs against the fake backend: a developer .env.local
+# pointing VITE_API_PROXY/VITE_API_URL at the PHP API must not leak into it.
+export VITE_API_PROXY=""
+export VITE_API_URL=""
+
 cleanup() {
   if [ -n "$CYPRESS_PID" ]; then
     kill "$CYPRESS_PID" 2>/dev/null || true

@@ -27,6 +27,7 @@ use App\Interface\Http\Kanban\FieldDefinitionController;
 use App\Interface\Http\Kanban\IssueController;
 use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\StatusController;
+use App\Interface\Http\Kanban\SnapshotController;
 use App\Interface\Http\Kanban\TransitionController;
 use App\Interface\Http\Kanban\RunController;
 use App\Interface\Http\Kanban\WorkflowController;
@@ -59,6 +60,7 @@ final readonly class TenancyRouter
         private ProfileController $profiles,
         private AgentController $agents,
         private RunController $runHistory,
+        private SnapshotController $snapshots,
         private SecretController $secrets,
         private RepositoryController $repositories,
         private TenancyErrorResponder $errors,
@@ -141,6 +143,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isIssueRuns($segments) => $this->runHistory->list($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isTeams($segments) => $this->teams->create($request, $this->workspaceId($segments)),
@@ -427,6 +430,15 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'issues'
             && $segments[5] === 'runs';
+    }
+
+    /** @param list<string> $segments */
+    private function isSnapshot(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'snapshot';
     }
 
     /** @param list<string> $segments */

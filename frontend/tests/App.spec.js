@@ -277,7 +277,7 @@ describe('App session gate', () => {
     expect(wrapper.find('.topbar').exists()).toBe(false)
     expect(wrapper.find('.content').exists()).toBe(false)
     expect(wrapper.find('.session-ended').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Session ended')
+    expect(wrapper.text()).toContain('Sign in to your workspace')
     wrapper.unmount()
   })
 
