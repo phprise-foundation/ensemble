@@ -243,8 +243,8 @@ function toggleSimulation() {
     <form class="session-ended-box" @submit.prevent="submitSignIn">
       <h1 class="session-ended-title">Multi-Agent</h1>
       <p class="session-ended-message">Sign in to your workspace</p>
-      <input v-model="signInLogin" class="input session-ended-field" name="login" placeholder="Login" autocomplete="username" />
-      <input v-model="signInPassword" class="input session-ended-field" name="password" type="password" placeholder="Password" autocomplete="current-password" />
+      <input v-model="signInLogin" class="input session-ended-field" aria-label="Login" autocomplete="username" />
+      <input v-model="signInPassword" class="input session-ended-field" type="password" aria-label="Password" autocomplete="current-password" />
       <p class="session-ended-error" v-if="signInError">{{ signInError }}</p>
       <button class="button" type="submit">Sign in</button>
     </form>
