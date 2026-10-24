@@ -71,7 +71,13 @@ export const session = {
   },
   async load() {
     if (realBackend && token()) {
-      return this.restore()
+      try {
+        return await this.restore()
+      } catch {
+        setToken(null)
+        state.signedIn = false
+        return state
+      }
     }
     const user = await api.fetchUser()
     applyUser(user)
