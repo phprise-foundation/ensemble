@@ -35,8 +35,7 @@ CYPRESS_LOG="$(mktemp)"
 cd "$DIR"
 
 # The suite always runs against the fake backend: a developer .env.local
-# pointing VITE_API_PROXY/VITE_API_URL at the PHP API must not leak into it.
-export VITE_API_PROXY=""
+# pointing VITE_API_URL at the PHP API must not leak into it.
 export VITE_API_URL=""
 
 cleanup() {

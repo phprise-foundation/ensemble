@@ -1,8 +1,6 @@
 import { reactive } from 'vue'
 import { api, request } from '../api/index.js'
-import { token, setToken } from '../api/client.js'
-
-const realBackend = Boolean(import.meta.env?.VITE_API_URL)
+import { isRealBackend, token, setToken } from '../api/client.js'
 
 const state = reactive({
   login: '',
@@ -70,7 +68,11 @@ export const session = {
     return (state.displayName || state.login || '?').charAt(0).toUpperCase()
   },
   async load() {
-    if (realBackend && token()) {
+    if (isRealBackend()) {
+      if (!token()) {
+        state.signedIn = false
+        return state
+      }
       try {
         return await this.restore()
       } catch {
@@ -89,7 +91,7 @@ export const session = {
     state.signedIn = true
   },
   async signIn(login, password) {
-    if (!realBackend && !token()) {
+    if (!isRealBackend() && !token()) {
       state.signedIn = true
       return state
     }
@@ -113,6 +115,13 @@ export const session = {
     return user
   },
   async signOut() {
+    if (isRealBackend() && token()) {
+      try {
+        await request('POST', '/api/auth/logout')
+      } catch {
+        setToken(null)
+      }
+    }
     setToken(null)
     state.signedIn = false
   },
