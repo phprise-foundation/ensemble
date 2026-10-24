@@ -15,7 +15,6 @@ use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\TransitionActor;
-use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Team\Agent;
 use DateTimeImmutable;
 
@@ -29,29 +28,47 @@ final readonly class AdvanceIssue
     ) {
     }
 
-    /** Advances the issue through its single agent transition when the subtask gate permits. */
-    public function execute(Agent $agent, Issue $issue): void
+    /** Moves the issue through its single agent transition once a published run ends. */
+    public function afterRun(Agent $agent, Issue $issue): void
     {
         $target = $this->nextTarget($issue);
         if ($target === null) {
             return;
         }
 
-        $at = new DateTimeImmutable();
-        $previous = $issue->statusId();
-        $issue->moveTo($target->id(), $at);
-        $this->issues->update($issue);
-        $this->events->add(new IssueEvent(
-            IssueEventId::generate(),
-            $issue->workspaceId(),
-            $issue->id(),
-            $previous,
-            $target->id(),
-            $agent->name(),
-            $at,
-        ));
+        $this->move($issue, $target, $agent->name());
+    }
 
+    /** The subtasks-done trigger: moves a waiting parent since a child reached its final status. */
+    public function waiting(Issue $issue): void
+    {
+        $target = $this->nextTarget($issue);
+        if ($target === null) {
+            return;
+        }
 
+        $children = $this->issues->forChildren($issue->workspaceId(), $issue->key());
+        if ($children === [] || ! $this->rearmed($issue, $children)) {
+            return;
+        }
+
+        $this->move($issue, $target, 'runner');
+    }
+
+    /**
+     * Re-arms only when a child has activity newer than the parent's last change,
+     * so a parent cannot keep crawling forward without fresh subtask completions.
+     * @param list<Issue> $children
+     */
+    private function rearmed(Issue $issue, array $children): bool
+    {
+        foreach ($children as $child) {
+            if ($issue->updatedAt() < $child->updatedAt()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function nextTarget(Issue $issue): ?Status
@@ -62,11 +79,12 @@ final readonly class AdvanceIssue
         }
 
         $targets = [];
-        foreach ($this->transitions->forWorkflow($issue->workspaceId(), $current->workflowId()) as $transition) {            if ($transition->fromStatusId()->value() !== $issue->statusId()->value()) {
+        foreach ($this->transitions->forWorkflow($issue->workspaceId(), $current->workflowId()) as $transition) {
+            if ($transition->fromStatusId()->value() !== $issue->statusId()->value()) {
                 continue;
             }
 
-            if ($transition->actor() === TransitionActor::Agent || $transition->actor() === TransitionActor::Both) {
+            if ($this->agentCan($transition->actor())) {
                 $targets[$transition->toStatusId()->value()] = $transition->toStatusId();
             }
         }
@@ -75,8 +93,7 @@ final readonly class AdvanceIssue
             return null;
         }
 
-        $statusId = $targets[array_key_first($targets)];
-        $target = $this->statuses->find($issue->workspaceId(), $statusId);
+        $target = $this->statuses->find($issue->workspaceId(), $targets[array_key_first($targets)]);
         if ($target === null) {
             throw NotFoundException::status();
         }
@@ -88,13 +105,14 @@ final readonly class AdvanceIssue
         return $target;
     }
 
+    private function agentCan(TransitionActor $actor): bool
+    {
+        return $actor === TransitionActor::Agent || $actor === TransitionActor::Both;
+    }
+
     private function hasUndoneSubtasks(Issue $issue): bool
     {
         $children = $this->issues->forChildren($issue->workspaceId(), $issue->key());
-        if ($children === []) {
-            return false;
-        }
-
         foreach ($children as $child) {
             if ($child->statusId()->value() === $issue->statusId()->value()) {
                 return true;
@@ -107,5 +125,22 @@ final readonly class AdvanceIssue
         }
 
         return false;
+    }
+
+    private function move(Issue $issue, Status $target, string $actor): void
+    {
+        $at = new DateTimeImmutable();
+        $previous = $issue->statusId();
+        $issue->moveTo($target->id(), $at);
+        $this->issues->update($issue);
+        $this->events->add(new IssueEvent(
+            IssueEventId::generate(),
+            $issue->workspaceId(),
+            $issue->id(),
+            $previous,
+            $target->id(),
+            $actor,
+            $at,
+        ));
     }
 }

@@ -14,6 +14,7 @@ use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusIds;
+use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Kanban\WorkdirState;
 use App\Domain\Runner\AgentExecutor;
@@ -60,7 +61,53 @@ final readonly class ExecuteSweep
                     $this->agentSweep($workspace->id(), $agent, $now);
                 }
             }
+
+            $this->advanceWaitingParents($workspace->id());
         }
+    }
+
+    /** The subtasks-done trigger: parents outside agent statuses move when their latest child activity allows. */
+    private function advanceWaitingParents(WorkspaceId $workspaceId): void
+    {
+        $owned = $this->ownedStatusIds($workspaceId);
+        foreach ($this->issues->forWorkspace($workspaceId) as $issue) {
+            if (in_array($issue->statusId()->value(), $owned, true)) {
+                continue;
+            }
+
+            if ($this->isFinal($issue->workspaceId(), $issue->statusId())) {
+                continue;
+            }
+
+            $this->advance->waiting($issue);
+        }
+    }
+
+    private function isFinal(WorkspaceId $workspaceId, StatusId $statusId): bool
+    {
+        $status = $this->statuses->find($workspaceId, $statusId);
+        if ($status === null) {
+            return false;
+        }
+
+        return $status->type() === StatusType::Final;
+    }
+
+    /** @return list<string> */
+    private function ownedStatusIds(WorkspaceId $workspaceId): array
+    {
+        $ids = [];
+        foreach ($this->agents->forWorkspace($workspaceId) as $agent) {
+            if (! $agent->active()) {
+                continue;
+            }
+
+            foreach ($this->statuses->ownedByRoles($workspaceId, $agent->roleIds()) as $status) {
+                $ids[$status->id()->value()] = $status->id()->value();
+            }
+        }
+
+        return array_values($ids);
     }
 
     private function agentSweep(WorkspaceId $workspaceId, Agent $agent, DateTimeImmutable $now): void
@@ -178,7 +225,7 @@ final readonly class ExecuteSweep
             if (! $published->ok) {
                 $outcome = Outcome::failed('the branch was not published: ' . $published->message);
             } else {
-                $this->advance->execute($agent, $issue);
+                $this->advance->afterRun($agent, $issue);
             }
         }
 

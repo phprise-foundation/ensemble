@@ -108,6 +108,7 @@ final class RunnerSweepTest extends TestCase
     private StatusId $inboxId;
     private StatusId $refinedId;
     private StatusId $doneId;
+    private StatusId $testingId;
     private WorkflowId $workflowId;
     private IssueTypeId $issueTypeId;
     private Issue $issue;
@@ -197,6 +198,19 @@ final class RunnerSweepTest extends TestCase
         );
         $this->statuses->add($done);
         $this->doneId = $done->id();
+        $testing = new Status(
+            StatusId::generate(),
+            $this->workspaceId,
+            $workflow->id(),
+            $issueType->id(),
+            Slug::fromName('Testing'),
+            'Testing',
+            StatusType::Transitional,
+            '#ffab00',
+            new Position(40),
+        );
+        $this->statuses->add($testing);
+        $this->testingId = $testing->id();
 
         $this->issue = new Issue(
             IssueId::generate(),
@@ -295,6 +309,44 @@ final class RunnerSweepTest extends TestCase
         );
     }
 
+    public function testWaitingParentAdvancesWhenTheLastSubtaskIsDone(): void
+    {
+        $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
+        $this->seedTransition($this->refinedId, $this->testingId, TransitionActor::Agent);
+        $this->seedChildIssue('KAN-2', $this->doneId);
+        $this->attachPending();
+        $this->sweep();
+
+        self::assertSame(
+            $this->refinedId->value(),
+            $this->issues->forWorkspace($this->workspaceId)[0]->statusId()->value(),
+        );
+
+        $child = $this->issues->find($this->workspaceId, new IssueKey('KAN-2')) ?? self::fail('child vanished');
+        $child->touch(new DateTimeImmutable('+1 second'));
+        $this->issues->update($child);
+        $this->sweep();
+
+        self::assertSame(
+            $this->testingId->value(),
+            $this->issues->forWorkspace($this->workspaceId)[0]->statusId()->value(),
+        );
+    }
+
+    public function testWaitingParentDoesNotCrawlForwardWithoutNewChildActivity(): void
+    {
+        $this->seedTransition($this->refinedId, $this->testingId, TransitionActor::Agent);
+        $this->seedTransition($this->testingId, $this->doneId, TransitionActor::Agent);
+        $this->seedChildIssue('KAN-2', $this->doneId);
+        $this->sweepWithParentRefined();
+        $this->sweep();
+
+        self::assertSame(
+            $this->testingId->value(),
+            $this->issues->forWorkspace($this->workspaceId)[0]->statusId()->value(),
+        );
+    }
+
     public function testFailsAtTheReclaimCeiling(): void
     {
         $run = new Run(
@@ -379,14 +431,14 @@ final class RunnerSweepTest extends TestCase
         );
     }
 
-    private function seedChildIssue(string $key): Issue
+    private function seedChildIssue(string $key, ?StatusId $statusId = null): Issue
     {
         $child = new Issue(
             IssueId::generate(),
             new IssueKey($key),
             $this->workspaceId,
             $this->issueTypeId,
-            $this->inboxId,
+            $statusId ?? $this->inboxId,
             'Subtask of the runner',
             'A child issue blocking the parent.',
             'admin',
@@ -399,6 +451,16 @@ final class RunnerSweepTest extends TestCase
         $this->issues->add($child);
 
         return $child;
+    }
+
+    /** Places the unbound parent directly in Refined, as a finished run would. */
+    private function sweepWithParentRefined(): void
+    {
+        $parent = $this->issues->find($this->workspaceId, $this->issue->key())
+            ?? self::fail('the issue vanished');
+        $parent->moveTo($this->refinedId, new DateTimeImmutable('-1 minute'));
+        $this->issues->update($parent);
+        $this->sweep();
     }
 
     private function bindWorkdir(): void
