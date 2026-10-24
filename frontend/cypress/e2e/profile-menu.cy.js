@@ -141,9 +141,11 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
 
     cy.get('#app-sidebar').should('not.exist')
     cy.get('.topbar').should('not.exist')
-    cy.contains('Session ended').should('be.visible')
+    cy.contains('Sign in to your workspace').should('be.visible')
 
-    cy.contains('Sign in again').click()
+    cy.get('input[aria-label="Login"]').type('admin')
+    cy.get('input[aria-label="Password"]').type('admin1234')
+    cy.contains('button', 'Sign in').click()
     cy.get('.topbar .profile-trigger').should('be.visible')
     cy.get('#app-sidebar').should('exist')
   })
