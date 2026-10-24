@@ -1,7 +1,33 @@
 import { reactive } from 'vue'
-import { api } from '../api/index.js'
+import { api, request } from '../api/index.js'
+import { token, setToken } from '../api/client.js'
 
-const state = reactive({ login: '', displayName: '', avatar: '', avatarColor: '', signedIn: true })
+const realBackend = Boolean(import.meta.env?.VITE_API_URL)
+
+const state = reactive({
+  login: '',
+  displayName: '',
+  avatar: '',
+  avatarColor: '',
+  signedIn: true,
+  isAdmin: false,
+  workspaceId: null,
+  workspaces: [],
+})
+
+function applyUser(user) {
+  state.login = user.login
+  state.displayName = user.displayName
+  state.avatar = user.avatar ?? ''
+  state.avatarColor = user.avatarColor ?? ''
+  state.isAdmin = Boolean(user.isAdmin)
+}
+
+async function applyWorkspaces() {
+  const payload = await api.workspaces()
+  state.workspaces = payload.workspaces
+  state.workspaceId = state.workspaces[0]?.id ?? null
+}
 
 export const session = {
   get login() {
@@ -19,11 +45,23 @@ export const session = {
   get avatar() {
     return state.avatar
   },
+  set avatar(value) {
+    state.avatar = value
+  },
   get avatarColor() {
     return state.avatarColor || '#333333'
   },
   get signedIn() {
     return state.signedIn
+  },
+  get isAdmin() {
+    return state.isAdmin
+  },
+  get workspaceId() {
+    return state.workspaceId
+  },
+  get workspaces() {
+    return state.workspaces
   },
   get label() {
     return state.displayName || state.login
@@ -32,11 +70,32 @@ export const session = {
     return (state.displayName || state.login || '?').charAt(0).toUpperCase()
   },
   async load() {
+    if (realBackend && token()) {
+      return this.restore()
+    }
     const user = await api.fetchUser()
-    state.login = user.login
-    state.displayName = user.displayName
-    state.avatar = user.avatar ?? ''
-    state.avatarColor = user.avatarColor ?? ''
+    applyUser(user)
+  },
+  async restore() {
+    const me = await request('GET', '/api/me')
+    applyUser(me.user)
+    await applyWorkspaces()
+    state.signedIn = true
+  },
+  async signIn(login, password) {
+    if (!realBackend && !token()) {
+      state.signedIn = true
+      return state
+    }
+    if (!login || !password) {
+      throw new Error('Login and password are required')
+    }
+    const payload = await request('POST', '/api/auth/login', { login, password })
+    setToken(payload.token)
+    applyUser(payload.user)
+    await applyWorkspaces()
+    state.signedIn = true
+    return payload.user
   },
   async updateProfile({ displayName, avatar }) {
     const changes = { displayName }
@@ -44,16 +103,11 @@ export const session = {
       changes.avatar = avatar
     }
     const user = await api.updateUser(changes)
-    state.login = user.login
-    state.displayName = user.displayName
-    state.avatar = user.avatar ?? ''
-    state.avatarColor = user.avatarColor ?? ''
+    applyUser(user)
     return user
   },
-  signOut() {
+  async signOut() {
+    setToken(null)
     state.signedIn = false
-  },
-  signIn() {
-    state.signedIn = true
   },
 }

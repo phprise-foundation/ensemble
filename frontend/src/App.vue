@@ -28,6 +28,21 @@ const consoleHeightStyle = computed(() => ({ '--console-height': `${consoleHeigh
 let sidebarQuery = null
 let narrowQuery = null
 
+const signInLogin = ref('')
+const signInPassword = ref('')
+const signInError = ref('')
+
+async function submitSignIn() {
+  signInError.value = ''
+  try {
+    await session.signIn(signInLogin.value.trim(), signInPassword.value)
+    signInPassword.value = ''
+    await boardStore.load()
+  } catch (error) {
+    signInError.value = error.message || 'Sign in failed'
+  }
+}
+
 function adjustConsoleHeight(delta) {
   consoleHeight.value = clampHeight(consoleHeight.value + delta)
 }
@@ -225,10 +240,13 @@ function toggleSimulation() {
     <ToastHost />
   </div>
   <div class="session-ended" v-else>
-    <div class="session-ended-box">
+    <form class="session-ended-box" @submit.prevent="submitSignIn">
       <h1 class="session-ended-title">Multi-Agent</h1>
-      <p class="session-ended-message">Session ended</p>
-      <button class="button ghost" @click="session.signIn()">Sign in again</button>
-    </div>
+      <p class="session-ended-message">Sign in to your workspace</p>
+      <input v-model="signInLogin" class="input session-ended-field" name="login" placeholder="Login" autocomplete="username" />
+      <input v-model="signInPassword" class="input session-ended-field" name="password" type="password" placeholder="Password" autocomplete="current-password" />
+      <p class="session-ended-error" v-if="signInError">{{ signInError }}</p>
+      <button class="button" type="submit">Sign in</button>
+    </form>
   </div>
 </template>

@@ -222,6 +222,21 @@ separate branch.
   change. **Still deferred:** configurable triggers on transitions (`spawn`,
   `voting`) and the open-warden execution path.
 
+- **P4-1 — frontend talks to the real backend (branch `feat/p4-1-frontend-cutover`):**
+  `GET /workspaces/{id}/snapshot` answers one read with the workspace,
+  workflows, issue types, statuses, transitions, boards, columns, issues (with
+  repository bindings) and the team configuration a member needs to boot the
+  board. On the frontend: real sign-in screen (`POST /api/auth/login`), bearer
+  token in localStorage with 401 auto-logout, `/api/me` restore, workspace list
+  and first-workspace selection; the board store boots from the snapshot and
+  moves the essential writes (move, comment, update, create) to key-based,
+  workspace-scoped paths while VITE-less dev keeps the fake backend untouched
+  (`VITE_API_PROXY=http://127.0.0.1:8081` enables real mode through the Vite
+  proxy; see `frontend/.env.example`). Verified end to end: login → token →
+  snapshot over the proxy. **Still P4:** board/column creation surfaces against
+  real resources beyond issues, CRUD pages flipped feature-by-feature, real
+  E2E, build served by PHP (P4-2+).
+
 - **Issue hierarchy levels are the child chain (branch
   `feat/p3d-children-chain`):** issue types carry a user-declared `level`;
   `CreateIssue` now enforces that a child's type sits **exactly one level
