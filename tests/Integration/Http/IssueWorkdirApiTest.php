@@ -47,8 +47,12 @@ final class IssueWorkdirApiTest extends TestCase
 
     public function testChildInheritsTheParentWorkdir(): void
     {
+        $workflowId = $this->createWorkflow('Chain', 'chain');
+        $childType = $this->createIssueType($workflowId, 'Child', 'child', 2);
+        $this->createStatus($workflowId, 'Refining', 'initial', $childType);
+
         $parent = $this->createIssue();
-        $child = $this->createIssue(parentKey: $parent['key']);
+        $child = $this->createIssue(parentKey: $parent['key'], issueTypeId: $childType);
         self::assertSame($parent['key'], $child['parentKey']);
         self::assertNull($child['repositoryId']);
 
@@ -142,24 +146,24 @@ final class IssueWorkdirApiTest extends TestCase
         return $data['workflow']['id'];
     }
 
-    private function createIssueType(string $workflowId, string $name, string $key): string
+    private function createIssueType(string $workflowId, string $name, string $key, int $level = 1): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
             '/api/workspaces/' . $this->workspaceId . '/workflows/' . $workflowId . '/issue-types',
-            ['name' => $name, 'key' => $key],
+            ['name' => $name, 'key' => $key, 'level' => $level],
             $this->adminToken,
         )), 201);
 
         return $data['issueType']['id'];
     }
 
-    private function createStatus(string $workflowId, string $name, string $type): string
+    private function createStatus(string $workflowId, string $name, string $type, ?string $issueTypeId = null): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
             '/api/workspaces/' . $this->workspaceId . '/workflows/' . $workflowId . '/statuses',
-            ['issueTypeId' => $this->issueTypeId, 'name' => $name, 'type' => $type],
+            ['issueTypeId' => $issueTypeId ?? $this->issueTypeId, 'name' => $name, 'type' => $type],
             $this->adminToken,
         )), 201);
 
@@ -187,10 +191,14 @@ final class IssueWorkdirApiTest extends TestCase
      * @param array<string, mixed> $extra
      * @return array<string, mixed>
      */
-    private function createIssue(?string $parentKey = null, ?string $repositoryId = null): array
+    private function createIssue(
+        ?string $parentKey = null,
+        ?string $repositoryId = null,
+        ?string $issueTypeId = null,
+    ): array
     {
         $body = array_filter([
-            'issueTypeId' => $this->issueTypeId,
+            'issueTypeId' => $issueTypeId ?? $this->issueTypeId,
             'summary' => 'Framed work',
             'description' => 'The work to be done.',
             'parentKey' => $parentKey,

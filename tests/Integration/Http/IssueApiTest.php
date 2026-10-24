@@ -228,12 +228,51 @@ final class IssueApiTest extends TestCase
         return $data['workflow']['id'];
     }
 
-    private function createIssueType(string $name, string $key): string
+    public function testIssueLevelsChainDownAndStopAtTheDeepest(): void
+    {
+        $l2TypeId = $this->createIssueType('Sub-issue', 'sub-issue', 2);
+        $this->createStatus($l2TypeId, 'Refining', 'initial');
+        $l3TypeId = $this->createIssueType('Detail', 'detail', 3);
+        $this->createStatus($l3TypeId, 'Refining', 'initial');
+
+        $l1 = $this->createIssue(['summary' => 'Level 1']);
+        $l2 = $this->createIssue(['summary' => 'Level 2', 'issueTypeId' => $l2TypeId, 'parentKey' => $l1]);
+        $l3 = $this->createIssue(['summary' => 'Level 3', 'issueTypeId' => $l3TypeId, 'parentKey' => $l2]);
+        self::assertSame('ALP-1', $l1);
+        self::assertSame('ALP-2', $l2);
+        self::assertSame('ALP-3', $l3);
+
+        $sameLevel = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues',
+            ['issueTypeId' => $l2TypeId, 'summary' => 'Wrong depth', 'parentKey' => $l2, 'fields' => []],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $sameLevel->getStatusCode());
+
+        $frontier = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues',
+            ['issueTypeId' => $l3TypeId, 'summary' => 'Too deep', 'parentKey' => $l3, 'fields' => []],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $frontier->getStatusCode());
+
+        $skipped = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues',
+            ['issueTypeId' => $l3TypeId, 'summary' => 'Skipping levels', 'parentKey' => $l1, 'fields' => []],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $skipped->getStatusCode());
+    }
+
+    private function createIssueType(string $name, string $key, int $level = 1): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
             '/api/workspaces/' . $this->workspaceId . '/workflows/' . $this->workflowId . '/issue-types',
-            ['name' => $name, 'key' => $key],
+            ['name' => $name, 'key' => $key, 'level' => $level],
             $this->adminToken,
         )), 201);
 

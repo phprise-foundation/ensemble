@@ -63,6 +63,9 @@ final readonly class CreateIssue
     ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
         $this->issueTypes->find($workspaceId, $issueTypeId) ?? throw NotFoundException::issueType();
+        if ($parentKey !== null) {
+            $this->guardParentDepth($workspaceId, $parentKey, $issueTypeId);
+        }
         $status = $statusId === null
             ? $this->initialStatus($workspaceId, $issueTypeId)
             : $this->status($workspaceId, $issueTypeId, $statusId);
@@ -100,6 +103,20 @@ final readonly class CreateIssue
         ));
 
         return $issue;
+    }
+
+    /** The chain grows one level down at a time; the frontier is the deepest configured issue type. */
+    private function guardParentDepth(WorkspaceId $workspaceId, IssueKey $parentKey, IssueTypeId $childTypeId): void
+    {
+        $parent = $this->issues->find($workspaceId, $parentKey) ?? throw NotFoundException::issue();
+        $parentType = $this->issueTypes->find($workspaceId, $parent->issueTypeId()) ?? throw NotFoundException::issueType();
+        $childType = $this->issueTypes->find($workspaceId, $childTypeId) ?? throw NotFoundException::issueType();
+        if ($childType->level()->value() !== $parentType->level()->value() + 1) {
+            throw new ValidationException(
+                'issueTypeId',
+                'The child issue type must sit exactly one level deeper than its parent.',
+            );
+        }
     }
 
     private function resolveWorkdir(
