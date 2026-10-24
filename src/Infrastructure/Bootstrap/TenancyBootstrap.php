@@ -165,6 +165,8 @@ use App\Interface\Http\Kanban\IssueTypeController;
 use App\Interface\Http\Kanban\IssueTypePresenter;
 use App\Interface\Http\Kanban\StatusController;
 use App\Interface\Http\Kanban\RunController;
+use App\Interface\Http\Kanban\SnapshotController;
+use App\Application\Kanban\ReadSnapshot;
 use App\Interface\Http\Kanban\RunPresenter;
 use App\Interface\Http\Kanban\StatusPresenter;
 use App\Interface\Http\Kanban\TransitionController;
@@ -440,6 +442,31 @@ final readonly class TenancyBootstrap
                     $guard,
                 ),
                 $workdirPresenter,
+            ),
+            new SnapshotController(
+                $currentUser,
+                new ReadSnapshot(
+                    $workspaces,
+                    $workflows,
+                    $issueTypes,
+                    $statuses,
+                    $transitions,
+                    $boards,
+                    $boardColumns,
+                    $issueRepository,
+                    $workdirs,
+                    $teams,
+                    $roles,
+                    $agents,
+                    $profiles,
+                    $guard,
+                ),
+                new AgentPresenter(),
+                new ProfilePresenter(),
+                new RolePresenter(),
+                new TeamPresenter(),
+                new WorkspacePresenter(),
+                $this->responder,
             ),
             new SecretController(
                 $currentUser,
