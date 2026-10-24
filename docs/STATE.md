@@ -210,17 +210,26 @@ separate branch.
   (the "Testing only after all subtasks Done" rule without configurable
   triggers yet).
 
-- **P3d-1 — subtasks-done trigger driving waiting parents (branch
-  `feat/p3d-subtasks-done-trigger`):** every sweep now ends with a waiting
+- **P3d-1 — children-done trigger driving waiting parents (branch
+  `feat/p3d-children-chain`):** every sweep now ends with a waiting
   pass: issues outside the agent-owned statuses (and not in a final status)
   advance through their single agent-actor transition when they still have
-  subtasks and at least one child has activity newer than the parent's last
+  child issues (following `parentKey`, regardless of issue type/level) and at
+  least one child has activity newer than the parent's last
   change (`rearmed`); the event is recorded with `runner` as the actor. The
   re-arm guard is what prevents a parent from crawling forward repeatedly — a
-  parent only fires again when a subtask is (re)completed after its own last
+  parent only fires again when a child is (re)completed after its own last
   change. **Still deferred:** configurable triggers on transitions (`spawn`,
-  `voting`, `subtasks-done` as transition flags) and the open-warden
-  execution path.
+  `voting`) and the open-warden execution path.
+
+- **Issue hierarchy levels are the child chain (branch
+  `feat/p3d-children-chain`):** issue types carry a user-declared `level`;
+  `CreateIssue` now enforces that a child's type sits **exactly one level
+  deeper** than its parent's type, and that the parent exists. Nothing about
+  `subtask`/`RFC`/`voting` is fixed in code — statuses (including which ones
+  are `final`), issue types, levels, transitions and their actors are all
+  owner-defined. Level 3 having no children is a consequence of not declaring
+  a level-4 issue type, not a hard rule.
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
   `feat/p0-tenancy-api`):** users and workspaces are N:N through
