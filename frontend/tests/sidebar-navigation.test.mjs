@@ -29,7 +29,7 @@ test('workspace nulo deixa modelo e rail vazios', () => {
 
 test('rail expoe as folhas de boards, workflows, teams e Experiences', () => {
   const sections = railSections(sidebarNavigation(store, 'ws'))
-  assert.deepEqual(sections.map((leaves) => leaves.length), [1, 3, 3, 3, 3, 1])
+  assert.deepEqual(sections.map((leaves) => leaves.length), [2, 3, 3, 3, 3, 1])
 })
 
 test('cada workflow e team expoe suas tres paginas', () => {
