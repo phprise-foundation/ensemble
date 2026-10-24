@@ -7,5 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     exclude: [...configDefaults.exclude, '**/*.test.mjs'],
+    // Unit tests exercise the fake-backend prototype paths: a developer
+    // .env.local pointing at the real PHP API must not flip them.
+    env: { VITE_API_URL: '' },
   },
 })

@@ -1,11 +1,10 @@
 import { computed, reactive } from 'vue'
 import { api } from '../api/index.js'
-import { token, request } from '../api/client.js'
+import { isRealBackend, token, request } from '../api/client.js'
 import { isSimulated } from '../api/simulation.js'
 import { session } from './session.js'
 
-const REAL = Boolean(import.meta.env?.VITE_API_URL)
-const realMode = () => REAL && Boolean(token()) && Boolean(session.workspaceId)
+const realMode = () => isRealBackend() && Boolean(token()) && Boolean(session.workspaceId)
 const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
 const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
 const presented = (payload) => payload?.issue ?? payload ?? null

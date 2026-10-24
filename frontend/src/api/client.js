@@ -1,4 +1,8 @@
-const base = import.meta.env?.VITE_API_URL || ''
+const SAME_ORIGIN = ''
+
+export function isRealBackend() {
+  return Boolean(import.meta.env?.VITE_API_URL)
+}
 
 export function token() {
   if (typeof localStorage === 'undefined') {
@@ -24,7 +28,7 @@ export async function request(method, path, body) {
   if (bearer) {
     headers.Authorization = `Bearer ${bearer}`
   }
-  const response = await fetch(base + path, {
+  const response = await fetch(SAME_ORIGIN + path, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
