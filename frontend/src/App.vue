@@ -95,8 +95,6 @@ function updateViewportFlags() {
 }
 
 onMounted(() => {
-  boardStore.load()
-  session.load()
   window.addEventListener('keydown', handleKeyboardShortcut)
   sidebarQuery = mediaQueryFor('--breakpoint-sidebar')
   narrowQuery = mediaQueryFor('--breakpoint-mobile', -1)
@@ -106,8 +104,11 @@ onMounted(() => {
   if (narrowQuery) {
     narrowQuery.addEventListener('change', updateViewportFlags)
   }
-    updateViewportFlags()
-    window.addEventListener('resize', updateViewportFlags)
+  updateViewportFlags()
+  window.addEventListener('resize', updateViewportFlags)
+  session.load().then(() => {
+    boardStore.load()
+  })
 })
 
 onUnmounted(() => {
