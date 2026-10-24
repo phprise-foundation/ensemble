@@ -33,7 +33,7 @@ const noChosenBoard = null
 describe('sidebarNavigation', () => {
   it('deriva folhas de boards, workflows, teams e Experiences sem Sources', () => {
     const navigation = sidebarNavigation(store, 'ws')
-    expect(navigation.boards.map((entry) => entry.leaves.map((leaf) => leaf.title))).toEqual([['Kanban'], ['Board 2']])
+    expect(navigation.boards.map((entry) => entry.leaves.map((leaf) => leaf.title))).toEqual([['Kanban', 'Columns'], ['Board 2', 'Columns']])
     expect(navigation.workflows.map((entry) => entry.leaves.map((leaf) => leaf.label))).toEqual([
       ['Statuses', 'Transitions', 'Issue types'],
       ['Statuses', 'Transitions', 'Issue types'],
@@ -63,8 +63,8 @@ describe('railSections', () => {
   it('preserva a ordem da arvore com nomes unicos no rail', () => {
     const sections = railSections(sidebarNavigation(store, 'ws'))
     expect(sections.map((leaves) => leaves.map((leaf) => leaf.railTitle))).toEqual([
-      ['Kanban'],
-      ['Board 2'],
+      ['Kanban', 'Kanban · Columns'],
+      ['Board 2', 'Board 2 · Columns'],
       ['Standard · Statuses', 'Standard · Transitions', 'Standard · Issue types'],
       ['Flow B · Statuses', 'Flow B · Transitions', 'Flow B · Issue types'],
       ['Default team · Agents', 'Default team · Roles', 'Default team · Profiles'],

@@ -10,6 +10,95 @@ const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
 const presented = (payload) => payload?.issue ?? payload ?? null
 const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
 
+const REAL_ROUTES = {
+  workflows: { key: 'workflow', path: () => 'workflows' },
+  boards: { key: 'board', path: () => 'boards' },
+  teams: { key: 'team', path: () => 'teams' },
+  sources: { key: 'repository', path: () => 'repositories' },
+  statuses: { key: 'status', path: (data) => `workflows/${data.workflowId}/statuses` },
+  transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions` },
+  issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types` },
+  columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns` },
+  roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles` },
+  profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles` },
+  agents: { key: 'agent', path: (data) => `teams/${data.teamId}/agents` },
+}
+
+const LEGACY_TO_REAL_KEYS = {
+  transitions: { from: 'fromStatusId', to: 'toStatusId', type: 'actor' },
+}
+
+const REAL_BODY_DROPS = {
+  workflows: ['id', 'templateId', 'workspaceId'],
+  boards: ['id', 'workspaceId', 'filters', 'columns'],
+  teams: ['id', 'workspaceId'],
+  sources: ['id', 'workspaceId', 'path'],
+  statuses: ['id', 'workflowId'],
+  transitions: ['id', 'workflowId'],
+  issueTypes: ['id', 'workflowId'],
+  columns: ['id', 'boardId'],
+  roles: ['id', 'teamId'],
+  profiles: ['id', 'teamId'],
+  agents: ['id', 'teamId'],
+}
+
+function normalizeEntity(collection, entity) {
+  const map = LEGACY_TO_REAL_KEYS[collection]
+  if (!map) {
+    return entity
+  }
+  const merged = { ...entity }
+  for (const [legacy, real] of Object.entries(map)) {
+    if (entity[real] !== undefined) {
+      merged[legacy] = entity[real]
+    }
+  }
+  return merged
+}
+
+function entityById(collection, id) {
+  return (state[collection] ?? []).find((item) => item.id === id) ?? null
+}
+
+function realPayload(collection, data) {
+  const drops = REAL_BODY_DROPS[collection] ?? ['id', 'workspaceId']
+  const map = LEGACY_TO_REAL_KEYS[collection]
+  const payload = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (drops.includes(key) || key === '__existing' || value === undefined) {
+      continue
+    }
+    payload[map?.[key] ?? key] = value
+  }
+  return payload
+}
+
+async function realSave(collection, data) {
+  const spec = REAL_ROUTES[collection]
+  if (!spec) {
+    throw new Error(`${collection} is not available on the real backend yet`)
+  }
+  const exists = Boolean(data.__existing)
+  const payload = realPayload(collection, data)
+  const path = spec.path(exists ? entityById(collection, data.id) ?? data : data)
+  const wrapper = exists
+    ? await request('PATCH', scoped(`/${path}/${data.id}`), payload)
+    : await request('POST', scoped(`/${path}`), payload)
+  return normalizeEntity(collection, wrapper?.[spec.key] ?? wrapper)
+}
+
+async function realRemove(collection, id) {
+  const spec = REAL_ROUTES[collection]
+  if (!spec) {
+    throw new Error(`${collection} is not available on the real backend yet`)
+  }
+  const entity = entityById(collection, id)
+  if (!entity) {
+    return
+  }
+  await request('DELETE', scoped(`/${spec.path(entity)}/${id}`))
+}
+
 async function moveReal(issueId, statusId) {
   const issue = issueOf(issueId)
   if (!issue) {
@@ -53,6 +142,7 @@ const state = reactive({
   experiences: [],
   sources: [],
   issues: [],
+  columns: [],
   boardId: null,
   selectedIssueId: null,
 })
@@ -147,7 +237,13 @@ export const boardStore = {
     state.error = ''
     try {
       if (realMode()) {
-        Object.assign(state, await api.snapshot(session.workspaceId))
+        const snapshot = await api.snapshot(session.workspaceId)
+        for (const [key, list] of Object.entries(snapshot)) {
+          if (Array.isArray(list)) {
+            snapshot[key] = list.map((item) => normalizeEntity(key, item))
+          }
+        }
+        Object.assign(state, snapshot)
       } else {
         const workspace = await api.fetchWorkspace()
         Object.assign(state, workspace)
@@ -219,6 +315,11 @@ export const boardStore = {
   },
 
   async saveEntity(collection, data) {
+    if (realMode()) {
+      const saved = await realSave(collection, data)
+      await boardStore.load()
+      return saved
+    }
     const exists = Boolean(data.__existing)
     delete data.__existing
     const saved = exists
@@ -235,6 +336,11 @@ export const boardStore = {
   },
 
   async removeEntity(collection, id) {
+    if (realMode()) {
+      await realRemove(collection, id)
+      await boardStore.load()
+      return
+    }
     await api.deleteEntity(collection, id)
     state[collection] = state[collection].filter((item) => item.id !== id)
   },

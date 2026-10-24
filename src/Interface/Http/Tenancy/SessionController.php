@@ -7,6 +7,7 @@ namespace App\Interface\Http\Tenancy;
 use App\Application\Security\AuthenticateUser;
 use App\Application\Security\ReadCurrentUser;
 use App\Application\Tenancy\ListWorkspaces;
+use App\Application\Tenancy\UpdateUser;
 use App\Domain\Contract\Tenancy\SessionRepository;
 use App\Domain\Security\PlainPassword;
 use App\Domain\Security\SessionTokenHash;
@@ -21,6 +22,7 @@ final readonly class SessionController
     public function __construct(
         private AuthenticateUser $authenticate,
         private ReadCurrentUser $currentUser,
+        private UpdateUser $updateProfile,
         private SessionRepository $sessions,
         private ListWorkspaces $workspaces,
         private UserPresenter $users,
@@ -61,5 +63,19 @@ final readonly class SessionController
             'user' => $this->users->present($user),
             'workspaces' => $this->workspacePresenter->presentMany($this->workspaces->execute($user)),
         ]);
+    }
+
+    public function patch(ServerRequestInterface $request): ResponseInterface
+    {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $updated = $this->updateProfile->execute(
+            $user,
+            array_key_exists('displayName', $body) ? JsonBody::string($body, 'displayName') : null,
+            array_key_exists('avatar', $body) ? (JsonBody::string($body, 'avatar') ?? '') : null,
+            array_key_exists('avatarColor', $body) ? JsonBody::string($body, 'avatarColor') : null,
+        );
+
+        return $this->responder->respond(['user' => $this->users->present($updated)]);
     }
 }

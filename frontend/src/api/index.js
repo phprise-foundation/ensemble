@@ -2,7 +2,7 @@ import { request } from './client.js'
 
 export { FEATURES, simulation, isSimulated, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
 
-export { request, token, setToken } from './client.js'
+export { request, token, setToken, isRealBackend } from './client.js'
 
 export const api = {
   login: (credentials) => request('POST', '/api/auth/login', credentials),

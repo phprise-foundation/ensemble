@@ -2,9 +2,15 @@
 import { useRoute } from 'vue-router'
 import CrudPage from '../components/CrudPage.vue'
 import { boardStore } from '../store/board.js'
+import { isRealBackend } from '../api/index.js'
 
 const route = useRoute()
 const statusName = (id) => (id === '*' ? 'Any status' : boardStore.status(id)?.name || id)
+
+const fromOptions = () => [
+  ...(isRealBackend() ? [] : [{ value: '*', label: 'Any status' }]),
+  ...boardStore.statusesOf(route.params.workflowId).map((status) => ({ value: status.id, label: status.name })),
+]
 
 const schema = {
   collection: 'transitions',
@@ -24,10 +30,7 @@ const schema = {
       label: 'From',
       type: 'select',
       required: true,
-      options: () => [
-        { value: '*', label: 'Any status' },
-        ...boardStore.statusesOf(route.params.workflowId).map((status) => ({ value: status.id, label: status.name })),
-      ],
+      options: fromOptions,
     },
     {
       key: 'to',

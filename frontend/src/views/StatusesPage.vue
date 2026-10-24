@@ -25,6 +25,13 @@ const schema = {
   fields: [
     { key: 'name', label: 'Name', type: 'text', required: true },
     {
+      key: 'issueTypeId',
+      label: 'Issue type',
+      type: 'select',
+      required: true,
+      options: () => boardStore.issueTypesOf(route.params.workflowId).map((type) => ({ value: type.id, label: type.name })),
+    },
+    {
       key: 'type',
       label: 'Type',
       type: 'select',
