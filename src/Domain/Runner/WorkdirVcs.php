@@ -12,4 +12,7 @@ interface WorkdirVcs
     public function prepare(Workdir $workdir, string $path): Outcome;
 
     public function publish(Workdir $workdir, string $path): Outcome;
+
+    /** Reconciles a conflicting workdir with the base branch and the agent branch. */
+    public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome;
 }

@@ -63,6 +63,11 @@ final class NotFoundException extends RuntimeException
         return new self('issue not found');
     }
 
+    public static function workdir(): self
+    {
+        return new self('workdir not found');
+    }
+
     public static function team(): self
     {
         return new self('team not found');

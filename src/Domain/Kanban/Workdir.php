@@ -113,8 +113,8 @@ final class Workdir
             throw new ValidationException('workdir', 'Only a repository workdir can become bound.');
         }
 
-        if ($this->state !== WorkdirState::Pending) {
-            throw new ValidationException('workdir', 'Only a pending workdir can become bound.');
+        if ($this->state !== WorkdirState::Pending && $this->state !== WorkdirState::Conflict) {
+            throw new ValidationException('workdir', 'Only a pending or conflicting workdir can become bound.');
         }
 
         $this->state = WorkdirState::Bound;

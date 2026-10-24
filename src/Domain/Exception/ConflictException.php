@@ -53,6 +53,11 @@ final class ConflictException extends RuntimeException
         return new self('workdir is already bound to another repository');
     }
 
+    public static function mergeFailed(string $reason): self
+    {
+        return new self('workdir resolution failed: ' . $reason);
+    }
+
     public static function transitionNotAllowed(): self
     {
         return new self('transition not allowed for the current status');

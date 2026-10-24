@@ -95,6 +95,25 @@ final readonly class DoctrineIssueRepository implements IssueRepository
     }
 
     #[Override]
+    public function forChildren(WorkspaceId $workspaceId, IssueKey $parentKey): array
+    {
+        /** @var list<IssueRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('i')
+            ->from(IssueRecord::class, 'i')
+            ->where('i.workspaceId = :workspaceId')
+            ->andWhere('i.parentKey = :parentKey')
+            ->setParameter('workspaceId', $workspaceId->value())
+            ->setParameter('parentKey', $parentKey->value())
+            ->orderBy('i.key', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(fn(IssueRecord $record): Issue => $this->mapper->toDomain($record), $records);
+    }
+
+    #[Override]
     public function forStatuses(WorkspaceId $workspaceId, StatusIds $statusIds): array
     {
         $ids = array_map(fn(StatusId $id): string => $id->value(), $statusIds->all());

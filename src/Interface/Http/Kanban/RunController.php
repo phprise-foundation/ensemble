@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Interface\Http\Kanban;
 
+use App\Application\Runner\ResolveWorkdirConflict;
 use App\Application\Kanban\ReadIssue;
 use App\Application\Security\ReadCurrentUser;
 use App\Domain\Contract\Runner\RunRepository;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\BearerToken;
+use App\Interface\Http\Tenancy\JsonBody;
 use App\Interface\Http\JsonResponder;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -22,7 +24,22 @@ final readonly class RunController
         private RunRepository $runs,
         private RunPresenter $presenter,
         private JsonResponder $responder,
+        private ResolveWorkdirConflict $resolveConflict,
+        private WorkdirPresenter $bindings,
     ) {
+    }
+
+    public function resolve(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $strategy = JsonBody::string($body, 'strategy') ?? '';
+        $workdir = $this->resolveConflict->execute($user, $workspaceId, $key, $strategy);
+
+        return $this->responder->respond(['binding' => $this->bindings->present($workdir)]);
     }
 
     public function list(

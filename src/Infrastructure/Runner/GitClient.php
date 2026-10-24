@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Runner;
 
 use App\Domain\Runner\Outcome;
+use App\Domain\Runner\ResolutionStrategy;
 
 final class GitClient
 {
@@ -54,20 +55,97 @@ final class GitClient
     /** Commits whatever the workdir changed and pushes the branch. */
     public function commitAndPush(string $path, string $branch, ?string $token = null): Outcome
     {
+        $committed = $this->commitAll($path, 'run: apply agent work on ' . $branch);
+        if ($committed !== null) {
+            return $committed;
+        }
+
+        return $this->push($path, $branch, false, $token);
+    }
+
+    /** Reconciles a conflicting workdir, leaving the workdir ready to run again. */
+    public function reconcile(
+        string $path,
+        string $branch,
+        string $base,
+        ResolutionStrategy $strategy,
+        ?string $token,
+    ): Outcome {
+        $fetch = $this->git($path, $this->auth(['fetch', 'origin'], $token));
+        if ($fetch['exit'] !== 0) {
+            return Outcome::failed('git fetch failed: ' . $this->trailing($fetch['output']));
+        }
+
+        return match ($strategy) {
+            ResolutionStrategy::RemoteWins => $this->remoteWins($path, $branch, $base, $token),
+            ResolutionStrategy::LocalWins => $this->localWins($path, $branch, $token),
+            ResolutionStrategy::Merge => $this->mergeAndPush($path, $branch, $base, $token),
+        };
+    }
+
+    private function remoteWins(string $path, string $branch, string $base, ?string $token): Outcome
+    {
+        $reset = $this->git($path, $this->auth(['checkout', '-B', $branch, 'origin/' . $base], $token));
+        if ($reset['exit'] !== 0) {
+            return Outcome::failed('git checkout failed: ' . $this->trailing($reset['output']));
+        }
+
+        return $this->push($path, $branch, true, $token);
+    }
+
+    private function localWins(string $path, string $branch, ?string $token): Outcome
+    {
+        $committed = $this->commitAll($path, 'run: keep the local work on ' . $branch);
+        if ($committed !== null) {
+            return $committed;
+        }
+
+        return $this->push($path, $branch, true, $token);
+    }
+
+    private function mergeAndPush(string $path, string $branch, string $base, ?string $token): Outcome
+    {
+        $committed = $this->commitAll($path, 'run: keep the local work on ' . $branch);
+        if ($committed !== null) {
+            return $committed;
+        }
+
+        $merge = $this->git($path, $this->auth(['merge', 'origin/' . $base], $token));
+        if ($merge['exit'] !== 0) {
+            return Outcome::failed('git merge failed: ' . $this->trailing($merge['output']));
+        }
+
+        return $this->push($path, $branch, false, $token);
+    }
+
+    private function commitAll(string $path, string $message): ?Outcome
+    {
         $add = $this->git($path, ['add', '-A']);
         if ($add['exit'] !== 0) {
             return Outcome::failed('git add failed: ' . $this->trailing($add['output']));
         }
 
         $status = $this->git($path, ['status', '--porcelain']);
-        if ($status['output'] !== '') {
-            $commit = $this->git($path, ['commit', '-m', 'run: apply agent work on ' . $branch]);
-            if ($commit['exit'] !== 0) {
-                return Outcome::failed('git commit failed: ' . $this->trailing($commit['output']));
-            }
+        if ($status['output'] === '') {
+            return null;
         }
 
-        $push = $this->git($path, $this->auth(['push', '-u', 'origin', $branch], $token));
+        $commit = $this->git($path, ['commit', '-q', '-m', $message]);
+        if ($commit['exit'] !== 0) {
+            return Outcome::failed('git commit failed: ' . $this->trailing($commit['output']));
+        }
+
+        return null;
+    }
+
+    private function push(string $path, string $branch, bool $force, ?string $token): Outcome
+    {
+        $arguments = ['push', '-u', 'origin', $branch];
+        if ($force) {
+            array_unshift($arguments, '--force');
+        }
+
+        $push = $this->git($path, $this->auth($arguments, $token));
         if ($push['exit'] !== 0) {
             return Outcome::failed('git push failed: ' . $this->trailing($push['output']));
         }

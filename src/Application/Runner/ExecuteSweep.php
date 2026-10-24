@@ -45,6 +45,7 @@ final readonly class ExecuteSweep
         private WorkdirPaths $paths,
         private AgentExecutor $executor,
         private PromptComposer $prompts,
+        private AdvanceIssue $advance,
     ) {
     }
 
@@ -176,6 +177,8 @@ final readonly class ExecuteSweep
             $published = $this->vcs->publish($workdir, $workdirPath);
             if (! $published->ok) {
                 $outcome = Outcome::failed('the branch was not published: ' . $published->message);
+            } else {
+                $this->advance->execute($agent, $issue);
             }
         }
 
