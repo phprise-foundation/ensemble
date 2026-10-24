@@ -190,9 +190,27 @@ separate branch.
   reasons are not duplicated; a succeeded/failed run is never re-run. Prompt
   composition (`PromptComposer`) includes identity, profile and the issue's
   summary/description. `bin/runner` is the CLI single pass; the run history is
-  exposed by `GET /workspaces/{ws}/issues/{key}/runs`. The repository lifecycle
-  landed in P3b; issue status moves, triggers and the open-warden execution
-  path are P3c.
+  exposed by `GET /workspaces/{ws}/issues/{key}/runs`.
+
+- **P3c-1 — conflict resolution + post-run advancement (branch
+  `feat/p3c-conflict-resolution-and-advance`):** a conflicting workdir can be
+  reconciled by the user's chosen strategy over
+  `POST /workspaces/{ws}/issues/{key}/workdir/resolve` (`strategy` =
+  `remote_wins` | `local_wins` | `merge`); `WorkdirVcs::resolve` +
+  `GitClient::reconcile` implement the three strategies against
+  `origin/<base>` and the agent branch, and a resolved workdir returns from
+  `conflict` to `bound` (`Workdir::markBound` accepts both `pending` and
+  `conflict`) so the next sweep runs on it. Failure keeps the workdir in
+  `conflict` and answers `409 workdir resolution failed: <reason>`. After a run
+  whose branch was successfully published, `Application/Runner/AdvanceIssue`
+  moves the issue through its **single** agent-actor (`agent`/`both`)
+  transition — ambiguous or absent transitions leave the issue in place — and
+  records an issue event with the agent's name as the actor. The advancement
+  waits while the issue still has subtasks that are not in a final status
+  (the "Testing only after all subtasks Done" rule without configurable
+  triggers yet). **Deferred to P3d:** configurable triggers on transitions
+  (`spawn`, `voting`, `subtasks-done` as transition flags), advancing waiting
+  parents in a separate sweep pass, and the open-warden execution path.
 
 - **P0 foundation — tenancy, PostgreSQL and Doctrine (branch
   `feat/p0-tenancy-api`):** users and workspaces are N:N through
