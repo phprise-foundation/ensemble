@@ -36,6 +36,27 @@ final class TenancyApiTest extends TestCase
         self::assertSame('owner', $data['workspaces'][0]['role']);
     }
 
+    public function testProfilePatchRenamesAndClearsAvatar(): void
+    {
+        $data = $this->app->json($this->app->handle($this->app->request(
+            'PATCH',
+            '/api/me',
+            ['displayName' => 'Ada', 'avatar' => 'data:image/png;base64,AAA'],
+            $this->adminToken,
+        )));
+        self::assertSame('Ada', $data['user']['displayName']);
+        self::assertSame('data:image/png;base64,AAA', $data['user']['avatar']);
+
+        $data = $this->app->json($this->app->handle($this->app->request(
+            'PATCH',
+            '/api/me',
+            ['avatar' => null],
+            $this->adminToken,
+        )));
+        self::assertNull($data['user']['avatar']);
+        self::assertSame('Ada', $data['user']['displayName']);
+    }
+
     public function testAdminCreatesUserAndUserCannotListUsers(): void
     {
         $this->createUser('bob', 'bob12345', 'Bob');

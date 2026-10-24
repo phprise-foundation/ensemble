@@ -55,7 +55,7 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   it('destaca somente o board atual quando a loja tem dois boards', async () => {
     const first = await mountAt('/boards/KANB')
     expect(currentTitles(first)).toEqual(['Kanban'])
-    expect(first.findAll('nav.rail a.rail-leaf')).toHaveLength(15)
+    expect(first.findAll('nav.rail a.rail-leaf')).toHaveLength(17)
     first.unmount()
 
     const second = await mountAt('/boards/B2')

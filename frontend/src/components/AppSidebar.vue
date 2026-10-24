@@ -5,8 +5,10 @@ import AppIcon from './AppIcon.vue'
 import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
+import { session } from '../store/session.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
+import { isRealBackend } from '../api/client.js'
 import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
@@ -168,6 +170,15 @@ function close() {
 }
 
 /* Editors */
+async function switchWorkspace(workspaceId) {
+  try {
+    await session.switchWorkspace(workspaceId)
+    await boardStore.load()
+  } catch (problem) {
+    toast.error(problem.message)
+  }
+}
+
 function editWorkspace() {
   openEditor('workspace', { ...workspace.value }, 'Edit workspace', [{ key: 'name', label: 'Name' }])
 }
@@ -230,7 +241,7 @@ function editSource(source) {
 }
 
 function normalizeBoard(board) {
-  if (!/^[A-Za-z]{3,6}$/.test(board.id)) {
+  if (!isRealBackend() && !/^[A-Za-z]{3,6}$/.test(board.id)) {
     throw new Error('Board ID must be 3 to 6 letters')
   }
   if (!board.name) {
@@ -248,11 +259,13 @@ function normalizeBoard(board) {
 async function copyWorkflow(templateId, workflow) {
   const idMap = {}
   for (const status of boardStore.statusesOf(templateId)) {
-    const newId = `${workflow.id}-${status.id}`
-    idMap[status.id] = newId
-    await boardStore.saveEntity('statuses', { workflowId: workflow.id, id: newId, name: status.name, type: status.type, color: status.color, roleIds: status.roleIds || [] })
+    const saved = await boardStore.saveEntity('statuses', { workflowId: workflow.id, id: `${workflow.id}-${status.id}`, name: status.name, type: status.type, color: status.color, roleIds: status.roleIds || [] })
+    idMap[status.id] = saved.id
   }
   for (const transition of boardStore.transitionsOf(templateId)) {
+    if (isRealBackend() && transition.from === '*') {
+      continue
+    }
     await boardStore.saveEntity('transitions', {
       workflowId: workflow.id,
       from: transition.from === '*' ? '*' : idMap[transition.from],
@@ -386,7 +399,16 @@ async function removeEntity(kind, id, label) {
       <div class="submenu">
         <div class="nav-entry" v-if="workspace" :title="workspace?.name">
           <AppIcon name="workspace" size="14" />
-          <span>{{ workspace.name }}</span>
+          <select
+            v-if="session.workspaces.length > 1"
+            class="workspace-switch"
+            :value="session.workspaceId"
+            aria-label="Active workspace"
+            @change="switchWorkspace($event.target.value)"
+          >
+            <option v-for="candidate in session.workspaces" :key="candidate.id" :value="candidate.id">{{ candidate.name }}</option>
+          </select>
+          <span v-else>{{ workspace.name }}</span>
           <span class="entry-actions">
             <button class="icon-btn" title="Edit workspace" aria-label="Edit workspace" @click.stop="editWorkspace"><AppIcon name="edit" size="14" /></button>
           </span>

@@ -87,6 +87,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $path === '/api/auth/login' => $this->sessions->login($request),
             $method === 'POST' && $path === '/api/auth/logout' => $this->sessions->logout($request),
             $method === 'GET' && $path === '/api/me' => $this->sessions->me($request),
+            $method === 'PATCH' && $path === '/api/me' => $this->sessions->patch($request),
             $method === 'GET' && $this->isUsersRoot($segments) => $this->users->list($request),
             $method === 'POST' && $this->isUsersRoot($segments) => $this->users->create($request),
             $method === 'GET' && $this->isWorkspacesRoot($segments) => $this->workspaces->list($request),

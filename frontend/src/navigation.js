@@ -1,3 +1,7 @@
+const BOARD_PAGES = [
+  { key: 'columns', label: 'Columns', icon: 'layers', feature: null, path: (id) => `/boards/${id}/columns` },
+]
+
 const WORKFLOW_PAGES = [
   { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', path: (id) => `/workflows/${id}/statuses` },
   { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', path: (id) => `/workflows/${id}/transitions` },
@@ -72,7 +76,7 @@ export function sidebarNavigation(store, workspaceId) {
   if (!workspaceId) {
     return emptyNavigation()
   }
-  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaves: [boardLeaf(board)] }))
+  const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaves: [boardLeaf(board), ...pageLeaves(BOARD_PAGES, board, 'board')] }))
   const workflows = store.workflowsOf(workspaceId).map((workflow) => ({ entity: workflow, leaves: pageLeaves(WORKFLOW_PAGES, workflow, 'workflow') }))
   const teams = store.teamsOf(workspaceId).map((team) => ({ entity: team, leaves: pageLeaves(TEAM_PAGES, team, 'team') }))
   return { boards, workflows, teams, experiences: [experienceEntry()] }

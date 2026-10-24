@@ -32,7 +32,7 @@ describe('sidebar colapsado na interface em execução', () => {
     cy.visit('/')
     cy.get('.nav-entry[title="Boards"]').should('have.class', 'open')
     cy.get('.leaf .label').should('have.length.greaterThan', 0)
-    cy.get('.leaf .label').first().should('be.visible')
+    cy.get('.leaf .label').filter(':visible').first().should('be.visible')
 
     cy.get('button.sidebar-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'collapsed')

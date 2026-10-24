@@ -106,13 +106,23 @@ export const session = {
     return payload.user
   },
   async updateProfile({ displayName, avatar }) {
-    const changes = { displayName }
-    if (avatar !== undefined) {
-      changes.avatar = avatar
+    if (!isRealBackend()) {
+      const user = await api.updateUser({ displayName, ...(avatar !== undefined ? { avatar } : {}) })
+      applyUser(user)
+      return user
     }
-    const user = await api.updateUser(changes)
-    applyUser(user)
-    return user
+    const payload = await request('PATCH', '/api/me', {
+      ...(displayName !== undefined ? { displayName } : {}),
+      ...(avatar !== undefined ? { avatar } : {}),
+    })
+    applyUser(payload.user)
+    return payload.user
+  },
+  async switchWorkspace(workspaceId) {
+    if (!state.workspaces.some((workspace) => workspace.id === workspaceId)) {
+      throw new Error('Unknown workspace')
+    }
+    state.workspaceId = workspaceId
   },
   async signOut() {
     if (isRealBackend() && token()) {

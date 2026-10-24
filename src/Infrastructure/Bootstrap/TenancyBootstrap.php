@@ -99,6 +99,7 @@ use App\Application\Tenancy\ListWorkspaces;
 use App\Application\Tenancy\ReadWorkspace;
 use App\Application\Tenancy\RegisterUser;
 use App\Application\Tenancy\RemoveWorkspaceMember;
+use App\Application\Tenancy\UpdateUser;
 use App\Application\Tenancy\UpdateWorkspace;
 use App\Application\Tenancy\WorkspaceGuard;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
@@ -264,6 +265,7 @@ final readonly class TenancyBootstrap
             new SessionController(
                 new AuthenticateUser($users, $sessions, $hasher, new RandomTokenGenerator()),
                 $currentUser,
+                new UpdateUser($users),
                 $sessions,
                 new ListWorkspaces($workspaces, $memberships),
                 $userPresenter,

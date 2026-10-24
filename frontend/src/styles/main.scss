@@ -176,6 +176,17 @@ textarea {
   white-space: nowrap;
 }
 
+.workspace-switch {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+}
+
 .leaf {
   display: flex;
   align-items: center;
