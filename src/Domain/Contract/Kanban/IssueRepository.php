@@ -30,5 +30,8 @@ interface IssueRepository
     public function forStatuses(WorkspaceId $workspaceId, StatusIds $statusIds): array;
 
     /** @return list<Issue> */
+    public function forChildren(WorkspaceId $workspaceId, IssueKey $parentKey): array;
+
+    /** @return list<Issue> */
     public function withoutWorkdir(): array;
 }

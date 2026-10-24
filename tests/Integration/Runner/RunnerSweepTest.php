@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Runner;
 
+use App\Application\Runner\AdvanceIssue;
 use App\Application\Runner\ExecuteSweep;
+use App\Application\Runner\ResolveWorkdirConflict;
 use App\Application\Runner\PromptComposer;
 use App\Application\Runner\ResolveProfile;
 use App\Domain\Runner\AgentExecutor;
@@ -32,7 +34,12 @@ use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
 use App\Domain\Runner\WorkdirPaths;
-use App\Domain\Runner\WorkdirVcs;use App\Domain\Team\Agent;
+use App\Domain\Runner\WorkdirVcs;
+use App\Domain\Runner\ResolutionStrategy;
+use App\Domain\Kanban\Transition;
+use App\Domain\Kanban\TransitionId;
+use App\Domain\Kanban\TransitionActor;
+use App\Domain\Team\Agent;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\Role;
 use App\Domain\Team\RoleIds;
@@ -40,6 +47,13 @@ use App\Domain\Team\RoleId;
 use App\Domain\Team\Team;
 use App\Domain\Team\TeamId;
 use App\Domain\Tenancy\Workspace;
+use App\Domain\Tenancy\User;
+use App\Domain\Tenancy\UserId;
+use App\Domain\Tenancy\Login;
+use App\Domain\Security\PasswordHash;
+use App\Infrastructure\Persistence\Doctrine\Mapper\MembershipRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
+use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Domain\Vcs\GitRepositoryId;
@@ -48,7 +62,9 @@ use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueEventRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\RunRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
@@ -56,12 +72,14 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueEventRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
@@ -86,13 +104,19 @@ final class RunnerSweepTest extends TestCase
     private WorkdirPathsForTest $paths;
     private WorkspaceId $workspaceId;
     private WorkdirId $workdirId;
+    private EntityManagerInterface $entityManager;
+    private StatusId $inboxId;
+    private StatusId $refinedId;
+    private StatusId $doneId;
+    private WorkflowId $workflowId;
+    private IssueTypeId $issueTypeId;
     private Issue $issue;
     private Agent $agent;
 
     protected function setUp(): void
     {
         try {
-            $entityManager = DoctrineEntityManagerFactory::fromEnvironment(true)->recreateSchema();
+            $this->entityManager = DoctrineEntityManagerFactory::fromEnvironment(true)->recreateSchema();
         } catch (Throwable $error) {
             self::markTestSkipped('PostgreSQL test database unavailable: ' . $error->getMessage());
         }
@@ -103,16 +127,16 @@ final class RunnerSweepTest extends TestCase
         $this->executor = new RecordedExecutor();
         $this->workspaceId = new WorkspaceId(bin2hex(random_bytes(16)));
 
-        $workflowRepository = new DoctrineWorkflowRepository($entityManager, new WorkflowRecordMapper());
-        $issueTypes = new DoctrineIssueTypeRepository($entityManager, new IssueTypeRecordMapper());
-        $teams = new DoctrineTeamRepository($entityManager, new TeamRecordMapper());
-        $this->statuses = new DoctrineStatusRepository($entityManager, new StatusRecordMapper());
-        $this->workdirs = new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMapper());
-        $this->issues = new DoctrineIssueRepository($entityManager, new IssueRecordMapper());
-        $this->runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
-        $this->agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
-        $this->profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
-        $this->workspaces = new DoctrineWorkspaceRepository($entityManager, new WorkspaceRecordMapper());
+        $workflowRepository = new DoctrineWorkflowRepository($this->entityManager, new WorkflowRecordMapper());
+        $issueTypes = new DoctrineIssueTypeRepository($this->entityManager, new IssueTypeRecordMapper());
+        $teams = new DoctrineTeamRepository($this->entityManager, new TeamRecordMapper());
+        $this->statuses = new DoctrineStatusRepository($this->entityManager, new StatusRecordMapper());
+        $this->workdirs = new DoctrineWorkdirRepository($this->entityManager, new WorkdirRecordMapper());
+        $this->issues = new DoctrineIssueRepository($this->entityManager, new IssueRecordMapper());
+        $this->runs = new DoctrineRunRepository($this->entityManager, new RunRecordMapper());
+        $this->agents = new DoctrineAgentRepository($this->entityManager, new AgentRecordMapper());
+        $this->profiles = new DoctrineProfileRepository($this->entityManager, new ProfileRecordMapper());
+        $this->workspaces = new DoctrineWorkspaceRepository($this->entityManager, new WorkspaceRecordMapper());
 
         $this->workspaces->add(new Workspace($this->workspaceId, 'Dev', new WorkspacePrefix('KAN')));
         $workflow = new Workflow(WorkflowId::generate(), $this->workspaceId, Slug::fromName('Delivery'), 'Delivery');
@@ -126,6 +150,8 @@ final class RunnerSweepTest extends TestCase
             new Level(1),
         );
         $issueTypes->add($issueType);
+        $this->workflowId = $workflow->id();
+        $this->issueTypeId = $issueType->id();
         $team = new Team(TeamId::generate(), $this->workspaceId, 'Squad');
         $teams->add($team);
         $role = new Role(RoleId::generate(), $this->workspaceId, $team->id(), 'Coder');
@@ -144,6 +170,33 @@ final class RunnerSweepTest extends TestCase
             new RoleIds([$role->id()]),
         );
         $this->statuses->add($status);
+        $this->inboxId = $status->id();
+        $refined = new Status(
+            StatusId::generate(),
+            $this->workspaceId,
+            $workflow->id(),
+            $issueType->id(),
+            Slug::fromName('Refined'),
+            'Refined',
+            StatusType::Transitional,
+            '#36b37e',
+            new Position(20),
+        );
+        $this->statuses->add($refined);
+        $this->refinedId = $refined->id();
+        $done = new Status(
+            StatusId::generate(),
+            $this->workspaceId,
+            $workflow->id(),
+            $issueType->id(),
+            Slug::fromName('Done'),
+            'Done',
+            StatusType::Final,
+            '#6b778c',
+            new Position(30),
+        );
+        $this->statuses->add($done);
+        $this->doneId = $done->id();
 
         $this->issue = new Issue(
             IssueId::generate(),
@@ -213,6 +266,35 @@ final class RunnerSweepTest extends TestCase
         self::assertSame('claimed', $runs[0]->state()->value);
     }
 
+    public function testSucceededRunAdvancesTheIssueThroughTheAgentTransition(): void
+    {
+        $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
+        $this->attachPending();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        self::assertSame(
+            $this->refinedId->value(),
+            $this->issues->forWorkspace($this->workspaceId)[0]->statusId()->value(),
+        );
+    }
+
+    public function testAdvancementWaitsWhileUndoneSubtasksRemain(): void
+    {
+        $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
+        $this->attachPending();
+        $this->seedChildIssue('KAN-2');
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        self::assertSame(
+            $this->inboxId->value(),
+            $this->issues->forWorkspace($this->workspaceId)[0]->statusId()->value(),
+        );
+    }
+
     public function testFailsAtTheReclaimCeiling(): void
     {
         $run = new Run(
@@ -248,7 +330,75 @@ final class RunnerSweepTest extends TestCase
             $this->paths,
             $this->executor,
             new PromptComposer(new ResolveProfile($this->profiles)),
+            new AdvanceIssue(
+                $this->issues,
+                $this->statuses,
+                new DoctrineTransitionRepository($this->entityManager, new TransitionRecordMapper()),
+                new DoctrineIssueEventRepository($this->entityManager, new IssueEventRecordMapper()),
+            ),
         ))->execute();
+    }
+
+    public function testResolvesAConflictingWorkdirBackToBound(): void
+    {
+        $this->attachPending();
+        $this->vcs->prepareFailure = 'git clone failed: boom';
+        $this->sweep();
+        $this->vcs->prepareFailure = null;
+        $workdir = $this->workdirs->find($this->workspaceId, $this->workdirId) ?? self::fail('the workdir vanished');
+
+        $guard = new WorkspaceGuard(
+            $this->workspaces,
+            new DoctrineMembershipRepository($this->entityManager, new MembershipRecordMapper()),
+        );
+        $resolver = new ResolveWorkdirConflict($this->issues, $this->workdirs, $this->paths, $this->vcs, $guard);
+        $resolver->execute($this->admin(), $this->workspaceId, $this->issue->key(), 'merge');
+
+        self::assertSame(
+            WorkdirState::Bound,
+            $this->workdirs->find($this->workspaceId, $this->workdirId)?->state(),
+        );
+        self::assertSame(['merge'], $this->vcs->resolved);
+    }
+
+    private function admin(): User
+    {
+        return new User(
+            UserId::generate(),
+            new Login('runner'),
+            new PasswordHash('svp-hash'),
+            'Runner',
+            admin: true,
+        );
+    }
+
+    private function seedTransition(StatusId $from, StatusId $to, TransitionActor $actor): void
+    {
+        (new DoctrineTransitionRepository($this->entityManager, new TransitionRecordMapper()))->add(
+            new Transition(TransitionId::generate(), $this->workspaceId, $this->workflowId, $from, $to, $actor),
+        );
+    }
+
+    private function seedChildIssue(string $key): Issue
+    {
+        $child = new Issue(
+            IssueId::generate(),
+            new IssueKey($key),
+            $this->workspaceId,
+            $this->issueTypeId,
+            $this->inboxId,
+            'Subtask of the runner',
+            'A child issue blocking the parent.',
+            'admin',
+            null,
+            new FieldValues(),
+            null,
+            null,
+            $this->issue->key(),
+        );
+        $this->issues->add($child);
+
+        return $child;
     }
 
     private function bindWorkdir(): void
@@ -335,6 +485,9 @@ final class RecordedVcs implements WorkdirVcs
     /** @var list<string> */
     public array $published = [];
 
+    /** @var list<string> */
+    public array $resolved = [];
+
     public ?string $prepareFailure = null;
 
     public ?string $publishFailure = null;
@@ -364,6 +517,14 @@ final class RecordedVcs implements WorkdirVcs
         $this->published[] = $path;
 
         return Outcome::succeeded('pushed ' . $workdir->branch()->value());
+    }
+
+    #[Override]
+    public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome
+    {
+        $this->resolved[] = $strategy->value;
+
+        return Outcome::succeeded('resolved with ' . $strategy->value);
     }
 }
 

@@ -67,7 +67,11 @@ use App\Application\Vcs\ReadRepository;
 use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
 use App\Application\Runner\ExecuteSweep;
+use App\Application\Runner\ResolveWorkdirConflict;
 use App\Application\Runner\PromptComposer;
+use App\Infrastructure\Runner\GitClient;
+use App\Infrastructure\Runner\GitWorkdirVcs;
+use App\Infrastructure\Runner\VarWorkdirPaths;
 use App\Application\Runner\ResolveProfile;
 use App\Application\Team\CreateAgent;
 use App\Application\Team\DeleteAgent;
@@ -238,6 +242,8 @@ final readonly class TenancyBootstrap
         $roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
         $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
         $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
+        $workdirRoot = getenv('ENSEMBLE_WORKDIR_ROOT');
+        $workdirRoot = $workdirRoot === false || $workdirRoot === '' ? 'var/workdirs' : $workdirRoot;
         $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
         $teamPresenter = new TeamPresenter();
@@ -421,6 +427,19 @@ final readonly class TenancyBootstrap
                 $runs,
                 $runHistoryPresenter,
                 $this->responder,
+                new ResolveWorkdirConflict(
+                    $issueRepository,
+                    $workdirs,
+                    new VarWorkdirPaths($workdirRoot),
+                    new GitWorkdirVcs(
+                        new GitClient(),
+                        $gitRepositories,
+                        $workspaceSecrets,
+                        $secretCipher,
+                    ),
+                    $guard,
+                ),
+                $workdirPresenter,
             ),
             new SecretController(
                 $currentUser,

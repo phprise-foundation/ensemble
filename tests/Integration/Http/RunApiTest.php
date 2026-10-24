@@ -62,6 +62,22 @@ final class RunApiTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    public function testResolveRejectsBadStrategiesAndUnknownIssues(): void
+    {
+        $issue = $this->createIssue();
+        $endpoint = '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue['key'] . '/workdir/resolve';
+
+        $response = $this->app->handle($this->app->request('POST', $endpoint, ['strategy' => 'yolo'], $this->adminToken));
+        self::assertSame(422, $response->getStatusCode());
+
+        $ghost = '/api/workspaces/' . $this->workspaceId . '/issues/RUN-999/workdir/resolve';
+        $response = $this->app->handle($this->app->request('POST', $ghost, ['strategy' => 'merge'], $this->adminToken));
+        self::assertSame(404, $response->getStatusCode());
+
+        $response = $this->app->handle($this->app->request('POST', $endpoint, ['strategy' => 'merge'], $this->adminToken));
+        self::assertSame(422, $response->getStatusCode());
+    }
+
     private function createWorkspace(string $name, string $prefix): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
