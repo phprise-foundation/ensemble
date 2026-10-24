@@ -31,8 +31,8 @@ describe('Avatar nas superfícies do agente (KAN-109)', () => {
   let errors
 
   before(() => {
-    cy.request('GET', '/api/agents').then((response) => {
-      vivy = response.body.find((agent) => agent.id === 'vivy')
+    cy.wsSnapshot().then((snapshot) => {
+      vivy = snapshot.agents.find((agent) => agent.name === 'Vivy')
     })
   })
 
@@ -47,12 +47,15 @@ describe('Avatar nas superfícies do agente (KAN-109)', () => {
   afterEach(() => {
     cy.get('vite-error-overlay').should('not.exist')
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
-    cy.request('PATCH', '/api/agents/vivy', vivy)
+    cy.wsRequest('PATCH', `/agents/${vivy.id}`, vivy)
   })
 
   const openAgents = () => {
-    cy.visit('/#/teams/default/agents')
-    cy.get('.agent-card').should('have.length.at.least', 1)
+    cy.wsSnapshot().then((snapshot) => {
+      const teamId = snapshot.teams[0].id
+      cy.visit(`/#/teams/${teamId}/agents`)
+    })
+    cy.get('.agent-card', { timeout: 10000 }).should('have.length.at.least', 1)
   }
 
   const openVivy = () => {

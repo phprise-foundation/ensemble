@@ -6,10 +6,16 @@ import { session } from '../src/store/session.js'
 import { toast } from '../src/store/toast.js'
 import { normalizeImageFile } from '../src/lib/image-normalize.js'
 
-const { fetchUser, updateUser } = vi.hoisted(() => ({
-  fetchUser: vi.fn(),
-  updateUser: vi.fn(),
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
+
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
 }))
+
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
@@ -17,12 +23,7 @@ vi.mock('vue-router', () => ({
   onBeforeRouteUpdate: vi.fn(),
 }))
 
-vi.mock('../src/api/index.js', () => ({
-  api: {
-    fetchUser,
-    updateUser,
-  },
-}))
+
 
 vi.mock('../src/lib/image-normalize.js', () => ({
   normalizeImageFile: vi.fn(),
@@ -40,8 +41,31 @@ function ultimoToast() {
   return toast.toasts[toast.toasts.length - 1]
 }
 
+const handlers = {
+  patch: () => ({ user: user({ displayName: 'Maria Silva' }) }),
+}
+
+function patchCalls() {
+  return client.request.mock.calls.filter(([method, path]) => method === 'PATCH' && path === '/api/me')
+}
+
+function mockSession(userPayload) {
+  client.request.mockImplementation(async (method, path) => {
+    if (method === 'PATCH' && path === '/api/me') {
+      return handlers.patch()
+    }
+    if (path === '/api/me') {
+      return { user: userPayload }
+    }
+    if (path === '/api/workspaces') {
+      return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+    }
+    throw new Error(`unexpected ${method} ${path}`)
+  })
+}
+
 async function mountPage(overrides = {}) {
-  fetchUser.mockResolvedValue(user(overrides))
+  mockSession(user(overrides))
   await session.load()
   await nextTick()
   return mount(ProfilePage)
@@ -56,15 +80,14 @@ async function chooseFile(wrapper, file) {
 
 describe('ProfilePage', () => {
   beforeEach(() => {
+    client.tokenValue = 't'
+    client.request = vi.fn()
     session.login = 'admin'
     session.displayName = ''
-    session.signIn()
-    fetchUser.mockReset()
-    updateUser.mockReset()
     normalizeImageFile.mockReset()
     toast.toasts.splice(0, toast.toasts.length)
-    fetchUser.mockResolvedValue(user({ displayName: 'Maria Fernanda de Souza Oliveira', avatar: null }))
-    updateUser.mockResolvedValue(user({ displayName: 'Maria Silva' }))
+    handlers.patch = () => ({ user: user({ displayName: 'Maria Silva' }) })
+    mockSession(user({ displayName: 'Maria Fernanda de Souza Oliveira', avatar: null }))
     normalizeImageFile.mockResolvedValue('data:image/webp;base64,AAA')
   })
 
@@ -90,19 +113,17 @@ describe('ProfilePage', () => {
 
     expect(wrapper.find('[data-test="save"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('#profile-login').element.readOnly).toBe(true)
-    expect(updateUser).not.toHaveBeenCalled()
+    expect(patchCalls()).toHaveLength(0)
 
     wrapper.unmount()
   })
 
   it('mostra loading no Save e confirma o sucesso por toast depois do PATCH', async () => {
     let resolveUpdate
-    updateUser.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveUpdate = resolve
-        }),
-    )
+    handlers.patch = () =>
+      new Promise((resolve) => {
+        resolveUpdate = resolve
+      })
     const wrapper = await mountPage()
 
     await wrapper.find('[data-test="display-name"]').setValue('Maria Silva')
@@ -113,18 +134,20 @@ describe('ProfilePage', () => {
     expect(wrapper.text()).toContain('Saving')
     expect(wrapper.find('[data-test="save"]').attributes('disabled')).toBeDefined()
 
-    resolveUpdate(user({ displayName: 'Maria Silva' }))
+    resolveUpdate({ user: user({ displayName: 'Maria Silva' }) })
     await flushPromises()
 
     expect(ultimoToast()).toMatchObject({ kind: 'success', text: 'Saved.' })
-    expect(updateUser).toHaveBeenCalledWith({ displayName: 'Maria Silva' })
+    expect(patchCalls()).toHaveLength(1)
 
     wrapper.unmount()
   })
 
   it('avisa o erro do PATCH por toast, sem diálogo nativo', async () => {
     const alert = vi.spyOn(window, 'alert').mockImplementation(() => {})
-    updateUser.mockRejectedValue(new Error('network down'))
+    handlers.patch = () => {
+      throw new Error('network down')
+    }
     const wrapper = await mountPage()
 
     await wrapper.find('[data-test="display-name"]').setValue('Maria Silva')
@@ -133,6 +156,7 @@ describe('ProfilePage', () => {
 
     expect(ultimoToast()).toMatchObject({ kind: 'error', text: 'network down' })
     expect(alert).not.toHaveBeenCalled()
+    expect(patchCalls()).toHaveLength(1)
 
     wrapper.unmount()
   })
@@ -157,7 +181,7 @@ describe('ProfilePage', () => {
       'data:image/webp;base64,AAA',
     )
     expect(wrapper.find('[data-test="save"]').attributes('disabled')).toBeUndefined()
-    expect(updateUser).not.toHaveBeenCalled()
+    expect(patchCalls()).toHaveLength(0)
 
     wrapper.unmount()
   })
@@ -170,12 +194,12 @@ describe('ProfilePage', () => {
 
     expect(wrapper.find('[data-test="avatar-preview"] img').exists()).toBe(false)
     expect(wrapper.find('[data-test="avatar-preview"]').text()).toBe('M')
-    expect(updateUser).not.toHaveBeenCalled()
+    expect(patchCalls()).toHaveLength(0)
 
     await wrapper.find('form').trigger('submit')
     await flushPromises()
 
-    expect(updateUser).toHaveBeenCalledWith({ displayName: 'Maria', avatar: null })
+    expect(patchCalls()).toHaveLength(1)
 
     wrapper.unmount()
   })

@@ -51,7 +51,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('upload válido mostra preview circular imediato e persiste após o Save e o reload', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     previewImage().should('not.exist')
     upload(PHOTO)
     previewImage().should('be.visible')
@@ -66,7 +66,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('o data URL enviado no PATCH é menor que o do arquivo original', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     cy.readFile(PHOTO, 'base64').then((base64) => {
       const originalLength = `data:image/png;base64,${base64}`.length
       upload(PHOTO)
@@ -81,7 +81,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('Remover + Save restaura o fallback: inicial sobre a cor persistida', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     upload(PHOTO)
     previewImage().should('be.visible')
     saveButton().click()
@@ -135,7 +135,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('Save começa disabled, entra em loading durante o PATCH e o login é somente leitura', () => {
-    cy.intercept('PATCH', '/api/user', (request) => {
+    cy.intercept('PATCH', '/api/me', (request) => {
       request.on('response', (response) => response.setDelay(400))
     }).as('patchUser')
     saveButton().should('be.disabled')

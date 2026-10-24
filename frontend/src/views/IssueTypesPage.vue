@@ -43,15 +43,17 @@ function openEdit(type) {
 }
 
 function addField() {
+  draft.value.fields = draft.value.fields ?? []
   draft.value.fields.push({ key: '', label: '', type: 'text', required: false })
 }
 
 function removeField(index) {
+  draft.value.fields = draft.value.fields ?? []
   draft.value.fields.splice(index, 1)
 }
 
 function normalize() {
-  draft.value.fields.forEach((field) => {
+  (draft.value.fields ?? []).forEach((field) => {
     if (!field.key) {
       field.key = slugify(field.label)
     }
@@ -112,7 +114,7 @@ async function remove(type) {
       <div class="table-row" v-for="type in types" :key="type.id">
         <span>{{ type.name }}</span>
         <span>{{ type.level }}</span>
-        <span>{{ type.fields.length }}</span>
+        <span>{{ (type.fields ?? []).length }}</span>
         <span class="actions">
           <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(type)"><AppIcon name="edit" size="14" /></button>
           <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(type)"><AppIcon name="delete" size="14" /></button>

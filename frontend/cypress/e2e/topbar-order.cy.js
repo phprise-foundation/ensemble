@@ -7,7 +7,7 @@ const collectErrors = (win, errors) => {
   )
 }
 
-const EXPECTED_SLOTS = ['sim', 'grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
+const EXPECTED_SLOTS = ['grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
 
 function breakpoint() {
   return cy.document().then((doc) => {
@@ -80,40 +80,6 @@ describe('ordem dos controles do topbar (KAN-87)', () => {
     })
   })
 
-  it('Sim alterna os dados simulados e o console, o copilot e o sidebar acompanham os painéis', () => {
-    viewportFromBreakpoint(200)
-    cy.get('[data-topbar-slot="sim"]').then(($sim) => {
-      expect($sim.attr('aria-pressed'), 'sim=1 deixa o botão pressionado').to.eq('true')
-    })
-    cy.get('[data-topbar-slot="sim"]').click()
-    cy.get('[data-topbar-slot="sim"]').should('have.attr', 'aria-pressed', 'false')
-    cy.get('[data-topbar-slot="sim"]').click()
-    cy.get('[data-topbar-slot="sim"]').should('have.attr', 'aria-pressed', 'true')
-
-    cy.get('[data-topbar-slot="grid-bottom"]').then(($toggle) => {
-      const wasExpanded = $toggle.attr('aria-expanded') === 'true'
-      cy.get('#app-console').should(wasExpanded ? 'exist' : 'not.exist')
-      cy.get('[data-topbar-slot="grid-bottom"]').click()
-      cy.get('[data-topbar-slot="grid-bottom"]').should('have.attr', 'aria-expanded', wasExpanded ? 'false' : 'true')
-      cy.get('#app-console').should(wasExpanded ? 'not.exist' : 'exist')
-    })
-
-    cy.get('[data-topbar-slot="grid-right"]').then(($toggle) => {
-      const wasExpanded = $toggle.attr('aria-expanded') === 'true'
-      cy.get('#app-copilot').should(wasExpanded ? 'exist' : 'not.exist')
-      cy.get('[data-topbar-slot="grid-right"]').click()
-      cy.get('[data-topbar-slot="grid-right"]').should('have.attr', 'aria-expanded', wasExpanded ? 'false' : 'true')
-      cy.get('#app-copilot').should(wasExpanded ? 'not.exist' : 'exist')
-    })
-
-    cy.get('[data-topbar-slot="grid-left"]').then(($toggle) => {
-      const wasExpanded = $toggle.attr('aria-expanded') === 'true'
-      cy.get('[data-topbar-slot="grid-left"]').click()
-      cy.get('[data-topbar-slot="grid-left"]').should('have.attr', 'aria-expanded', wasExpanded ? 'false' : 'true')
-      cy.get('[data-topbar-slot="grid-left"]').click()
-      cy.get('[data-topbar-slot="grid-left"]').should('have.attr', 'aria-expanded', wasExpanded ? 'true' : 'false')
-    })
-  })
 
   it('tema alterna e o perfil abre as opções de perfil e sair', () => {
     viewportFromBreakpoint(200)
@@ -128,7 +94,7 @@ describe('ordem dos controles do topbar (KAN-87)', () => {
 
   it('em 1024px ou menos não há grade, o menu mobile permanece e não há overflow', () => {
     viewportFromBreakpoint(0)
-    slotNames().should('deep.equal', ['sim', 'theme', 'profile'])
+    slotNames().should('deep.equal', ['theme', 'profile'])
     cy.get('.menu-toggle').should('be.visible')
     cy.get('[data-topbar-slot="theme"]').should('be.visible')
     cy.get('[data-topbar-slot="profile"]').should('be.visible')

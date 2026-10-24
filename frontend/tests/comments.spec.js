@@ -8,6 +8,16 @@ import { api } from '../src/api/index.js'
 
 const timestampPattern = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/
 
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
+
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
+}))
+
 vi.mock('../src/store/board.js', async () => {
   const { ref } = await import('vue')
   const issue = {
@@ -90,18 +100,15 @@ describe('IssueCard: assignee renderiza via Avatar (KAN-128)', () => {
 })
 
 describe('store real: contrato do POST de comentarios (KAN-128 onda 1)', () => {
-  it('[RED] addComment envia author = session.login, nao o literal antigo', async () => {
+  it('addComment posta so o body no endpoint por key; o autor e do lado do servidor', async () => {
     const { boardStore } = await vi.importActual('../src/store/board.js')
-    session.login = 'admin'
-    const spy = vi.spyOn(api, 'addComment').mockResolvedValue({
-      id: 'KANB-1',
-      comments: [{ id: 'c3', author: 'admin', body: 'Novo', at: '2026-10-19T13:00:00Z' }],
-    })
+    boardStore.state.issues = [{ id: 'i1', key: 'KANB-1', comments: [] }]
+    client.request.mockResolvedValue({ issue: { id: 'i1', key: 'KANB-1', comments: [{ id: 'c3', author: 'admin', body: 'Novo', at: '2026-10-19T13:00:00Z' }] } })
 
-    await boardStore.addComment('KANB-1', 'Comentario novo')
+    await boardStore.addComment('i1', 'Comentario novo')
 
-    expect(spy).toHaveBeenCalledWith('KANB-1', { author: 'admin', body: 'Comentario novo' })
-    spy.mockRestore()
-    session.login = ''
+    const post = client.request.mock.calls.find(([method, path]) => method === 'POST' && path.includes('/issues/KANB-1/comments'))
+    expect(post).toBeTruthy()
+    expect(post[2]).toEqual({ body: 'Comentario novo' })
   })
 })

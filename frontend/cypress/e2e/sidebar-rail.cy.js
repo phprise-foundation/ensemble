@@ -218,7 +218,7 @@ describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
     errors = []
     trackConsole(errors)
     cy.viewport(1280, 800)
-    cy.intercept({ method: 'GET', pathname: '/api/workspace' }, (req) => {
+    cy.intercept({ method: 'GET', pathname: '**/api/workspaces/*/snapshot' }, (req) => {
       req.continue((res) => {
         for (const [collection, entity] of Object.entries(extraEntities)) {
           res.body[collection].push(entity)

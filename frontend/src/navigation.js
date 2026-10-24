@@ -44,32 +44,12 @@ function boardLeaf(board) {
   }
 }
 
-function experienceLeaf() {
-  return {
-    key: 'experience:experiences',
-    label: 'Experiences',
-    title: 'Experiences',
-    railTitle: 'Experiences',
-    icon: 'experiences',
-    to: '/experiences',
-    route: { name: 'experiences', params: {} },
-    feature: 'experiences',
-  }
-}
-
-function experienceEntry() {
-  return {
-    entity: { id: 'experiences', name: 'Experiences' },
-    leaves: [experienceLeaf()],
-  }
-}
-
 function emptyNavigation() {
-  return { boards: [], workflows: [], teams: [], experiences: [] }
+  return { boards: [], workflows: [], teams: [] }
 }
 
 function sectionsOf(navigation) {
-  return [...navigation.boards, ...navigation.workflows, ...navigation.teams, ...navigation.experiences].map((entry) => entry.leaves)
+  return [...navigation.boards, ...navigation.workflows, ...navigation.teams].map((entry) => entry.leaves)
 }
 
 export function sidebarNavigation(store, workspaceId) {
@@ -79,7 +59,7 @@ export function sidebarNavigation(store, workspaceId) {
   const boards = store.boardsOf(workspaceId).map((board) => ({ entity: board, leaves: [boardLeaf(board), ...pageLeaves(BOARD_PAGES, board, 'board')] }))
   const workflows = store.workflowsOf(workspaceId).map((workflow) => ({ entity: workflow, leaves: pageLeaves(WORKFLOW_PAGES, workflow, 'workflow') }))
   const teams = store.teamsOf(workspaceId).map((team) => ({ entity: team, leaves: pageLeaves(TEAM_PAGES, team, 'team') }))
-  return { boards, workflows, teams, experiences: [experienceEntry()] }
+  return { boards, workflows, teams }
 }
 
 export function railSections(navigation) {

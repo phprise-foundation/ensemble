@@ -24,7 +24,6 @@ describe('frontend smoke', () => {
     cy.get('#app').should('not.be.empty')
     cy.get('.topbar').should('be.visible')
     cy.get('#app-sidebar').should('exist')
-    cy.contains('Prototype backend').should('exist')
     cy.get('.column').should('have.length.at.least', 1)
     cy.get('.card .card-id')
       .first()

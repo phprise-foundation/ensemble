@@ -1,91 +1,109 @@
 #!/usr/bin/env bash
-# Starts the dev server, runs the Cypress E2E suite against it, then stops it.
-# Extra arguments are forwarded to `cypress run` (e.g. --browser chrome).
-# The Cypress run is capped by E2E_TIMEOUT so it can never hang forever, and
-# cleanup kills both the dev server and the Cypress runner on any exit.
+# Runs the Cypress E2E suite against the REAL backend: an ephemeral
+# PostgreSQL database seeded through the API, the PHP server on :8081 and
+# the Vite dev server proxying /api to it. Nothing touches the developer
+# database. Extra arguments are forwarded to `cypress run`.
 #
-# The dev server boots from a LEGACY .data/db.json (no `user` key, added in
-# KAN-32): the suite must prove the fake backend backfills new seed keys on
-# boot, not only on a clean clone. The developer database is backed up before
-# and restored after the run.
-#
-# When E2E_DATA_FILE is set, the fixture goes to that file instead of the
-# developer database: nothing is backed up, restored or removed — the caller
-# owns that file for the whole round and keeps it afterwards (KAN-125/145).
-# When no DISPLAY is available the Cypress run gets its own Xvfb display,
-# seeded from the port, so parallel invocations never contend for :99.
+# E2E_DATABASE_URL points at the ephemeral database (created when missing).
+# When E2E_DATA_FILE is set the database is reused instead of recreated.
+# Without a DISPLAY the run gets its own Xvfb display.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$DIR/.." && pwd)"
 PORT="${E2E_PORT:-5173}"
+API_PORT="${E2E_API_PORT:-8081}"
 SPEC_COUNT="$(find "$DIR/cypress/e2e" -name '*.cy.js' | wc -l | tr -d ' ')"
 DEFAULT_TIMEOUT=$((120 + 60 * SPEC_COUNT))
 TIMEOUT="${E2E_TIMEOUT:-$DEFAULT_TIMEOUT}"
 BASE="http://127.0.0.1:$PORT"
+API="http://127.0.0.1:$API_PORT"
 LOG="$(mktemp)"
-DATA_FILE="${E2E_DATA_FILE:-$DIR/.data/db.json}"
-EPHEMERAL=0
-mkdir -p "$(dirname "$DATA_FILE")"
-BACKUP="$(mktemp "$(dirname "$DATA_FILE")/backup.XXXXXX" 2>/dev/null || mktemp)"
-HAD_DATABASE=0
+API_LOG="$(mktemp)"
+CYPRESS_LOG="$(mktemp)"
+E2E_DATABASE_URL="${E2E_DATABASE_URL:-pgsql://phprise:phprise@127.0.0.1:5432/ensemble_e2e}"
 SERVER_PID=""
-CYPRESS_PID=""
+API_PID=""
 XVFB_PID=""
 DISPLAY_NUMBER=""
-CYPRESS_LOG="$(mktemp)"
 cd "$DIR"
 
-# The suite always runs against the fake backend: a developer .env.local
-# pointing VITE_API_URL at the PHP API must not leak into it.
-export VITE_API_URL=""
+export VITE_API_URL="$API"
 
 cleanup() {
-  if [ -n "$CYPRESS_PID" ]; then
-    kill "$CYPRESS_PID" 2>/dev/null || true
-  fi
   if [ -n "$SERVER_PID" ]; then
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
+  fi
+  if [ -n "$API_PID" ]; then
+    kill "$API_PID" 2>/dev/null || true
+    wait "$API_PID" 2>/dev/null || true
   fi
   if [ -n "$XVFB_PID" ]; then
     kill "$XVFB_PID" 2>/dev/null || true
     wait "$XVFB_PID" 2>/dev/null || true
   fi
-  if [ "$EPHEMERAL" != "1" ]; then
-    if [ "$HAD_DATABASE" = "1" ]; then
-      RESTORE="$(mktemp "$(dirname "$DATA_FILE")/restore.XXXXXX" 2>/dev/null || mktemp)"
-      cp "$BACKUP" "$RESTORE"
-      mv "$RESTORE" "$DATA_FILE"
-    else
-      rm -f "$DATA_FILE"
-    fi
-  fi
-  rm -f "$LOG" "$BACKUP" "$CYPRESS_LOG"
+  rm -f "$LOG" "$API_LOG" "$CYPRESS_LOG"
 }
 trap cleanup EXIT INT TERM
 
-if [ "${E2E_DATA_FILE:+set}" = "set" ]; then
-  EPHEMERAL=1
-elif [ -f "$DATA_FILE" ]; then
-  cp "$DATA_FILE" "$BACKUP"
-  HAD_DATABASE=1
+if ! command -v php >/dev/null 2>&1; then
+  echo "php is required to run the backend under test" >&2
+  exit 1
 fi
 
-SEED="$(mktemp "$(dirname "$DATA_FILE")/seed.XXXXXX" 2>/dev/null || mktemp)"
-if node --input-type=module -e "import { createSeed } from './src/data/seed.js'; const database = createSeed(); delete database.user; process.stdout.write(JSON.stringify(database, null, 2))" >"$SEED"; then
-  mv "$SEED" "$DATA_FILE"
-else
-  rm -f "$SEED"
-  echo "could not prepare the legacy database fixture" >&2
+# Ensure the ephemeral database exists (best effort: local dev uses the
+# docker compose instance; CI services provision the database themselves).
+DB_NAME=$(printf '%s' "$E2E_DATABASE_URL" | sed -E 's|.*/([^/?]+)(\?.*)?$|\1|')
+if command -v docker >/dev/null 2>&1 && docker compose -f "$ROOT/docker-compose.dev.yml" ps >/dev/null 2>&1; then
+  docker compose -f "$ROOT/docker-compose.dev.yml" exec -T postgres psql -U phprise -d postgres -c "CREATE DATABASE $DB_NAME" >/dev/null 2>&1 || true
+elif command -v psql >/dev/null 2>&1; then
+  ROOT_URL=$(printf '%s' "$E2E_DATABASE_URL" | sed -E 's|/[^/?]+(\?.*)?$|/postgres|')
+  psql "$ROOT_URL" -c "CREATE DATABASE $DB_NAME" >/dev/null 2>&1 || true
+fi
+
+if ! (cd "$ROOT" && TEST_DATABASE_URL="$E2E_DATABASE_URL" php bin/e2e-reset >/dev/null && DATABASE_URL="$E2E_DATABASE_URL" BOOTSTRAP_WORKSPACE_NAME=Default BOOTSTRAP_WORKSPACE_PREFIX=KANB php bin/install >/dev/null); then
+  echo "could not bootstrap the ephemeral database: $E2E_DATABASE_URL" >&2
   exit 1
 fi
 
 port_is_busy() {
-  (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null && return 0
+  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null && return 0
   return 1
 }
 
-if port_is_busy; then
+if port_is_busy "$API_PORT"; then
+  echo "port $API_PORT is already in use: the API would answer from another tree. Set E2E_API_PORT to a free port." >&2
+  exit 1
+fi
+if port_is_busy "$PORT"; then
   echo "port $PORT is already in use: the suite would measure another tree. Set E2E_PORT to a free port." >&2
+  exit 1
+fi
+
+if [ -f "$ROOT/.env" ]; then
+  set -a
+  . "$ROOT/.env"
+  set +a
+fi
+DATABASE_URL="$E2E_DATABASE_URL" php -d variables_order=EGPCS -S "127.0.0.1:$API_PORT" -t "$ROOT/public" "$ROOT/public/router.php" >"$API_LOG" 2>&1 &
+API_PID=$!
+
+for _ in $(seq 1 60); do
+  curl -s -o /dev/null "$API/api/auth/login" && break
+  sleep 0.5
+done
+
+if ! kill -0 "$API_PID" 2>/dev/null; then
+  echo "php server died before answering on $API:" >&2
+  cat "$API_LOG" >&2
+  exit 1
+fi
+
+if E2E_API_BASE="$API" bash "$DIR/tests/e2e-seed.sh" >/dev/null; then
+  echo "e2e backend seeded on $API"
+else
+  echo "could not seed the e2e backend:" >&2
+  E2E_API_BASE="$API" bash "$DIR/tests/e2e-seed.sh" >&2 || true
   exit 1
 fi
 

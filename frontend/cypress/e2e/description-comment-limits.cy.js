@@ -55,7 +55,7 @@ describe('description and comment limits', () => {
 
   it('4095 habilita o Create e grava o texto integral; 4096 bloqueia', () => {
     const summary = 'E2E description 4095'
-    cy.intercept('POST', '/api/issues').as('createIssue')
+    cy.intercept('POST', '**/api/workspaces/*/issues').as('createIssue')
     cy.contains('button', 'New task').click()
     cy.get('#create-summary').type(summary)
     cy.get('#create-description')
@@ -75,8 +75,8 @@ describe('description and comment limits', () => {
     cy.contains('button', 'Create').click()
     cy.wait('@createIssue')
     cy.get('.modal').should('not.exist')
-    cy.request('GET', '/api/issues').then((response) => {
-      const created = response.body.find((issue) => issue.summary === summary)
+    cy.wsRequest('GET', '/issues').then((response) => {
+      const created = response.body.issues.find((issue) => issue.summary === summary)
       expect(created.description).to.equal(description41)
       cy.wrap(created.id).as('createdId')
     })
@@ -97,8 +97,8 @@ describe('description and comment limits', () => {
   })
 
   it('edição: Edit abre, 4096 bloqueia o Save, Cancel descarta', () => {
-    cy.request('GET', '/api/issues').then((response) => {
-      const target = response.body.find((issue) => issue.id === 'KANB-1')
+    cy.wsRequest('GET', '/issues').then((response) => {
+      const target = response.body.issues.find((issue) => issue.key === 'KANB-1')
       cy.wrap(target).as('editTarget')
     })
     cy.get('@editTarget').then((target) => {
@@ -127,7 +127,7 @@ describe('description and comment limits', () => {
   })
 
   it('edição: Save grava o texto novo', () => {
-    cy.request('GET', '/api/issues/KANB-2').then((response) => {
+    cy.wsRequest('GET', '/issues/KANB-2').then((response) => {
       const baseline = response.body.description
       cy.contains('.card', 'KANB-2').click()
       cy.get('.issue-panel').contains('button', 'Edit').click()
@@ -155,7 +155,7 @@ E2E-SAVED`)
   it('comentário: 1024 bloqueia com erro e 1023 é enviado', () => {
     cy.contains('.card', 'KANB-1').click()
     cy.get('.issue-panel').invoke('text').then(() => {
-      cy.request('GET', '/api/issues/KANB-1').then((before) => {
+      cy.wsRequest('GET', '/issues/KANB-1').then((before) => {
         const commentCount = before.body.comments.length
         cy.get('.issue-panel textarea[aria-label="Comment"]')
           .invoke('val', comment1024)
@@ -174,7 +174,7 @@ E2E-SAVED`)
         cy.get('.comments-body > button.button').should('have.text', 'Comment').and('not.be.disabled').click()
         cy.get('.issue-panel .comment', { timeout: 10000 }).should('have.length', commentCount + 1)
         cy.get('.issue-panel .comment p').last().should('have.text', comment1023)
-        cy.request('GET', '/api/issues/KANB-1').then((after) => {
+        cy.wsRequest('GET', '/issues/KANB-1').then((after) => {
           expect(after.body.comments.length).to.equal(commentCount + 1)
         })
       })
@@ -231,11 +231,13 @@ E2E-SAVED`)
   })
 
   it('legado KANB-7: reduzir habilita o Save e trocar assignee funciona', () => {
-    cy.request('GET', '/api/issues/KANB-7').then((before) => {
+    cy.wsRequest('GET', '/issues/KANB-7').then((before) => {
       const original = before.body.description
       const originalAssignee = before.body.assigneeId
-      const targetAssignee = originalAssignee === 'vivy' ? 'mai' : 'vivy'
-      const otherAssignee = originalAssignee === 'vivy' ? 'mai' : 'vivy'
+      cy.wsSnapshot().then((snapshot) => {
+      const byName = Object.fromEntries(snapshot.agents.map((agent) => [agent.name, agent.id]))
+      const targetAssignee = originalAssignee === byName.Vivy ? byName.Mai : byName.Vivy
+      const otherAssignee = targetAssignee
       cy.contains('.card', 'KANB-7').click()
       cy.get('.issue-panel').contains('button', 'Edit').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
@@ -247,94 +249,80 @@ E2E-SAVED`)
       cy.get('.issue-panel .body').invoke('text').then((text) => {
         expect(text).to.contain('LEGACY-DESCRIPTION-END')
       })
-      cy.intercept('PATCH', '/api/issues/KANB-7').as('patchAssignee')
+      cy.intercept('PATCH', '**/api/workspaces/*/issues/KANB-7').as('patchAssignee')
       cy.get('.issue-panel select').eq(1).select(targetAssignee)
       cy.wait('@patchAssignee')
       cy.get('#issue-comment-limit').should('exist')
-      cy.request('GET', '/api/issues/KANB-7').then((moved) => {
+      cy.wsRequest('GET', '/issues/KANB-7').then((moved) => {
         expect(moved.body.assigneeId).to.equal(otherAssignee)
       })
       cy.get('.issue-panel select').eq(1).select(originalAssignee)
       cy.wait('@patchAssignee')
-      cy.request('GET', '/api/issues/KANB-7').then((after) => {
+      cy.wsRequest('GET', '/issues/KANB-7').then((after) => {
         expect(after.body.assigneeId).to.equal(originalAssignee)
         expect(after.body.description).to.equal(original)
       })
-      expectNoErrors()
+      })
+    expectNoErrors()
     })
   })
 
   it('HTTP: POST com 4096 devolve 422 field=description e não cria issue', () => {
-    cy.request('GET', '/api/issues').then((before) => {
-      const count = before.body.length
-      cy.request({
-        method: 'POST',
-        url: '/api/issues',
-        failOnStatusCode: false,
-        body: {
-          boardId: 'KANB',
-          summary: 'E2E over limit',
-          description: description42,
-          statusId: 'to-develop',
-        },
-      }).then((response) => {
+    cy.wsRequest('GET', '/issues').then((before) => {
+      const count = before.body.issues.length
+      cy.wsSnapshot().then((snapshot) => {
+      cy.wsRequest('POST', '/issues', {
+        issueTypeId: snapshot.issueTypes[0].id,
+        summary: 'E2E over limit',
+        description: description42,
+      }, { failOnStatusCode: false }).then((response) => {
         expect(response.status).to.equal(422)
         expect(response.body.error).to.be.a('string').and.not.equal('')
         expect(response.body.field).to.equal('description')
-        cy.request('GET', '/api/issues').then((after) => {
-          expect(after.body.length).to.equal(count)
+        cy.wsRequest('GET', '/issues').then((after) => {
+          expect(after.body.issues.length).to.equal(count)
         })
+      })
       })
     })
     expectNoErrors()
   })
 
   it('HTTP: PATCH com 4096 e assigneeId devolve 422 e não altera nada', () => {
-    cy.request('GET', '/api/issues/KANB-1').then((before) => {
-      const snapshot = {
+    cy.wsRequest('GET', '/issues/KANB-1').then((before) => {
+      const baseline = {
         description: before.body.description,
         assigneeId: before.body.assigneeId,
         updatedAt: before.body.updatedAt,
       }
-      const otherAssignee = snapshot.assigneeId === 'vivy' ? 'mai' : 'vivy'
-      cy.request({
-        method: 'PATCH',
-        url: '/api/issues/KANB-1',
-        failOnStatusCode: false,
-        body: {
-          description: description42,
-          assigneeId: otherAssignee,
-        },
-      }).then((response) => {
+      cy.wsSnapshot().then((agentsSnapshot) => {
+      cy.wsRequest('PATCH', '/issues/KANB-1', {
+        description: description42,
+        assigneeId: agentsSnapshot.agents[0].id,
+      }, { failOnStatusCode: false }).then((response) => {
         expect(response.status).to.equal(422)
         expect(response.body.error).to.be.a('string').and.not.equal('')
         expect(response.body.field).to.equal('description')
-        cy.request('GET', '/api/issues/KANB-1').then((after) => {
-          expect(after.body.description).to.equal(snapshot.description)
-          expect(after.body.assigneeId).to.equal(snapshot.assigneeId)
-          expect(after.body.updatedAt).to.equal(snapshot.updatedAt)
+        cy.wsRequest('GET', '/issues/KANB-1').then((after) => {
+          expect(after.body.description).to.equal(baseline.description)
+          expect(after.body.assigneeId).to.equal(baseline.assigneeId)
+          expect(after.body.updatedAt).to.equal(baseline.updatedAt)
         })
+      })
       })
     })
     expectNoErrors()
   })
 
   it('HTTP: comentário com 1024 devolve 422 field=comment e não grava', () => {
-    cy.request('GET', '/api/issues/KANB-1').then((before) => {
+    cy.wsRequest('GET', '/issues/KANB-1/comments').then((before) => {
       const comments = before.body.comments
-      const updatedAt = before.body.updatedAt
-      cy.request({
-        method: 'POST',
-        url: '/api/issues/KANB-1/comments',
-        failOnStatusCode: false,
-        body: { body: comment1024 },
-      }).then((response) => {
+      cy.wsRequest('POST', '/issues/KANB-1/comments', { body: comment1024 }, { failOnStatusCode: false }).then((response) => {
         expect(response.status).to.equal(422)
         expect(response.body.error).to.be.a('string').and.not.equal('')
         expect(response.body.field).to.equal('comment')
-        cy.request('GET', '/api/issues/KANB-1').then((after) => {
+        cy.wsRequest('GET', '/issues/KANB-1/comments').then((after) => {
           expect(after.body.comments).to.deep.equal(comments)
-          expect(after.body.updatedAt).to.equal(updatedAt)
         })
       })
     })

@@ -2,22 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-const { createEntity, updateEntity } = vi.hoisted(() => ({
-  createEntity: vi.fn(),
-  updateEntity: vi.fn(),
-}))
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
 
-vi.mock('../src/api/index.js', () => ({
-  api: {
-    createEntity: (collection, data) => createEntity(collection, data),
-    updateEntity: (collection, id, data) => updateEntity(collection, id, data),
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
   },
-  isSimulated: () => false,
-  setFeature: () => {},
-  setAll: () => {},
-  hasSimulation: { value: false },
-  simulatedFeatures: { value: [] },
-  simulation: { features: {} },
+  request: (...args) => client.request(...args),
 }))
 
 vi.mock('vue-router', () => ({
@@ -26,6 +18,7 @@ vi.mock('vue-router', () => ({
 }))
 
 import { boardStore } from '../src/store/board.js'
+import { session } from '../src/store/session.js'
 import AppSidebar from '../src/components/AppSidebar.vue'
 
 let wrapper
@@ -64,9 +57,40 @@ async function save() {
   await nextTick()
 }
 
-beforeEach(() => {
-  createEntity.mockImplementation(async (collection, data) => ({ ...data, id: data.id || `${collection}-generated` }))
-  updateEntity.mockImplementation(async (collection, id, data) => ({ ...data, id }))
+function calls(method, suffix) {
+  return client.request.mock.calls.filter(([verb, path]) => verb === method && path.includes(suffix))
+}
+
+beforeEach(async () => {
+  client.request.mockImplementation(async (method, path) => {
+    if (path === '/api/me') {
+      return { user: { login: 'admin', displayName: 'Admin' } }
+    }
+    if (path === '/api/workspaces') {
+      return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+    }
+    if (path === '/api/workspaces/ws/snapshot') {
+      return {
+        workspaces: [{ id: 'ws', name: 'Workspace' }],
+        workflows: boardStore.state.workflows,
+        issueTypes: [],
+        statuses: [],
+        transitions: [],
+        boards: boardStore.state.boards,
+        columns: [],
+        issues: [],
+        teams: boardStore.state.teams,
+        roles: [],
+        profiles: [],
+        agents: [],
+      }
+    }
+    if (method === 'POST') {
+      return { ok: true }
+    }
+    throw new Error(`unexpected ${method} ${path}`)
+  })
+  await session.load()
   boardStore.state.workspaces = [{ id: 'ws', name: 'Workspace' }]
   boardStore.state.teams = []
   boardStore.state.workflows = []
@@ -91,11 +115,11 @@ describe('creation derives the verb from the fact, not from a slug', () => {
 
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('teams', expect.objectContaining({ id: '', name: 'Design', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/teams')).toHaveLength(1)
+    expect(calls('PATCH', '/api/workspaces/ws/teams')).toHaveLength(0)
   })
 
-  it('updates an existing team with PATCH, keeping its id', async () => {
+  it('updates an existing team with PATCH, keeping its id in the path', async () => {
     boardStore.state.teams = [{ id: 'time-a', name: 'Time A', workspaceId: 'ws' }]
     mountSidebar()
 
@@ -104,8 +128,8 @@ describe('creation derives the verb from the fact, not from a slug', () => {
     await fill('Name', 'Time A Renomeado')
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('teams', 'time-a', expect.objectContaining({ id: 'time-a', name: 'Time A Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/teams/time-a')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/teams')).toHaveLength(0)
   })
 
   it('creates a new workflow with POST, leaving the id empty', async () => {
@@ -116,11 +140,11 @@ describe('creation derives the verb from the fact, not from a slug', () => {
     await fill('Name', 'Development')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('workflows', expect.objectContaining({ id: '', name: 'Development', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(1)
+    expect(calls('PATCH', '/api/workspaces/ws/workflows')).toHaveLength(0)
   })
 
-  it('updates an existing workflow with PATCH, keeping its id', async () => {
+  it('updates an existing workflow with PATCH, keeping its id in the path', async () => {
     boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
     mountSidebar()
 
@@ -129,7 +153,7 @@ describe('creation derives the verb from the fact, not from a slug', () => {
     await fill('Name', 'Flow A Renomeado')
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('workflows', 'flow-a', expect.objectContaining({ id: 'flow-a', name: 'Flow A Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/workflows/flow-a')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(0)
   })
 })

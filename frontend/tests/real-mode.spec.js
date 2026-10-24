@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/api/client.js', () => ({
-  isRealBackend: () => mocks.real,
   token: () => mocks.tokenValue,
   setToken: (value) => {
     mocks.tokenValue = value
@@ -40,7 +39,6 @@ const WORKSPACES = { workspaces: [{ id: 'w1', name: 'One' }] }
 
 beforeEach(() => {
   vi.resetModules()
-  mocks.real = false
   mocks.tokenValue = null
   mocks.request = vi.fn()
 })
@@ -51,7 +49,6 @@ afterEach(() => {
 
 describe('real backend session', () => {
   it('lands on the gate when there is no stored token', async () => {
-    mocks.real = true
     const { session } = await loadStores()
 
     await session.load()
@@ -61,7 +58,6 @@ describe('real backend session', () => {
   })
 
   it('restores the session and picks the first workspace from the token', async () => {
-    mocks.real = true
     mocks.tokenValue = 'stored'
     mocks.request.mockImplementation(async (method, path) => {
       if (path === '/api/me') {
@@ -82,7 +78,6 @@ describe('real backend session', () => {
   })
 
   it('clears the token and shows the gate when the token expired', async () => {
-    mocks.real = true
     mocks.tokenValue = 'expired'
     const expired = new Error('401 Unauthorized')
     expired.status = 401
@@ -96,7 +91,6 @@ describe('real backend session', () => {
   })
 
   it('rejects a wrong password without storing a token', async () => {
-    mocks.real = true
     const denied = new Error('login does not match')
     denied.status = 401
     mocks.request.mockRejectedValue(denied)
@@ -112,7 +106,6 @@ describe('real backend session', () => {
   })
 
   it('signs in through the backend and boots the workspace', async () => {
-    mocks.real = true
     mocks.request.mockImplementation(async (method, path) => {
       if (path === '/api/auth/login') {
         return { token: 'fresh', user: USER }
@@ -133,7 +126,6 @@ describe('real backend session', () => {
   })
 
   it('refuses empty credentials before calling the backend', async () => {
-    mocks.real = true
     const { session } = await loadStores()
 
     await expect(session.signIn('', '')).rejects.toThrow('required')
@@ -142,30 +134,8 @@ describe('real backend session', () => {
   })
 })
 
-describe('legacy fake session', () => {
-  it('keeps the prototype shortcut without touching the backend', async () => {
-    const { session } = await loadStores()
-
-    await session.signIn('', '')
-
-    expect(session.signedIn).toBe(true)
-    expect(mocks.request).not.toHaveBeenCalled()
-  })
-
-  it('boots the fake user on load', async () => {
-    mocks.request.mockResolvedValue(USER)
-    const { session } = await loadStores()
-
-    await session.load()
-
-    expect(session.signedIn).toBe(true)
-    expect(session.login).toBe('admin')
-  })
-})
-
 describe('real board mode', () => {
   it('boots from the workspace snapshot and scopes writes by key', async () => {
-    mocks.real = true
     mocks.tokenValue = 'stored'
     const issue = { id: 'i1', key: 'ONE-1', statusId: 's1' }
     mocks.request.mockImplementation(async (method, path) => {

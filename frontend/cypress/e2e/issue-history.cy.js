@@ -39,7 +39,7 @@ describe('issue history tab', () => {
     cy.visit('/')
     cy.get('vite-error-overlay').should('not.exist')
     openIssue('KANB-1')
-    cy.request('GET', '/api/issues/KANB-1').then((current) => {
+    cy.wsRequest('GET', '/issues/KANB-1').then((current) => {
       cy.get('#issue-tab-comments')
         .should('have.attr', 'aria-selected', 'true')
         .and('contain.text', `Comments (${current.body.comments.length})`)
@@ -163,21 +163,4 @@ describe('issue history tab', () => {
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('shows the Prototype badge with ?sim=1 and hides it with ?sim=0 while History keeps working', () => {
-    cy.visit('/?sim=1')
-    openIssue('KANB-1')
-    cy.get('#issue-tab-history .badge.sim').should('contain.text', 'Prototype')
-    cy.get('vite-error-overlay').should('not.exist')
-    cy.get('#issue-tab-history').click()
-    cy.get('#issue-panel-history .history-entry').should('have.length', 4)
-    cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
-
-    cy.clearLocalStorage('sim.history')
-    cy.visit('/?sim=0')
-    openIssue('KANB-1')
-    cy.get('#issue-tab-history .badge.sim').should('not.exist')
-    cy.get('#issue-tab-history').click()
-    cy.get('#issue-panel-history .history-entry').should('have.length', 4)
-    cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
-  })
 })

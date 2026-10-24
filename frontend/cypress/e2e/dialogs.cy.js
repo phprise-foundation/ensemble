@@ -90,7 +90,7 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('sidebar: exclusão de source confirmada via Enter remove e mostra toast', () => {
-    cy.request('POST', '/api/sources', { path: '/tmp', name: 'src-enter', workspaceId: 'default' })
+    cy.wsRequest('POST', '/repositories', { name: 'src-enter', provider: 'github', url: 'https://github.com/example/src-enter', baseBranch: 'main' })
     cy.visit('/')
     abrirDeleteSource('src-enter')
     cy.get(card).trigger('keydown', { key: 'Enter' })

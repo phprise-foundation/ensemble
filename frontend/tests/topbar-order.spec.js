@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
 
@@ -39,10 +39,34 @@ vi.mock('../src/api/index.js', async () => {
     simulatedFeatures: { value: [] },
     simulation: { features: {} },
     api: {
-      fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-      updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+      me: vi.fn(),
+      workspaces: vi.fn(),
     },
   }
+})
+
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
+
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
+}))
+
+
+client.request.mockImplementation(async (method, path) => {
+  if (path === '/api/me') {
+    return { user: { login: 'admin', displayName: 'Admin' } }
+  }
+  if (path === '/api/workspaces') {
+    return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+  }
+  if (path === '/api/auth/login') {
+    return { token: 't', user: { login: 'admin', displayName: 'Admin' } }
+  }
+  throw new Error(`unexpected ${method} ${path}`)
 })
 
 vi.mock('vue-router', () => ({
@@ -100,6 +124,7 @@ async function mountApp(mobile) {
     attachTo: document.body,
   })
   await nextTick()
+  await flushPromises()
   return wrapper
 }
 
@@ -118,7 +143,7 @@ describe('Ordem dos controles do topbar', () => {
   it('em desktop, os slots seguem a ordem canonica e o perfil e o ultimo', async () => {
     const wrapper = await mountApp(false)
 
-    expect(slots(wrapper)).toEqual(['sim', 'grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile'])
+    expect(slots(wrapper)).toEqual(['grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile'])
     expect(wrapper.find('.topbar .spacer').element.nextElementSibling.className).toContain('topbar-actions')
     expect(wrapper.findAll('.topbar-actions > *').at(-1).attributes('data-topbar-slot')).toBe('profile')
     wrapper.unmount()
@@ -127,7 +152,7 @@ describe('Ordem dos controles do topbar', () => {
   it('em mobile, nenhuma grade e renderizada e menu, Sim, tema e perfil permanecem', async () => {
     const wrapper = await mountApp(true)
 
-    expect(slots(wrapper)).toEqual(['sim', 'theme', 'profile'])
+    expect(slots(wrapper)).toEqual(['theme', 'profile'])
     expect(wrapper.find('.menu-toggle').exists()).toBe(true)
     for (const control of ['.sidebar-toggle', '.console-toggle', '.copilot-toggle']) {
       expect(wrapper.find(control).exists()).toBe(false)

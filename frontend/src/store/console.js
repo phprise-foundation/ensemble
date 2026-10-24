@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { api } from '../api/index.js'
+import { boardStore } from './board.js'
 
 const POLL_INTERVAL_MS = 5000
 const SYSTEM_ACTOR = 'system'
@@ -87,8 +87,7 @@ function absorb(entries) {
 }
 
 async function collect() {
-  const issues = await api.fetchIssues()
-  const entries = (issues ?? []).flatMap(entriesOf)
+  const entries = (boardStore.state.issues ?? []).flatMap(entriesOf)
   absorb(entries)
 }
 

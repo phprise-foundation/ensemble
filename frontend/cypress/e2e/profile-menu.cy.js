@@ -30,7 +30,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
         errors.push(`console.error: ${args.join(' ')}`)
       })
     })
-    cy.request('PATCH', '/api/user', { displayName: '' })
+    cy.wsRequest('PATCH', '/me', { displayName: '' })
   })
 
   afterEach(() => {
@@ -58,7 +58,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
   })
 
   it('trunca o nome em linha única sem quebrar o topo', () => {
-    cy.request('PATCH', '/api/user', { displayName: FULL_NAME })
+    cy.wsRequest('PATCH', '/me', { displayName: FULL_NAME })
     viewportFromBreakpoint(200)
     cy.visit('/')
     cy.get('.profile-name').should('have.text', FULL_NAME).and('have.attr', 'title', FULL_NAME)

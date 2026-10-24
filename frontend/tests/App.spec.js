@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
 import { session } from '../src/store/session.js'
@@ -22,6 +22,15 @@ vi.mock('../src/store/board.js', () => ({
   },
 }))
 
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
+
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
+}))
 vi.mock('../src/api/index.js', () => ({
   isSimulated: () => false,
   setFeature: () => {},
@@ -30,10 +39,23 @@ vi.mock('../src/api/index.js', () => ({
   simulatedFeatures: { value: [] },
   simulation: { features: {} },
   api: {
-    fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-    updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+    me: vi.fn(),
+    workspaces: vi.fn(),
   },
 }))
+
+client.request.mockImplementation(async (method, path) => {
+  if (path === '/api/me') {
+    return { user: { login: 'admin', displayName: 'Admin' } }
+  }
+  if (path === '/api/workspaces') {
+    return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+  }
+  if (path === '/api/auth/login') {
+    return { token: 't', user: { login: 'admin', displayName: 'Admin' } }
+  }
+  throw new Error(`unexpected ${method} ${path}`)
+})
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ meta: { title: 'Test' } }),
@@ -75,6 +97,7 @@ async function mountApp(mobile = true) {
     attachTo: document.body,
   })
   await nextTick()
+  await flushPromises()
   return wrapper
 }
 
@@ -270,7 +293,7 @@ describe('App session gate', () => {
     expect(wrapper.find('.topbar').exists()).toBe(true)
     expect(wrapper.find('.profile-menu').exists()).toBe(true)
 
-    session.signOut()
+    await session.signOut()
     await nextTick()
 
     expect(wrapper.find('.app').exists()).toBe(false)
@@ -282,11 +305,13 @@ describe('App session gate', () => {
   })
 
   it('restores the shell when sign in again is activated', async () => {
-    session.signOut()
+    await session.signOut()
     const wrapper = await mountApp(false)
 
-    await wrapper.find('.session-ended .button').trigger('click')
-    await nextTick()
+    await wrapper.find('input[aria-label="Login"]').setValue('admin')
+    await wrapper.find('input[aria-label="Password"]').setValue('admin1234')
+    await wrapper.find('.session-ended .button').trigger('submit')
+    await flushPromises()
 
     expect(session.signedIn).toBe(true)
     expect(wrapper.find('.app').exists()).toBe(true)

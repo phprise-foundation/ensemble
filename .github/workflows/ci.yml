@@ -5,13 +5,37 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: phprise
+          POSTGRES_PASSWORD: phprise
+          POSTGRES_DB: ensemble_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phprise"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Composer install
+        run: composer install --no-interaction --no-progress
+      - name: Backend (phpunit)
+        run: vendor/bin/phpunit
+      - name: Backend (psalm)
+        run: vendor/bin/psalm --no-progress
       - name: Install
         run: npm ci
         working-directory: frontend
@@ -23,6 +47,8 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: frontend
-      - name: Browser E2E
+      - name: Browser E2E (real backend)
+        env:
+          E2E_DATABASE_URL: pgsql://phprise:phprise@127.0.0.1:5432/ensemble_e2e
         run: xvfb-run --auto-servernum npm run test:e2e
         working-directory: frontend
