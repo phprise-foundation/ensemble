@@ -26,18 +26,19 @@ function openCreate() {
     workflowId: route.params.workflowId,
     name: '',
     level: 1,
-    fields: [
-      { key: 'summary', label: 'Summary', type: 'text', required: true, system: true },
-      { key: 'description', label: 'Description', type: 'textarea', required: true, system: true },
-    ],
+    fields: [],
   }
   error.value = ''
   editing.value = true
 }
 
+let originalFields = []
+
 function openEdit(type) {
+  originalFields = JSON.parse(JSON.stringify(type.fields ?? []))
   draft.value = JSON.parse(JSON.stringify(type))
   draft.value.__existing = true
+  draft.value.fields = (draft.value.fields ?? []).map((field) => ({ ...field }))
   error.value = ''
   editing.value = true
 }
@@ -63,6 +64,34 @@ function normalize() {
   })
 }
 
+async function saveFields(typeId) {
+  const original = draft.value.__existing ? originalFields : []
+  const keptIds = new Set()
+  let position = 0
+  for (const field of draft.value.fields ?? []) {
+    const payload = {
+      issueTypeId: typeId,
+      key: field.key,
+      label: field.label,
+      type: field.type,
+      required: Boolean(field.required),
+      options: field.options ?? [],
+      position: position++,
+      __existing: Boolean(field.id),
+      id: field.id,
+    }
+    await boardStore.saveEntity('fields', payload)
+    if (field.id) {
+      keptIds.add(field.id)
+    }
+  }
+  for (const field of original) {
+    if (!keptIds.has(field.id)) {
+      await boardStore.removeEntity('fields', field.id)
+    }
+  }
+}
+
 async function save() {
   error.value = ''
   if (!draft.value.name) {
@@ -71,7 +100,8 @@ async function save() {
   }
   normalize()
   try {
-    await boardStore.saveEntity('issueTypes', draft.value)
+    const saved = await boardStore.saveEntity('issueTypes', draft.value)
+    await saveFields(saved.id)
     editing.value = false
     toast.success(`${draft.value.name} saved.`)
   } catch (problem) {

@@ -8,6 +8,7 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\BoardColumnRepository;
 use App\Domain\Contract\Kanban\BoardRepository;
 use App\Domain\Contract\Kanban\IssueRepository;
+use App\Domain\Contract\Kanban\FieldDefinitionRepository;
 use App\Domain\Contract\Kanban\IssueTypeRepository;
 use App\Domain\Contract\Kanban\StatusRepository;
 use App\Domain\Contract\Kanban\TransitionRepository;
@@ -25,6 +26,7 @@ use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueType;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\Transition;
+use App\Domain\Kanban\FieldDefinition;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Team\Profile;
 use App\Domain\Team\Role;
@@ -44,6 +46,7 @@ final readonly class ReadSnapshot
         private BoardRepository $boards,
         private BoardColumnRepository $columns,
         private IssueRepository $issues,
+        private FieldDefinitionRepository $fields,
         private WorkdirRepository $workdirs,
         private TeamRepository $teams,
         private RoleRepository $roles,
@@ -76,6 +79,7 @@ final readonly class ReadSnapshot
             profiles: $this->profilesFor($teams),
             agents: $this->agents->forWorkspace($workspaceId),
             repositories: $this->repositories->all($workspaceId),
+            fields: $this->fieldsFor($workspaceId),
         );
     }
 
@@ -90,6 +94,17 @@ final readonly class ReadSnapshot
         }
 
         return $types;
+    }
+
+    /** @return array<string, list<FieldDefinition>> */
+    private function fieldsFor(WorkspaceId $workspaceId): array
+    {
+        $fields = [];
+        foreach ($this->issueTypesFor($workspaceId) as $type) {
+            $fields[$type->id()->value()] = $this->fields->forIssueType($workspaceId, $type->id());
+        }
+
+        return $fields;
     }
 
     /** @return list<Status> */

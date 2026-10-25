@@ -62,7 +62,7 @@ describe('issue history tab', () => {
     openIssue('KANB-5')
     cy.get('#issue-tab-history').click()
     historyTypes().then((types) => {
-      expect(types).to.deep.equal(['created', 'status', 'status', 'status', 'status'])
+      expect(types).to.deep.equal(['status', 'status', 'status', 'status', 'created'])
     })
     cy.get('#issue-panel-history .history-entry').each(($entry) => {
       expect($entry.find('.history-icon svg').length, 'ícone do evento').to.equal(1)
@@ -72,9 +72,9 @@ describe('issue history tab', () => {
     })
     cy.get('#issue-panel-history [data-history-type="created"] .history-text').should('contain.text', 'Issue created')
     cy.get('#issue-panel-history .history-text')
-      .eq(1)
+      .first()
       .should('contain.text', 'Status')
-      .and('contain.text', 'To Develop → In Development')
+      .and('contain.text', 'In Test → Done')
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 

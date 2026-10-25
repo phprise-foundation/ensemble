@@ -68,13 +68,14 @@ I2=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary
 I3=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Add dark theme to the board\",\"description\":\"Dark theme by default with a light option.\",\"assigneeId\":\"$ALAN\"}" | field "['issue']['key']")
 I4=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Card shows aging flag\",\"description\":\"Flag cards with more than 24h without activity.\",\"assigneeId\":\"$MAI\"}" | field "['issue']['key']")
 I5=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Set up the CI pipeline\",\"description\":\"Run tests on every pull request.\",\"assigneeId\":\"$KAIO\"}" | field "['issue']['key']")
+I7=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Legacy issue over the limits\",\"description\":\"LEGACY-DESCRIPTION-START\\n$(printf 'D%.0s' $(seq 1 200))\\nLEGACY-DESCRIPTION-END\"}" | field "['issue']['key']")
 api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Retire the legacy exporter\",\"description\":\"No longer needed.\"}" >/dev/null
-api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Legacy issue over the limits\",\"description\":\"$(printf 'D%.0s' $(seq 1 200))\"}" >/dev/null
 
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"We lose users in the first step."}' >/dev/null
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"Let me investigate this."}' >/dev/null
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"Have a look at the data flow."}' >/dev/null
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"Great progress so far."}' >/dev/null
+api POST "/api/workspaces/$WS/issues/$I7/comments" '{"body":"LEGACY-COMMENT-START"}' >/dev/null
 move() {
   local key="$1" status="$2"
   local response

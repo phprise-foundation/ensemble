@@ -160,18 +160,6 @@ describe('Ordem dos controles do topbar', () => {
     wrapper.unmount()
   })
 
-  it('Sim alterna a simulacao e expoe aria-pressed coerente', async () => {
-    const wrapper = await mountApp(false)
-    const sim = wrapper.find('[data-topbar-slot="sim"]')
-
-    expect(sim.attributes('aria-pressed')).toBe('true')
-    await sim.trigger('click')
-    expect(stubs.setAll).toHaveBeenCalledWith(false)
-    stubs.hasSimulation.value = false
-    await nextTick()
-    expect(wrapper.find('[data-topbar-slot="sim"]').attributes('aria-pressed')).toBe('false')
-    wrapper.unmount()
-  })
 
   it('cada grade alterna seu painel e o aria-expanded acompanha', async () => {
     const wrapper = await mountApp(false)

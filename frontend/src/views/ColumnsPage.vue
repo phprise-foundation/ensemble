@@ -38,7 +38,12 @@ const schema = {
       options: () => boardStore.statusesOf(board()?.workflowId ?? '').map((status) => ({ value: status.id, label: status.name })),
     },
   ],
-  defaults: () => ({ name: '', wip: null, statusIds: [] }),
+  defaults: () => ({
+    name: '',
+    wip: null,
+    statusIds: [],
+    position: boardStore.state.columns.filter((column) => column.boardId === route.params.boardId).length,
+  }),
 }
 </script>
 

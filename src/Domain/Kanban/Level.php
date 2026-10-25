@@ -10,8 +10,8 @@ final readonly class Level
 {
     public function __construct(private int $value)
     {
-        if ($value < 1) {
-            throw new ValidationException('level', 'Level must be at least 1.');
+        if ($value < 0) {
+            throw new ValidationException('level', 'Level must be at least 0.');
         }
     }
 

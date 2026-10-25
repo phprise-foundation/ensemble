@@ -16,6 +16,7 @@ import {
 } from '../../shared/limits.js'
 
 const issue = boardStore.selectedIssue
+const summaryInput = ref(null)
 const comment = ref('')
 const activeTab = ref('comments')
 const commentsTab = ref(null)
@@ -26,6 +27,9 @@ const TABS = [
   { id: 'history', ref: historyTab },
 ]
 
+const editingSummary = ref(false)
+const summaryDraft = ref('')
+const summaryError = ref('')
 const editingDescription = ref(false)
 const descriptionDraft = ref('')
 const descriptionError = ref('')
@@ -63,6 +67,7 @@ const overdue = computed(() => (issue.value ? boardStore.isOverdue(issue.value) 
 
 watch(() => issue.value?.id, () => {
   activeTab.value = 'comments'
+  editingSummary.value = false
   editingDescription.value = false
   descriptionDraft.value = ''
   descriptionError.value = ''
@@ -108,6 +113,35 @@ async function changeStatus(event) {
 
 async function changeAssignee(event) {
   await boardStore.updateIssue(issue.value.id, { assigneeId: event.target.value || null })
+}
+
+function startSummaryEdit() {
+  summaryDraft.value = issue.value.summary ?? ''
+  summaryError.value = ''
+  editingSummary.value = true
+  nextTick(() => summaryInput.value?.focus())
+}
+
+function cancelSummaryEdit() {
+  editingSummary.value = false
+  summaryDraft.value = ''
+  summaryError.value = ''
+}
+
+async function saveSummary() {
+  if (!summaryDraft.value.trim()) {
+    summaryError.value = 'The summary is required.'
+    return
+  }
+  try {
+    await boardStore.updateIssue(issue.value.id, { summary: summaryDraft.value.trim() })
+  } catch (failure) {
+    summaryError.value = failure.message
+    return
+  }
+  editingSummary.value = false
+  summaryDraft.value = ''
+  summaryError.value = ''
 }
 
 function startDescriptionEdit() {
@@ -168,7 +202,25 @@ async function submitComment() {
       </button>
     </header>
 
-    <h2 class="panel-title">{{ issue.summary }}</h2>
+    <div class="panel-title-row" v-if="!editingSummary">
+      <h2 class="panel-title">{{ issue.summary }}</h2>
+      <button class="icon-btn" title="Edit summary" aria-label="Edit summary" @click="startSummaryEdit"><AppIcon name="edit" size="14" /></button>
+    </div>
+    <form v-else class="panel-summary-edit" @submit.prevent="saveSummary">
+      <input
+        ref="summaryInput"
+        v-model="summaryDraft"
+        class="input"
+        aria-label="Summary"
+        aria-describedby="issue-summary-error"
+        :aria-invalid="summaryError ? 'true' : undefined"
+      />
+      <p id="issue-summary-error" class="error" v-if="summaryError" role="alert">{{ summaryError }}</p>
+      <div class="panel-summary-actions">
+        <button type="button" class="button ghost" @click="cancelSummaryEdit">Cancel</button>
+        <button type="submit" class="button">Save</button>
+      </div>
+    </form>
 
     <div class="panel-meta">
       <Avatar

@@ -40,7 +40,7 @@ describe('diálogos e toasts na interface em execução', () => {
     cy.get('.toast')
       .should('have.class', 'success')
       .and('contain', '"E2E Temp" deleted.')
-    cy.get('.table-row').contains('Coder').should('not.exist')
+    cy.get('.table-row').contains('E2E Temp').should('not.exist')
   })
 
   it('confirm: clique no botão Cancelar cancela, registro permanece e o foco volta ao gatilho', () => {

@@ -164,6 +164,15 @@ describe('real board mode', () => {
       if (path === '/api/workspaces/w1/issues/ONE-1/move') {
         return { issue: { ...issue, statusId: 's2' } }
       }
+      if (path === '/api/workspaces/w1/issues/ONE-1') {
+        return { issue: { ...issue, statusId: 's2' } }
+      }
+      if (path === '/api/workspaces/w1/issues/ONE-1/comments') {
+        return { comments: [] }
+      }
+      if (path === '/api/workspaces/w1/issues/ONE-1/events') {
+        return { events: [] }
+      }
       throw new Error(`unexpected ${method} ${path}`)
     })
     const { session, boardStore } = await loadStores()

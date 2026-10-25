@@ -456,6 +456,7 @@ final readonly class TenancyBootstrap
                     $boards,
                     $boardColumns,
                     $issueRepository,
+                    $fields,
                     $workdirs,
                     $teams,
                     $roles,

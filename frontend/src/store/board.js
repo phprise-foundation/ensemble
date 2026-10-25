@@ -16,6 +16,7 @@ const REAL_ROUTES = {
   statuses: { key: 'status', path: (data) => `workflows/${data.workflowId}/statuses` },
   transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions` },
   issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types` },
+  fields: { key: 'field', path: (data) => `issue-types/${data.issueTypeId}/fields`, editPath: (data) => `fields/${data.id}` },
   columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns` },
   roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles`, editPath: (data) => `roles/${data.id}` },
   profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles`, editPath: (data) => `profiles/${data.id}` },
@@ -33,7 +34,8 @@ const REAL_BODY_DROPS = {
   sources: ['id', 'workspaceId', 'path'],
   statuses: ['id', 'workflowId'],
   transitions: ['id', 'workflowId'],
-  issueTypes: ['id', 'workflowId'],
+  issueTypes: ['id', 'workflowId', 'fields'],
+  fields: ['id', 'issueTypeId'],
   columns: ['id', 'boardId'],
   roles: ['id', 'teamId'],
   profiles: ['id', 'teamId'],
@@ -87,7 +89,9 @@ async function realSave(collection, data) {
   const exists = Boolean(data.__existing)
   const payload = realPayload(collection, data)
   const entity = exists ? entityById(collection, data.id) ?? data : data
-  const path = exists && spec.editPath ? spec.editPath(entity) : spec.path(entity)
+  const path = exists
+    ? spec.editPath ? spec.editPath(entity) : `${spec.path(entity)}/${data.id}`
+    : spec.path(entity)
   const wrapper = exists
     ? await request('PATCH', scoped(`/${path}`), payload)
     : await request('POST', scoped(`/${path}`), payload)
@@ -107,12 +111,14 @@ async function realRemove(collection, id) {
   await request('DELETE', scoped(`/${path}`))
 }
 
-async function moveReal(issueId, statusId) {
+async function moveReal(issueId, target) {
   const issue = issueOf(issueId)
   if (!issue) {
     throw new Error('Unknown issue')
   }
-  return presented(await request('POST', scoped(`/issues/${issue.key}/move`), { statusId }))
+  const statusId = typeof target === 'string' ? target : target?.statusId
+  await request('POST', scoped(`/issues/${issue.key}/move`), { statusId })
+  return presented(await request('GET', scoped(`/issues/${issue.key}`)))
 }
 
 async function commentReal(issueId, body) {
@@ -179,7 +185,12 @@ const state = reactive({
 })
 
 const board = computed(() => find(state.boards, state.boardId))
-const boardColumns = computed(() => state.columns.filter((column) => column.boardId === board.value?.id))
+const boardColumns = computed(() =>
+  state.columns
+    .filter((column) => column.boardId === board.value?.id)
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+)
 const boardStatuses = computed(() => state.statuses.filter((status) => status.workflowId === board.value?.workflowId))
 const boardTransitions = computed(() => state.transitions.filter((transition) => transition.workflowId === board.value?.workflowId))
 const boardIssueTypes = computed(() => state.issueTypes.filter((type) => type.workflowId === board.value?.workflowId))

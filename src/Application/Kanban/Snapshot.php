@@ -11,6 +11,7 @@ use App\Domain\Kanban\IssueType;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\Transition;
 use App\Domain\Kanban\Workflow;
+use App\Domain\Kanban\FieldDefinition;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Tenancy\Workspace;
 use App\Domain\Team\Agent;
@@ -36,6 +37,7 @@ final readonly class Snapshot
      * @param list<Profile>    $profiles
      * @param list<Agent>      $agents
      * @param list<GitRepository> $repositories
+     * @param array<string, list<FieldDefinition>> $fields
      */
     public function __construct(
         public Workspace $workspace,
@@ -52,6 +54,7 @@ final readonly class Snapshot
         public array $profiles,
         public array $agents,
         public array $repositories,
+        public array $fields,
     ) {
     }
 }
