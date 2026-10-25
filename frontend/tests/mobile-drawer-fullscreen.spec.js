@@ -98,7 +98,7 @@ function setupViewports(viewport) {
 }
 
 async function mountApp(stubSidebar) {
-  session.signIn()
+  await session.signIn('admin', 'admin1234')
   const stubs = { RouterView: true, RouterLink: 'a', AppIcon: 'span', AppCopilot: true, AppConsole: true }
   if (stubSidebar) {
     stubs.AppSidebar = sidebarStub

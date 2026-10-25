@@ -279,12 +279,12 @@ describe('App copilot panel toggle', () => {
 })
 
 describe('App session gate', () => {
-  beforeEach(() => {
-    session.signIn()
+  beforeEach(async () => {
+    await session.signIn('admin', 'admin1234')
   })
 
-  afterEach(() => {
-    session.signIn()
+  afterEach(async () => {
+    await session.signIn('admin', 'admin1234')
   })
 
   it('hides every protected region and offers a neutral view after logout', async () => {
