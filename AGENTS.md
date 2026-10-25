@@ -35,8 +35,8 @@
 
 | Document | When to consult |
 |---|---|
-| [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) | **Always.** It holds the unbreakable rules. All development is driven by it. |
-| [`docs/GUIDE.md`](docs/GUIDE.md) | When in doubt about **how to apply** a rule from PHILOSOPHY. If there is no clear example, decide together and add the example to the GUIDE. |
+| [OTAKU Manifesto](https://otakumanifesto.org/manifesto/) | **Always.** It holds the unbreakable rules. All development is driven by it. |
+| [OTAKU Guide](https://otakumanifesto.org/guide/) | When in doubt about **how to apply** a rule from PHILOSOPHY. If there is no clear example, decide together and add the example to the GUIDE. |
 | [`docs/GITFLOW.md`](docs/GITFLOW.md) | For **any git operation** (branch, commit, PR, tag, release). If a situation has no guidance, ask how to proceed and then add it to the document. |
 | [`docs/STATE.md`](docs/STATE.md) | When resuming work. Tells where we stopped and what was decided. |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | To know what hasn't started yet. |
@@ -74,7 +74,7 @@ Details in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Code rules (non-negotiable)
 
-The 9 Object Calisthenics rules of [`docs/PHILOSOPHY.md`](docs/PHILOSOPHY.md) are
+The 9 Object Calisthenics rules of [OTAKU Manifesto](https://otakumanifesto.org/manifesto/) are
 mandatory. In short:
 
 1. One level of indentation per method.

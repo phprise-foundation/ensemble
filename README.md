@@ -3,7 +3,7 @@
 Agents as a real development team. Ensemble orchestrates
 [agent-watcher](https://github.com/phprise-foundation/agent-watcher) on a
 self-hosted kanban board with authentication, built following
-[The OTAKU Manifesto](docs/PHILOSOPHY.md) (Clean Architecture + DDD). Every
+[The OTAKU Manifesto](https://otakumanifesto.org/manifesto/) (Clean Architecture + DDD). Every
 agent has a role, a profile and a stage to own; the board takes the work from
 the business problem to the outcome.
 

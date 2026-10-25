@@ -3,7 +3,7 @@
 > Guide to the Git flows of Ensemble: how to create branches, commit, open a
 > PR, merge, version and publish. **Follow this document** when contributing.
 >
-> In case of conflict with the [PHILOSOPHY.md](PHILOSOPHY.md), the philosophy wins.
+> In case of conflict with the [OTAKU Manifesto](https://otakumanifesto.org/manifesto/), the philosophy wins.
 
 ---
 
