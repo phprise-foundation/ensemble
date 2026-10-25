@@ -19,7 +19,7 @@ function breakpoint() {
 }
 
 function viewportFromBreakpoint(offset) {
-  cy.visit('/?sim=1')
+  cy.visitApp('/?sim=1')
   breakpoint().then((value) => {
     cy.viewport(Math.round(value) + offset, 900)
     cy.document().should((doc) => {

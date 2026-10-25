@@ -1,6 +1,7 @@
 // The real history is a chain of status events recorded by the backend on
-// every move: KANB-5 was seeded crossing the whole board (four moves) and
-// KANB-1/KANB-3 never moved, so their tabs start empty or comment-focused.
+// every move: KANB-5 was seeded crossing the whole board (four moves),
+// KANB-3 crossed two columns and KANB-1 never moved, so its tab is only the
+// created event.
 const collectErrors = (win, errors) => {
   win.addEventListener('error', (event) => errors.push(`error: ${event.message}`))
   win.addEventListener('unhandledrejection', (event) =>
@@ -39,7 +40,7 @@ describe('issue history tab', () => {
   })
 
   it('opens KANB-3 with Comments selected, counter only there and History hidden', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('vite-error-overlay').should('not.exist')
     openIssue('KANB-3')
     cy.wsRequest('GET', '/issues/KANB-3/comments').then((current) => {
@@ -52,13 +53,13 @@ describe('issue history tab', () => {
     cy.get('#issue-panel-history').should('not.be.visible')
     cy.get('#issue-tab-history').click()
     cy.get('#issue-panel-history').should('be.visible')
-    cy.get('#issue-panel-history .history-entry').should('have.length', 2)
+    cy.get('#issue-panel-history .history-entry').should('have.length', 3)
     cy.get('#issue-panel-comments').should('not.be.visible')
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
   it('shows the KANB-5 timeline with icon, actor, datetime and status text', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     openIssue('KANB-5')
     cy.get('#issue-tab-history').click()
     historyTypes().then((types) => {
@@ -79,7 +80,7 @@ describe('issue history tab', () => {
   })
 
   it('lists events in reverse chronological order', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     openIssue('KANB-5')
     cy.get('#issue-tab-history').click()
     historyDatetimes().then((datetimes) => {
@@ -97,7 +98,7 @@ describe('issue history tab', () => {
   })
 
   it('shows the created event on KANB-1 and resets to Comments when another issue opens', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     openIssue('KANB-1')
     cy.get('#issue-tab-history').click()
     cy.get('#issue-panel-history .history-entry').should('have.length', 1)
@@ -113,7 +114,7 @@ describe('issue history tab', () => {
   })
 
   it('supports arrow, Home, End, Enter and Space with roving tabindex and visible focus', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     openIssue('KANB-3')
     const tabs = ['#issue-tab-comments', '#issue-tab-history']
     cy.get('#issue-tab-comments').focus()

@@ -34,7 +34,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
       collectErrors(win, errors)
       cy.stub(win.console, 'error', (...args) => errors.push(`console.error: ${args.join(' ')}`))
     })
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     preview().should('be.visible')
   })
 
@@ -178,7 +178,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
     cy.get('@nativeAlert').should('not.have.been.called')
     cy.get('.dialog-confirm').click()
     cy.url().should('not.contain', '/profile')
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     previewImage().should('not.exist')
     cy.get('[data-test="display-name"]').should('have.value', initialUser.displayName)
   })

@@ -33,7 +33,7 @@ describe('comments avatars e2e', () => {
     cy.wsRequest('GET', '/issues/KANB-1/comments').then((response) => {
       cy.wrap(response.body.comments).as('seedComments')
     })
-    cy.visit('/').then(() => {
+    cy.visitApp('/').then(() => {
       errors = []
     })
     cy.get('.card', { timeout: 10000 }).should('have.length.at.least', 1)

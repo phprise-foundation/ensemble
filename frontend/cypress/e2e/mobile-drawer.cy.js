@@ -33,7 +33,7 @@ describe('drawer mobile na interface em execução', () => {
 
   it('abre pelo handler do toggle do menu e fecha pelo scrim', () => {
     cy.viewport(1000, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-sidebar')
       .should('not.have.class', 'open')
       .and('have.attr', 'aria-hidden', 'true')
@@ -60,7 +60,7 @@ describe('drawer mobile na interface em execução', () => {
   })
 
   it('fecha quando a tecla Escape é pressionada com o overlay aberto', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('button.menu-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'open')
     cy.get('.scrim').should('exist')
@@ -70,7 +70,7 @@ describe('drawer mobile na interface em execução', () => {
   })
 
   it('fecha quando uma navegação de rota acontece com o overlay aberto', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('button.menu-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'open')
     cy.get('.nav a.leaf').first().click()

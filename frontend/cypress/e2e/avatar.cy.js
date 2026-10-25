@@ -53,7 +53,7 @@ describe('Avatar nas superfícies do agente (KAN-109)', () => {
   const openAgents = () => {
     cy.wsSnapshot().then((snapshot) => {
       const teamId = snapshot.teams[0].id
-      cy.visit(`/#/teams/${teamId}/agents`)
+      cy.visitApp(`/#/teams/${teamId}/agents`)
     })
     cy.get('.agent-card', { timeout: 10000 }).should('have.length.at.least', 1)
   }
@@ -105,7 +105,7 @@ describe('Avatar nas superfícies do agente (KAN-109)', () => {
     openVivy()
     cy.get('.modal-card input[type="file"]').selectFile(FIXTURE)
     cy.get('.modal-footer').contains('button', 'Save').click()
-    cy.visit('/')
+    cy.visitApp('/')
     cy.contains('.card', 'KANB-1').click()
     cy.get('.panel-meta .avatar.md').then(($avatar) => {
       const element = $avatar[0]

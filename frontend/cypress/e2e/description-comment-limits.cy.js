@@ -31,7 +31,7 @@ describe('description and comment limits', () => {
         errors.push(`console.error: ${args.join(' ')}`)
       })
     })
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.card', { timeout: 10000 }).should('have.length.at.least', 1)
   })
 
@@ -128,7 +128,7 @@ describe('description and comment limits', () => {
 
   it('edição: Save grava o texto novo', () => {
     cy.wsRequest('GET', '/issues/KANB-2').then((response) => {
-      const baseline = response.body.description
+      const baseline = response.body.issue.description
       cy.contains('.card', 'KANB-2').click()
       cy.get('.issue-panel').contains('button', 'Edit').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
@@ -231,12 +231,13 @@ E2E-SAVED`)
 
   it('legado KANB-7: reduzir habilita o Save e trocar assignee funciona', () => {
     cy.wsRequest('GET', '/issues/KANB-7').then((before) => {
-      const original = before.body.description
-      const originalAssignee = before.body.assigneeId
+      const original = before.body.issue.description
+      const originalAssignee = before.body.issue.assigneeId
       cy.wsSnapshot().then((snapshot) => {
       const byName = Object.fromEntries(snapshot.agents.map((agent) => [agent.name, agent.id]))
       const targetAssignee = originalAssignee === byName.Vivy ? byName.Mai : byName.Vivy
       const otherAssignee = targetAssignee
+      const restoreAssignee = originalAssignee ?? 'Unassigned'
       cy.contains('.card', 'KANB-7').click()
       cy.get('.issue-panel').contains('button', 'Edit').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
@@ -253,13 +254,13 @@ E2E-SAVED`)
       cy.wait('@patchAssignee')
       cy.get('#issue-comment-limit').should('exist')
       cy.wsRequest('GET', '/issues/KANB-7').then((moved) => {
-        expect(moved.body.assigneeId).to.equal(otherAssignee)
+        expect(moved.body.issue.assigneeId).to.equal(otherAssignee)
       })
-      cy.get('.issue-panel select').eq(1).select(originalAssignee)
+      cy.get('.issue-panel select').eq(1).select(restoreAssignee)
       cy.wait('@patchAssignee')
       cy.wsRequest('GET', '/issues/KANB-7').then((after) => {
-        expect(after.body.assigneeId).to.equal(originalAssignee)
-        expect(after.body.description).to.equal(original)
+        expect(after.body.issue.assigneeId).to.equal(originalAssignee)
+        expect(after.body.issue.description).to.equal(original)
       })
       })
     expectNoErrors()
@@ -290,9 +291,9 @@ E2E-SAVED`)
   it('HTTP: PATCH com 4096 e assigneeId devolve 422 e não altera nada', () => {
     cy.wsRequest('GET', '/issues/KANB-1').then((before) => {
       const baseline = {
-        description: before.body.description,
-        assigneeId: before.body.assigneeId,
-        updatedAt: before.body.updatedAt,
+        description: before.body.issue.description,
+        assigneeId: before.body.issue.assigneeId,
+        updatedAt: before.body.issue.updatedAt,
       }
       cy.wsSnapshot().then((agentsSnapshot) => {
       cy.wsRequest('PATCH', '/issues/KANB-1', {
@@ -303,9 +304,9 @@ E2E-SAVED`)
         expect(response.body.error).to.be.a('string').and.not.equal('')
         expect(response.body.field).to.equal('description')
         cy.wsRequest('GET', '/issues/KANB-1').then((after) => {
-          expect(after.body.description).to.equal(baseline.description)
-          expect(after.body.assigneeId).to.equal(baseline.assigneeId)
-          expect(after.body.updatedAt).to.equal(baseline.updatedAt)
+          expect(after.body.issue.description).to.equal(baseline.description)
+          expect(after.body.issue.assigneeId).to.equal(baseline.assigneeId)
+          expect(after.body.issue.updatedAt).to.equal(baseline.updatedAt)
         })
       })
       })

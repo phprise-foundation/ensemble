@@ -1,7 +1,7 @@
 describe('console grid', () => {
   beforeEach(() => {
     cy.viewport(1280, 800)
-    cy.visit('/')
+    cy.visitApp('/')
   })
 
   it('opens from the top button and exposes the live log', () => {

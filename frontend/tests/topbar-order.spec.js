@@ -149,7 +149,7 @@ describe('Ordem dos controles do topbar', () => {
     wrapper.unmount()
   })
 
-  it('em mobile, nenhuma grade e renderizada e menu, Sim, tema e perfil permanecem', async () => {
+  it('em mobile, nenhuma grade e renderizada e menu, tema e perfil permanecem', async () => {
     const wrapper = await mountApp(true)
 
     expect(slots(wrapper)).toEqual(['theme', 'profile'])

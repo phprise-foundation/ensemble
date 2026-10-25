@@ -78,7 +78,7 @@ describe('diálogos e toasts na interface em execução', () => {
     cy.get(card).find('button').last().click()
     cy.get(card).should('not.exist')
     cy.get('.toast').should('contain', 'deleted.')
-    cy.contains('E2E Temp').should('not.exist')
+    cy.contains('.agent-card', 'E2E Temp').should('not.exist')
   })
 
   it('agents: erro na exclusão anuncia toast com role="alert"', () => {
@@ -94,7 +94,7 @@ describe('diálogos e toasts na interface em execução', () => {
 
   it('sidebar: exclusão de source cancelada via Cancelar mantém a source', () => {
     cy.wsRequest('POST', '/repositories', { name: 'src-e2e', provider: 'github', url: 'https://github.com/example/src-e2e', baseBranch: 'main' })
-    cy.visit('/')
+    cy.visitApp('/')
     abrirDeleteSource('src-e2e')
     cy.get(card).find('button.ghost').click()
     cy.get(card).should('not.exist')
@@ -103,7 +103,7 @@ describe('diálogos e toasts na interface em execução', () => {
 
   it('sidebar: exclusão de source confirmada via Enter remove e mostra toast', () => {
     cy.wsRequest('POST', '/repositories', { name: 'src-enter', provider: 'github', url: 'https://github.com/example/src-enter', baseBranch: 'main' })
-    cy.visit('/')
+    cy.visitApp('/')
     abrirDeleteSource('src-enter')
     cy.get(card).trigger('keydown', { key: 'Enter' })
     cy.get(card).should('not.exist')

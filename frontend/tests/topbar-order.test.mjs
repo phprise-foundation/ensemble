@@ -24,7 +24,7 @@ const consoleInTree = () => /AppConsole|class="icon-btn console-toggle"|app-cons
 
 const expectedSequence = () => {
   assert.ok(consoleInTree(), 'a grade inferior (console) deve estar na arvore do topbar')
-  return ['sim', 'grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
+  return ['grid-left', 'grid-bottom', 'grid-right', 'theme', 'profile']
 }
 
 test('o grupo .topbar-actions fica depois do titulo e do spacer', () => {
@@ -40,7 +40,7 @@ test('os slots seguem a sequencia canonica derivada da arvore', () => {
 test('nenhum controle de grade fica fora do grupo .topbar-actions', () => {
   const block = actionsBlock()
   const outside = appVue.slice(0, appVue.indexOf(block)) + appVue.slice(appVue.indexOf(block) + block.length)
-  for (const control of ['sidebar-toggle', 'console-toggle', 'copilot-toggle', 'sim-toggle', 'theme-toggle']) {
+  for (const control of ['sidebar-toggle', 'console-toggle', 'copilot-toggle', 'theme-toggle']) {
     assert.doesNotMatch(outside, new RegExp(`class="[^"]*${control}`), `${control} so pode existir dentro do grupo`)
   }
 })
@@ -50,13 +50,6 @@ test('todas as grades sao desktop-only e o grupo e o unico container', () => {
   for (const slot of ['grid-left', 'grid-bottom', 'grid-right']) {
     assert.match(block, new RegExp(`v-if="!isMobile"\\s+data-topbar-slot="${slot}"`), `${slot} deve ser desktop-only`)
   }
-})
-
-test('Sim e botao de alternancia com aria-pressed e dot visivel', () => {
-  const block = actionsBlock()
-  assert.match(block, /data-topbar-slot="sim"\s+class="button ghost sim-toggle"/)
-  assert.match(block, /:aria-pressed="simActive"/)
-  assert.match(block, /<span class="sim-dot sm"><\/span>/)
 })
 
 test('grades declaram aria-expanded e aria-controls coerentes', () => {

@@ -5,7 +5,7 @@
 # database. Extra arguments are forwarded to `cypress run`.
 #
 # E2E_DATABASE_URL points at the ephemeral database (created when missing).
-# When E2E_DATA_FILE is set the database is reused instead of recreated.
+# The database is recreated on every run; nothing touches the developer one.
 # Without a DISPLAY the run gets its own Xvfb display.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

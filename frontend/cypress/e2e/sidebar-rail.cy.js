@@ -29,6 +29,15 @@ const expectOneCurrent = (title) => {
 
 describe('rail do sidebar colapsado', () => {
   let errors
+  let boardId
+  let workflowId
+
+  before(() => {
+    cy.wsSnapshot().then((snapshot) => {
+      boardId = snapshot.boards.find((board) => board.name === 'Kanban').id
+      workflowId = snapshot.workflows[0].id
+    })
+  })
 
   beforeEach(() => {
     errors = []
@@ -44,12 +53,12 @@ describe('rail do sidebar colapsado', () => {
   })
 
   it('exibe um link para cada folha, sem elementos mortos, com tooltip e destaque ativo', () => {
-    cy.visit('/#/boards/KANB')
+    cy.visitApp(`/#/boards/${boardId}`)
     cy.get('.leaf').its('length').then((treeLeaves) => {
       collapse()
 
       cy.get('nav.rail').should('have.attr', 'aria-label', 'Pages')
-      cy.get('nav.rail a.leaf.rail-leaf').should('have.length', treeLeaves + 1)
+      cy.get('nav.rail a.leaf.rail-leaf').should('have.length', treeLeaves)
       cy.get('nav.rail .rail-divider').should('have.length.greaterThan', 0)
 
       cy.get('nav.rail .rail-leaf svg').first().then(($svg) => {
@@ -85,24 +94,21 @@ describe('rail do sidebar colapsado', () => {
     })
   })
 
-  it('compara a contagem do rail com as folhas do modelo e mantém Experiences só no rail', () => {
-    cy.visit('/')
-    cy.window().then((win) => {
-      cy.get('.leaf').then(($tree) => {
-        const treeTitles = [...$tree].map((link) => link.getAttribute('title'))
-        expect(treeTitles).to.not.include('Experiences')
-        cy.wrap(treeTitles.length).as('treeCount')
-      })
+  it('compara a contagem do rail com as folhas do modelo', () => {
+    cy.visitApp('/')
+    cy.get('.leaf').then(($tree) => {
+      const treeTitles = [...$tree].map((link) => link.getAttribute('title'))
+      expect(treeTitles).to.not.include('Experiences')
+      cy.wrap(treeTitles.length).as('treeCount')
     })
     collapse()
     cy.get('@treeCount').then((treeCount) => {
-      cy.get('nav.rail a.rail-leaf').should('have.length', treeCount + 1)
-      cy.get('nav.rail a.rail-leaf').last().should('have.attr', 'title', 'Experiences')
+      cy.get('nav.rail a.rail-leaf').should('have.length', treeCount)
     })
   })
 
   it('cada link do rail navega para o seu endereço e destaca apenas ele', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     collapse()
     cy.get('nav.rail a.rail-leaf').each(($link) => {
       const title = $link.attr('title')
@@ -113,8 +119,8 @@ describe('rail do sidebar colapsado', () => {
     })
   })
 
-  it('mantém o destaque ao recarregar em deep link e ao clicar em Experiences', () => {
-    cy.visit('/#/workflows/standard/transitions')
+  it('mantém o destaque ao recarregar em deep link e ao clicar em outra folha', () => {
+    cy.visitApp(`/#/workflows/${workflowId}/transitions`)
     collapse()
     expectOneCurrent('Standard · Transitions')
     cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.class', 'router-link-active')
@@ -124,13 +130,13 @@ describe('rail do sidebar colapsado', () => {
     collapse()
     expectOneCurrent('Standard · Transitions')
 
-    cy.get('nav.rail a.rail-leaf[title="Experiences"]').click()
-    cy.location('hash').should('eq', '#/experiences')
-    expectOneCurrent('Experiences')
+    cy.get('nav.rail a.rail-leaf[title="Kanban · Columns"]').click()
+    cy.location('hash').should('eq', `#/boards/${boardId}/columns`)
+    expectOneCurrent('Kanban · Columns')
   })
 
   it('navega entre os links com Tab e mostra o foco visível', () => {
-    cy.visit('/#/boards/KANB')
+    cy.visitApp(`/#/boards/${boardId}`)
     collapse()
     cy.get('button.sidebar-toggle').focus().then(($toggle) => {
       expect($toggle[0].matches(':focus')).to.eq(true)
@@ -157,23 +163,15 @@ describe('rail do sidebar colapsado', () => {
   })
 
   it('destaca o board escolhido pela loja na rota padrão /#/boards', () => {
-    cy.visit('/#/boards')
+    cy.visitApp('/#/boards')
     cy.get('.leaf').should('have.length.greaterThan', 0)
     collapse()
     expectOneCurrent('Kanban')
   })
 
-  it('não exibe ponto de simulação no rail, como na árvore', () => {
-    cy.visit('/#/boards')
-    cy.get('.sim-dot').should('have.length.greaterThan', 0)
-    collapse()
-    cy.get('nav.rail .sim-dot').should('not.exist')
-    cy.get('nav.rail a.rail-leaf svg').should('have.length.greaterThan', 0)
-  })
-
   it('mantém a árvore expandida em 1024px e exibe o rail a partir de 1025px', () => {
     cy.viewport(1024, 800)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.leaf').should('have.length.greaterThan', 0)
     cy.get('button.sidebar-toggle').should('not.exist')
     cy.get('nav:not(.rail)').should('be.visible')
@@ -205,14 +203,15 @@ describe('rail do sidebar colapsado', () => {
   })
 })
 
-const extraEntities = {
-  boards: { id: 'B2', name: 'Board 2', workspaceId: 'default', workflowId: 'standard', filters: { statusIds: [] }, columns: [{ id: 'todo', name: 'Todo', wip: null, statusIds: ['to-develop'] }] },
-  workflows: { id: 'flow-b', name: 'Flow B', workspaceId: 'default' },
-  teams: { id: 'design', name: 'Design team', workspaceId: 'default' },
-}
-
 describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
   let errors
+  let boardId
+
+  before(() => {
+    cy.wsSnapshot().then((snapshot) => {
+      boardId = snapshot.boards.find((board) => board.name === 'Kanban').id
+    })
+  })
 
   beforeEach(() => {
     errors = []
@@ -220,9 +219,19 @@ describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
     cy.viewport(1280, 800)
     cy.intercept({ method: 'GET', pathname: '**/api/workspaces/*/snapshot' }, (req) => {
       req.continue((res) => {
-        for (const [collection, entity] of Object.entries(extraEntities)) {
-          res.body[collection].push(entity)
-        }
+        const workspaceId = res.body.workspaces[0].id
+        const workflowId = res.body.workflows[0].id
+        const statusId = res.body.statuses[0].id
+        res.body.boards.push({
+          id: 'B2',
+          name: 'Board 2',
+          workspaceId,
+          workflowId,
+          filters: { statusIds: [] },
+          columns: [{ id: 'todo', name: 'Todo', wip: null, statusIds: [statusId] }],
+        })
+        res.body.workflows.push({ id: 'flow-b', name: 'Flow B', workspaceId })
+        res.body.teams.push({ id: 'design', name: 'Design team', workspaceId })
       })
     })
   })
@@ -235,7 +244,7 @@ describe('destaque ativo com mais de uma entidade do mesmo tipo', () => {
   })
 
   it('destaca somente o board, o workflow e o time atuais', () => {
-    cy.visit('/#/boards/KANB')
+    cy.visitApp(`/#/boards/${boardId}`)
     cy.get('.leaf[title="Board 2"]').should('exist')
     collapse()
     expectOneCurrent('Kanban')

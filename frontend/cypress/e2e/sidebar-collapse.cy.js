@@ -9,6 +9,13 @@ const collectErrors = (win, errors) => {
 
 describe('sidebar colapsado na interface em execução', () => {
   let errors
+  let boardId
+
+  before(() => {
+    cy.wsSnapshot().then((snapshot) => {
+      boardId = snapshot.boards.find((board) => board.name === 'Kanban').id
+    })
+  })
 
   beforeEach(() => {
     errors = []
@@ -29,7 +36,7 @@ describe('sidebar colapsado na interface em execução', () => {
   })
 
   it('oculta os rótulos das folhas com submenu aberto e preserva ícones, títulos e navegação', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.nav-entry[title="Boards"]').should('have.class', 'open')
     cy.get('.leaf .label').should('have.length.greaterThan', 0)
     cy.get('.leaf .label').filter(':visible').first().should('be.visible')
@@ -49,7 +56,7 @@ describe('sidebar colapsado na interface em execução', () => {
     })
 
     cy.get('nav.rail .rail-leaf').first().click()
-    cy.location('hash').should('eq', '#/boards/KANB')
+    cy.location('hash').should('eq', `#/boards/${boardId}`)
     cy.get('vite-error-overlay').should('not.exist')
   })
 })

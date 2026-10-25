@@ -23,13 +23,13 @@ const store = storeWith({
 })
 
 test('workspace nulo deixa modelo e rail vazios', () => {
-  assert.deepEqual(sidebarNavigation(store, null), { boards: [], workflows: [], teams: [], experiences: [] })
+  assert.deepEqual(sidebarNavigation(store, null), { boards: [], workflows: [], teams: [] })
   assert.deepEqual(railSections(sidebarNavigation(store, null)), [])
 })
 
-test('rail expoe as folhas de boards, workflows, teams e Experiences', () => {
+test('rail expoe as folhas de boards, workflows e teams', () => {
   const sections = railSections(sidebarNavigation(store, 'ws'))
-  assert.deepEqual(sections.map((leaves) => leaves.length), [2, 3, 3, 3, 3, 1])
+  assert.deepEqual(sections.map((leaves) => leaves.length), [2, 3, 3, 3, 3])
 })
 
 test('cada workflow e team expoe suas tres paginas', () => {

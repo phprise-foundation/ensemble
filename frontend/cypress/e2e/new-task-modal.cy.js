@@ -5,8 +5,8 @@ const collectErrors = (win, errors) => {
   )
 }
 
-const initialStatusesFor = (workspace, boardId) => {
-  const board = workspace.boards.find((candidate) => candidate.id === boardId)
+const initialStatusesFor = (workspace, boardName) => {
+  const board = workspace.boards.find((candidate) => candidate.name === boardName)
   return workspace.statuses.filter(
     (status) => status.workflowId === board.workflowId && status.type === 'initial',
   )
@@ -17,7 +17,7 @@ const issueCount = () => cy.wsRequest('GET', '/issues').its('body.issues.length'
 const waitForBoard = () => cy.get('.column', { timeout: 10000 }).should('have.length.at.least', 1)
 
 const openModal = () => {
-  cy.visit('/?sim=0')
+  cy.visitApp('/?sim=0')
   waitForBoard()
   cy.contains('button', 'New task').click()
   cy.get('.new-task-modal').should('be.visible')
@@ -25,8 +25,6 @@ const openModal = () => {
 
 describe('new task modal (KAN-123)', () => {
   let errors
-  const createdIssues = []
-  const extraStatusIds = []
 
   beforeEach(() => {
     errors = []
@@ -38,16 +36,8 @@ describe('new task modal (KAN-123)', () => {
     })
   })
 
-  afterEach(() => {
-    extraStatusIds.length = 0
-    for (const key of createdIssues) {
-      cy.wsRequest('DELETE', `/issues/${key}`)
-    }
-    createdIssues.length = 0
-  })
-
   it('opens with focus on summary and lists only the initial statuses of the workflow', () => {
-    cy.visit('/?sim=0')
+    cy.visitApp('/?sim=0')
     waitForBoard()
     cy.wsSnapshot().then((workspace) => {
       const initial = initialStatusesFor(workspace, 'Kanban')
@@ -110,7 +100,6 @@ describe('new task modal (KAN-123)', () => {
       cy.wsRequest('GET', '/issues').then((issues) => {
         const created = issues.body.issues.find((issue) => issue.summary === 'E2E modal created task')
         expect(created).to.exist
-        createdIssues.push(created.key)
         expect(created.assigneeId).to.equal(mai.id)
         cy.get('.column')
           .contains('.column-title', 'Todo')

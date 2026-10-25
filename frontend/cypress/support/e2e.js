@@ -49,21 +49,29 @@ Cypress.Commands.add('meRequest', (method, body) => {
   })
 })
 
+// The dev server serves the SPA under the build base (/app/). Visiting the
+// bare root goes through a 302 to the base; a second visit through that
+// redirect leaves Cypress waiting for a load event that never arrives, so
+// every page visit goes straight to the base path.
+Cypress.Commands.add('visitApp', (path = '') => {
+  return cy.visit(`/app/${String(path).replace(/^\/+/, '')}`)
+})
+
 Cypress.Commands.add('visitRoles', function () {
   return cy.wsSnapshot().then((snapshot) => {
-    cy.visit(`/#/teams/${snapshot.teams[0].id}/roles`)
+    cy.visitApp(`/#/teams/${snapshot.teams[0].id}/roles`)
   })
 })
 
 Cypress.Commands.add('visitIssueTypes', function () {
   return cy.wsSnapshot().then((snapshot) => {
-    cy.visit(`/#/workflows/${snapshot.workflows[0].id}/issue-types`)
+    cy.visitApp(`/#/workflows/${snapshot.workflows[0].id}/issue-types`)
   })
 })
 
 Cypress.Commands.add('visitAgents', function () {
   return cy.wsSnapshot().then((snapshot) => {
-    cy.visit(`/#/teams/${snapshot.teams[0].id}/agents`)
+    cy.visitApp(`/#/teams/${snapshot.teams[0].id}/agents`)
   })
 })
 
