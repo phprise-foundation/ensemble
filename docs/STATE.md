@@ -1,5 +1,82 @@
 # STATE
 
+## P4 status — last updated 2026-10-25
+
+**Merged into `main`:** P4-1 (#192, #194), P4-2 (#195).
+
+**In progress on `feat/p4-3-fake-removal` (WIP, pushed, no PR yet), head
+`ac7c576`:** the fake backend is gone from the code and the browser review
+fixes are in.
+
+### What P4-3 already does
+
+- `vite build` lands in `public/app/` (git-ignored); `public/router.php` serves
+  the SPA there and redirects `/` to `/app/`. The legacy root `index.html` /
+  `app.js` / `style.css` were removed.
+- `frontend/plugin/fake-backend.js`, the legacy session/board branches, the
+  Experiences surface and the "Sim/Prototype" UI are gone. `session.load()`
+  starts at the sign-in gate; `VITE_API_URL` is the single real-backend knob
+  (required by `vite.config.js` in dev) and is pinned empty in
+  `vitest.config.js` and `run-e2e.sh` so a developer `.env.local` cannot flip
+  them.
+- New endpoints: `GET /issues/{key}/comments`, `GET /issues/{key}/events`,
+  `PATCH /api/me`, and the snapshot now carries `sources` (repositories) and
+  `fields` per issue type. `Level` accepts `0` (epic above stories).
+- Browser-review fixes: `realSave` PATCH now carries the entity id for every
+  collection (board edits were 404); `moveReal` extracts `statusId` from the
+  board drop payload and re-fetches the issue (comments/history survive a
+  move); columns sort by `position`, get an automatic position on create and
+  reorder by dragging the column header; the issue panel edits the summary
+  inline; issue types manage custom fields through
+  `POST /issue-types/{id}/fields` + `PATCH/DELETE /fields/{id}`; the board
+  editor drops the legacy "3 to 6 letters" id field.
+- E2E runs against the real backend: `run-e2e.sh` resets an ephemeral
+  PostgreSQL schema (`bin/e2e-reset`), installs (`bin/install` with
+  `BOOTSTRAP_WORKSPACE_PREFIX=KANB`), starts `php -S` on :8081 and seeds the
+  board through the API (`frontend/tests/e2e-seed.sh`). Cypress gets a bearer
+  token in `cypress/support/e2e.js` (`wsRequest`, `meRequest`, `wsSnapshot`,
+  `visitRoles`, `visitIssueTypes`, `visitAgents`). CI now provisions
+  postgres + PHP and runs phpunit/psalm before the frontend jobs.
+
+### Current bar
+
+- Backend: **138 PHPUnit tests / 889 assertions**, Psalm level 1, **0 errors**.
+- Frontend unit: green except the untracked legacy `comment-author.spec.js`
+  (kept on disk, never tracked).
+- Real E2E: **109/117**. Remaining failures (12 tests / 7 specs):
+  1. `profile-menu` / `profile-avatar` — `cy.visit` page-load timeout of 60s on
+     reload (investigate; suspect the single-threaded `php -S` under the
+     avatar data-URI PATCH).
+  2. `sidebar-rail` / `sidebar-collapse` — the intercepted snapshot fixtures
+     still use `workspaceId: 'default'`; resolve it through `e2eContext`.
+  3. `new-task-modal` (2) — PATCH responses now return `{issue}`; assert the
+     wrapper.
+  4. `issue-history` (2) — text/order assertions to tune (backend returns
+     events newest-first so same-second seeds keep a deterministic order).
+  5. `description-comment-limits` (3) — key/timestamp assertions and the
+     `KANB-7` legacy markers.
+
+### Next moves
+
+1. Close the 12 e2e failures above; `npm run test:unit` green.
+2. PR of `feat/p4-3-fake-removal` → CI (phpunit + psalm + vitest + contracts +
+   build + real e2e) → merge into `main` with `--delete-branch`.
+3. Update this STATE section at merge time.
+4. The product owner runs the full browser pass **on `main`** afterwards (his
+   rule: test only what is merged).
+
+### How to run locally (dev)
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+set -a && source .env && set +a && php bin/install
+php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
+cd frontend && npm run dev     # needs VITE_API_URL=http://127.0.0.1:8081 in .env.local
+```
+
+Login: `admin` / `admin1234`. Build-and-serve: `npm run build` then
+`http://127.0.0.1:8081/app/`.
+
 ## Current status — 2026-10-24
 
 - **P0, P1 and P2 are merged into `main` and pushed to origin.** All previous
