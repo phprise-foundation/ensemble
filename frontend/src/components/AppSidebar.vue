@@ -8,7 +8,6 @@ import { boardStore } from '../store/board.js'
 import { session } from '../store/session.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
-import { isRealBackend } from '../api/client.js'
 import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
@@ -241,8 +240,8 @@ function editSource(source) {
 }
 
 function normalizeBoard(board) {
-  if (!isRealBackend() && !/^[A-Za-z]{3,6}$/.test(board.id)) {
-    throw new Error('Board ID must be 3 to 6 letters')
+  if (!board.name) {
+    throw new Error('Name is required')
   }
   if (!board.name) {
     throw new Error('Name is required')
@@ -263,7 +262,7 @@ async function copyWorkflow(templateId, workflow) {
     idMap[status.id] = saved.id
   }
   for (const transition of boardStore.transitionsOf(templateId)) {
-    if (isRealBackend() && transition.from === '*') {
+    if (transition.from === '*') {
       continue
     }
     await boardStore.saveEntity('transitions', {

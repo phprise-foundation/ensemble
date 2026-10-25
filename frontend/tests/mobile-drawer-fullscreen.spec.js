@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
 import { session } from '../src/store/session.js'
@@ -30,10 +30,34 @@ vi.mock('../src/api/index.js', () => ({
   simulatedFeatures: { value: [] },
   simulation: { features: {} },
   api: {
-    fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-    updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
+    me: vi.fn(),
+    workspaces: vi.fn(),
   },
 }))
+
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
+
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
+}))
+
+
+client.request.mockImplementation(async (method, path) => {
+  if (path === '/api/me') {
+    return { user: { login: 'admin', displayName: 'Admin' } }
+  }
+  if (path === '/api/workspaces') {
+    return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+  }
+  if (path === '/api/auth/login') {
+    return { token: 't', user: { login: 'admin', displayName: 'Admin' } }
+  }
+  throw new Error(`unexpected ${method} ${path}`)
+})
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ meta: { title: 'Test' } }),
@@ -74,7 +98,7 @@ function setupViewports(viewport) {
 }
 
 async function mountApp(stubSidebar) {
-  session.signIn()
+  await session.signIn('admin', 'admin1234')
   const stubs = { RouterView: true, RouterLink: 'a', AppIcon: 'span', AppCopilot: true, AppConsole: true }
   if (stubSidebar) {
     stubs.AppSidebar = sidebarStub
@@ -84,6 +108,7 @@ async function mountApp(stubSidebar) {
     attachTo: document.body,
   })
   await nextTick()
+  await flushPromises()
   return wrapper
 }
 

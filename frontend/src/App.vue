@@ -3,7 +3,6 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
-import SimBanner from './components/SimBanner.vue'
 import AppIcon from './components/AppIcon.vue'
 import AppCopilot from './components/AppCopilot.vue'
 import AppConsole from './components/AppConsole.vue'
@@ -13,7 +12,6 @@ import { boardStore } from './store/board.js'
 import { CONSOLE_HEIGHT_STEP, DEFAULT_CONSOLE_HEIGHT, clampHeight } from './store/consoleHeight.js'
 import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
-import { hasSimulation, setAll } from './api/index.js'
 
 const route = useRoute()
 const sidebarOpen = ref(false)
@@ -131,11 +129,7 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
   }
 })
 
-const simActive = computed(() => hasSimulation.value)
 
-function toggleSimulation() {
-  setAll(!hasSimulation.value)
-}
 </script>
 
 <template>
@@ -144,7 +138,6 @@ function toggleSimulation() {
     <div v-if="sidebarOpen && isMobile" class="scrim" @click="sidebarOpen = false"></div>
 
     <div class="content" :inert="sidebarOpen && isMobile ? true : undefined">
-      <SimBanner />
       <header class="topbar">
         <button
           ref="menuToggle"
@@ -160,17 +153,6 @@ function toggleSimulation() {
         <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
         <div class="spacer"></div>
         <div class="topbar-actions">
-          <button
-            data-topbar-slot="sim"
-            class="button ghost sim-toggle"
-            title="Alternar dados simulados"
-            aria-label="Alternar dados simulados"
-            :aria-pressed="simActive"
-            @click="toggleSimulation"
-          >
-            <span class="sim-dot sm"></span>
-            Sim
-          </button>
           <button
             v-if="!isMobile"
             data-topbar-slot="grid-left"

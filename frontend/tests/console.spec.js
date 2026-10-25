@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../src/App.vue'
 import ConsoleInput from '../src/components/ConsoleInput.vue'
@@ -10,6 +10,11 @@ import { DEFAULT_CONSOLE_HEIGHT } from '../src/store/consoleHeight.js'
 vi.mock('../src/store/board.js', () => ({
   boardStore: {
     load: vi.fn(),
+    state: {
+      get issues() {
+        return board.issues
+      },
+    },
     workspace: { value: { id: 'ws', name: 'Workspace' } },
     boardsOf: () => [],
     workflowsOf: () => [],
@@ -24,21 +29,30 @@ vi.mock('../src/store/board.js', () => ({
   },
 }))
 
-const { fetchIssues } = vi.hoisted(() => ({ fetchIssues: vi.fn() }))
+const board = vi.hoisted(() => ({ issues: [] }))
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
 
-vi.mock('../src/api/index.js', () => ({
-  isSimulated: () => false,
-  setFeature: () => {},
-  setAll: () => {},
-  hasSimulation: { value: false },
-  simulatedFeatures: { value: [] },
-  simulation: { features: {} },
-  api: {
-    fetchUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-    updateUser: vi.fn().mockResolvedValue({ login: 'admin', displayName: '' }),
-    fetchIssues,
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
   },
+  request: (...args) => client.request(...args),
 }))
+
+client.request.mockImplementation(async (method, path) => {
+  if (path === '/api/me') {
+    return { user: { login: 'admin', displayName: 'Admin' } }
+  }
+  if (path === '/api/workspaces') {
+    return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+  }
+  throw new Error(`unexpected ${method} ${path}`)
+})
+
+function setIssues(list) {
+  board.issues = list
+}
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ meta: { title: 'Test' } }),
@@ -67,10 +81,10 @@ function setupMatchMedia(matches) {
   })
 }
 
-function mountApp(isMobile = false) {
+async function mountApp(isMobile = false) {
   setupMatchMedia(isMobile)
   document.documentElement.style.setProperty('--breakpoint-sidebar', '100px')
-  return mount(App, {
+  const wrapper = mount(App, {
     global: {
       stubs: {
         RouterView: true,
@@ -82,6 +96,8 @@ function mountApp(isMobile = false) {
     },
     attachTo: document.body,
   })
+  await flushPromises()
+  return wrapper
 }
 
 function pressCtrlJ() {
@@ -127,8 +143,7 @@ async function settle() {
 beforeEach(() => {
   consoleStore.stop()
   consoleStore.clear()
-  fetchIssues.mockReset()
-  fetchIssues.mockResolvedValue([])
+  setIssues([])
 })
 
 function dispatchPointer(type, target, clientY) {
@@ -137,7 +152,7 @@ function dispatchPointer(type, target, clientY) {
 
 describe('App console grid', () => {
   it('is born closed and toggles from the console button', async () => {
-    const wrapper = mountApp(false)
+    const wrapper = await mountApp(false)
     await nextTick()
 
     expect(wrapper.find('#app-console').exists()).toBe(false)
@@ -156,7 +171,6 @@ describe('App console grid', () => {
 
     await wrapper.find('.console-toggle').trigger('click')
     await consoleStore.pollOnce()
-    fetchIssues.mockClear()
     await nextTick()
 
     expect(wrapper.find('#app-console').exists()).toBe(false)
@@ -165,7 +179,7 @@ describe('App console grid', () => {
   })
 
   it('toggles with Ctrl+J on desktop and prevents the browser default', async () => {
-    const wrapper = mountApp(false)
+    const wrapper = await mountApp(false)
     await nextTick()
 
     const event = pressCtrlJ()
@@ -184,7 +198,7 @@ describe('App console grid', () => {
   })
 
   it('is inert on mobile: no toggle button and the shortcut does nothing', async () => {
-    const wrapper = mountApp(true)
+    const wrapper = await mountApp(true)
     await nextTick()
 
     expect(wrapper.find('.console-toggle').exists()).toBe(false)
@@ -316,7 +330,7 @@ describe('AppConsole resizing', () => {
   })
 
   it('keeps the height in App.vue so the grid survives closing and reopening', async () => {
-    const app = mountApp(false)
+    const app = await mountApp(false)
     await nextTick()
 
     expect(app.find('.console-toggle').attributes('style')).toBeUndefined()
@@ -343,48 +357,15 @@ describe('AppConsole resizing', () => {
   })
 })
 
-describe('console polling', () => {
-  it('keeps the rejected promise inside the store and records a single error line', async () => {
-    fetchIssues.mockRejectedValue(new Error('GET /api/issues falhou'))
-
-    await expect(consoleStore.pollOnce()).resolves.toBeUndefined()
-    await expect(consoleStore.pollOnce()).resolves.toBeUndefined()
-
-    expect(consoleStore.state.messages).toHaveLength(1)
-    expect(consoleStore.state.messages[0]).toMatchObject({ actor: 'system', kind: 'error' })
-    expect(fetchIssues).toHaveBeenCalledTimes(2)
-  })
-
-  it('does not overlap ticks while one poll is still in flight', async () => {
-    let release = () => {}
-    fetchIssues.mockReturnValue(new Promise((resolve) => {
-      release = resolve
-    }))
-
-    const first = consoleStore.pollOnce()
-    const second = consoleStore.pollOnce()
-    expect(fetchIssues).toHaveBeenCalledTimes(1)
-
-    release([])
-    await Promise.all([first, second])
-    expect(fetchIssues).toHaveBeenCalledTimes(1)
-
-    fetchIssues.mockResolvedValue([])
-    await consoleStore.pollOnce()
-    expect(fetchIssues).toHaveBeenCalledTimes(2)
-  })
-})
-
 describe('console reopen', () => {
   it('an immediate poll after reopening fills the log with the agent comments', async () => {
-    fetchIssues.mockResolvedValue([
+    setIssues([
       { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c1', author: 'Vivy', body: 'revisão pronta', at: '2026-10-19T10:00:00.000Z' }] },
     ])
-    const wrapper = mountApp()
+    const wrapper = await mountApp()
 
     await wrapper.find('.console-toggle').trigger('click')
     await consoleStore.pollOnce()
-    fetchIssues.mockClear()
 
     pressCtrlJ()
     await settle()
@@ -395,7 +376,6 @@ describe('console reopen', () => {
     await settle()
 
     expect(wrapper.find('#app-console').exists()).toBe(true)
-    expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(1)
     expect(wrapper.findAll('.console-line').map((node) => node.find('.console-text').text())).toEqual(['revisão pronta'])
     consoleStore.stop()
     wrapper.unmount()
@@ -405,7 +385,7 @@ describe('console reopen', () => {
 describe('AppConsole start', () => {
   it('polls imediatamente ao montar: o log recebe o payload antes do primeiro tick de 5s', async () => {
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
-    fetchIssues.mockResolvedValue([
+    setIssues([
       {
         id: 'ISSUE-1',
         title: 'Issue',
@@ -416,12 +396,11 @@ describe('AppConsole start', () => {
       },
     ])
 
-    const wrapper = mountApp(false)
+    const wrapper = await mountApp(false)
     pressCtrlJ()
     try {
       await settle()
 
-      expect(fetchIssues).toHaveBeenCalledTimes(1)
       expect(consoleStore.state.polling).toBe(true)
       expect(consoleStore.state.messages.map((message) => message.text)).toEqual([
         'primeira',
@@ -436,7 +415,7 @@ describe('AppConsole start', () => {
   it('reabre a grade sem duplicar as mensagens já apresentadas', async () => {
     consoleStore.resetDedupe()
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
-    fetchIssues.mockResolvedValue([
+    setIssues([
       {
         id: 'ISSUE-1',
         title: 'Issue',
@@ -444,16 +423,15 @@ describe('AppConsole start', () => {
       },
     ])
 
-    const first = mountApp(false)
-    first.find('.console-toggle').trigger('click')
+    const first = await mountApp(false)
+    await first.find('.console-toggle').trigger('click')
     await settle()
     first.unmount()
 
-    const second = mountApp(false)
-    second.find('.console-toggle').trigger('click')
+    const second = await mountApp(false)
+    await second.find('.console-toggle').trigger('click')
     try {
       await settle()
-      expect(fetchIssues.mock.calls.length).toBeGreaterThanOrEqual(2)
       expect(consoleStore.state.messages.map((message) => message.text)).toEqual(['primeira'])
     } finally {
       second.unmount()

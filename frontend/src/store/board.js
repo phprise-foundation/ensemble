@@ -1,13 +1,11 @@
 import { computed, reactive } from 'vue'
-import { api } from '../api/index.js'
-import { isRealBackend, token, request } from '../api/client.js'
+import { token, request } from '../api/client.js'
 import { isSimulated } from '../api/simulation.js'
 import { session } from './session.js'
 
-const realMode = () => isRealBackend() && Boolean(token()) && Boolean(session.workspaceId)
 const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
 const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
-const presented = (payload) => payload?.issue ?? payload ?? null
+const presented = (payload) => normalizeEntity('issues', payload?.issue ?? payload ?? null)
 const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
 
 const REAL_ROUTES = {
@@ -18,10 +16,11 @@ const REAL_ROUTES = {
   statuses: { key: 'status', path: (data) => `workflows/${data.workflowId}/statuses` },
   transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions` },
   issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types` },
+  fields: { key: 'field', path: (data) => `issue-types/${data.issueTypeId}/fields`, editPath: (data) => `fields/${data.id}` },
   columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns` },
-  roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles` },
-  profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles` },
-  agents: { key: 'agent', path: (data) => `teams/${data.teamId}/agents` },
+  roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles`, editPath: (data) => `roles/${data.id}` },
+  profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles`, editPath: (data) => `profiles/${data.id}` },
+  agents: { key: 'agent', path: (data) => `teams/${data.teamId}/agents`, editPath: (data) => `agents/${data.id}` },
 }
 
 const LEGACY_TO_REAL_KEYS = {
@@ -35,14 +34,23 @@ const REAL_BODY_DROPS = {
   sources: ['id', 'workspaceId', 'path'],
   statuses: ['id', 'workflowId'],
   transitions: ['id', 'workflowId'],
-  issueTypes: ['id', 'workflowId'],
+  issueTypes: ['id', 'workflowId', 'fields'],
+  fields: ['id', 'issueTypeId'],
   columns: ['id', 'boardId'],
   roles: ['id', 'teamId'],
   profiles: ['id', 'teamId'],
-  agents: ['id', 'teamId'],
+  agents: ['id'],
 }
 
 function normalizeEntity(collection, entity) {
+  if (collection === 'issues' && entity && typeof entity === 'object') {
+    return {
+      ...entity,
+      id: entity.key ?? entity.id,
+      comments: entity.comments ?? [],
+      history: entity.history ?? [],
+    }
+  }
   const map = LEGACY_TO_REAL_KEYS[collection]
   if (!map) {
     return entity
@@ -80,9 +88,12 @@ async function realSave(collection, data) {
   }
   const exists = Boolean(data.__existing)
   const payload = realPayload(collection, data)
-  const path = spec.path(exists ? entityById(collection, data.id) ?? data : data)
+  const entity = exists ? entityById(collection, data.id) ?? data : data
+  const path = exists
+    ? spec.editPath ? spec.editPath(entity) : `${spec.path(entity)}/${data.id}`
+    : spec.path(entity)
   const wrapper = exists
-    ? await request('PATCH', scoped(`/${path}/${data.id}`), payload)
+    ? await request('PATCH', scoped(`/${path}`), payload)
     : await request('POST', scoped(`/${path}`), payload)
   return normalizeEntity(collection, wrapper?.[spec.key] ?? wrapper)
 }
@@ -96,15 +107,18 @@ async function realRemove(collection, id) {
   if (!entity) {
     return
   }
-  await request('DELETE', scoped(`/${spec.path(entity)}/${id}`))
+  const path = spec.editPath ? spec.editPath(entity) : `${spec.path(entity)}/${id}`
+  await request('DELETE', scoped(`/${path}`))
 }
 
-async function moveReal(issueId, statusId) {
+async function moveReal(issueId, target) {
   const issue = issueOf(issueId)
   if (!issue) {
     throw new Error('Unknown issue')
   }
-  return presented(await request('POST', scoped(`/issues/${issue.key}/move`), { statusId }))
+  const statusId = typeof target === 'string' ? target : target?.statusId
+  await request('POST', scoped(`/issues/${issue.key}/move`), { statusId })
+  return presented(await request('GET', scoped(`/issues/${issue.key}`)))
 }
 
 async function commentReal(issueId, body) {
@@ -112,7 +126,30 @@ async function commentReal(issueId, body) {
   if (!issue) {
     throw new Error('Unknown issue')
   }
-  return presented(await request('POST', scoped(`/issues/${issue.key}/comments`), { body }))
+  await request('POST', scoped(`/issues/${issue.key}/comments`), { body })
+  return presented(await request('GET', scoped(`/issues/${issue.key}`)))
+}
+
+async function hydrateIssue(issue) {
+  if (!issue?.key) {
+    return
+  }
+  const [comments, events] = await Promise.all([
+    request('GET', scoped(`/issues/${issue.key}/comments`)).catch(() => ({ comments: [] })),
+    request('GET', scoped(`/issues/${issue.key}/events`)).catch(() => ({ events: [] })),
+  ])
+  const target = issueOf(issue.id)
+  if (!target) {
+    return
+  }
+  target.comments = (comments?.comments ?? []).map((entry) => ({ ...entry, at: entry.createdAt ?? entry.at }))
+  target.history = (events?.events ?? []).map((event) => ({
+    type: event.fromStatusId ? 'status' : 'created',
+    actor: event.actor,
+    at: event.createdAt,
+    from: event.fromStatusId,
+    to: event.toStatusId,
+  }))
 }
 
 async function updateReal(issueId, patch) {
@@ -148,7 +185,12 @@ const state = reactive({
 })
 
 const board = computed(() => find(state.boards, state.boardId))
-const boardColumns = computed(() => board.value?.columns ?? [])
+const boardColumns = computed(() =>
+  state.columns
+    .filter((column) => column.boardId === board.value?.id)
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+)
 const boardStatuses = computed(() => state.statuses.filter((status) => status.workflowId === board.value?.workflowId))
 const boardTransitions = computed(() => state.transitions.filter((transition) => transition.workflowId === board.value?.workflowId))
 const boardIssueTypes = computed(() => state.issueTypes.filter((type) => type.workflowId === board.value?.workflowId))
@@ -236,19 +278,13 @@ export const boardStore = {
     state.loading = true
     state.error = ''
     try {
-      if (realMode()) {
-        const snapshot = await api.snapshot(session.workspaceId)
-        for (const [key, list] of Object.entries(snapshot)) {
-          if (Array.isArray(list)) {
-            snapshot[key] = list.map((item) => normalizeEntity(key, item))
-          }
+      const snapshot = await request('GET', scoped('/snapshot'))
+      for (const [key, list] of Object.entries(snapshot)) {
+        if (Array.isArray(list)) {
+          snapshot[key] = list.map((item) => normalizeEntity(key, item))
         }
-        Object.assign(state, snapshot)
-      } else {
-        const workspace = await api.fetchWorkspace()
-        Object.assign(state, workspace)
-        state.issues = await api.fetchIssues()
       }
+      Object.assign(state, snapshot)
       boardStore.setBoard(state.boardId)
     } catch (error) {
       state.error = error.message
@@ -259,6 +295,7 @@ export const boardStore = {
 
   select(id) {
     state.selectedIssueId = id
+    void hydrateIssue(issueOf(id))
   },
 
   clearSelection() {
@@ -266,31 +303,22 @@ export const boardStore = {
   },
 
   async moveIssue(issueId, target) {
-    if (realMode()) {
-      const moved = await moveReal(issueId, target)
-      const index = state.issues.findIndex((issue) => issue.id === issueId)
-      if (index >= 0) {
-        state.issues.splice(index, 1, moved)
-      }
-      return
+    const moved = await moveReal(issueId, target)
+    const index = state.issues.findIndex((issue) => issue.id === issueId)
+    if (index >= 0) {
+      state.issues.splice(index, 1, moved)
+      void hydrateIssue(state.issues[index])
     }
-    await api.moveIssue(issueId, target)
-    state.issues = await api.fetchIssues()
   },
 
   async createIssue(payload) {
-    if (realMode()) {
-      const created = presented(await api.request('POST', scoped('/issues'), payload))
-      state.issues.push(created)
-      return created
-    }
-    const created = await api.createIssue(payload)
-    state.issues = await api.fetchIssues()
+    const created = presented(await request('POST', scoped('/issues'), payload))
+    state.issues.push(created)
     return created
   },
 
   async updateIssue(id, patch) {
-    const updated = realMode() ? await updateReal(id, patch) : await api.updateIssue(id, patch)
+    const updated = await updateReal(id, patch)
     const index = state.issues.findIndex((issue) => issue.id === id)
     if (index >= 0) {
       state.issues.splice(index, 1, updated)
@@ -299,49 +327,22 @@ export const boardStore = {
   },
 
   async addComment(issueId, body) {
-    if (realMode()) {
-      const updated = await commentReal(issueId, body)
-      const index = state.issues.findIndex((issue) => issue.id === issueId)
-      if (index >= 0) {
-        state.issues.splice(index, 1, updated)
-      }
-      return
-    }
-    const updated = await api.addComment(issueId, { author: session.login, body })
+    const updated = await commentReal(issueId, body)
     const index = state.issues.findIndex((issue) => issue.id === issueId)
     if (index >= 0) {
       state.issues.splice(index, 1, updated)
+      void hydrateIssue(state.issues[index])
     }
   },
 
   async saveEntity(collection, data) {
-    if (realMode()) {
-      const saved = await realSave(collection, data)
-      await boardStore.load()
-      return saved
-    }
-    const exists = Boolean(data.__existing)
-    delete data.__existing
-    const saved = exists
-      ? await api.updateEntity(collection, data.id, data)
-      : await api.createEntity(collection, data)
-    const list = state[collection]
-    const index = list.findIndex((item) => item.id === saved.id)
-    if (index >= 0) {
-      list.splice(index, 1, saved)
-    } else {
-      list.push(saved)
-    }
+    const saved = await realSave(collection, data)
+    await boardStore.load()
     return saved
   },
 
   async removeEntity(collection, id) {
-    if (realMode()) {
-      await realRemove(collection, id)
-      await boardStore.load()
-      return
-    }
-    await api.deleteEntity(collection, id)
-    state[collection] = state[collection].filter((item) => item.id !== id)
+    await realRemove(collection, id)
+    await boardStore.load()
   },
 }

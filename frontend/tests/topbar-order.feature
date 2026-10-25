@@ -2,19 +2,15 @@
 Funcionalidade: Ordem dos controles do grupo direito do topbar
   Como pessoa que usa o board
   Quero que os controles do topo tenham posição fixa
-  Para localizar Sim, grades, tema e perfil sem procurar
+  Para localizar as grades, o tema e o perfil sem procurar
 
   Antecedente:
     Dado que a sessão está iniciada em uma tela desktop de 1025px ou mais
 
   Cenário: ordem completa em desktop
-    Então o grupo direito contém exatamente os slots Sim, grade esquerda, grade inferior, grade direita, tema e perfil
+    Então o grupo direito contém exatamente os slots grade esquerda, grade inferior, grade direita, tema e perfil
     E a ordem visual das bordas esquerdas acompanha a ordem do DOM
     E o perfil é o último item à direita
-
-  Cenário: Sim alterna os dados simulados
-    Quando aciono o controle Sim
-    Então o atributo aria-pressed de Sim reflete o estado da simulação
 
   Cenário: grade esquerda alterna o menu lateral
     Quando aciono a grade esquerda
@@ -39,7 +35,7 @@ Funcionalidade: Ordem dos controles do grupo direito do topbar
   Cenário: tela mobile não exibe grades
     Dado que a viewport tem 1024px ou menos
     Então nenhum controle de grade é renderizado
-    E o menu mobile, Sim, tema e perfil permanecem visíveis
+    E o menu mobile, o tema e o perfil permanecem visíveis
     E não há rolagem horizontal
 
   Cenário: título longo trunca sem empurrar o grupo

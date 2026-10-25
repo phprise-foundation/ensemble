@@ -10,7 +10,7 @@ const collectErrors = (win, errors) => {
 const FULL_NAME = 'Maria Fernanda de Souza Oliveira'
 
 function viewportFromBreakpoint(offset) {
-  cy.visit('/')
+  cy.visitApp('/')
   cy.document().then((doc) => {
     const declared = getComputedStyle(doc.documentElement).getPropertyValue('--breakpoint-sidebar')
     const breakpoint = Number.parseFloat(declared)
@@ -30,7 +30,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
         errors.push(`console.error: ${args.join(' ')}`)
       })
     })
-    cy.request('PATCH', '/api/user', { displayName: '' })
+    cy.meRequest('PATCH', { displayName: '' })
   })
 
   afterEach(() => {
@@ -42,7 +42,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
 
   it('mostra avatar, nome e dropdown profile/logout no topo direito', () => {
     viewportFromBreakpoint(200)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.topbar .profile-trigger').should('be.visible')
     cy.get('.profile-avatar')
       .should('be.visible')
@@ -58,9 +58,9 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
   })
 
   it('trunca o nome em linha única sem quebrar o topo', () => {
-    cy.request('PATCH', '/api/user', { displayName: FULL_NAME })
+    cy.meRequest('PATCH', { displayName: FULL_NAME })
     viewportFromBreakpoint(200)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.profile-name').should('have.text', FULL_NAME).and('have.attr', 'title', FULL_NAME)
     cy.get('.profile-name').then(($name) => {
       const name = $name[0]
@@ -77,7 +77,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
 
   it('em tela pequena o perfil interage, o nome fica em linha única e o topo não estoura', () => {
     viewportFromBreakpoint(-8)
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     cy.get('#profile-name').clear().type(FULL_NAME)
     cy.get('form button[type="submit"]').click()
     cy.get('.toast-text', { timeout: 2000 }).should('contain.text', 'Saved.')
@@ -100,7 +100,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
   })
 
   it('edita o nome na tela de profile, nunca o login, e persiste ao recarregar', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.profile-trigger').click()
     cy.contains('.profile-dropdown [role="menuitem"]', 'profile').click()
     cy.location('hash').should('eq', '#/profile')
@@ -126,7 +126,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
   })
 
   it('limita o nome a 40 caracteres na entrada e salva o valor aceito', () => {
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     cy.get('#profile-name').clear().type('x'.repeat(41))
     cy.get('#profile-name').invoke('val').should('have.length', 40)
     cy.get('form button[type="submit"]').click()
@@ -135,7 +135,7 @@ describe('menu de perfil do usuário no topo direito (KAN-15)', () => {
   })
 
   it('encerra a sessão no logout e torna a área protegida inacessível', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.profile-trigger').click()
     cy.contains('.profile-dropdown [role="menuitem"]', 'logout').click()
 

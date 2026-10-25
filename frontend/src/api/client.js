@@ -1,9 +1,5 @@
 const SAME_ORIGIN = ''
 
-export function isRealBackend() {
-  return Boolean(import.meta.env?.VITE_API_URL)
-}
-
 export function token() {
   if (typeof localStorage === 'undefined') {
     return null

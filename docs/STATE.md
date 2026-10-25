@@ -1,5 +1,99 @@
 # STATE
 
+## P4 status — last updated 2026-10-25
+
+**Merged into `main`:** P4-1 (#192, #194), P4-2 (#195).
+
+**On `feat/p4-3-fake-removal` (pushed, PR next),** the fake backend is gone
+from the code, the browser review fixes are in and the real-backend E2E suite is
+green (104/104).
+
+### What P4-3 already does
+
+- `vite build` lands in `public/app/` (git-ignored); `public/router.php` serves
+  the SPA there and redirects `/` to `/app/`. The legacy root `index.html` /
+  `app.js` / `style.css` were removed.
+- `frontend/plugin/fake-backend.js`, the legacy session/board branches, the
+  Experiences surface and the "Sim/Prototype" UI are gone. `session.load()`
+  starts at the sign-in gate; `VITE_API_URL` is the single real-backend knob
+  (required by `vite.config.js` in dev) and is pinned empty in
+  `vitest.config.js` and `run-e2e.sh` so a developer `.env.local` cannot flip
+  them.
+- New endpoints: `GET /issues/{key}/comments`, `GET /issues/{key}/events`,
+  `PATCH /api/me`, and the snapshot now carries `sources` (repositories) and
+  `fields` per issue type. `Level` accepts `0` (epic above stories).
+- Browser-review fixes: `realSave` PATCH now carries the entity id for every
+  collection (board edits were 404); `moveReal` extracts `statusId` from the
+  board drop payload and re-fetches the issue (comments/history survive a
+  move); columns sort by `position`, get an automatic position on create and
+  reorder by dragging the column header; the issue panel edits the summary
+  inline; issue types manage custom fields through
+  `POST /issue-types/{id}/fields` + `PATCH/DELETE /fields/{id}`; the board
+  editor drops the legacy "3 to 6 letters" id field.
+- E2E runs against the real backend: `run-e2e.sh` resets an ephemeral
+  PostgreSQL schema (`bin/e2e-reset`), installs (`bin/install` with
+  `BOOTSTRAP_WORKSPACE_PREFIX=KANB`), starts `php -S` on :8081 and seeds the
+  board through the API (`frontend/tests/e2e-seed.sh`). Cypress gets a bearer
+  token in `cypress/support/e2e.js` (`wsRequest`, `meRequest`, `wsSnapshot`,
+  `visitRoles`, `visitIssueTypes`, `visitAgents`). CI now provisions
+  postgres + PHP and runs phpunit/psalm before the frontend jobs.
+
+### Current bar
+
+- Backend: **138 PHPUnit tests / 892 assertions**, Psalm level 1, **0 errors**.
+- CI now creates `phprise_test` and sets `TEST_DATABASE_URL`, so the
+  PostgreSQL integration suite runs instead of skipping; `GitClientTest`
+  configures the git identity in its own clones.
+- Frontend unit: **249/249** (vitest).
+- Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
+- Real E2E: **104/104 across 17 specs**, green.
+- Build: `/app/` lands in `public/app/`.
+
+### What closed the remaining E2E failures
+
+- Page visits go through `cy.visitApp(path)`, which prefixes the build base
+  (`/app/`). Visiting the bare root twice went through Vite's 302 and left
+  Cypress waiting for a `load` event that never arrived.
+- Specs resolve real ids from the API (`cy.wsSnapshot()`) instead of the fake
+  ids (`KANB`, `standard`, `workspaceId: 'default'`); the rail/sidebar guards
+  dropped the removed Experiences surface and the old Sim marker.
+- `GET /issues/{key}` answers `{issue, comments, history}`; the limits spec
+  reads the envelope. The legacy issue is seeded as `KANB-7` (with both
+  `LEGACY-COMMENT-START/END` markers) and the columns no longer depend on the
+  old ids.
+- The seed spaces KANB-5's four moves one second apart so the timeline order is
+  deterministic (events are stored with whole-second timestamps).
+- `dialogs` asserts the card disappeared instead of the whole page (the toast
+  text also contains the name).
+- `PATCH /api/me` now clears the display name with `displayName: ""` (absent
+  stays untouched), matching the UI and the e2e reset.
+- The issue panel's Unassigned option uses an empty value, so clearing the
+  assignee no longer sends the label as an id.
+- Deleted the fake-backend-era E2E harness contracts (`run-e2e-*` node tests,
+  `cypress/harness/` fixtures). They spawned the whole harness against the
+  developer database and hardcoded `.data/db.json`; the Browser E2E job is the
+  proof now.
+
+### Next moves
+
+1. PR of `feat/p4-3-fake-removal` → CI (phpunit + psalm + vitest + contracts +
+   build + real e2e) → merge into `main` with `--delete-branch`.
+2. Update this STATE section at merge time.
+3. The product owner runs the full browser pass **on `main`** afterwards (his
+   rule: test only what is merged).
+
+### How to run locally (dev)
+
+```bash
+docker compose -f docker-compose.dev.yml up -d
+set -a && source .env && set +a && php bin/install
+php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
+cd frontend && npm run dev     # needs VITE_API_URL=http://127.0.0.1:8081 in .env.local
+```
+
+Login: `admin` / `admin1234`. Build-and-serve: `npm run build` then
+`http://127.0.0.1:8081/app/`.
+
 ## Current status — 2026-10-24
 
 - **P0, P1 and P2 are merged into `main` and pushed to origin.** All previous
@@ -145,17 +239,15 @@ separate branch.
 - The dev Postgres now runs as the `ensemble` compose project (fresh volume);
   the old dev data lives in the orphaned `multi-agent-postgres-1` container and
   its volume. Dev data is throwaway; delete the orphan when confident.
-- **Frontend test revisit (remembered):** the untracked WIP specs — notably
-  `frontend/tests/comment-author.spec.js` — make the local vitest run red while
-  CI never sees them. Decide in a future round: adopt, move out of the suite or
-  delete the files, and stop `node --test` from racing (`run-e2e-parallel` is
-  flaky under high parallelism).
+- **Frontend test revisit (closed in P4-3):** `comment-author.spec.js` was stale
+  against the current `resolveAuthor({ agents, user, author })` contract and is
+  now updated and green; the obsolete `run-e2e-*` harness contracts (they spawned
+  the whole suite from `node --test` against the developer database) were
+  deleted with the fake backend, so `node --test` is green (97/97).
 - Untracked WIP that predates P0/P1 and was **not** committed:
   `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
   `frontend/src/components/Comment.vue`,
-  `frontend/tests/comment-author.spec.js`,
-  `frontend/tests/icon-standard-capture.feature`,
-  `frontend/tests/viewport-boundary.test.mjs`, `kanban-outcome.md`,
+  `frontend/tests/icon-standard-capture.feature`, `kanban-outcome.md`,
   `tmp-kan-112-comentario.txt`, plus root `node_modules/` and
   `package-lock.json`. Review before adopting or deleting.
 

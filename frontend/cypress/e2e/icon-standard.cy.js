@@ -99,7 +99,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
       })
     })
     cy.viewport(1280, 800)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.topbar', { timeout: 15000 }).should('be.visible')
   })
 
@@ -228,7 +228,7 @@ describe('padrão de ícones Lucide na interface em execução (KAN-106)', () =>
 
   it('1024x800: sem layout quebrado no corte do sidebar', () => {
     cy.viewport(1024, 800)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.topbar').should('be.visible')
     cy.document().then((doc) => {
       expect(doc.documentElement.scrollWidth, 'sem barra horizontal').to.be.lessThan(1100)

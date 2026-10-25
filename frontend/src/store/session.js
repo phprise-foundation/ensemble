@@ -1,13 +1,12 @@
 import { reactive } from 'vue'
-import { api, request } from '../api/index.js'
-import { isRealBackend, token, setToken } from '../api/client.js'
+import { request, token, setToken } from '../api/client.js'
 
 const state = reactive({
   login: '',
   displayName: '',
   avatar: '',
   avatarColor: '',
-  signedIn: true,
+  signedIn: false,
   isAdmin: false,
   workspaceId: null,
   workspaces: [],
@@ -22,7 +21,7 @@ function applyUser(user) {
 }
 
 async function applyWorkspaces() {
-  const payload = await api.workspaces()
+  const payload = await request('GET', '/api/workspaces')
   state.workspaces = payload.workspaces
   state.workspaceId = state.workspaces[0]?.id ?? null
 }
@@ -68,33 +67,22 @@ export const session = {
     return (state.displayName || state.login || '?').charAt(0).toUpperCase()
   },
   async load() {
-    if (isRealBackend()) {
-      if (!token()) {
-        state.signedIn = false
-        return state
-      }
-      try {
-        return await this.restore()
-      } catch {
-        setToken(null)
-        state.signedIn = false
-        return state
-      }
-    }
-    const user = await api.fetchUser()
-    applyUser(user)
-  },
-  async restore() {
-    const me = await request('GET', '/api/me')
-    applyUser(me.user)
-    await applyWorkspaces()
-    state.signedIn = true
-  },
-  async signIn(login, password) {
-    if (!isRealBackend() && !token()) {
-      state.signedIn = true
+    if (!token()) {
+      state.signedIn = false
       return state
     }
+    try {
+      const me = await request('GET', '/api/me')
+      applyUser(me.user)
+      await applyWorkspaces()
+      state.signedIn = true
+    } catch {
+      setToken(null)
+      state.signedIn = false
+    }
+    return state
+  },
+  async signIn(login, password) {
     if (!login || !password) {
       throw new Error('Login and password are required')
     }
@@ -106,11 +94,6 @@ export const session = {
     return payload.user
   },
   async updateProfile({ displayName, avatar }) {
-    if (!isRealBackend()) {
-      const user = await api.updateUser({ displayName, ...(avatar !== undefined ? { avatar } : {}) })
-      applyUser(user)
-      return user
-    }
     const payload = await request('PATCH', '/api/me', {
       ...(displayName !== undefined ? { displayName } : {}),
       ...(avatar !== undefined ? { avatar } : {}),
@@ -125,7 +108,7 @@ export const session = {
     state.workspaceId = workspaceId
   },
   async signOut() {
-    if (isRealBackend() && token()) {
+    if (token()) {
       try {
         await request('POST', '/api/auth/logout')
       } catch {

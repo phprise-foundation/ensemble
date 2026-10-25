@@ -190,6 +190,30 @@ final readonly class IssueController
         return $this->responder->respond(['comment' => $this->commentPresenter->present($comment)], 201);
     }
 
+    public function comments(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+
+        return $this->responder->respond([
+            'comments' => $this->commentPresenter->presentMany($this->listComments->execute($user, $workspaceId, $key)),
+        ]);
+    }
+
+    public function events(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+
+        return $this->responder->respond([
+            'events' => $this->eventPresenter->presentMany($this->listEvents->execute($user, $workspaceId, $key)),
+        ]);
+    }
+
     /**
      * @param array<array-key, mixed> $body
      * @return array<string, mixed>

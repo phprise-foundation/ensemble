@@ -11,7 +11,7 @@ const props = defineProps({
   dropBefore: { type: String, default: null },
 })
 
-const emit = defineEmits(['over', 'drop', 'drag-start', 'drag-end', 'card-over', 'card-drop'])
+const emit = defineEmits(['over', 'drop', 'drag-start', 'drag-end', 'card-over', 'card-drop', 'column-drag-start', 'column-drop'])
 
 const issues = computed(() => boardStore.issuesForColumn(props.column.id))
 </script>
@@ -23,7 +23,13 @@ const issues = computed(() => boardStore.issuesForColumn(props.column.id))
     @dragover.prevent="emit('over', column.id)"
     @drop.prevent="emit('drop', column.id)"
   >
-    <header class="column-header">
+    <header
+      class="column-header"
+      draggable="true"
+      :title="'Reorder column'"
+      @dragstart="emit('column-drag-start', column)"
+      @drop.stop="emit('column-drop', column)"
+    >
       <span class="column-title">{{ column.name }}</span>
       <span class="column-count">
         {{ issues.length }}<template v-if="column.wip"> / {{ column.wip }}</template>

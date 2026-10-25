@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { session } from '../src/store/session.js'
+import { boardStore } from '../src/store/board.js'
 
 const mocks = vi.hoisted(() => ({
   real: false,
@@ -7,7 +9,6 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../src/api/client.js', () => ({
-  isRealBackend: () => mocks.real,
   token: () => mocks.tokenValue,
   setToken: (value) => {
     mocks.tokenValue = value
@@ -27,20 +28,10 @@ vi.mock('../src/api/index.js', () => ({
   request: (...args) => mocks.request(...args),
 }))
 
-const loadStores = async () => {
-  const [{ session }, { boardStore }] = await Promise.all([
-    import('../src/store/session.js'),
-    import('../src/store/board.js'),
-  ])
-  return { session, boardStore }
-}
-
 const USER = { login: 'admin', displayName: 'Admin', avatar: '', avatarColor: '#000' }
 const WORKSPACES = { workspaces: [{ id: 'w1', name: 'One' }] }
 
 beforeEach(() => {
-  vi.resetModules()
-  mocks.real = false
   mocks.tokenValue = null
   mocks.request = vi.fn()
 })
@@ -51,9 +42,6 @@ afterEach(() => {
 
 describe('real backend session', () => {
   it('lands on the gate when there is no stored token', async () => {
-    mocks.real = true
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(false)
@@ -61,7 +49,6 @@ describe('real backend session', () => {
   })
 
   it('restores the session and picks the first workspace from the token', async () => {
-    mocks.real = true
     mocks.tokenValue = 'stored'
     mocks.request.mockImplementation(async (method, path) => {
       if (path === '/api/me') {
@@ -72,8 +59,6 @@ describe('real backend session', () => {
       }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(true)
@@ -82,13 +67,10 @@ describe('real backend session', () => {
   })
 
   it('clears the token and shows the gate when the token expired', async () => {
-    mocks.real = true
     mocks.tokenValue = 'expired'
     const expired = new Error('401 Unauthorized')
     expired.status = 401
     mocks.request.mockRejectedValue(expired)
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(false)
@@ -96,12 +78,9 @@ describe('real backend session', () => {
   })
 
   it('rejects a wrong password without storing a token', async () => {
-    mocks.real = true
     const denied = new Error('login does not match')
     denied.status = 401
     mocks.request.mockRejectedValue(denied)
-    const { session } = await loadStores()
-
     await session.load()
     expect(session.signedIn).toBe(false)
 
@@ -112,7 +91,6 @@ describe('real backend session', () => {
   })
 
   it('signs in through the backend and boots the workspace', async () => {
-    mocks.real = true
     mocks.request.mockImplementation(async (method, path) => {
       if (path === '/api/auth/login') {
         return { token: 'fresh', user: USER }
@@ -122,8 +100,6 @@ describe('real backend session', () => {
       }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session } = await loadStores()
-
     const user = await session.signIn('admin', 'admin1234')
 
     expect(user.login).toBe('admin')
@@ -133,39 +109,14 @@ describe('real backend session', () => {
   })
 
   it('refuses empty credentials before calling the backend', async () => {
-    mocks.real = true
-    const { session } = await loadStores()
-
     await expect(session.signIn('', '')).rejects.toThrow('required')
 
     expect(mocks.request).not.toHaveBeenCalled()
   })
 })
 
-describe('legacy fake session', () => {
-  it('keeps the prototype shortcut without touching the backend', async () => {
-    const { session } = await loadStores()
-
-    await session.signIn('', '')
-
-    expect(session.signedIn).toBe(true)
-    expect(mocks.request).not.toHaveBeenCalled()
-  })
-
-  it('boots the fake user on load', async () => {
-    mocks.request.mockResolvedValue(USER)
-    const { session } = await loadStores()
-
-    await session.load()
-
-    expect(session.signedIn).toBe(true)
-    expect(session.login).toBe('admin')
-  })
-})
-
 describe('real board mode', () => {
   it('boots from the workspace snapshot and scopes writes by key', async () => {
-    mocks.real = true
     mocks.tokenValue = 'stored'
     const issue = { id: 'i1', key: 'ONE-1', statusId: 's1' }
     mocks.request.mockImplementation(async (method, path) => {
@@ -194,17 +145,24 @@ describe('real board mode', () => {
       if (path === '/api/workspaces/w1/issues/ONE-1/move') {
         return { issue: { ...issue, statusId: 's2' } }
       }
+      if (path === '/api/workspaces/w1/issues/ONE-1') {
+        return { issue: { ...issue, statusId: 's2' } }
+      }
+      if (path === '/api/workspaces/w1/issues/ONE-1/comments') {
+        return { comments: [] }
+      }
+      if (path === '/api/workspaces/w1/issues/ONE-1/events') {
+        return { events: [] }
+      }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session, boardStore } = await loadStores()
-
     await session.load()
     await boardStore.load()
 
     expect(boardStore.state.boardId).toBe('b1')
     expect(boardStore.state.issues).toHaveLength(1)
 
-    await boardStore.moveIssue('i1', 's2')
+    await boardStore.moveIssue('ONE-1', 's2')
 
     expect(boardStore.state.issues[0].statusId).toBe('s2')
   })

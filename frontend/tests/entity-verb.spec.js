@@ -2,34 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
-const { createEntity, updateEntity, routeParams } = vi.hoisted(() => ({
-  createEntity: vi.fn(),
-  updateEntity: vi.fn(),
-  routeParams: { params: {} },
-}))
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
 
-vi.mock('../src/api/index.js', () => ({
-  api: {
-    createEntity: (collection, data) => createEntity(collection, data),
-    updateEntity: (collection, id, data) => updateEntity(collection, id, data),
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
   },
-  isSimulated: () => false,
-  setFeature: () => {},
-  setAll: () => {},
-  hasSimulation: { value: false },
-  simulatedFeatures: { value: [] },
-  simulation: { features: {} },
+  request: (...args) => client.request(...args),
 }))
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: routeParams.params, query: {} }),
+  useRoute: () => ({ params: {} }),
   useRouter: () => ({ afterEach: () => {} }),
 }))
 
 import { boardStore } from '../src/store/board.js'
+import { session } from '../src/store/session.js'
 import AppSidebar from '../src/components/AppSidebar.vue'
-import AgentsPage from '../src/views/AgentsPage.vue'
-import IssueTypesPage from '../src/views/IssueTypesPage.vue'
 
 let wrapper
 
@@ -41,20 +31,8 @@ function mountSidebar() {
   return wrapper
 }
 
-function mountPage(component) {
-  wrapper = mount(component, {
-    attachTo: document.body,
-    global: { stubs: { RouterLink: 'a', AppIcon: 'span' } },
-  })
-  return wrapper
-}
-
 function navButton(title) {
   return wrapper.findAll('button').find((button) => button.attributes('title') === title)
-}
-
-function editButton() {
-  return wrapper.findAll('button').find((button) => button.attributes('title') === 'Edit')
 }
 
 function fieldInput(label) {
@@ -79,19 +57,52 @@ async function save() {
   await nextTick()
 }
 
+function calls(method, suffix) {
+  return client.request.mock.calls.filter(([verb, path]) => verb === method && path.includes(suffix))
+}
+
+function postedBody(suffix) {
+  return calls('POST', suffix)[0]?.[2]
+}
+
 function expectNoExistingFlag() {
-  for (const call of createEntity.mock.calls) {
-    expect(call[1]).not.toHaveProperty('__existing')
-  }
-  for (const call of updateEntity.mock.calls) {
-    expect(call[2]).not.toHaveProperty('__existing')
+  for (const call of client.request.mock.calls) {
+    if (call[2] !== undefined) {
+      expect(call[2]).not.toHaveProperty('__existing')
+    }
   }
 }
 
-beforeEach(() => {
-  createEntity.mockImplementation(async (collection, data) => ({ ...data, id: data.id || `${collection}-generated` }))
-  updateEntity.mockImplementation(async (collection, id, data) => ({ ...data, id }))
-  routeParams.params = {}
+beforeEach(async () => {
+  client.request.mockImplementation(async (method, path, body) => {
+    if (path === '/api/me') {
+      return { user: { login: 'admin', displayName: 'Admin' } }
+    }
+    if (path === '/api/workspaces') {
+      return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+    }
+    if (path === '/api/workspaces/ws/snapshot') {
+      return {
+        workspaces: [{ id: 'ws', name: 'Workspace' }],
+        workflows: boardStore.state.workflows,
+        issueTypes: boardStore.state.issueTypes,
+        statuses: boardStore.state.statuses,
+        transitions: boardStore.state.transitions,
+        boards: boardStore.state.boards,
+        columns: boardStore.state.columns,
+        issues: boardStore.state.issues,
+        teams: boardStore.state.teams,
+        roles: boardStore.state.roles,
+        profiles: boardStore.state.profiles,
+        agents: boardStore.state.agents,
+      }
+    }
+    if (method === 'POST') {
+      return { ...(body ?? {}), id: body?.id || 'generated' }
+    }
+    throw new Error(`unexpected ${method} ${path}`)
+  })
+  await session.load()
   boardStore.state.workspaces = [{ id: 'ws', name: 'Workspace' }]
   boardStore.state.boards = []
   boardStore.state.teams = []
@@ -112,87 +123,102 @@ afterEach(() => {
 })
 
 describe('the verb is born from the fact (__existing), not from the id field', () => {
-  it('creates a new board with a typed id via POST (red: currently PATCH)', async () => {
+  it('creates a new board via POST to the workspace boards path', async () => {
+    boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
     mountSidebar()
 
     await navButton('New board').trigger('click')
     await nextTick()
-    await fill('ID (3 to 6 letters)', 'abcd')
     await fill('Name', 'Alpha')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('boards', expect.objectContaining({ id: 'abcd', name: 'Alpha', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/boards')).toHaveLength(1)
+    expect(postedBody('/boards')).toEqual(expect.objectContaining({ name: 'Alpha', workflowId: 'flow-a' }))
+    expect(calls('PATCH', '/boards')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('creates a new workflow with a typed id via POST (red: currently PATCH)', async () => {
+  it('creates a new workflow via POST', async () => {
     mountSidebar()
 
     await navButton('New workflow').trigger('click')
     await nextTick()
-    await fill('ID', 'devflow')
     await fill('Name', 'Development')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('workflows', expect.objectContaining({ id: 'devflow', name: 'Development', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(1)
+    expect(postedBody('/workflows')).toEqual(expect.objectContaining({ name: 'Development' }))
+    expect(calls('PATCH', '/workflows')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('creates a new team with a typed id via POST (red: currently PATCH)', async () => {
+  it('creates a new team via POST', async () => {
     mountSidebar()
 
     await navButton('New team').trigger('click')
     await nextTick()
     await fill('Name', 'Design')
-    await fill('ID (optional)', 'tg-alpha')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('teams', expect.objectContaining({ id: 'tg-alpha', name: 'Design', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/teams')).toHaveLength(1)
+    expect(postedBody('/teams')).toEqual(expect.objectContaining({ name: 'Design' }))
+    expect(calls('PATCH', '/teams')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('copies template children via POST with pre-generated ids, no PATCH (red: currently PATCH)', async () => {
+  it('copies template children via POST with server ids and skips wildcard transitions', async () => {
     boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
     boardStore.state.statuses = [
       { id: 'up', workflowId: 'flow-a', name: 'Up', type: 'normal', color: '#ff0000', roleIds: [] },
       { id: 'down', workflowId: 'flow-a', name: 'Down', type: 'normal', color: '#0000ff', roleIds: [] },
     ]
-    boardStore.state.transitions = [{ workflowId: 'flow-a', from: '*', to: 'up', type: 'user' }]
-    boardStore.state.issueTypes = [{ id: 'task', workflowId: 'flow-a', name: 'Task', level: 1, fields: [{ key: 'summary', label: 'Summary', type: 'text', required: true, system: true }] }]
+    boardStore.state.transitions = [{ workflowId: 'flow-a', fromStatusId: '*', toStatusId: 'up', actor: 'user' }]
+    boardStore.state.issueTypes = [{ id: 'task', workflowId: 'flow-a', name: 'Task', level: 1 }]
+    client.request.mockImplementation(async (method, path, body) => {
+      if (path === '/api/workspaces/ws/snapshot') {
+        return {
+          workspaces: [{ id: 'ws', name: 'Workspace' }],
+          workflows: boardStore.state.workflows,
+          issueTypes: boardStore.state.issueTypes,
+          statuses: boardStore.state.statuses,
+          transitions: boardStore.state.transitions,
+          boards: [],
+          columns: [],
+          issues: [],
+          teams: [],
+          roles: [],
+          profiles: [],
+          agents: [],
+        }
+      }
+      if (method === 'POST' && path === '/api/workspaces/ws/workflows') {
+        return { workflow: { id: 'flow-new', name: body?.name } }
+      }
+      if (method === 'POST' && path.endsWith('/statuses')) {
+        return { status: { id: `st-${body?.name}`, workflowId: 'flow-new', name: body?.name, type: body?.type } }
+      }
+      if (method === 'POST' && path.endsWith('/issue-types')) {
+        return { issueType: { id: `it-${body?.name}`, workflowId: 'flow-new', name: body?.name, level: body?.level } }
+      }
+      throw new Error(`unexpected ${method} ${path}`)
+    })
     mountSidebar()
 
     await navButton('New workflow').trigger('click')
     await nextTick()
-    await fill('ID', 'flow-new')
     await fill('Name', 'Flow New')
     await fill('Start from a template (optional)', 'flow-a')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('workflows', expect.objectContaining({ id: 'flow-new', name: 'Flow New', workspaceId: 'ws' }))
-    expect(createEntity).toHaveBeenCalledWith('statuses', expect.objectContaining({ id: 'flow-new-up', workflowId: 'flow-new', name: 'Up' }))
-    expect(createEntity).toHaveBeenCalledWith('transitions', expect.objectContaining({ workflowId: 'flow-new', from: '*', to: 'flow-new-up' }))
-    expect(createEntity).toHaveBeenCalledWith('issueTypes', expect.objectContaining({ id: 'flow-new-task', name: 'Task' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/workflows/flow-new/statuses')).toHaveLength(2)
+    expect(calls('POST', '/workflows/flow-new/statuses').map((call) => call[2].name)).toEqual(['Up', 'Down'])
+    expect(calls('POST', '/workflows/flow-new/transitions')).toHaveLength(0)
+    expect(calls('POST', '/workflows/flow-new/issue-types')).toHaveLength(1)
+    expect(calls('PATCH', '/api/workspaces/ws')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('edit workflow modal does not expose an editable id (red: currently exposes ID)', async () => {
-    boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
-    mountSidebar()
-
-    await navButton('Edit workflow').trigger('click')
-    await nextTick()
-
-    const idLabel = Array.from(document.body.querySelectorAll('.modal-body label')).find(
-      (element) => element.querySelector('span')?.textContent === 'ID',
-    )
-    expect(idLabel).toBeUndefined()
-  })
-
-  it('edits an existing workflow via PATCH, keeping its id and stripping the flag', async () => {
+  it('edits an existing workflow via PATCH, keeping its id in the path and out of the body', async () => {
     boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
     mountSidebar()
 
@@ -201,12 +227,13 @@ describe('the verb is born from the fact (__existing), not from the id field', (
     await fill('Name', 'Flow A Renomeado')
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('workflows', 'flow-a', expect.objectContaining({ id: 'flow-a', name: 'Flow A Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/workflows/flow-a')).toHaveLength(1)
+    expect(client.request.mock.calls.find(([method, path]) => method === 'PATCH' && path.endsWith('/workflows/flow-a'))[2]).toEqual({ name: 'Flow A Renomeado' })
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('edits an existing team via PATCH, keeping its id and stripping the flag', async () => {
+  it('edits an existing team via PATCH', async () => {
     boardStore.state.teams = [{ id: 'time-a', name: 'Time A', workspaceId: 'ws' }]
     mountSidebar()
 
@@ -215,26 +242,26 @@ describe('the verb is born from the fact (__existing), not from the id field', (
     await fill('Name', 'Time A Renomeado')
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('teams', 'time-a', expect.objectContaining({ id: 'time-a', name: 'Time A Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/teams/time-a')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/teams')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('edits an existing board via PATCH, keeping its id and stripping the flag', async () => {
+  it('edits an existing board via PATCH', async () => {
     boardStore.state.workflows = [{ id: 'flow-a', name: 'Flow A', workspaceId: 'ws' }]
-    boardStore.state.boards = [{ id: 'abcd', name: 'Alpha', workflowId: 'flow-a', workspaceId: 'ws', filters: { statusIds: [] }, columns: [] }]
+    boardStore.state.boards = [{ id: 'abcd', name: 'Alpha', workflowId: 'flow-a', workspaceId: 'ws' }]
     mountSidebar()
 
     await navButton('Edit board').trigger('click')
     await nextTick()
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('boards', 'abcd', expect.objectContaining({ id: 'abcd', name: 'Alpha' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/boards/abcd')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/boards')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
-  it('edits an existing source via PATCH, keeping its id and stripping the flag', async () => {
+  it('edits an existing repository (source) via PATCH', async () => {
     boardStore.state.sources = [{ id: 'src-a', name: 'Projeto A', path: '/home/you/src/projeto-a', workspaceId: 'ws' }]
     mountSidebar()
 
@@ -243,40 +270,8 @@ describe('the verb is born from the fact (__existing), not from the id field', (
     await fill('Directory (local path)', '/home/you/src/projeto-b')
     await save()
 
-    expect(updateEntity).toHaveBeenCalledWith('sources', 'src-a', expect.objectContaining({ id: 'src-a', path: '/home/you/src/projeto-b' }))
-    expect(createEntity).not.toHaveBeenCalled()
-    expectNoExistingFlag()
-  })
-
-  it('edits an existing agent via its page with PATCH after openEdit marks __existing', async () => {
-    routeParams.params = { teamId: 'team-a' }
-    boardStore.state.agents = [{ id: 'agent-a', teamId: 'team-a', name: 'Bot A', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: 'profile-a', portrait: '', avatarColor: '#4c9aff' }]
-    boardStore.state.roles = []
-    boardStore.state.profiles = [{ id: 'profile-a', teamId: 'team-a', name: 'Profile A' }]
-    mountPage(AgentsPage)
-
-    await editButton().trigger('click')
-    await nextTick()
-    await fill('Name', 'Bot A Renomeado')
-    await save()
-
-    expect(updateEntity).toHaveBeenCalledWith('agents', 'agent-a', expect.objectContaining({ id: 'agent-a', name: 'Bot A Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
-    expectNoExistingFlag()
-  })
-
-  it('edits an existing issue type via its page with PATCH after openEdit marks __existing', async () => {
-    routeParams.params = { workflowId: 'flow-a' }
-    boardStore.state.issueTypes = [{ id: 'task', workflowId: 'flow-a', name: 'Task', level: 1, fields: [{ key: 'summary', label: 'Summary', type: 'text', required: true, system: true }] }]
-    mountPage(IssueTypesPage)
-
-    await editButton().trigger('click')
-    await nextTick()
-    await fill('Name', 'Task Renomeado')
-    await save()
-
-    expect(updateEntity).toHaveBeenCalledWith('issueTypes', 'task', expect.objectContaining({ id: 'task', name: 'Task Renomeado' }))
-    expect(createEntity).not.toHaveBeenCalled()
+    expect(calls('PATCH', '/api/workspaces/ws/repositories/src-a')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/repositories')).toHaveLength(0)
     expectNoExistingFlag()
   })
 
@@ -288,8 +283,8 @@ describe('the verb is born from the fact (__existing), not from the id field', (
     await fill('Name', 'Design')
     await save()
 
-    expect(createEntity).toHaveBeenCalledWith('teams', expect.objectContaining({ id: '', name: 'Design', workspaceId: 'ws' }))
-    expect(updateEntity).not.toHaveBeenCalled()
+    expect(calls('POST', '/api/workspaces/ws/teams')).toHaveLength(1)
+    expect(calls('PATCH', '/api/workspaces/ws/teams')).toHaveLength(0)
   })
 })
 
@@ -297,17 +292,17 @@ describe('contraexemplos: o contrato de verbo falha nominalmente, nunca silencio
   it('a draft carrying an existing key without the fact is born new via POST, never silently PATCHed', async () => {
     await boardStore.saveEntity('workflows', { id: 'flow-a', name: 'Mesmo Id De Existente', __existing: false })
 
-    expect(createEntity).toHaveBeenCalledWith('workflows', expect.objectContaining({ id: 'flow-a', name: 'Mesmo Id De Existente' }))
-    expect(updateEntity).not.toHaveBeenCalled()
-    expect(createEntity.mock.calls[0][1]).not.toHaveProperty('__existing')
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(1)
+    expect(calls('PATCH', '/api/workspaces/ws/workflows')).toHaveLength(0)
+    expect(client.request.mock.calls.find(([method]) => method === 'POST')[2]).not.toHaveProperty('__existing')
   })
 
   it('a draft with the fact and no persisted id chooses PATCH and does not swallow the 404', async () => {
-    updateEntity.mockRejectedValueOnce(new Error('workflows not found'))
+    client.request.mockRejectedValueOnce(new Error('workflows not found'))
     await expect(boardStore.saveEntity('workflows', { id: '', name: 'Ficcional', __existing: true })).rejects.toThrow('workflows not found')
 
-    expect(updateEntity).toHaveBeenCalled()
-    expect(createEntity).not.toHaveBeenCalled()
-    expect(updateEntity.mock.calls[0][2]).not.toHaveProperty('__existing')
+    expect(calls('PATCH', '/api/workspaces/ws/workflows')).toHaveLength(1)
+    expect(calls('POST', '/api/workspaces/ws/workflows')).toHaveLength(0)
+    expect(client.request.mock.calls.find(([method]) => method === 'PATCH')[2]).not.toHaveProperty('__existing')
   })
 })

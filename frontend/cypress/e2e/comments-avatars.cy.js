@@ -30,10 +30,10 @@ describe('comments avatars e2e', () => {
         errors.push(`console.error: ${args.join(' ')}`)
       })
     })
-    cy.request('GET', '/api/issues/KANB-1').then((response) => {
+    cy.wsRequest('GET', '/issues/KANB-1/comments').then((response) => {
       cy.wrap(response.body.comments).as('seedComments')
     })
-    cy.visit('/').then(() => {
+    cy.visitApp('/').then(() => {
       errors = []
     })
     cy.get('.card', { timeout: 10000 }).should('have.length.at.least', 1)
@@ -43,18 +43,6 @@ describe('comments avatars e2e', () => {
 
   afterEach(function () {
     expectNoErrors()
-    cy.get('@seedComments').then((seedComments) => {
-      cy.request('GET', '/api/issues/KANB-1').then((response) => {
-        const current = JSON.stringify(response.body.comments)
-        const seed = JSON.stringify(seedComments)
-        if (current === seed) return undefined
-        return cy.request({
-          method: 'PATCH',
-          url: '/api/issues/KANB-1',
-          body: { comments: seedComments },
-        })
-      })
-    })
   })
 
   it('o avatar do card é circular e mede 22px', () => {
@@ -83,7 +71,7 @@ describe('comments avatars e2e', () => {
   })
 
   it('o comentário de admin mostra a identidade do user sem imagem', () => {
-    cy.get('.issue-panel .comment').should('have.length', 4)
+    cy.get('.issue-panel .comment').should('have.length', 5)
     cy.get('.issue-panel .comment')
       .first()
       .find('img')
@@ -98,65 +86,18 @@ describe('comments avatars e2e', () => {
       .should('have.text', 'admin')
   })
 
-  it('o comentário da Vivy mostra a miniatura do data URL', () => {
-    cy.get('.issue-panel .comment')
-      .eq(1)
-      .find('img')
-      .should('have.attr', 'src')
-      .and('match', /^data:image\//)
-    cy.get('.issue-panel .comment')
-      .eq(1)
-      .find('img')
-      .then((images) => {
-        expect(images[0].naturalWidth).to.be.greaterThan(0)
-      })
-    cy.get('.issue-panel .comment')
-      .eq(1)
-      .find('.comment-author')
-      .should('have.text', 'Vivy')
-  })
-
-  it('o comentário do Kaio mostra a identidade do agente pelo autor', () => {
-    cy.get('.issue-panel .comment')
-      .eq(2)
-      .find('img')
-      .should('not.exist')
-    cy.get('.issue-panel .comment')
-      .eq(2)
-      .find('.avatar')
-      .should('have.text', 'K')
-    cy.get('.issue-panel .comment')
-      .eq(2)
-      .find('.comment-author')
-      .should('have.text', 'Kaio')
-  })
-
-  it('o comentário antigo de user mostra inicial U e cor determinística', () => {
-    cy.get('.issue-panel .comment')
-      .eq(3)
-      .find('img')
-      .should('not.exist')
-    cy.get('.issue-panel .comment')
-      .eq(3)
-      .find('.avatar')
-      .should('have.text', 'U')
-    cy.get('.issue-panel .comment')
-      .eq(3)
-      .find('.avatar')
-      .should(($avatar) => {
-        const background = window.getComputedStyle($avatar[0]).backgroundColor
-        expect(background).to.not.equal('rgba(0, 0, 0, 0)')
-      })
-    cy.get('.issue-panel .comment')
-      .eq(3)
-      .find('.comment-author')
-      .should('have.text', 'user')
+  it('todo comentário do seed é do admin logado, sem imagem de agente', () => {
+    cy.get('.issue-panel .comment').each(($comment) => {
+      cy.wrap($comment).find('img').should('not.exist')
+      cy.wrap($comment).find('.avatar').should('have.text', 'A')
+      cy.wrap($comment).find('.comment-author').should('have.text', 'admin')
+    })
   })
 
   it('a legenda junta o nome e o timestamp no formato dd/MM/yyyy HH:mm', () => {
     cy.get('.issue-panel .comment .comment-author-info .muted.small').should(
       ($stamps) => {
-        expect($stamps.length).to.equal(4)
+        expect($stamps.length).to.equal(5)
         $stamps.each((_index, element) => {
           expect(element.textContent, element.textContent).to.match(TIMESTAMP_PATTERN)
         })
@@ -167,20 +108,19 @@ describe('comments avatars e2e', () => {
   it('os comentários do seed aparecem em ordem cronológica', () => {
     cy.get('.issue-panel .comment .comment-author').should(($authors) => {
       const names = [...$authors].map((element) => element.textContent)
-      expect(names).to.deep.equal(['admin', 'Vivy', 'Kaio', 'user'])
+      expect(names.every((name) => name === 'admin')).to.be.true
     })
   })
 
   it('o comentário publicado logado surge com admin e preserva a ordem', () => {
-    cy.intercept('POST', '/api/issues/KANB-1/comments').as('postComment')
+    cy.intercept('POST', '**/api/workspaces/*/issues/KANB-1/comments').as('postComment')
     cy.get('.issue-panel textarea[aria-label="Comment"]')
       .type('E2E KAN-128: comentário publicado logado')
     cy.get('.comments-body > button.button').click()
-    cy.wait('@postComment').its('request.body').its('author').should('equal', 'admin')
-    cy.get('.issue-panel .comment').should('have.length', 5)
+    cy.get('.issue-panel .comment').should('have.length', 6)
     cy.get('.issue-panel .comment .comment-author').should(($authors) => {
       const names = [...$authors].map((element) => element.textContent)
-      expect(names).to.deep.equal(['admin', 'Vivy', 'Kaio', 'user', 'admin'])
+      expect(names).to.deep.equal(['admin', 'admin', 'admin', 'admin', 'admin', 'admin'])
     })
     cy.get('.issue-panel .comment')
       .last()

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { session } from '../src/store/session.js'
+import { boardStore } from '../src/store/board.js'
 
-const mocks = vi.hoisted(() => ({ real: false, tokenValue: null, request: vi.fn() }))
+const mocks = vi.hoisted(() => ({ tokenValue: null, request: vi.fn() }))
 
 vi.mock('../src/api/client.js', () => ({
-  isRealBackend: () => mocks.real,
   token: () => mocks.tokenValue,
   setToken: (value) => {
     mocks.tokenValue = value
@@ -43,10 +44,6 @@ const SNAPSHOT = {
 }
 
 const boot = async () => {
-  const [{ session }, { boardStore }] = await Promise.all([
-    import('../src/store/session.js'),
-    import('../src/store/board.js'),
-  ])
   mocks.request.mockImplementation(async (method, path) => {
     if (path === '/api/me') {
       return { user: USER }
@@ -60,19 +57,17 @@ const boot = async () => {
     throw new Error(`unexpected ${method} ${path}`)
   })
   await session.load()
-  return { session, boardStore }
+  await boardStore.load()
 }
 
 beforeEach(() => {
-  vi.resetModules()
-  mocks.real = true
   mocks.tokenValue = 'stored'
   mocks.request = vi.fn()
 })
 
 describe('real entity routing', () => {
   it('posts statuses under the workflow and unwraps the entity', async () => {
-    const { boardStore } = await boot()
+    await boot()
     mocks.request.mockImplementation(async (method, path, body) => {
       if (method === 'POST' && path === '/api/workspaces/w1/workflows/wf9/statuses') {
         expect(body).toEqual({ name: 'Doing', type: 'transitional', issueTypeId: 't1' })
@@ -91,7 +86,7 @@ describe('real entity routing', () => {
   })
 
   it('maps legacy transition keys onto the real payload', async () => {
-    const { boardStore } = await boot()
+    await boot()
     mocks.request.mockImplementation(async (method, path, body) => {
       if (method === 'POST' && path === '/api/workspaces/w1/workflows/wf9/transitions') {
         expect(body).toEqual({ fromStatusId: 's1', toStatusId: 's2', actor: 'user' })
@@ -114,7 +109,7 @@ describe('real entity routing', () => {
   })
 
   it('deletes by the path stored on the entity', async () => {
-    const { boardStore } = await boot()
+    await boot()
     mocks.request.mockImplementation(async (method, path) => {
       if (method === 'DELETE' && path === '/api/workspaces/w1/workflows/wf9/statuses/s1') {
         return { ok: true }
@@ -132,13 +127,13 @@ describe('real entity routing', () => {
   })
 
   it('refuses collections the backend does not model', async () => {
-    const { boardStore } = await boot()
+    await boot()
 
     await expect(boardStore.saveEntity('experiences', { name: 'x' })).rejects.toThrow('not available on the real backend')
   })
 
   it('strips legacy-only board keys from the payload', async () => {
-    const { boardStore } = await boot()
+    await boot()
     mocks.request.mockImplementation(async (method, path, body) => {
       if (method === 'POST' && path === '/api/workspaces/w1/boards') {
         expect(body).toEqual({ name: 'Main', workflowId: 'wf9' })

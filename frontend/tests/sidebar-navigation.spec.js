@@ -31,7 +31,7 @@ function routeOf(name, params) {
 const noChosenBoard = null
 
 describe('sidebarNavigation', () => {
-  it('deriva folhas de boards, workflows, teams e Experiences sem Sources', () => {
+  it('deriva folhas de boards, workflows e teams sem Sources', () => {
     const navigation = sidebarNavigation(store, 'ws')
     expect(navigation.boards.map((entry) => entry.leaves.map((leaf) => leaf.title))).toEqual([['Kanban', 'Columns'], ['Board 2', 'Columns']])
     expect(navigation.workflows.map((entry) => entry.leaves.map((leaf) => leaf.label))).toEqual([
@@ -42,19 +42,19 @@ describe('sidebarNavigation', () => {
       ['Agents', 'Roles', 'Profiles'],
       ['Agents', 'Roles', 'Profiles'],
     ])
-    expect(navigation.experiences.flatMap((entry) => entry.leaves.map((leaf) => leaf.to))).toEqual(['/experiences'])
     expect(JSON.stringify(navigation)).not.toContain('sources')
+    expect(JSON.stringify(navigation)).not.toContain('experiences')
   })
 
   it('usa o mesmo formato de entrada em todas as seções', () => {
     const navigation = sidebarNavigation(store, 'ws')
-    const entries = [...navigation.boards, ...navigation.workflows, ...navigation.teams, ...navigation.experiences]
+    const entries = [...navigation.boards, ...navigation.workflows, ...navigation.teams]
     expect(entries.every((entry) => entry.entity)).toBe(true)
     expect(entries.every((entry) => entry.leaf || (Array.isArray(entry.leaves) && entry.leaves.length > 0))).toBe(true)
   })
 
   it('devolve modelo e rail vazios sem workspace', () => {
-    expect(sidebarNavigation(store, null)).toEqual({ boards: [], workflows: [], teams: [], experiences: [] })
+    expect(sidebarNavigation(store, null)).toEqual({ boards: [], workflows: [], teams: [] })
     expect(railSections(sidebarNavigation(store, null))).toEqual([])
   })
 })
@@ -69,7 +69,6 @@ describe('railSections', () => {
       ['Flow B · Statuses', 'Flow B · Transitions', 'Flow B · Issue types'],
       ['Default team · Agents', 'Default team · Roles', 'Default team · Profiles'],
       ['Design · Agents', 'Design · Roles', 'Design · Profiles'],
-      ['Experiences'],
     ])
     const titles = sections.flat().map((leaf) => leaf.railTitle)
     expect(new Set(titles).size).toBe(titles.length)

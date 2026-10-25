@@ -40,7 +40,7 @@ final readonly class DoctrineIssueEventRepository implements IssueEventRepositor
             ->andWhere('e.workspaceId = :workspaceId')
             ->setParameter('issueId', $issueId->value())
             ->setParameter('workspaceId', $workspaceId->value())
-            ->orderBy('e.createdAt', 'ASC')
+            ->orderBy('e.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
 

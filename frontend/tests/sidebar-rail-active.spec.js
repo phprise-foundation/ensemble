@@ -55,7 +55,7 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   it('destaca somente o board atual quando a loja tem dois boards', async () => {
     const first = await mountAt('/boards/KANB')
     expect(currentTitles(first)).toEqual(['Kanban'])
-    expect(first.findAll('nav.rail a.rail-leaf')).toHaveLength(17)
+    expect(first.findAll('nav.rail a.rail-leaf')).toHaveLength(16)
     first.unmount()
 
     const second = await mountAt('/boards/B2')
@@ -85,9 +85,9 @@ describe('rail colapsado com mais de uma entidade do mesmo tipo', () => {
   it('move o destaque para o único link atual ao clicar no rail', async () => {
     const wrapper = await mountAt('/teams/default/agents')
     expect(currentTitles(wrapper)).toEqual(['Default team · Agents'])
-    await railLink(wrapper, 'Experiences').trigger('click')
+    await railLink(wrapper, 'Standard · Statuses').trigger('click')
     await flushPromises()
-    expect(currentTitles(wrapper)).toEqual(['Experiences'])
+    expect(currentTitles(wrapper)).toEqual(['Standard · Statuses'])
     wrapper.unmount()
   })
 })

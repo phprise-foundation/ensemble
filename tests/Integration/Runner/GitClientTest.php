@@ -26,13 +26,9 @@ final class GitClientTest extends TestCase
         $this->base = sys_get_temp_dir() . '/ensemble-git-' . uniqid();
         mkdir($this->base . '/bare.git', 0775, true);
         shell_exec('git -C ' . escapeshellarg($this->base) . '/bare.git init --bare -b main 2>/dev/null');
-        shell_exec(
-            'git -C ' . escapeshellarg($this->base)
-            . '/bare.git config user.email t@t && git -C ' . escapeshellarg($this->base)
-            . '/bare.git config user.name t'
-        );
         $seed = $this->base . '/seed';
         shell_exec('git clone ' . escapeshellarg($this->base) . '/bare.git ' . escapeshellarg($seed) . ' 2>/dev/null');
+        $this->configureIdentity($seed);
         shell_exec('echo hello > ' . escapeshellarg($seed) . '/README.md');
         shell_exec(
             'git -C ' . escapeshellarg($seed)
@@ -56,6 +52,7 @@ final class GitClientTest extends TestCase
         self::assertTrue($prepared->ok);
         self::assertTrue(is_file($workdir . '/README.md'));
         self::assertSame('agent/KAN-1', trim((string) shell_exec('git -C ' . escapeshellarg($workdir) . ' branch --show-current')));
+        $this->configureIdentity($workdir);
 
         file_put_contents($workdir . '/feature.md', 'agent work');
         $published = $this->git->commitAndPush($workdir, 'agent/KAN-1');
@@ -69,9 +66,17 @@ final class GitClientTest extends TestCase
         );
     }
 
-    public function testCloneRefusalBecomesAFailedOutcome(): void
+    private function configureIdentity(string $path): void
     {
-        $prepared = $this->git->ensureClone(
+        shell_exec(
+            'git -C ' . escapeshellarg($path)
+            . ' config user.email t@t && git -C ' . escapeshellarg($path)
+            . ' config user.name t'
+        );
+    }
+
+    public function testCloneRefusalBecomesAFailedOutcome(): void
+    {        $prepared = $this->git->ensureClone(
             'file://' . $this->base . '/missing.git',
             'main',
             'agent/KAN-1',

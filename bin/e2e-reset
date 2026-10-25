@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$entityManager = DoctrineEntityManagerFactory::fromEnvironment(true)->recreateSchema();
+
+echo "schema reset\n";

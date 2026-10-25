@@ -26,7 +26,7 @@ function persisted(key, fallback) {
 }
 
 export const simulation = reactive({
-  features: Object.fromEntries(FEATURES.map((feature) => [feature.key, persisted(`sim.${feature.key}`, true)])),
+  features: Object.fromEntries(FEATURES.map((feature) => [feature.key, persisted(`sim.${feature.key}`, false)])),
 })
 
 export function isSimulated(feature) {

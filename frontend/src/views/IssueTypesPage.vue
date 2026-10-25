@@ -26,32 +26,35 @@ function openCreate() {
     workflowId: route.params.workflowId,
     name: '',
     level: 1,
-    fields: [
-      { key: 'summary', label: 'Summary', type: 'text', required: true, system: true },
-      { key: 'description', label: 'Description', type: 'textarea', required: true, system: true },
-    ],
+    fields: [],
   }
   error.value = ''
   editing.value = true
 }
 
+let originalFields = []
+
 function openEdit(type) {
+  originalFields = JSON.parse(JSON.stringify(type.fields ?? []))
   draft.value = JSON.parse(JSON.stringify(type))
   draft.value.__existing = true
+  draft.value.fields = (draft.value.fields ?? []).map((field) => ({ ...field }))
   error.value = ''
   editing.value = true
 }
 
 function addField() {
+  draft.value.fields = draft.value.fields ?? []
   draft.value.fields.push({ key: '', label: '', type: 'text', required: false })
 }
 
 function removeField(index) {
+  draft.value.fields = draft.value.fields ?? []
   draft.value.fields.splice(index, 1)
 }
 
 function normalize() {
-  draft.value.fields.forEach((field) => {
+  (draft.value.fields ?? []).forEach((field) => {
     if (!field.key) {
       field.key = slugify(field.label)
     }
@@ -59,6 +62,34 @@ function normalize() {
       field.options = field.options.split(',').map((option) => option.trim()).filter(Boolean)
     }
   })
+}
+
+async function saveFields(typeId) {
+  const original = draft.value.__existing ? originalFields : []
+  const keptIds = new Set()
+  let position = 0
+  for (const field of draft.value.fields ?? []) {
+    const payload = {
+      issueTypeId: typeId,
+      key: field.key,
+      label: field.label,
+      type: field.type,
+      required: Boolean(field.required),
+      options: field.options ?? [],
+      position: position++,
+      __existing: Boolean(field.id),
+      id: field.id,
+    }
+    await boardStore.saveEntity('fields', payload)
+    if (field.id) {
+      keptIds.add(field.id)
+    }
+  }
+  for (const field of original) {
+    if (!keptIds.has(field.id)) {
+      await boardStore.removeEntity('fields', field.id)
+    }
+  }
 }
 
 async function save() {
@@ -69,7 +100,8 @@ async function save() {
   }
   normalize()
   try {
-    await boardStore.saveEntity('issueTypes', draft.value)
+    const saved = await boardStore.saveEntity('issueTypes', draft.value)
+    await saveFields(saved.id)
     editing.value = false
     toast.success(`${draft.value.name} saved.`)
   } catch (problem) {
@@ -112,7 +144,7 @@ async function remove(type) {
       <div class="table-row" v-for="type in types" :key="type.id">
         <span>{{ type.name }}</span>
         <span>{{ type.level }}</span>
-        <span>{{ type.fields.length }}</span>
+        <span>{{ (type.fields ?? []).length }}</span>
         <span class="actions">
           <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(type)"><AppIcon name="edit" size="14" /></button>
           <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(type)"><AppIcon name="delete" size="14" /></button>

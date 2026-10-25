@@ -27,19 +27,24 @@ describe('diálogos e toasts na interface em execução', () => {
   }
 
   it('confirm: Enter confirma, registro some e toast de sucesso aparece', () => {
-    cy.visit('/#/teams/default/roles')
-    cy.get('.table-row').filter((_, el) => el.textContent.includes('Coder')).as('linha')
+    cy.visitRoles()
+    cy.wsSnapshot().then((snapshot) => {
+      const teamId = snapshot.teams[0].id
+      cy.wsRequest('POST', `/teams/${teamId}/roles`, { name: 'E2E Temp', description: 'throwaway' })
+  })
+    cy.reload()
+    cy.get('.table-row').filter((_, el) => el.textContent.includes('E2E Temp')).as('linha')
     abrirDialogDanger('@linha')
     cy.get(card).trigger('keydown', { key: 'Enter' })
     cy.get(card).should('not.exist')
     cy.get('.toast')
       .should('have.class', 'success')
-      .and('contain', '"Coder" deleted.')
-    cy.get('.table-row').contains('Coder').should('not.exist')
+      .and('contain', '"E2E Temp" deleted.')
+    cy.get('.table-row').contains('E2E Temp').should('not.exist')
   })
 
   it('confirm: clique no botão Cancelar cancela, registro permanece e o foco volta ao gatilho', () => {
-    cy.visit('/#/teams/default/roles')
+    cy.visitRoles()
     cy.get('.table-row').filter((_, el) => el.textContent.includes('Tech Lead')).as('linha')
     abrirDialogDanger('@linha')
     cy.get(card).find('button.ghost').click()
@@ -49,7 +54,7 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('confirm: Escape cancela e o scrim não fecha a caixa', () => {
-    cy.visit('/#/workflows/standard/issue-types')
+    cy.visitIssueTypes()
     cy.get('.table-row').filter((_, el) => el.textContent.includes('Task')).as('linha')
     abrirDialogDanger('@linha')
     cy.get(overlay).click('topLeft', { force: true })
@@ -61,17 +66,24 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('agents: confirmação pela exclusão do fluxo remove o agente e mostra toast', () => {
-    cy.visit('/#/teams/default/agents')
-    abrirDialogDanger('.content')
+    cy.visitAgents()
+    cy.wsSnapshot().then((snapshot) => {
+      const teamId = snapshot.teams[0].id
+      const profile = snapshot.profiles[0]
+      const role = snapshot.roles[0]
+      cy.wsRequest('POST', `/teams/${teamId}/agents`, { name: 'E2E Temp', whoAmI: 'throwaway', age: null, maritalStatus: 'Single', roleIds: [role.id], profileId: profile.id, avatarColor: '#4c9aff', model: 'test-model', fallbackModel: '', active: true })
+    })
+    cy.reload()
+    cy.contains('.agent-card', 'E2E Temp').find('[aria-label="Delete"]').first().click({ force: true })
     cy.get(card).find('button').last().click()
     cy.get(card).should('not.exist')
     cy.get('.toast').should('contain', 'deleted.')
-    cy.contains('Vivy').should('not.exist')
+    cy.contains('.agent-card', 'E2E Temp').should('not.exist')
   })
 
   it('agents: erro na exclusão anuncia toast com role="alert"', () => {
-    cy.intercept('DELETE', '**/api/agents/*', { statusCode: 500, body: { error: 'falha simulada' } }).as('falha')
-    cy.visit('/#/teams/default/agents')
+    cy.intercept('DELETE', '**/api/workspaces/*/agents/*', { statusCode: 500, body: { error: 'falha simulada' } }).as('falha')
+    cy.visitAgents()
     abrirDialogDanger('.content')
     cy.get(card).find('button').last().click()
     cy.get(card).should('not.exist')
@@ -81,8 +93,8 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('sidebar: exclusão de source cancelada via Cancelar mantém a source', () => {
-    cy.request('POST', '/api/sources', { path: '/tmp', name: 'src-e2e', workspaceId: 'default' })
-    cy.visit('/')
+    cy.wsRequest('POST', '/repositories', { name: 'src-e2e', provider: 'github', url: 'https://github.com/example/src-e2e', baseBranch: 'main' })
+    cy.visitApp('/')
     abrirDeleteSource('src-e2e')
     cy.get(card).find('button.ghost').click()
     cy.get(card).should('not.exist')
@@ -90,8 +102,8 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('sidebar: exclusão de source confirmada via Enter remove e mostra toast', () => {
-    cy.request('POST', '/api/sources', { path: '/tmp', name: 'src-enter', workspaceId: 'default' })
-    cy.visit('/')
+    cy.wsRequest('POST', '/repositories', { name: 'src-enter', provider: 'github', url: 'https://github.com/example/src-enter', baseBranch: 'main' })
+    cy.visitApp('/')
     abrirDeleteSource('src-enter')
     cy.get(card).trigger('keydown', { key: 'Enter' })
     cy.get(card).should('not.exist')
@@ -101,7 +113,7 @@ describe('diálogos e toasts na interface em execução', () => {
 
   it('overlay ocupa a tela em viewport estreita (390×844)', () => {
     cy.viewport(390, 844)
-    cy.visit('/#/teams/default/roles')
+    cy.visitRoles()
     abrirDialogDanger('.content')
     cy.get(card).then(($card) => {
       const rect = $card[0].getBoundingClientRect()

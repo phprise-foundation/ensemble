@@ -6,11 +6,16 @@ import { session } from '../src/store/session.js'
 
 const FOTO = 'data:image/webp;base64,Zm90by1kby11c3Vhcmlv'
 
-const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
+const client = vi.hoisted(() => ({ tokenValue: 't', request: vi.fn() }))
 
-vi.mock('../src/api/index.js', () => ({
-  api: { fetchUser, updateUser: vi.fn() },
+vi.mock('../src/api/client.js', () => ({
+  token: () => client.tokenValue,
+  setToken: (value) => {
+    client.tokenValue = value
+  },
+  request: (...args) => client.request(...args),
 }))
+
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -18,13 +23,21 @@ vi.mock('vue-router', () => ({
 
 describe('ProfileMenu', () => {
   async function hydrate({ avatar = '', color = '#e5484d' } = {}) {
-    fetchUser.mockReset()
-    fetchUser.mockResolvedValue({ login: 'admin', displayName: 'Admin', avatar, avatarColor: color })
+    client.request.mockImplementation(async (method, path) => {
+      if (path === '/api/me') {
+        return { user: { login: 'admin', displayName: 'Admin', avatar, avatarColor: color } }
+      }
+      if (path === '/api/workspaces') {
+        return { workspaces: [{ id: 'ws', name: 'Workspace' }] }
+      }
+      throw new Error(`unexpected ${method} ${path}`)
+    })
     await session.load()
   }
 
   beforeEach(() => {
-    session.signIn()
+    client.tokenValue = 't'
+    client.request = vi.fn()
   })
 
   it('mostra a foto do usuário no Avatar do topbar quando ela existe', async () => {

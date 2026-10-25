@@ -34,7 +34,7 @@ describe('drawer em tela cheia abaixo de 768px na interface em execução', () =
   })
 
   function openDrawer() {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('button.menu-toggle').click()
     cy.get('#app-sidebar').should('have.class', 'open').and('have.attr', 'role', 'dialog')
     cy.get('.content').should('have.attr', 'inert')
@@ -122,7 +122,7 @@ describe('drawer em tela cheia abaixo de 768px na interface em execução', () =
 
   it('mantém a sidebar desktop intacta em 1025px', () => {
     cy.viewport(1025, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-sidebar')
       .should('be.visible')
       .then(($sidebar) => {

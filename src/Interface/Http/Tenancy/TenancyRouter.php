@@ -142,6 +142,8 @@ final readonly class TenancyRouter
             $method === 'PATCH' && $this->isIssue($segments) => $this->issues->update($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMove($segments) => $this->issues->move($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueComments($segments) => $this->issues->comment($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isIssueComments($segments) => $this->issues->comments($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isIssueEvents($segments) => $this->issues->events($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
@@ -383,6 +385,16 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'issues'
             && $segments[5] === 'comments';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueEvents(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'events';
     }
 
     /** @param list<string> $segments */

@@ -15,7 +15,7 @@ final readonly class UpdateUser
 
     public function execute(User $actor, ?string $displayName, ?string $avatar, ?string $avatarColor): User
     {
-        if (is_string($displayName) && $displayName !== '') {
+        if ($displayName !== null) {
             $actor->rename($displayName);
         }
         if ($avatar !== null) {

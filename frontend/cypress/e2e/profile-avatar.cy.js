@@ -23,8 +23,8 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   let initialUser
 
   before(() => {
-    cy.request('GET', '/api/user').then((response) => {
-      initialUser = response.body
+    cy.meRequest('GET').then((response) => {
+      initialUser = response.body.user
     })
   })
 
@@ -34,7 +34,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
       collectErrors(win, errors)
       cy.stub(win.console, 'error', (...args) => errors.push(`console.error: ${args.join(' ')}`))
     })
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     preview().should('be.visible')
   })
 
@@ -43,15 +43,14 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
     cy.then(() => {
       expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.have.length(0)
     })
-    cy.request('PATCH', '/api/user', {
+    cy.meRequest('PATCH', {
       displayName: initialUser.displayName,
-      avatar: initialUser.avatar,
-      avatarColor: initialUser.avatarColor,
+      ...(initialUser.avatar !== undefined ? { avatar: initialUser.avatar } : {}),
     })
   })
 
   it('upload válido mostra preview circular imediato e persiste após o Save e o reload', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     previewImage().should('not.exist')
     upload(PHOTO)
     previewImage().should('be.visible')
@@ -66,7 +65,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('o data URL enviado no PATCH é menor que o do arquivo original', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     cy.readFile(PHOTO, 'base64').then((base64) => {
       const originalLength = `data:image/png;base64,${base64}`.length
       upload(PHOTO)
@@ -81,7 +80,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('Remover + Save restaura o fallback: inicial sobre a cor persistida', () => {
-    cy.intercept('PATCH', '/api/user').as('patchUser')
+    cy.intercept('PATCH', '/api/me').as('patchUser')
     upload(PHOTO)
     previewImage().should('be.visible')
     saveButton().click()
@@ -135,7 +134,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   })
 
   it('Save começa disabled, entra em loading durante o PATCH e o login é somente leitura', () => {
-    cy.intercept('PATCH', '/api/user', (request) => {
+    cy.intercept('PATCH', '/api/me', (request) => {
       request.on('response', (response) => response.setDelay(400))
     }).as('patchUser')
     saveButton().should('be.disabled')
@@ -179,7 +178,7 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
     cy.get('@nativeAlert').should('not.have.been.called')
     cy.get('.dialog-confirm').click()
     cy.url().should('not.contain', '/profile')
-    cy.visit('/#/profile')
+    cy.visitApp('/#/profile')
     previewImage().should('not.exist')
     cy.get('[data-test="display-name"]').should('have.value', initialUser.displayName)
   })

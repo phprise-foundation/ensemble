@@ -45,7 +45,7 @@ async function openCreate() {
     boardId: board.value?.id,
     summary: '',
     description: '',
-    typeId: issueTypes.value[0]?.id || 'task',
+    typeId: issueTypes.value[0]?.id ?? null,
     statusId: initialStatuses.value[0]?.id || '',
     assigneeId: boardStore.state.agents[0]?.id || null,
   }
@@ -92,6 +92,10 @@ async function save() {
     summaryInput.value?.focus()
     return
   }
+  if (!draft.value.typeId) {
+    error.value = 'Nenhum tipo de issue disponível neste workflow.'
+    return
+  }
   if (!initialStatuses.value.length) return
   if (!draft.value.statusId) {
     statusError.value = 'Selecione um status inicial.'
@@ -102,12 +106,53 @@ async function save() {
     return
   }
   try {
-    await boardStore.createIssue(draft.value)
+    await boardStore.createIssue({
+      issueTypeId: draft.value.typeId,
+      summary: draft.value.summary,
+      description: draft.value.description,
+      ...(draft.value.assigneeId ? { assigneeId: draft.value.assigneeId } : {}),
+    })
   } catch (failure) {
     applyFailure(failure)
     return
   }
   editing.value = false
+}
+
+let draggingColumnId = null
+
+function onColumnDragStart(column) {
+  draggingColumnId = column.id
+}
+
+function onColumnDrop(targetColumn) {
+  if (!draggingColumnId || draggingColumnId === targetColumn.id) {
+    draggingColumnId = null
+    return
+  }
+  const ordered = columns.value.slice()
+  const from = ordered.findIndex((column) => column.id === draggingColumnId)
+  const to = ordered.findIndex((column) => column.id === targetColumn.id)
+  if (from < 0 || to < 0) {
+    draggingColumnId = null
+    return
+  }
+  const [moved] = ordered.splice(from, 1)
+  ordered.splice(to, 0, moved)
+  draggingColumnId = null
+  void reorderColumns(ordered)
+}
+
+async function reorderColumns(ordered) {
+  try {
+    for (let index = 0; index < ordered.length; index += 1) {
+      if (ordered[index].position !== index) {
+        await boardStore.saveEntity('columns', { ...ordered[index], __existing: true, position: index })
+      }
+    }
+  } catch (problem) {
+    toast.error(problem.message)
+  }
 }
 
 function startDrag(issue) {
@@ -197,6 +242,8 @@ async function drop(columnId, beforeId) {
           @drag-end="endDrag"
           @card-over="(issueId) => onCardOver(column.id, issueId)"
           @card-drop="(issueId) => drop(column.id, issueId)"
+          @column-drag-start="onColumnDragStart"
+          @column-drop="onColumnDrop"
         />
       </div>
     </div>

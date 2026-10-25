@@ -29,7 +29,7 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('nasce expandido com largura min(25vw, 400px) e símbolo no menu superior', () => {
     cy.viewport(1280, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.window().then((win) => {
       const esperado = Math.min(win.innerWidth * 0.25, 400)
       cy.get('#app-copilot').should('be.visible')
@@ -45,7 +45,7 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('nasce expandido com largura máxima de 400px em 1920x900', () => {
     cy.viewport(1920, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.window().then((win) => {
       const esperado = Math.min(win.innerWidth * 0.25, 400)
       cy.get('#app-copilot').should('be.visible')
@@ -58,7 +58,7 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('clicar no símbolo colapsa e clicar de novo expande, sem tocar no sidebar', () => {
     cy.viewport(1280, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-sidebar').should('not.have.class', 'collapsed')
 
     cy.get('button.copilot-toggle').click()
@@ -74,7 +74,7 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('o atalho Ctrl+Alt+B alterna o copilot e não colapsa o sidebar', () => {
     cy.viewport(1280, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-sidebar').should('not.have.class', 'collapsed')
 
     cy.get('body').type('{ctrl+alt+b}')
@@ -92,7 +92,7 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('abrir um issue e alternar o copilot não altera o painel de issue nem as colunas', () => {
     cy.viewport(1280, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('.card').should('have.length.at.least', 1)
     cy.get('.card').first().click()
     cy.get('.issue-panel').should('be.visible')
@@ -118,21 +118,21 @@ describe('painel do copilot (grade direita) na interface em execução', () => {
 
   it('no breakpoint (1024x900, lado mobile) nem painel nem símbolo existem no DOM', () => {
     cy.viewport(1024, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-copilot').should('not.exist')
     cy.get('button.copilot-toggle').should('not.exist')
   })
 
   it('em viewport de telefone (390x844) nem painel nem símbolo existem no DOM', () => {
     cy.viewport(390, 844)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-copilot').should('not.exist')
     cy.get('button.copilot-toggle').should('not.exist')
   })
 
   it('recarregar a página volta com o painel expandido (sem memória)', () => {
     cy.viewport(1280, 900)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('button.copilot-toggle').click()
     cy.get('#app-copilot').should('not.exist')
 

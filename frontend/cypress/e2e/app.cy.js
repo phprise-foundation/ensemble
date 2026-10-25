@@ -19,12 +19,11 @@ describe('frontend smoke', () => {
   })
 
   it('boots and renders the board without runtime errors', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('vite-error-overlay').should('not.exist')
     cy.get('#app').should('not.be.empty')
     cy.get('.topbar').should('be.visible')
     cy.get('#app-sidebar').should('exist')
-    cy.contains('Prototype backend').should('exist')
     cy.get('.column').should('have.length.at.least', 1)
     cy.get('.card .card-id')
       .first()
@@ -37,7 +36,7 @@ describe('frontend smoke', () => {
 
   it('opens the console grid with Ctrl+J and keeps it closed by default', () => {
     cy.viewport(1280, 800)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('#app-console').should('not.exist')
     cy.get('.console-toggle').should('have.attr', 'aria-expanded', 'false')
     cy.get('body').type('{ctrl}j')
@@ -59,7 +58,7 @@ describe('frontend smoke', () => {
 
   it('resizes the console grid by pointer drag within the 60vh ceiling', () => {
     cy.viewport(1280, 800)
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('body').type('{ctrl}j')
     cy.get('#app-console').should('have.css', 'height', '240px')
     cy.get('.console-resize').then(($handle) => {
@@ -80,7 +79,7 @@ describe('frontend smoke', () => {
   })
 
   it('toggles the theme on the top bar control', () => {
-    cy.visit('/')
+    cy.visitApp('/')
     cy.get('html').should('have.attr', 'data-theme', 'dark')
     cy.get('button[title="Light theme"]').click()
     cy.get('html').should('have.attr', 'data-theme', 'light')
