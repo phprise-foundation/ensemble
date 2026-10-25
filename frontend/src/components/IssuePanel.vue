@@ -245,8 +245,8 @@ async function submitComment() {
 
     <label class="field">
       <span>Assignee</span>
-      <select :value="issue.assigneeId" @change="changeAssignee">
-        <option :value="null">Unassigned</option>
+      <select :value="issue.assigneeId || ''" @change="changeAssignee">
+        <option value="">Unassigned</option>
         <option v-for="member in boardStore.state.agents" :key="member.id" :value="member.id">{{ member.name }}</option>
       </select>
     </label>
