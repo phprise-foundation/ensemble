@@ -4,9 +4,9 @@
 
 **Merged into `main`:** P4-1 (#192, #194), P4-2 (#195).
 
-**In progress on `feat/p4-3-fake-removal` (WIP, pushed, no PR yet), head
-`ac7c576`:** the fake backend is gone from the code and the browser review
-fixes are in.
+**On `feat/p4-3-fake-removal` (pushed, PR next),** the fake backend is gone
+from the code, the browser review fixes are in and the real-backend E2E suite is
+green (104/104).
 
 ### What P4-3 already does
 
@@ -40,29 +40,43 @@ fixes are in.
 
 ### Current bar
 
-- Backend: **138 PHPUnit tests / 889 assertions**, Psalm level 1, **0 errors**.
-- Frontend unit: green except the untracked legacy `comment-author.spec.js`
-  (kept on disk, never tracked).
-- Real E2E: **109/117**. Remaining failures (12 tests / 7 specs):
-  1. `profile-menu` / `profile-avatar` — `cy.visit` page-load timeout of 60s on
-     reload (investigate; suspect the single-threaded `php -S` under the
-     avatar data-URI PATCH).
-  2. `sidebar-rail` / `sidebar-collapse` — the intercepted snapshot fixtures
-     still use `workspaceId: 'default'`; resolve it through `e2eContext`.
-  3. `new-task-modal` (2) — PATCH responses now return `{issue}`; assert the
-     wrapper.
-  4. `issue-history` (2) — text/order assertions to tune (backend returns
-     events newest-first so same-second seeds keep a deterministic order).
-  5. `description-comment-limits` (3) — key/timestamp assertions and the
-     `KANB-7` legacy markers.
+- Backend: **138 PHPUnit tests / 892 assertions**, Psalm level 1, **0 errors**.
+- Frontend unit: **249/249** (vitest).
+- Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
+- Real E2E: **104/104 across 17 specs**, green.
+- Build: `/app/` lands in `public/app/`.
+
+### What closed the remaining E2E failures
+
+- Page visits go through `cy.visitApp(path)`, which prefixes the build base
+  (`/app/`). Visiting the bare root twice went through Vite's 302 and left
+  Cypress waiting for a `load` event that never arrived.
+- Specs resolve real ids from the API (`cy.wsSnapshot()`) instead of the fake
+  ids (`KANB`, `standard`, `workspaceId: 'default'`); the rail/sidebar guards
+  dropped the removed Experiences surface and the old Sim marker.
+- `GET /issues/{key}` answers `{issue, comments, history}`; the limits spec
+  reads the envelope. The legacy issue is seeded as `KANB-7` (with both
+  `LEGACY-COMMENT-START/END` markers) and the columns no longer depend on the
+  old ids.
+- The seed spaces KANB-5's four moves one second apart so the timeline order is
+  deterministic (events are stored with whole-second timestamps).
+- `dialogs` asserts the card disappeared instead of the whole page (the toast
+  text also contains the name).
+- `PATCH /api/me` now clears the display name with `displayName: ""` (absent
+  stays untouched), matching the UI and the e2e reset.
+- The issue panel's Unassigned option uses an empty value, so clearing the
+  assignee no longer sends the label as an id.
+- Deleted the fake-backend-era E2E harness contracts (`run-e2e-*` node tests,
+  `cypress/harness/` fixtures). They spawned the whole harness against the
+  developer database and hardcoded `.data/db.json`; the Browser E2E job is the
+  proof now.
 
 ### Next moves
 
-1. Close the 12 e2e failures above; `npm run test:unit` green.
-2. PR of `feat/p4-3-fake-removal` → CI (phpunit + psalm + vitest + contracts +
+1. PR of `feat/p4-3-fake-removal` → CI (phpunit + psalm + vitest + contracts +
    build + real e2e) → merge into `main` with `--delete-branch`.
-3. Update this STATE section at merge time.
-4. The product owner runs the full browser pass **on `main`** afterwards (his
+2. Update this STATE section at merge time.
+3. The product owner runs the full browser pass **on `main`** afterwards (his
    rule: test only what is merged).
 
 ### How to run locally (dev)
@@ -222,17 +236,15 @@ separate branch.
 - The dev Postgres now runs as the `ensemble` compose project (fresh volume);
   the old dev data lives in the orphaned `multi-agent-postgres-1` container and
   its volume. Dev data is throwaway; delete the orphan when confident.
-- **Frontend test revisit (remembered):** the untracked WIP specs — notably
-  `frontend/tests/comment-author.spec.js` — make the local vitest run red while
-  CI never sees them. Decide in a future round: adopt, move out of the suite or
-  delete the files, and stop `node --test` from racing (`run-e2e-parallel` is
-  flaky under high parallelism).
+- **Frontend test revisit (closed in P4-3):** `comment-author.spec.js` was stale
+  against the current `resolveAuthor({ agents, user, author })` contract and is
+  now updated and green; the obsolete `run-e2e-*` harness contracts (they spawned
+  the whole suite from `node --test` against the developer database) were
+  deleted with the fake backend, so `node --test` is green (97/97).
 - Untracked WIP that predates P0/P1 and was **not** committed:
   `docs/KAN-126-guide.md`, `docs/KAN-127-guide.md`,
   `frontend/src/components/Comment.vue`,
-  `frontend/tests/comment-author.spec.js`,
-  `frontend/tests/icon-standard-capture.feature`,
-  `frontend/tests/viewport-boundary.test.mjs`, `kanban-outcome.md`,
+  `frontend/tests/icon-standard-capture.feature`, `kanban-outcome.md`,
   `tmp-kan-112-comentario.txt`, plus root `node_modules/` and
   `package-lock.json`. Review before adopting or deleting.
 
