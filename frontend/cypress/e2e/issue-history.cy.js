@@ -97,13 +97,16 @@ describe('issue history tab', () => {
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('shows the created event on KANB-1 and resets to Comments when another issue opens', () => {
+  it('shows the created event and the comments on KANB-1, then resets to Comments', () => {
     cy.visitApp('/')
     openIssue('KANB-1')
-    cy.get('#issue-tab-history').click()
-    cy.get('#issue-panel-history .history-entry').should('have.length', 1)
-    cy.get('#issue-panel-history [data-history-type="created"] .history-text').should('contain.text', 'Issue created')
-    cy.get('#issue-panel-history .history-entry').should('have.length', 1)
+    cy.wsRequest('GET', '/issues/KANB-1').then((detail) => {
+      cy.get('#issue-tab-history').click()
+      cy.get('#issue-panel-history .history-entry').should('have.length', detail.body.history.length)
+      cy.get('#issue-panel-history [data-history-type="created"] .history-text').should('contain.text', 'Issue created')
+      cy.get('#issue-panel-history [data-history-type="comment"]').should('have.length.at.least', 1)
+      cy.get('#issue-panel-history [data-history-type="comment"] .history-text').first().should('contain.text', 'Commented:')
+    })
     cy.get('.issue-panel [aria-label="Close"]').click()
     cy.get('.issue-panel').should('not.exist')
     openIssue('KANB-3')

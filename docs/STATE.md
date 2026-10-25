@@ -5,8 +5,10 @@
 **Merged into `main`:** P4-1 (#192, #194), P4-2 (#195), P4-3 (#196).
 
 P4-3 removed the fake backend, moved the build under `public/app/`, wired every
-editor to the real API and closed the real-backend E2E suite (104/104). The
-product owner's full browser pass on `main` is the only step left before P5.
+editor to the real API and closed the real-backend E2E suite. The product
+owner's browser pass on `main` found a second round of editor bugs; they are
+fixed and covered by `browser-review.cy.js` (see below). The pass continues
+before P5.
 
 ### What P4-3 delivered
 
@@ -40,13 +42,13 @@ product owner's full browser pass on `main` is the only step left before P5.
 
 ### Current bar
 
-- Backend: **138 PHPUnit tests / 892 assertions**, Psalm level 1, **0 errors**.
-- CI now creates `phprise_test` and sets `TEST_DATABASE_URL`, so the
-  PostgreSQL integration suite runs instead of skipping; `GitClientTest`
-  configures the git identity in its own clones.
-- Frontend unit: **249/249** (vitest).
+- Backend: **138 PHPUnit tests / 895 assertions**, Psalm level 1, **0 errors**.
+- CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
+  integration suite runs instead of skipping; `GitClientTest` configures the
+  git identity in its own clones.
+- Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **104/104 across 17 specs**, green.
+- Real E2E: **112/112 across 18 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -74,10 +76,53 @@ product owner's full browser pass on `main` is the only step left before P5.
   developer database and hardcoded `.data/db.json`; the Browser E2E job is the
   proof now.
 
+### Second browser pass (2026-10-25)
+
+The product owner retested `main` and reported the board, column and issue-type
+editors still failing. Root causes and fixes:
+
+- **Board id**: the sidebar badge printed the 32-hex `BoardId`. It now prints
+  the board `key` (slug).
+- **Edit board**: opening the editor before the workspace snapshot landed left
+  the workflow select empty and the save answered `422`; the select now waits
+  for the workflows and Save is disabled without a name/workflow.
+- **Column position**: the Columns editor had no Position input (the table only
+  displayed it); the field is back and the backend already persisted it.
+- **Column drag & drop**: reordering threw `ReferenceError: toast is not
+  defined` in `BoardPage`; the toast store is imported again and
+  `browser-review.cy.js` drags a header with native `DragEvent`s and asserts
+  the persisted order.
+- **Custom fields**: the editor sent the legacy `select` type (the domain wants
+  `single_select`/`multi_select`) and the type/field collections PATCHed the
+  nested list URLs (`workflows/{wf}/issue-types/{id}`) instead of
+  `/issue-types/{id}` — hence "not found". The same `editPath` bug hit
+  statuses, transitions and columns (edit/delete); all four collections now
+  use the flat edit routes. The type editor exposes text/textarea/number/date/
+  boolean/single/multi select, and the snapshot fields are flattened into the
+  store so removals work.
+- **Comment history**: comments wrote no `issue_events` row. Events now carry a
+  `type` (`created`, `status`, `assignee`, `summary`, `description`, `comment`)
+  and a short `summary`; comments record a snippet, updates record
+  summary/description/assignee, and the History tab renders them.
+- **New task**: the modal listed types without an initial status and the
+  workflow-wide initial statuses, which made creation answer `422`. It now
+  offers only types with an initial status and only that type's initial
+  statuses. It also renders the type's custom fields (required ones included)
+  and the issue panel can edit them.
+- **Workspace and sources**: editing the workspace called an unmodelled
+  collection; it now PATCHes `/api/workspaces/{id}`. The Sources editor
+  collects provider/HTTPS URL/base branch (repositories) instead of a local
+  path, and the sidebar shows the URL.
+- **Panel hydration**: an issue update replaced the local issue with the PATCH
+  payload (no comments/history); comments and history are re-fetched after the
+  save.
+- Removed the remaining "Sim/Prototype" UI (`SimBanner`, badges, `sim-dot`,
+  `simulation.js`); the `?sim` switch is gone for good.
+
 ### Next moves
 
-1. The product owner runs the full browser pass **on `main`** (his rule: test
-   only what is merged) and reports the findings.
+1. The product owner continues the browser pass on the merged fix and reports
+   anything else before release.
 2. Then **P5 — Cloudflare single image**: image roles (`web`/`runner`/`all`),
    external PostgreSQL, R2 artifacts, cron/queue-triggered runner, secrets,
    health, no compose in production.
