@@ -55,6 +55,15 @@ final class TenancyApiTest extends TestCase
         )));
         self::assertNull($data['user']['avatar']);
         self::assertSame('Ada', $data['user']['displayName']);
+
+        $data = $this->app->json($this->app->handle($this->app->request(
+            'PATCH',
+            '/api/me',
+            ['displayName' => ''],
+            $this->adminToken,
+        )));
+        self::assertSame('', $data['user']['displayName']);
+        self::assertNull($data['user']['avatar']);
     }
 
     public function testAdminCreatesUserAndUserCannotListUsers(): void
