@@ -6,10 +6,14 @@ namespace App\Application\Kanban;
 
 use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\IssueCommentRepository;
+use App\Domain\Contract\Kanban\IssueEventRepository;
 use App\Domain\Contract\Kanban\IssueRepository;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Kanban\IssueComment;
 use App\Domain\Kanban\IssueCommentId;
+use App\Domain\Kanban\IssueEvent;
+use App\Domain\Kanban\IssueEventId;
+use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
@@ -19,6 +23,7 @@ final readonly class CommentIssue
     public function __construct(
         private IssueRepository $issues,
         private IssueCommentRepository $comments,
+        private IssueEventRepository $events,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -35,6 +40,16 @@ final readonly class CommentIssue
             $body,
         );
         $this->comments->add($comment);
+        $this->events->add(new IssueEvent(
+            IssueEventId::generate(),
+            $workspaceId,
+            $issue->id(),
+            IssueEventType::Comment,
+            null,
+            null,
+            $actor->login()->value(),
+            mb_substr(trim($body), 0, 140),
+        ));
 
         return $comment;
     }

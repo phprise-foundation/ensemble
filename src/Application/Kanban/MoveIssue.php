@@ -14,6 +14,7 @@ use App\Domain\Exception\NotFoundException;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueEvent;
+use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\Status;
@@ -55,9 +56,11 @@ final readonly class MoveIssue
             IssueEventId::generate(),
             $workspaceId,
             $issue->id(),
+            IssueEventType::Status,
             $previous,
             $target->id(),
             $actor->login()->value(),
+            null,
             $at,
         ));
 

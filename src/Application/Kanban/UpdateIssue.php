@@ -6,13 +6,21 @@ namespace App\Application\Kanban;
 
 use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\FieldDefinitionRepository;
+use App\Domain\Contract\Kanban\IssueEventRepository;
 use App\Domain\Contract\Kanban\IssueRepository;
+use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Kanban\Issue;
+use App\Domain\Kanban\IssueEvent;
+use App\Domain\Kanban\IssueEventId;
+use App\Domain\Kanban\IssueEventType;
+use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
+use App\Domain\Team\AgentId;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 use DateTimeImmutable;
+use InvalidArgumentException;
 
 final readonly class UpdateIssue
 {
@@ -20,6 +28,8 @@ final readonly class UpdateIssue
         private IssueRepository $issues,
         private FieldDefinitionRepository $fields,
         private ValidateFieldValues $validateFields,
+        private IssueEventRepository $events,
+        private AgentRepository $agents,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -40,10 +50,15 @@ final readonly class UpdateIssue
     ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
         $issue = $this->issues->find($workspaceId, $key) ?? throw NotFoundException::issue();
-        if ($summary !== null) {
+        $previousAssignee = $issue->assigneeId();
+        $summaryChanged = $summary !== null && $summary !== $issue->summary();
+        $descriptionChanged = $description !== null && $description !== $issue->description();
+        $assigneeChanged = $assigneeProvided && $assigneeId !== $previousAssignee;
+
+        if ($summaryChanged) {
             $issue->rename($summary);
         }
-        if ($description !== null) {
+        if ($descriptionChanged) {
             $issue->describe($description);
         }
         if ($assigneeProvided) {
@@ -61,6 +76,61 @@ final readonly class UpdateIssue
         $issue->touch(new DateTimeImmutable());
         $this->issues->update($issue);
 
+        $actorLogin = $actor->login()->value();
+        if ($summaryChanged) {
+            $this->record($workspaceId, $issue->id(), IssueEventType::Summary, $actorLogin, $summary);
+        }
+        if ($descriptionChanged) {
+            $this->record($workspaceId, $issue->id(), IssueEventType::Description, $actorLogin, 'Description updated');
+        }
+        if ($assigneeChanged) {
+            $this->record(
+                $workspaceId,
+                $issue->id(),
+                IssueEventType::Assignee,
+                $actorLogin,
+                sprintf(
+                    '%s → %s',
+                    $this->assigneeLabel($workspaceId, $previousAssignee),
+                    $this->assigneeLabel($workspaceId, $assigneeId),
+                ),
+            );
+        }
+
         return $issue;
+    }
+
+    private function record(
+        WorkspaceId $workspaceId,
+        IssueId $issueId,
+        IssueEventType $type,
+        string $actor,
+        ?string $summary,
+    ): void {
+        $this->events->add(new IssueEvent(
+            IssueEventId::generate(),
+            $workspaceId,
+            $issueId,
+            $type,
+            null,
+            null,
+            $actor,
+            $summary,
+        ));
+    }
+
+    private function assigneeLabel(WorkspaceId $workspaceId, ?string $assigneeId): string
+    {
+        if ($assigneeId === null || $assigneeId === '') {
+            return 'Unassigned';
+        }
+
+        try {
+            $agent = $this->agents->find($workspaceId, new AgentId($assigneeId));
+        } catch (InvalidArgumentException) {
+            return $assigneeId;
+        }
+
+        return $agent?->name() ?? $assigneeId;
     }
 }

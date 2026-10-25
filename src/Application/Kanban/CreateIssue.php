@@ -17,6 +17,7 @@ use App\Domain\Exception\NotFoundException;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueEvent;
+use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
@@ -97,6 +98,7 @@ final readonly class CreateIssue
             IssueEventId::generate(),
             $workspaceId,
             $issue->id(),
+            IssueEventType::Created,
             null,
             $status->id(),
             $actor->login()->value(),
