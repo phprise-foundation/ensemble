@@ -38,6 +38,7 @@ vi.mock('../src/store/board.js', async () => {
       },
       selectedIssue: ref(issue),
       status: () => ({ id: 'in-progress', name: 'In Progress', color: '#0052cc' }),
+      issueType: () => ({ fields: [] }),
       agent: (id) => (id === 'vivy' ? { id: 'vivy', name: 'Vivy', roleIds: [], avatarColor: '#4c9aff', portrait: 'data:image/png;base64,iVBORw0KGgo=' } : null),
       role: () => ({ name: 'Product Owner' }),
       userTargets: () => [],

@@ -262,12 +262,12 @@ describe('the verb is born from the fact (__existing), not from the id field', (
   })
 
   it('edits an existing repository (source) via PATCH', async () => {
-    boardStore.state.sources = [{ id: 'src-a', name: 'Projeto A', path: '/home/you/src/projeto-a', workspaceId: 'ws' }]
+    boardStore.state.sources = [{ id: 'src-a', name: 'Projeto A', provider: 'github', url: 'https://github.com/a/a', baseBranch: 'main', workspaceId: 'ws' }]
     mountSidebar()
 
     await navButton('Edit source').trigger('click')
     await nextTick()
-    await fill('Directory (local path)', '/home/you/src/projeto-b')
+    await fill('HTTPS URL', 'https://github.com/a/b')
     await save()
 
     expect(calls('PATCH', '/api/workspaces/ws/repositories/src-a')).toHaveLength(1)

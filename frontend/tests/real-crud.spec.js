@@ -111,7 +111,7 @@ describe('real entity routing', () => {
   it('deletes by the path stored on the entity', async () => {
     await boot()
     mocks.request.mockImplementation(async (method, path) => {
-      if (method === 'DELETE' && path === '/api/workspaces/w1/workflows/wf9/statuses/s1') {
+      if (method === 'DELETE' && path === '/api/workspaces/w1/statuses/s1') {
         return { ok: true }
       }
       if (path === '/api/workspaces/w1/snapshot') {

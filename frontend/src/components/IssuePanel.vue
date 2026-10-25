@@ -4,9 +4,11 @@ import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
 import Avatar from './Avatar.vue'
 import FieldLimit from './FieldLimit.vue'
+import FieldValueInput from './FieldValueInput.vue'
 import IssueHistory from './IssueHistory.vue'
 import { formatCommentTimestamp, resolveAuthor } from '../lib/comment-author.js'
 import { session } from '../store/session.js'
+import { toast } from '../store/toast.js'
 import {
   COMMENT_LIMIT,
   DESCRIPTION_LIMIT,
@@ -40,6 +42,9 @@ const commentPayload = computed(() => comment.value.trim())
 const commentLength = computed(() => countCharacters(commentPayload.value))
 const commentOver = computed(() => limitExceeded(commentLength.value, COMMENT_LIMIT))
 const commentError = ref('')
+const fieldsDraft = ref({})
+const fieldsSaving = ref(false)
+const fieldsError = ref('')
 
 const commentRows = computed(() =>
   issue.value.comments.map((entry) => ({
@@ -64,16 +69,42 @@ const agent = computed(() => (issue.value ? boardStore.agent(issue.value.assigne
 const role = computed(() => (agent.value ? agent.value.roleIds.map((id) => boardStore.role(id)?.name).filter(Boolean).join(', ') : ''))
 const targets = computed(() => (issue.value ? boardStore.userTargets(issue.value.statusId) : []))
 const overdue = computed(() => (issue.value ? boardStore.isOverdue(issue.value) : false))
+const typeFields = computed(
+  () => (issue.value ? boardStore.issueType(issue.value.issueTypeId)?.fields ?? [] : []),
+)
+const fieldsDirty = computed(
+  () => Boolean(issue.value) && JSON.stringify(fieldsDraft.value) !== JSON.stringify(issue.value.fields ?? {}),
+)
 
-watch(() => issue.value?.id, () => {
-  activeTab.value = 'comments'
-  editingSummary.value = false
-  editingDescription.value = false
-  descriptionDraft.value = ''
-  descriptionError.value = ''
-})
+watch(
+  () => issue.value?.id,
+  () => {
+    activeTab.value = 'comments'
+    editingSummary.value = false
+    editingDescription.value = false
+    descriptionDraft.value = ''
+    descriptionError.value = ''
+    fieldsDraft.value = JSON.parse(JSON.stringify(issue.value?.fields ?? {}))
+    fieldsError.value = ''
+  },
+  { immediate: true },
+)
 watch(descriptionDraft, () => { descriptionError.value = '' })
 watch(comment, () => { commentError.value = '' })
+
+async function saveFields() {
+  if (!fieldsDirty.value || fieldsSaving.value) return
+  fieldsSaving.value = true
+  fieldsError.value = ''
+  try {
+    await boardStore.updateIssue(issue.value.id, { fields: fieldsDraft.value })
+    toast.success('Fields saved.')
+  } catch (failure) {
+    fieldsError.value = failure?.message ?? 'Could not save the fields.'
+  } finally {
+    fieldsSaving.value = false
+  }
+}
 
 function selectTab(tabId) {
   activeTab.value = tabId
@@ -292,6 +323,24 @@ async function submitComment() {
       <p v-else class="body">{{ issue.description || 'No description' }}</p>
     </section>
 
+    <section v-if="typeFields.length" class="panel-section panel-fields">
+      <div class="section-heading">
+        <h3>Fields</h3>
+      </div>
+      <FieldValueInput
+        v-for="field in typeFields"
+        :key="field.id"
+        v-model="fieldsDraft[field.key]"
+        :field="field"
+      />
+      <p v-if="fieldsError" class="error small" role="alert">{{ fieldsError }}</p>
+      <div class="section-actions">
+        <button type="button" class="button" :disabled="!fieldsDirty || fieldsSaving" @click="saveFields">
+          Save fields
+        </button>
+      </div>
+    </section>
+
     <section class="panel-section panel-tabs">
       <div class="tabs" role="tablist" aria-label="Issue details">
         <button
@@ -322,9 +371,6 @@ async function submitComment() {
           @keydown="onTabKeydown"
         >
           History
-          <span v-if="boardStore.simulated('history')" class="badge sim">
-            <span class="sim-dot sm"></span> Prototype
-          </span>
         </button>
       </div>
 

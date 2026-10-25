@@ -30,16 +30,19 @@ function toggleStatus(column, statusId) {
       <label class="field"><span>Name</span><input type="text" v-model="draft.name" /></label>
       <label class="field">
         <span>Workflow</span>
-        <select v-model="draft.workflowId">
+        <select v-model="draft.workflowId" :disabled="!workflows.length">
           <option v-for="workflow in workflows" :key="workflow.id" :value="workflow.id">{{ workflow.name }}</option>
         </select>
       </label>
+      <p class="muted small" v-if="!workflows.length">
+        Create a workflow before creating a board.
+      </p>
       <p class="error" v-if="error">{{ error }}</p>
     </div>
 
     <footer class="modal-footer">
       <button class="button ghost" @click="emit('close')">Cancel</button>
-      <button class="button" @click="emit('save')">Save</button>
+      <button class="button" :disabled="!draft.name || !draft.workflowId" @click="emit('save')">Save</button>
     </footer>
   </div>
 </template>

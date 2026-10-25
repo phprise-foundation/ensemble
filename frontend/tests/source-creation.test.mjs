@@ -8,14 +8,14 @@ const here = dirname(fileURLToPath(import.meta.url))
 const sidebarVue = readFileSync(join(here, '..', 'src', 'components', 'AppSidebar.vue'), 'utf8')
 
 function sourceBlock() {
-  const match = sidebarVue.match(/if \(current\.kind === 'source'\) \{[\s\S]*?\n    \}/)
+  const match = sidebarVue.match(/if \(current\.kind === 'source'[\s\S]*?\n    \}/)
   return match ? match[0] : ''
 }
 
 test('new source draft starts without id', () => {
   assert.match(
     sidebarVue,
-    /function addSource\(\) \{[\s\S]*?openEditor\('source', \{ id: '', name: '', path: '', workspaceId: workspaceId\.value \}/,
+    /function addSource\(\) \{[\s\S]*?id: '', name: '', provider: 'github', url: '', baseBranch: 'main', workspaceId: workspaceId\.value/,
     'a source nova deve ser aberta com id vazio'
   )
 })
