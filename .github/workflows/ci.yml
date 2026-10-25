@@ -32,7 +32,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Composer install
         run: composer install --no-interaction --no-progress
+      - name: Test database
+        env:
+          PGPASSWORD: phprise
+        run: psql -h 127.0.0.1 -U phprise -d postgres -c 'CREATE DATABASE phprise_test'
       - name: Backend (phpunit)
+        env:
+          TEST_DATABASE_URL: pgsql://phprise:phprise@127.0.0.1:5432/phprise_test
         run: vendor/bin/phpunit
       - name: Backend (psalm)
         run: vendor/bin/psalm --no-progress
