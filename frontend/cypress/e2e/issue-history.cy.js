@@ -1,3 +1,6 @@
+// The real history is a chain of status events recorded by the backend on
+// every move: KANB-5 was seeded crossing the whole board (four moves) and
+// KANB-1/KANB-3 never moved, so their tabs start empty or comment-focused.
 const collectErrors = (win, errors) => {
   win.addEventListener('error', (event) => errors.push(`error: ${event.message}`))
   win.addEventListener('unhandledrejection', (event) =>
@@ -5,8 +8,8 @@ const collectErrors = (win, errors) => {
   )
 }
 
-const openIssue = (issueId) => {
-  cy.get('.card').contains('.card-id', issueId).click()
+const openIssue = (issueKey) => {
+  cy.get('.card').contains('.card-id', issueKey).click()
   cy.get('.issue-panel').should('be.visible')
   cy.get('.issue-panel .panel-title').should('not.be.empty')
 }
@@ -35,11 +38,11 @@ describe('issue history tab', () => {
     cy.viewport(1280, 800)
   })
 
-  it('opens KANB-1 with Comments selected, counter only there and History hidden', () => {
+  it('opens KANB-3 with Comments selected, counter only there and History hidden', () => {
     cy.visit('/')
     cy.get('vite-error-overlay').should('not.exist')
-    openIssue('KANB-1')
-    cy.wsRequest('GET', '/issues/KANB-1').then((current) => {
+    openIssue('KANB-3')
+    cy.wsRequest('GET', '/issues/KANB-3/comments').then((current) => {
       cy.get('#issue-tab-comments')
         .should('have.attr', 'aria-selected', 'true')
         .and('contain.text', `Comments (${current.body.comments.length})`)
@@ -49,44 +52,38 @@ describe('issue history tab', () => {
     cy.get('#issue-panel-history').should('not.be.visible')
     cy.get('#issue-tab-history').click()
     cy.get('#issue-panel-history').should('be.visible')
-    cy.get('#issue-panel-history .history-entry').should('have.length', 4)
+    cy.get('#issue-panel-history .history-entry').should('have.length', 2)
     cy.get('#issue-panel-comments').should('not.be.visible')
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('shows the KANB-1 timeline with icon, actor, datetime and summary per event type', () => {
+  it('shows the KANB-5 timeline with icon, actor, datetime and status text', () => {
     cy.visit('/')
-    openIssue('KANB-1')
+    openIssue('KANB-5')
     cy.get('#issue-tab-history').click()
     historyTypes().then((types) => {
-      expect(types).to.include.members(['created', 'summary', 'description', 'assignee'])
+      expect(types).to.deep.equal(['created', 'status', 'status', 'status', 'status'])
     })
     cy.get('#issue-panel-history .history-entry').each(($entry) => {
       expect($entry.find('.history-icon svg').length, 'ícone do evento').to.equal(1)
-      expect($entry.find('.history-actor').text().trim(), 'autor do evento').to.not.equal('')
+      expect($entry.find('.history-actor').text().trim(), 'autor do evento').to.equal('admin')
       expect($entry.find('time[datetime]').length, 'timestamp do evento').to.equal(1)
       expect($entry.find('.history-text').text().trim(), 'resumo do evento').to.not.equal('')
     })
-    cy.get('#issue-panel-history [data-history-type="created"] .history-text').should(
-      'contain.text',
-      'Issue created',
-    )
-    cy.get('#issue-panel-history [data-history-type="assignee"] .history-text').should(
-      'contain.text',
-      'Assignee',
-    )
+    cy.get('#issue-panel-history [data-history-type="created"] .history-text').should('contain.text', 'Issue created')
+    cy.get('#issue-panel-history .history-text')
+      .eq(1)
+      .should('contain.text', 'Status')
+      .and('contain.text', 'To Develop → In Development')
+    cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('covers the status event on KANB-2 and lists events in reverse chronological order', () => {
+  it('lists events in reverse chronological order', () => {
     cy.visit('/')
-    openIssue('KANB-2')
+    openIssue('KANB-5')
     cy.get('#issue-tab-history').click()
-    historyTypes().then((types) => {
-      expect(types).to.include('status')
-      expect(types.filter((type) => type === 'status').length).to.be.at.least(1)
-    })
     historyDatetimes().then((datetimes) => {
-      expect(datetimes.length, 'eventos listados').to.equal(4)
+      expect(datetimes.length, 'eventos listados').to.equal(5)
       const parsed = datetimes.map((value) => Date.parse(value))
       parsed.forEach((timestamp, index) => {
         expect(parsed[index], 'datetime válido').to.not.be.NaN
@@ -95,23 +92,20 @@ describe('issue history tab', () => {
         }
       })
     })
-    cy.get('#issue-panel-history [data-history-type="status"] .history-text')
-      .first()
-      .should('contain.text', 'Status')
-      .and('contain.text', '→')
     cy.get('#issue-panel-history .comment').should('not.exist')
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('shows the empty state on KANB-6 and resets to Comments when another issue opens', () => {
+  it('shows the created event on KANB-1 and resets to Comments when another issue opens', () => {
     cy.visit('/')
-    openIssue('KANB-6')
+    openIssue('KANB-1')
     cy.get('#issue-tab-history').click()
-    cy.get('#issue-panel-history').should('contain.text', 'No history yet')
-    cy.get('#issue-panel-history .history-entry').should('not.exist')
+    cy.get('#issue-panel-history .history-entry').should('have.length', 1)
+    cy.get('#issue-panel-history [data-history-type="created"] .history-text').should('contain.text', 'Issue created')
+    cy.get('#issue-panel-history .history-entry').should('have.length', 1)
     cy.get('.issue-panel [aria-label="Close"]').click()
     cy.get('.issue-panel').should('not.exist')
-    openIssue('KANB-2')
+    openIssue('KANB-3')
     cy.get('#issue-tab-comments').should('have.attr', 'aria-selected', 'true')
     cy.get('#issue-panel-comments').should('be.visible')
     cy.get('#issue-panel-history').should('not.be.visible')
@@ -120,7 +114,7 @@ describe('issue history tab', () => {
 
   it('supports arrow, Home, End, Enter and Space with roving tabindex and visible focus', () => {
     cy.visit('/')
-    openIssue('KANB-1')
+    openIssue('KANB-3')
     const tabs = ['#issue-tab-comments', '#issue-tab-history']
     cy.get('#issue-tab-comments').focus()
     cy.get('#issue-tab-comments').type('{rightArrow}')
@@ -162,5 +156,4 @@ describe('issue history tab', () => {
     )
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
-
 })

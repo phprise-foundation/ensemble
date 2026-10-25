@@ -23,8 +23,8 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
   let initialUser
 
   before(() => {
-    cy.request('GET', '/api/user').then((response) => {
-      initialUser = response.body
+    cy.meRequest('GET').then((response) => {
+      initialUser = response.body.user
     })
   })
 
@@ -43,10 +43,9 @@ describe('perfil: foto do usuário, save com estados e remoção do voltar (KAN-
     cy.then(() => {
       expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.have.length(0)
     })
-    cy.request('PATCH', '/api/user', {
+    cy.meRequest('PATCH', {
       displayName: initialUser.displayName,
-      avatar: initialUser.avatar,
-      avatarColor: initialUser.avatarColor,
+      ...(initialUser.avatar !== undefined ? { avatar: initialUser.avatar } : {}),
     })
   })
 

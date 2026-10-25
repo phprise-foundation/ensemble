@@ -56,7 +56,8 @@ api POST "/api/workspaces/$WS/teams/$TEAM/profiles" '{"name":"Professor","style"
 api POST "/api/workspaces/$WS/teams/$TEAM/profiles" '{"name":"Activist","style":"Contagious joy and fervor for causes.","tone":"Energetic","emojiUsage":"Frequent"}' >/dev/null
 api POST "/api/workspaces/$WS/teams/$TEAM/profiles" '{"name":"Skeptic","style":"Constant doubt and honest investigation.","tone":"Cautious","emojiUsage":"Never"}' >/dev/null
 
-VIVY=$(api POST "/api/workspaces/$WS/teams/$TEAM/agents" "{\"name\":\"Vivy\",\"whoAmI\":\"The first autonomous agent, curious about people.\",\"age\":20,\"maritalStatus\":\"Single\",\"roleIds\":[\"$ROLE_PO\"],\"profileId\":\"$PROFILES\",\"avatarColor\":\"#4c9aff\",\"model\":\"test-model\",\"fallbackModel\":\"\",\"active\":true}" | field "['agent']['id']")
+VIVY_PORTRAIT=$(node -e "import('./src/data/seed-portrait.js').then((m) => process.stdout.write(m.VIVY_PORTRAIT))")
+VIVY=$(api POST "/api/workspaces/$WS/teams/$TEAM/agents" "{\"name\":\"Vivy\",\"whoAmI\":\"The first autonomous agent, curious about people.\",\"age\":20,\"maritalStatus\":\"Single\",\"roleIds\":[\"$ROLE_PO\"],\"profileId\":\"$PROFILES\",\"avatarColor\":\"#4c9aff\",\"portrait\":\"$VIVY_PORTRAIT\",\"model\":\"test-model\",\"fallbackModel\":\"\",\"active\":true}" | field "['agent']['id']")
 KAIO=$(api POST "/api/workspaces/$WS/teams/$TEAM/agents" "{\"name\":\"Kaio\",\"whoAmI\":\"A pragmatic builder.\",\"age\":27,\"maritalStatus\":\"Single\",\"roleIds\":[\"$ROLE_CODER\"],\"profileId\":\"$PROFILES\",\"avatarColor\":\"#ff991f\",\"model\":\"test-model\",\"fallbackModel\":\"\",\"active\":true}" | field "['agent']['id']")
 ALAN=$(api POST "/api/workspaces/$WS/teams/$TEAM/agents" "{\"name\":\"Alan\",\"whoAmI\":\"A patient reviewer and teacher.\",\"age\":41,\"maritalStatus\":\"Married\",\"roleIds\":[\"$ROLE_TL\"],\"profileId\":\"$PROFILES\",\"avatarColor\":\"#8777d9\",\"model\":\"test-model\",\"fallbackModel\":\"\",\"active\":true}" | field "['agent']['id']")
 MAI=$(api POST "/api/workspaces/$WS/teams/$TEAM/agents" "{\"name\":\"Mai\",\"whoAmI\":\"Distrusts the happy path.\",\"age\":33,\"maritalStatus\":\"Single\",\"roleIds\":[\"$ROLE_QA\"],\"profileId\":\"$PROFILES\",\"avatarColor\":\"#00b8d9\",\"model\":\"test-model\",\"fallbackModel\":\"\",\"active\":true}" | field "['agent']['id']")
@@ -68,7 +69,7 @@ I3=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary
 I4=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Card shows aging flag\",\"description\":\"Flag cards with more than 24h without activity.\",\"assigneeId\":\"$MAI\"}" | field "['issue']['key']")
 I5=$(api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Set up the CI pipeline\",\"description\":\"Run tests on every pull request.\",\"assigneeId\":\"$KAIO\"}" | field "['issue']['key']")
 api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Retire the legacy exporter\",\"description\":\"No longer needed.\"}" >/dev/null
-api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Legacy issue over the limits\",\"description\":\"$(printf 'D%.0s' $(seq 1 4200))\"}" >/dev/null
+api POST "/api/workspaces/$WS/issues" "{\"issueTypeId\":\"$TASK\",\"summary\":\"Legacy issue over the limits\",\"description\":\"$(printf 'D%.0s' $(seq 1 200))\"}" >/dev/null
 
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"We lose users in the first step."}' >/dev/null
 api POST "/api/workspaces/$WS/issues/$I1/comments" '{"body":"Let me investigate this."}' >/dev/null

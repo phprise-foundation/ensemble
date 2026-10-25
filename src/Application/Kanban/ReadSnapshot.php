@@ -17,6 +17,7 @@ use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Contract\Team\ProfileRepository;
 use App\Domain\Contract\Team\RoleRepository;
 use App\Domain\Contract\Team\TeamRepository;
+use App\Domain\Contract\Vcs\GitRepositories;
 use App\Domain\Contract\Tenancy\WorkspaceRepository;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Kanban\BoardColumn;
@@ -28,6 +29,7 @@ use App\Domain\Kanban\Workdir;
 use App\Domain\Team\Profile;
 use App\Domain\Team\Role;
 use App\Domain\Team\Team;
+use App\Domain\Vcs\GitRepository;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 
@@ -47,6 +49,7 @@ final readonly class ReadSnapshot
         private RoleRepository $roles,
         private AgentRepository $agents,
         private ProfileRepository $profiles,
+        private GitRepositories $repositories,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -72,6 +75,7 @@ final readonly class ReadSnapshot
             roles: $this->rolesFor($teams),
             profiles: $this->profilesFor($teams),
             agents: $this->agents->forWorkspace($workspaceId),
+            repositories: $this->repositories->all($workspaceId),
         );
     }
 

@@ -174,7 +174,7 @@ describe('real board mode', () => {
     expect(boardStore.state.boardId).toBe('b1')
     expect(boardStore.state.issues).toHaveLength(1)
 
-    await boardStore.moveIssue('i1', 's2')
+    await boardStore.moveIssue('ONE-1', 's2')
 
     expect(boardStore.state.issues[0].statusId).toBe('s2')
   })

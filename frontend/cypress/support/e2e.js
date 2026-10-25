@@ -39,6 +39,34 @@ Cypress.Commands.add('wsRequest', (method, suffix, body, options = {}) => {
   })
 })
 
+// Global-scope request (/api/me) with the injected bearer.
+Cypress.Commands.add('meRequest', (method, body) => {
+  return cy.request({
+    method,
+    url: '/api/me',
+    headers: { Authorization: `Bearer ${e2eToken}` },
+    ...(body !== undefined ? { body } : {}),
+  })
+})
+
+Cypress.Commands.add('visitRoles', function () {
+  return cy.wsSnapshot().then((snapshot) => {
+    cy.visit(`/#/teams/${snapshot.teams[0].id}/roles`)
+  })
+})
+
+Cypress.Commands.add('visitIssueTypes', function () {
+  return cy.wsSnapshot().then((snapshot) => {
+    cy.visit(`/#/workflows/${snapshot.workflows[0].id}/issue-types`)
+  })
+})
+
+Cypress.Commands.add('visitAgents', function () {
+  return cy.wsSnapshot().then((snapshot) => {
+    cy.visit(`/#/teams/${snapshot.teams[0].id}/agents`)
+  })
+})
+
 Cypress.Commands.add('wsSnapshot', function () {
   return cy
     .request({ url: `/api/workspaces/${e2eWorkspaceId}/snapshot`, headers: { Authorization: `Bearer ${e2eToken}` } })

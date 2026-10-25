@@ -461,6 +461,7 @@ final readonly class TenancyBootstrap
                     $roles,
                     $agents,
                     $profiles,
+                    $gitRepositories,
                     $guard,
                 ),
                 new AgentPresenter(),
@@ -468,6 +469,7 @@ final readonly class TenancyBootstrap
                 new RolePresenter(),
                 new TeamPresenter(),
                 new WorkspacePresenter(),
+                new RepositoryPresenter(),
                 $this->responder,
             ),
             new SecretController(

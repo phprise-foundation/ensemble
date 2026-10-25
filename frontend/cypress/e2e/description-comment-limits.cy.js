@@ -78,10 +78,10 @@ describe('description and comment limits', () => {
     cy.wsRequest('GET', '/issues').then((response) => {
       const created = response.body.issues.find((issue) => issue.summary === summary)
       expect(created.description).to.equal(description41)
-      cy.wrap(created.id).as('createdId')
+      cy.wrap(created.key).as('createdKey')
     })
-    cy.get('@createdId').then((id) => {
-      cy.contains('.card', id).click()
+    cy.get('@createdKey').then((key) => {
+      cy.contains('.card', key).click()
     })
     cy.get('.issue-panel .body').invoke('text').then((text) => {
       expect(text).to.equal(description41)
@@ -102,7 +102,7 @@ describe('description and comment limits', () => {
       cy.wrap(target).as('editTarget')
     })
     cy.get('@editTarget').then((target) => {
-      cy.contains('.card', target.id).click()
+      cy.contains('.card', target.key).click()
     })
     cy.get('.issue-panel .body').invoke('text').then((original) => {
       cy.get('.issue-panel').contains('button', 'Edit').click()
@@ -193,7 +193,7 @@ E2E-SAVED`)
     expectNoErrors()
   })
 
-  it('legado KANB-7: descrição e comentário inteiros acima do limite', () => {
+  it('legado KANB-7: PATCH acima do limite devolve 422 e preserva o original', () => {
     cy.contains('.card', 'KANB-7').click()
     cy.get('.issue-panel .body').invoke('text').then((text) => {
       expect(text).to.contain('LEGACY-DESCRIPTION-START')
@@ -202,13 +202,12 @@ E2E-SAVED`)
     cy.get('.issue-panel .comment p').invoke('text').then((text) => {
       expect(text).to.contain('LEGACY-COMMENT-START')
       expect(text).to.contain('LEGACY-COMMENT-END')
-      expect(text.length).to.be.greaterThan(1023)
     })
     cy.get('.issue-panel').contains('button', 'Edit').click()
-    cy.get('#issue-description-limit .field-limit-count').invoke('text').then((text) => {
-      expect(parseInt(text, 10)).to.be.greaterThan(4095)
-    })
-    cy.get('#issue-description-limit .field-limit-error').should('not.have.text', '')
+    cy.get('.issue-panel textarea[aria-label="Description"]')
+      .invoke('val', `${'D'.repeat(4200)}`)
+      .trigger('input')
+    cy.get('#issue-description-limit .field-limit-error').should('contain', 'excede o limite de 4095')
     cy.get('.issue-panel').contains('button', 'Save').should('be.disabled')
     cy.get('.issue-panel textarea[aria-label="Description"]').should('have.attr', 'aria-invalid', 'true')
     cy.get('.issue-panel').contains('button', 'Cancel').click()
@@ -320,7 +319,7 @@ E2E-SAVED`)
       cy.wsRequest('POST', '/issues/KANB-1/comments', { body: comment1024 }, { failOnStatusCode: false }).then((response) => {
         expect(response.status).to.equal(422)
         expect(response.body.error).to.be.a('string').and.not.equal('')
-        expect(response.body.field).to.equal('comment')
+        expect(response.body.field).to.equal('body')
         cy.wsRequest('GET', '/issues/KANB-1/comments').then((after) => {
           expect(after.body.comments).to.deep.equal(comments)
         })

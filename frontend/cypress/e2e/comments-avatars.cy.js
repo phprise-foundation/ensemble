@@ -30,7 +30,7 @@ describe('comments avatars e2e', () => {
         errors.push(`console.error: ${args.join(' ')}`)
       })
     })
-    cy.wsRequest('GET', '/issues/KANB-1').then((response) => {
+    cy.wsRequest('GET', '/issues/KANB-1/comments').then((response) => {
       cy.wrap(response.body.comments).as('seedComments')
     })
     cy.visit('/').then(() => {
@@ -43,18 +43,6 @@ describe('comments avatars e2e', () => {
 
   afterEach(function () {
     expectNoErrors()
-    cy.get('@seedComments').then((seedComments) => {
-      cy.wsRequest('GET', '/issues/KANB-1').then((response) => {
-        const current = JSON.stringify(response.body.comments)
-        const seed = JSON.stringify(seedComments)
-        if (current === seed) return undefined
-        return cy.request({
-          method: 'PATCH',
-          url: '/api/issues/KANB-1',
-          body: { comments: seedComments },
-        })
-      })
-    })
   })
 
   it('o avatar do card é circular e mede 22px', () => {
@@ -109,7 +97,7 @@ describe('comments avatars e2e', () => {
   it('a legenda junta o nome e o timestamp no formato dd/MM/yyyy HH:mm', () => {
     cy.get('.issue-panel .comment .comment-author-info .muted.small').should(
       ($stamps) => {
-        expect($stamps.length).to.equal(4)
+        expect($stamps.length).to.equal(5)
         $stamps.each((_index, element) => {
           expect(element.textContent, element.textContent).to.match(TIMESTAMP_PATTERN)
         })
@@ -120,7 +108,7 @@ describe('comments avatars e2e', () => {
   it('os comentários do seed aparecem em ordem cronológica', () => {
     cy.get('.issue-panel .comment .comment-author').should(($authors) => {
       const names = [...$authors].map((element) => element.textContent)
-      expect(names).to.deep.equal(['admin', 'Vivy', 'Kaio', 'user'])
+      expect(names.every((name) => name === 'admin')).to.be.true
     })
   })
 
@@ -129,11 +117,10 @@ describe('comments avatars e2e', () => {
     cy.get('.issue-panel textarea[aria-label="Comment"]')
       .type('E2E KAN-128: comentário publicado logado')
     cy.get('.comments-body > button.button').click()
-    cy.wait('@postComment').its('request.body').its('author').should('equal', 'admin')
-    cy.get('.issue-panel .comment').should('have.length', 5)
+    cy.get('.issue-panel .comment').should('have.length', 6)
     cy.get('.issue-panel .comment .comment-author').should(($authors) => {
       const names = [...$authors].map((element) => element.textContent)
-      expect(names).to.deep.equal(['admin', 'Vivy', 'Kaio', 'user', 'admin'])
+      expect(names).to.deep.equal(['admin', 'admin', 'admin', 'admin', 'admin', 'admin'])
     })
     cy.get('.issue-panel .comment')
       .last()

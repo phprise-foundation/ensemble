@@ -45,7 +45,7 @@ async function openCreate() {
     boardId: board.value?.id,
     summary: '',
     description: '',
-    typeId: issueTypes.value[0]?.id || 'task',
+    typeId: issueTypes.value[0]?.id ?? null,
     statusId: initialStatuses.value[0]?.id || '',
     assigneeId: boardStore.state.agents[0]?.id || null,
   }
@@ -92,6 +92,10 @@ async function save() {
     summaryInput.value?.focus()
     return
   }
+  if (!draft.value.typeId) {
+    error.value = 'Nenhum tipo de issue disponível neste workflow.'
+    return
+  }
   if (!initialStatuses.value.length) return
   if (!draft.value.statusId) {
     statusError.value = 'Selecione um status inicial.'
@@ -102,7 +106,12 @@ async function save() {
     return
   }
   try {
-    await boardStore.createIssue(draft.value)
+    await boardStore.createIssue({
+      issueTypeId: draft.value.typeId,
+      summary: draft.value.summary,
+      description: draft.value.description,
+      ...(draft.value.assigneeId ? { assigneeId: draft.value.assigneeId } : {}),
+    })
   } catch (failure) {
     applyFailure(failure)
     return

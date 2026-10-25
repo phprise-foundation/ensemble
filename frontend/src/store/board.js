@@ -5,7 +5,7 @@ import { session } from './session.js'
 
 const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
 const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
-const presented = (payload) => payload?.issue ?? payload ?? null
+const presented = (payload) => normalizeEntity('issues', payload?.issue ?? payload ?? null)
 const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
 
 const REAL_ROUTES = {
@@ -17,8 +17,8 @@ const REAL_ROUTES = {
   transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions` },
   issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types` },
   columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns` },
-  roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles` },
-  profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles` },
+  roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles`, editPath: (data) => `roles/${data.id}` },
+  profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles`, editPath: (data) => `profiles/${data.id}` },
   agents: { key: 'agent', path: (data) => `teams/${data.teamId}/agents`, editPath: (data) => `agents/${data.id}` },
 }
 
@@ -120,7 +120,8 @@ async function commentReal(issueId, body) {
   if (!issue) {
     throw new Error('Unknown issue')
   }
-  return presented(await request('POST', scoped(`/issues/${issue.key}/comments`), { body }))
+  await request('POST', scoped(`/issues/${issue.key}/comments`), { body })
+  return presented(await request('GET', scoped(`/issues/${issue.key}`)))
 }
 
 async function hydrateIssue(issue) {
@@ -137,7 +138,7 @@ async function hydrateIssue(issue) {
   }
   target.comments = (comments?.comments ?? []).map((entry) => ({ ...entry, at: entry.createdAt ?? entry.at }))
   target.history = (events?.events ?? []).map((event) => ({
-    type: 'status',
+    type: event.fromStatusId ? 'status' : 'created',
     actor: event.actor,
     at: event.createdAt,
     from: event.fromStatusId,

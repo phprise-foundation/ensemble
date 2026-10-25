@@ -14,6 +14,7 @@ use App\Interface\Http\Team\ProfilePresenter;
 use App\Interface\Http\Team\RolePresenter;
 use App\Interface\Http\Team\TeamPresenter;
 use App\Interface\Http\Tenancy\WorkspacePresenter;
+use App\Interface\Http\Vcs\RepositoryPresenter;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -27,6 +28,7 @@ final readonly class SnapshotController
         private RolePresenter $roles,
         private TeamPresenter $teams,
         private WorkspacePresenter $workspaces,
+        private RepositoryPresenter $repositories,
         private JsonResponder $responder,
     ) {
     }
@@ -50,6 +52,7 @@ final readonly class SnapshotController
             'roles' => $this->roles->presentMany($snapshot->roles),
             'profiles' => $this->profiles->presentMany($snapshot->profiles),
             'agents' => $this->agents->presentMany($snapshot->agents),
+            'sources' => $this->repositories->presentMany($snapshot->repositories),
         ]);
     }
 }
