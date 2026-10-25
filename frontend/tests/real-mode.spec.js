@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { session } from '../src/store/session.js'
+import { boardStore } from '../src/store/board.js'
 
 const mocks = vi.hoisted(() => ({
   real: false,
@@ -26,19 +28,10 @@ vi.mock('../src/api/index.js', () => ({
   request: (...args) => mocks.request(...args),
 }))
 
-const loadStores = async () => {
-  const [{ session }, { boardStore }] = await Promise.all([
-    import('../src/store/session.js'),
-    import('../src/store/board.js'),
-  ])
-  return { session, boardStore }
-}
-
 const USER = { login: 'admin', displayName: 'Admin', avatar: '', avatarColor: '#000' }
 const WORKSPACES = { workspaces: [{ id: 'w1', name: 'One' }] }
 
 beforeEach(() => {
-  vi.resetModules()
   mocks.tokenValue = null
   mocks.request = vi.fn()
 })
@@ -49,8 +42,6 @@ afterEach(() => {
 
 describe('real backend session', () => {
   it('lands on the gate when there is no stored token', async () => {
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(false)
@@ -68,8 +59,6 @@ describe('real backend session', () => {
       }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(true)
@@ -82,8 +71,6 @@ describe('real backend session', () => {
     const expired = new Error('401 Unauthorized')
     expired.status = 401
     mocks.request.mockRejectedValue(expired)
-    const { session } = await loadStores()
-
     await session.load()
 
     expect(session.signedIn).toBe(false)
@@ -94,8 +81,6 @@ describe('real backend session', () => {
     const denied = new Error('login does not match')
     denied.status = 401
     mocks.request.mockRejectedValue(denied)
-    const { session } = await loadStores()
-
     await session.load()
     expect(session.signedIn).toBe(false)
 
@@ -115,8 +100,6 @@ describe('real backend session', () => {
       }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session } = await loadStores()
-
     const user = await session.signIn('admin', 'admin1234')
 
     expect(user.login).toBe('admin')
@@ -126,8 +109,6 @@ describe('real backend session', () => {
   })
 
   it('refuses empty credentials before calling the backend', async () => {
-    const { session } = await loadStores()
-
     await expect(session.signIn('', '')).rejects.toThrow('required')
 
     expect(mocks.request).not.toHaveBeenCalled()
@@ -175,8 +156,6 @@ describe('real board mode', () => {
       }
       throw new Error(`unexpected ${method} ${path}`)
     })
-    const { session, boardStore } = await loadStores()
-
     await session.load()
     await boardStore.load()
 
