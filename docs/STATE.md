@@ -2,13 +2,13 @@
 
 ## P4 status — last updated 2026-10-25
 
-**Merged into `main`:** P4-1 (#192, #194), P4-2 (#195).
+**Merged into `main`:** P4-1 (#192, #194), P4-2 (#195), P4-3 (#196).
 
-**On `feat/p4-3-fake-removal` (pushed, PR next),** the fake backend is gone
-from the code, the browser review fixes are in and the real-backend E2E suite is
-green (104/104).
+P4-3 removed the fake backend, moved the build under `public/app/`, wired every
+editor to the real API and closed the real-backend E2E suite (104/104). The
+product owner's full browser pass on `main` is the only step left before P5.
 
-### What P4-3 already does
+### What P4-3 delivered
 
 - `vite build` lands in `public/app/` (git-ignored); `public/router.php` serves
   the SPA there and redirects `/` to `/app/`. The legacy root `index.html` /
@@ -16,9 +16,8 @@ green (104/104).
 - `frontend/plugin/fake-backend.js`, the legacy session/board branches, the
   Experiences surface and the "Sim/Prototype" UI are gone. `session.load()`
   starts at the sign-in gate; `VITE_API_URL` is the single real-backend knob
-  (required by `vite.config.js` in dev) and is pinned empty in
-  `vitest.config.js` and `run-e2e.sh` so a developer `.env.local` cannot flip
-  them.
+  (required by `vite.config.js` in dev); `run-e2e.sh` pins it at the ephemeral
+  API so a developer `.env.local` cannot flip the suite.
 - New endpoints: `GET /issues/{key}/comments`, `GET /issues/{key}/events`,
   `PATCH /api/me`, and the snapshot now carries `sources` (repositories) and
   `fields` per issue type. `Level` accepts `0` (epic above stories).
@@ -35,8 +34,9 @@ green (104/104).
   `BOOTSTRAP_WORKSPACE_PREFIX=KANB`), starts `php -S` on :8081 and seeds the
   board through the API (`frontend/tests/e2e-seed.sh`). Cypress gets a bearer
   token in `cypress/support/e2e.js` (`wsRequest`, `meRequest`, `wsSnapshot`,
-  `visitRoles`, `visitIssueTypes`, `visitAgents`). CI now provisions
-  postgres + PHP and runs phpunit/psalm before the frontend jobs.
+  `visitApp`, `visitRoles`, `visitIssueTypes`, `visitAgents`). CI now provisions
+  postgres + PHP, creates `phprise_test`, and runs phpunit/psalm before the
+  frontend jobs.
 
 ### Current bar
 
@@ -49,7 +49,7 @@ green (104/104).
 - Real E2E: **104/104 across 17 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
-### What closed the remaining E2E failures
+### How the remaining E2E failures were closed
 
 - Page visits go through `cy.visitApp(path)`, which prefixes the build base
   (`/app/`). Visiting the bare root twice went through Vite's 302 and left
@@ -76,11 +76,14 @@ green (104/104).
 
 ### Next moves
 
-1. PR of `feat/p4-3-fake-removal` → CI (phpunit + psalm + vitest + contracts +
-   build + real e2e) → merge into `main` with `--delete-branch`.
-2. Update this STATE section at merge time.
-3. The product owner runs the full browser pass **on `main`** afterwards (his
-   rule: test only what is merged).
+1. The product owner runs the full browser pass **on `main`** (his rule: test
+   only what is merged) and reports the findings.
+2. Then **P5 — Cloudflare single image**: image roles (`web`/`runner`/`all`),
+   external PostgreSQL, R2 artifacts, cron/queue-triggered runner, secrets,
+   health, no compose in production.
+3. Deferred from P3 and still open: the configurable transition triggers
+   (`spawn`, `voting`, `subtasks-done`) and the open-warden execution path;
+   P6 imports the 161 local issues and dogfoods the product.
 
 ### How to run locally (dev)
 

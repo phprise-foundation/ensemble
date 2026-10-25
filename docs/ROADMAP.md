@@ -88,7 +88,8 @@ Order and exit criteria:
 5. **P4 — frontend cutover** — login/token, workspace switcher, snapshot +
    resource writes, feature flags flipped in dependency order, fake backend out
    of production, Vite build served by PHP, real-backend E2E; console and
-   copilot untouched; i18n later.
+   copilot untouched; i18n later. **Done and merged into `main`** (P4-1,
+   P4-2, P4-3/PR #196).
 6. **P5 — Cloudflare single image** — image roles (`web`/`runner`/`all`),
    external PostgreSQL, R2 for artifacts, cron/queue-triggered runner with
    resumable leases, secrets, health, no compose in production.
