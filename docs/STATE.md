@@ -41,6 +41,9 @@ green (104/104).
 ### Current bar
 
 - Backend: **138 PHPUnit tests / 892 assertions**, Psalm level 1, **0 errors**.
+- CI now creates `phprise_test` and sets `TEST_DATABASE_URL`, so the
+  PostgreSQL integration suite runs instead of skipping; `GitClientTest`
+  configures the git identity in its own clones.
 - Frontend unit: **249/249** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
 - Real E2E: **104/104 across 17 specs**, green.
