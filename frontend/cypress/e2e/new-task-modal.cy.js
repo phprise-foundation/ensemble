@@ -17,7 +17,7 @@ const issueCount = () => cy.wsRequest('GET', '/issues').its('body.issues.length'
 const waitForBoard = () => cy.get('.column', { timeout: 10000 }).should('have.length.at.least', 1)
 
 const openModal = () => {
-  cy.visitApp('/?sim=0')
+  cy.visitApp('/')
   waitForBoard()
   cy.contains('button', 'New task').click()
   cy.get('.new-task-modal').should('be.visible')
@@ -37,7 +37,7 @@ describe('new task modal (KAN-123)', () => {
   })
 
   it('opens with focus on summary and lists only the initial statuses of the workflow', () => {
-    cy.visitApp('/?sim=0')
+    cy.visitApp('/')
     waitForBoard()
     cy.wsSnapshot().then((workspace) => {
       const initial = initialStatusesFor(workspace, 'Kanban')
