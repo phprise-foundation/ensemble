@@ -6,6 +6,8 @@ import BoardColumn from '../components/BoardColumn.vue'
 import IssuePanel from '../components/IssuePanel.vue'
 import AppIcon from '../components/AppIcon.vue'
 import FieldLimit from '../components/FieldLimit.vue'
+import FieldValueInput from '../components/FieldValueInput.vue'
+import { toast } from '../store/toast.js'
 import { DESCRIPTION_LIMIT, countCharacters, limitError, limitExceeded } from '../../shared/limits.js'
 
 const route = useRoute()
@@ -20,13 +22,26 @@ const summaryInput = ref(null)
 const summaryError = ref('')
 const statusError = ref('')
 const descriptionError = ref('')
+const fieldErrors = ref({})
 const descriptionOver = computed(() => limitExceeded(countCharacters(draft.value.description), DESCRIPTION_LIMIT))
 
 const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
 const statuses = computed(() => boardStore.boardStatuses.value)
 const issueTypes = computed(() => boardStore.boardIssueTypes.value)
-const initialStatuses = computed(() => statuses.value.filter((status) => status.type === 'initial'))
+const selectableTypes = computed(() =>
+  issueTypes.value.filter((type) =>
+    statuses.value.some((status) => status.issueTypeId === type.id && status.type === 'initial'),
+  ),
+)
+const initialStatuses = computed(() =>
+  statuses.value.filter(
+    (status) => status.type === 'initial' && status.issueTypeId === draft.value.typeId,
+  ),
+)
+const typeFields = computed(
+  () => issueTypes.value.find((type) => type.id === draft.value.typeId)?.fields ?? [],
+)
 const dragIssue = computed(
   () => boardStore.state.issues.find((issue) => issue.id === dragIssueId.value) || null,
 )
@@ -45,14 +60,17 @@ async function openCreate() {
     boardId: board.value?.id,
     summary: '',
     description: '',
-    typeId: issueTypes.value[0]?.id ?? null,
-    statusId: initialStatuses.value[0]?.id || '',
+    typeId: selectableTypes.value[0]?.id ?? null,
+    statusId: '',
     assigneeId: boardStore.state.agents[0]?.id || null,
+    fields: {},
   }
   error.value = ''
   summaryError.value = ''
   statusError.value = ''
   descriptionError.value = ''
+  fieldErrors.value = {}
+  draft.value.statusId = initialStatuses.value[0]?.id || ''
   editing.value = true
   await nextTick()
   summaryInput.value?.focus()
@@ -61,9 +79,18 @@ async function openCreate() {
 watch(() => draft.value.summary, () => { summaryError.value = '' })
 watch(() => draft.value.statusId, () => { statusError.value = '' })
 watch(() => draft.value.description, () => { descriptionError.value = '' })
+watch(
+  () => draft.value.typeId,
+  () => {
+    draft.value.fields = {}
+    draft.value.statusId = initialStatuses.value[0]?.id || ''
+    fieldErrors.value = {}
+  },
+)
 watch(initialStatuses, (initials) => {
-  if (!editing.value || initials.some((status) => status.id === draft.value.statusId)) return
-  draft.value = { ...draft.value, statusId: initials[0]?.id || '' }
+  if (!editing.value) return
+  if (initials.some((status) => status.id === draft.value.statusId)) return
+  draft.value.statusId = initials[0]?.id || ''
 })
 
 function applyFailure(failure) {
@@ -79,6 +106,10 @@ function applyFailure(failure) {
     descriptionError.value = failure.message
     return
   }
+  if (typeof failure.field === 'string' && failure.field.startsWith('fields.')) {
+    fieldErrors.value = { ...fieldErrors.value, [failure.field.slice('fields.'.length)]: failure.message }
+    return
+  }
   error.value = failure.message || 'Não foi possível criar a task.'
 }
 
@@ -87,6 +118,7 @@ async function save() {
   summaryError.value = ''
   statusError.value = ''
   descriptionError.value = ''
+  fieldErrors.value = {}
   if (!draft.value.summary) {
     summaryError.value = 'O resumo é obrigatório.'
     summaryInput.value?.focus()
@@ -111,6 +143,7 @@ async function save() {
       summary: draft.value.summary,
       description: draft.value.description,
       ...(draft.value.assigneeId ? { assigneeId: draft.value.assigneeId } : {}),
+      ...(typeFields.value.length ? { fields: draft.value.fields } : {}),
     })
   } catch (failure) {
     applyFailure(failure)
@@ -217,7 +250,6 @@ async function drop(columnId, beforeId) {
     <div class="board-main">
       <div class="board-toolbar">
         <strong>{{ board?.name || 'Board' }}</strong>
-        <span class="badge sim" v-if="boardStore.simulated('board')"><span class="sim-dot sm"></span> Prototype</span>
         <span class="spacer"></span>
         <button class="button" @click="openCreate">
           <AppIcon name="plus" size="16" /> New task
@@ -314,6 +346,14 @@ async function drop(columnId, beforeId) {
           <p v-if="statusError" id="create-status-error" class="error field-error" role="alert">
             {{ statusError }}
           </p>
+          <FieldValueInput
+            v-for="field in typeFields"
+            :key="field.id"
+            v-model="draft.fields[field.key]"
+            :field="field"
+          >
+            <small v-if="fieldErrors[field.key]" class="error">{{ fieldErrors[field.key] }}</small>
+          </FieldValueInput>
           <label class="field" for="create-assignee">
             <span>Assignee</span>
             <select id="create-assignee" v-model="draft.assigneeId">

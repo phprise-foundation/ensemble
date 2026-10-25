@@ -5,7 +5,6 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
-import { isSimulated } from '../api/index.js'
 
 const route = useRoute()
 const types = computed(() => boardStore.issueTypesOf(route.params.workflowId))
@@ -20,6 +19,18 @@ const slugify = (text) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+
+const FIELD_TYPES = [
+  { value: 'text', label: 'Text' },
+  { value: 'textarea', label: 'Textarea' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'single_select', label: 'Single select' },
+  { value: 'multi_select', label: 'Multi select' },
+]
+
+const hasOptions = (type) => type === 'single_select' || type === 'multi_select'
 
 function openCreate() {
   draft.value = {
@@ -38,14 +49,17 @@ function openEdit(type) {
   originalFields = JSON.parse(JSON.stringify(type.fields ?? []))
   draft.value = JSON.parse(JSON.stringify(type))
   draft.value.__existing = true
-  draft.value.fields = (draft.value.fields ?? []).map((field) => ({ ...field }))
+  draft.value.fields = (draft.value.fields ?? []).map((field) => ({
+    ...field,
+    options: Array.isArray(field.options) ? field.options.join(', ') : (field.options ?? ''),
+  }))
   error.value = ''
   editing.value = true
 }
 
 function addField() {
   draft.value.fields = draft.value.fields ?? []
-  draft.value.fields.push({ key: '', label: '', type: 'text', required: false })
+  draft.value.fields.push({ key: '', label: '', type: 'text', required: false, options: '' })
 }
 
 function removeField(index) {
@@ -58,7 +72,7 @@ function normalize() {
     if (!field.key) {
       field.key = slugify(field.label)
     }
-    if (field.type === 'select' && typeof field.options === 'string') {
+    if (hasOptions(field.type) && typeof field.options === 'string') {
       field.options = field.options.split(',').map((option) => option.trim()).filter(Boolean)
     }
   })
@@ -99,6 +113,16 @@ async function save() {
     return
   }
   normalize()
+  for (const field of draft.value.fields ?? []) {
+    if (!field.label) {
+      error.value = 'Every field needs a label'
+      return
+    }
+    if (hasOptions(field.type) && !(field.options ?? []).length) {
+      error.value = `The field "${field.label}" needs at least one option`
+      return
+    }
+  }
   try {
     const saved = await boardStore.saveEntity('issueTypes', draft.value)
     await saveFields(saved.id)
@@ -134,7 +158,6 @@ async function remove(type) {
   <div class="crud">
     <header class="crud-header">
       <h2>Issue types</h2>
-      <span v-if="isSimulated('issueTypes')" class="badge sim"><span class="sim-dot sm"></span> Prototype</span>
       <div class="spacer"></div>
       <button class="button" @click="openCreate"><AppIcon name="plus" size="16" /> New type</button>
     </header>
@@ -170,12 +193,9 @@ async function remove(type) {
           <div class="field-row" v-for="(field, index) in draft.fields" :key="index">
             <input type="text" placeholder="Label" v-model="field.label" :disabled="field.system" />
             <select v-model="field.type" :disabled="field.system">
-              <option value="text">Text</option>
-              <option value="textarea">Textarea</option>
-              <option value="number">Number</option>
-              <option value="select">Select</option>
+              <option v-for="type in FIELD_TYPES" :key="type.value" :value="type.value">{{ type.label }}</option>
             </select>
-            <input v-if="field.type === 'select'" type="text" placeholder="a, b, c" v-model="field.options" />
+            <input v-if="hasOptions(field.type)" type="text" placeholder="a, b, c" v-model="field.options" />
             <label class="inline"><input type="checkbox" v-model="field.required" /> required</label>
             <button class="icon-btn" title="Remove" :disabled="field.system" aria-label="Remove" @click="removeField(index)">
               <AppIcon name="delete" size="14" />

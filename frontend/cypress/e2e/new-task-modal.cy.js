@@ -5,12 +5,10 @@ const collectErrors = (win, errors) => {
   )
 }
 
-const initialStatusesFor = (workspace, boardName) => {
-  const board = workspace.boards.find((candidate) => candidate.name === boardName)
-  return workspace.statuses.filter(
-    (status) => status.workflowId === board.workflowId && status.type === 'initial',
+const initialStatusesOfType = (workspace, typeId) =>
+  workspace.statuses.filter(
+    (status) => status.issueTypeId === typeId && status.type === 'initial',
   )
-}
 
 const issueCount = () => cy.wsRequest('GET', '/issues').its('body.issues.length')
 
@@ -36,20 +34,22 @@ describe('new task modal (KAN-123)', () => {
     })
   })
 
-  it('opens with focus on summary and lists only the initial statuses of the workflow', () => {
+  it('opens with focus on summary and lists only the initial statuses of the selected issue type', () => {
     cy.visitApp('/')
     waitForBoard()
     cy.wsSnapshot().then((workspace) => {
-      const initial = initialStatusesFor(workspace, 'Kanban')
-      expect(initial.length).to.be.at.least(1)
       cy.contains('button', 'New task').click()
       cy.get('.new-task-modal').should('be.visible')
       cy.focused().should('have.id', 'create-summary')
-      cy.get('#create-status option').then(($options) => {
-        const values = [...$options].map((option) => option.value)
-        expect(values).to.deep.equal(initial.map((status) => status.id))
+      cy.get('#create-type').invoke('val').then((typeId) => {
+        const initial = initialStatusesOfType(workspace, typeId)
+        expect(initial.length, 'the selected type must offer an initial status').to.be.at.least(1)
+        cy.get('#create-status option').then(($options) => {
+          const values = [...$options].map((option) => option.value)
+          expect(values).to.deep.equal(initial.map((status) => status.id))
+        })
+        cy.get('#create-status').should('have.value', initial[0].id)
       })
-      cy.get('#create-status').should('have.value', initial[0].id)
       cy.then(() => {
         expect(errors).to.deep.equal([])
       })

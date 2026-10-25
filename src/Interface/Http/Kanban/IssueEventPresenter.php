@@ -13,9 +13,11 @@ final class IssueEventPresenter
     {
         return [
             'id' => $event->id()->value(),
+            'type' => $event->type()->value,
             'fromStatusId' => $event->fromStatusId()?->value(),
-            'toStatusId' => $event->toStatusId()->value(),
+            'toStatusId' => $event->toStatusId()?->value(),
             'actor' => $event->actor(),
+            'summary' => $event->summary(),
             'createdAt' => $event->createdAt()->format(DATE_ATOM),
         ];
     }

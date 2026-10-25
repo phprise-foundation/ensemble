@@ -5,7 +5,6 @@ import { nextTick } from 'vue'
 vi.mock('../src/store/board.js', async () => {
   const { computed, reactive, ref } = await import('vue')
   const selectedIssue = ref(null)
-  const simulatedHistory = ref(true)
   const statuses = [
     { id: 'to-develop', name: 'To Develop' },
     { id: 'in-development', name: 'In Development' },
@@ -18,9 +17,9 @@ vi.mock('../src/store/board.js', async () => {
   return {
     boardStore: {
       selectedIssue,
-      simulatedHistory,
       state: reactive({ agents }),
       status: (id) => statuses.find((status) => status.id === id),
+      issueType: () => ({ fields: [] }),
       agent: (id) => agents.find((agent) => agent.id === id),
       role: (id) => roles.find((role) => role.id === id),
       userTargets: () => statuses,
@@ -29,7 +28,6 @@ vi.mock('../src/store/board.js', async () => {
       moveIssue: vi.fn(),
       updateIssue: vi.fn(),
       addComment: vi.fn(),
-      simulated: (feature) => (feature !== 'history' ? true : simulatedHistory.value),
     },
   }
 })
@@ -75,7 +73,6 @@ async function openHistoryTab(wrapper) {
 describe('IssuePanel abas Comments e History', () => {
   afterEach(() => {
     boardStore.selectedIssue.value = null
-    boardStore.simulatedHistory.value = true
     document.body.innerHTML = ''
   })
 
@@ -212,22 +209,6 @@ describe('IssuePanel abas Comments e History', () => {
     wrapper.unmount()
   })
 
-  it('selo Prototype aparece com simulação ligada e some com ela desligada', async () => {
-    boardStore.selectedIssue.value = makeIssue({ history: richHistory() })
-    const wrapper = mountPanel()
-    await nextTick()
-
-    expect(wrapper.find('#issue-tab-history .badge.sim').exists()).toBe(true)
-    expect(wrapper.find('#issue-tab-history .badge.sim').text()).toContain('Prototype')
-
-    boardStore.simulatedHistory.value = false
-    await nextTick()
-    expect(wrapper.find('#issue-tab-history .badge.sim').exists()).toBe(false)
-
-    await openHistoryTab(wrapper)
-    expect(wrapper.find('#issue-panel-history .history-list').exists()).toBe(true)
-    wrapper.unmount()
-  })
 })
 
 describe('IssueHistory timeline', () => {

@@ -7,7 +7,6 @@ import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
 import Avatar from '../components/Avatar.vue'
 import { imageFileError, readImageFile } from '../lib/image-upload.js'
-import { isSimulated } from '../api/index.js'
 
 const route = useRoute()
 const agents = computed(() => boardStore.agentsOf(route.params.teamId))
@@ -108,7 +107,6 @@ onMounted(() => {
   <div class="crud">
     <header class="crud-header">
       <h2>Agents</h2>
-      <span v-if="isSimulated('agents')" class="badge sim"><span class="sim-dot sm"></span> Prototype</span>
       <div class="spacer"></div>
       <button class="button" @click="openCreate"><AppIcon name="plus" size="16" /> New agent</button>
     </header>

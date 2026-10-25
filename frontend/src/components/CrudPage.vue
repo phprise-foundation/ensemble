@@ -4,7 +4,6 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
-import { isSimulated } from '../api/index.js'
 
 const props = defineProps({ schema: { type: Object, required: true } })
 
@@ -90,7 +89,6 @@ async function remove(row) {
   <div class="crud">
     <header class="crud-header">
       <h2>{{ schema.title }}</h2>
-      <span v-if="isSimulated(schema.feature)" class="badge sim"><span class="sim-dot sm"></span> Prototype</span>
       <div class="spacer"></div>
       <button class="button" @click="openCreate"><AppIcon name="plus" size="16" /> New {{ schema.singular }}</button>
     </header>

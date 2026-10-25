@@ -92,9 +92,16 @@ final class IssueApiTest extends TestCase
             $this->adminToken,
         )));
         self::assertCount(1, $detail['comments']);
-        self::assertCount(2, $detail['history']);
-        self::assertNull($detail['history'][0]['fromStatusId']);
-        self::assertSame($this->refinedId, $detail['history'][1]['toStatusId']);
+        self::assertCount(4, $detail['history']);
+        $types = array_column($detail['history'], 'type');
+        sort($types);
+        self::assertSame(['comment', 'created', 'status', 'summary'], $types);
+        $status = $this->eventOfType($detail['history'], 'status');
+        self::assertSame($this->refinedId, $status['toStatusId']);
+        self::assertSame('admin', $status['actor']);
+        $comment = $this->eventOfType($detail['history'], 'comment');
+        self::assertSame('Looking into it.', $comment['summary']);
+        self::assertSame('First issue v2', $this->eventOfType($detail['history'], 'summary')['summary']);
 
         $invalid = $this->app->handle($this->app->request(
             'POST',
@@ -330,6 +337,21 @@ final class IssueApiTest extends TestCase
         )), 201);
 
         return $data['board']['id'];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $events
+     * @return array<string, mixed>
+     */
+    private function eventOfType(array $events, string $type): array
+    {
+        foreach ($events as $event) {
+            if ($event['type'] === $type) {
+                return $event;
+            }
+        }
+
+        self::fail('No ' . $type . ' event in the history.');
     }
 
     /** @param list<string> $statuses */

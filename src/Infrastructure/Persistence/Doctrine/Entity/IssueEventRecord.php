@@ -23,14 +23,20 @@ final class IssueEventRecord
     #[ORM\Column(name: 'issue_id', type: 'string', length: 32)]
     private string $issueId;
 
+    #[ORM\Column(type: 'string', length: 32, options: ['default' => 'status'])]
+    private string $type;
+
     #[ORM\Column(name: 'from_status_id', type: 'string', length: 32, nullable: true)]
     private ?string $fromStatusId;
 
-    #[ORM\Column(name: 'to_status_id', type: 'string', length: 32)]
-    private string $toStatusId;
+    #[ORM\Column(name: 'to_status_id', type: 'string', length: 32, nullable: true)]
+    private ?string $toStatusId;
 
     #[ORM\Column(type: 'string', length: 64)]
     private string $actor;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $summary;
 
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
@@ -39,25 +45,31 @@ final class IssueEventRecord
         string $id,
         string $workspaceId,
         string $issueId,
+        string $type,
         ?string $fromStatusId,
-        string $toStatusId,
+        ?string $toStatusId,
         string $actor,
+        ?string $summary,
         DateTimeImmutable $createdAt,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
         $this->issueId = $issueId;
+        $this->type = $type;
         $this->fromStatusId = $fromStatusId;
         $this->toStatusId = $toStatusId;
         $this->actor = $actor;
+        $this->summary = $summary;
         $this->createdAt = $createdAt;
     }
 
     public function id(): string { return $this->id; }
     public function workspaceId(): string { return $this->workspaceId; }
     public function issueId(): string { return $this->issueId; }
+    public function type(): string { return $this->type; }
     public function fromStatusId(): ?string { return $this->fromStatusId; }
-    public function toStatusId(): string { return $this->toStatusId; }
+    public function toStatusId(): ?string { return $this->toStatusId; }
     public function actor(): string { return $this->actor; }
+    public function summary(): ?string { return $this->summary; }
     public function createdAt(): DateTimeImmutable { return $this->createdAt; }
 }

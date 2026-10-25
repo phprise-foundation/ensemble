@@ -1,6 +1,5 @@
 import { request, token, setToken } from './client.js'
 
-export { FEATURES, simulation, isSimulated, setFeature, setAll, simulatedFeatures, hasSimulation } from './simulation.js'
 export { request, token, setToken } from './client.js'
 
 export const api = {

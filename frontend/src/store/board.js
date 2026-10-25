@@ -1,6 +1,5 @@
 import { computed, reactive } from 'vue'
 import { token, request } from '../api/client.js'
-import { isSimulated } from '../api/simulation.js'
 import { session } from './session.js'
 
 const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
@@ -9,15 +8,16 @@ const presented = (payload) => normalizeEntity('issues', payload?.issue ?? paylo
 const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
 
 const REAL_ROUTES = {
+  workspaces: { key: 'workspace', path: () => '/api/workspaces', editPath: (data) => `/api/workspaces/${data.id}` },
   workflows: { key: 'workflow', path: () => 'workflows' },
   boards: { key: 'board', path: () => 'boards' },
   teams: { key: 'team', path: () => 'teams' },
   sources: { key: 'repository', path: () => 'repositories' },
-  statuses: { key: 'status', path: (data) => `workflows/${data.workflowId}/statuses` },
-  transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions` },
-  issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types` },
+  statuses: { key: 'status', path: (data) => `workflows/${data.workflowId}/statuses`, editPath: (data) => `statuses/${data.id}` },
+  transitions: { key: 'transition', path: (data) => `workflows/${data.workflowId}/transitions`, editPath: (data) => `transitions/${data.id}` },
+  issueTypes: { key: 'issueType', path: (data) => `workflows/${data.workflowId}/issue-types`, editPath: (data) => `issue-types/${data.id}` },
   fields: { key: 'field', path: (data) => `issue-types/${data.issueTypeId}/fields`, editPath: (data) => `fields/${data.id}` },
-  columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns` },
+  columns: { key: 'column', path: (data) => `boards/${data.boardId}/columns`, editPath: (data) => `columns/${data.id}` },
   roles: { key: 'role', path: (data) => `teams/${data.teamId}/roles`, editPath: (data) => `roles/${data.id}` },
   profiles: { key: 'profile', path: (data) => `teams/${data.teamId}/profiles`, editPath: (data) => `profiles/${data.id}` },
   agents: { key: 'agent', path: (data) => `teams/${data.teamId}/agents`, editPath: (data) => `agents/${data.id}` },
@@ -31,7 +31,8 @@ const REAL_BODY_DROPS = {
   workflows: ['id', 'templateId', 'workspaceId'],
   boards: ['id', 'workspaceId', 'filters', 'columns'],
   teams: ['id', 'workspaceId'],
-  sources: ['id', 'workspaceId', 'path'],
+  sources: ['id', 'workspaceId'],
+  workspaces: ['id', 'prefix', 'role', 'createdAt', 'updatedAt'],
   statuses: ['id', 'workflowId'],
   transitions: ['id', 'workflowId'],
   issueTypes: ['id', 'workflowId', 'fields'],
@@ -41,6 +42,8 @@ const REAL_BODY_DROPS = {
   profiles: ['id', 'teamId'],
   agents: ['id'],
 }
+
+const backendPath = (path) => (path.startsWith('/api/') ? path : scoped(`/${path}`))
 
 function normalizeEntity(collection, entity) {
   if (collection === 'issues' && entity && typeof entity === 'object') {
@@ -93,8 +96,8 @@ async function realSave(collection, data) {
     ? spec.editPath ? spec.editPath(entity) : `${spec.path(entity)}/${data.id}`
     : spec.path(entity)
   const wrapper = exists
-    ? await request('PATCH', scoped(`/${path}`), payload)
-    : await request('POST', scoped(`/${path}`), payload)
+    ? await request('PATCH', backendPath(path), payload)
+    : await request('POST', backendPath(path), payload)
   return normalizeEntity(collection, wrapper?.[spec.key] ?? wrapper)
 }
 
@@ -108,7 +111,7 @@ async function realRemove(collection, id) {
     return
   }
   const path = spec.editPath ? spec.editPath(entity) : `${spec.path(entity)}/${id}`
-  await request('DELETE', scoped(`/${path}`))
+  await request('DELETE', backendPath(path))
 }
 
 async function moveReal(issueId, target) {
@@ -144,11 +147,12 @@ async function hydrateIssue(issue) {
   }
   target.comments = (comments?.comments ?? []).map((entry) => ({ ...entry, at: entry.createdAt ?? entry.at }))
   target.history = (events?.events ?? []).map((event) => ({
-    type: event.fromStatusId ? 'status' : 'created',
+    type: event.type ?? (event.fromStatusId ? 'status' : 'created'),
     actor: event.actor,
     at: event.createdAt,
     from: event.fromStatusId,
     to: event.toStatusId,
+    summary: event.summary ?? null,
   }))
 }
 
@@ -171,6 +175,7 @@ const state = reactive({
   statuses: [],
   transitions: [],
   issueTypes: [],
+  fields: [],
   boards: [],
   teams: [],
   roles: [],
@@ -272,7 +277,6 @@ export const boardStore = {
     return Date.now() - Date.parse(issue.updatedAt) > OVERDUE_MS
   },
 
-  simulated: (feature) => isSimulated(feature),
 
   async load() {
     state.loading = true
@@ -284,6 +288,9 @@ export const boardStore = {
           snapshot[key] = list.map((item) => normalizeEntity(key, item))
         }
       }
+      snapshot.fields = (snapshot.issueTypes ?? []).flatMap((type) =>
+        (type.fields ?? []).map((field) => ({ ...field, issueTypeId: type.id })),
+      )
       Object.assign(state, snapshot)
       boardStore.setBoard(state.boardId)
     } catch (error) {
@@ -322,6 +329,7 @@ export const boardStore = {
     const index = state.issues.findIndex((issue) => issue.id === id)
     if (index >= 0) {
       state.issues.splice(index, 1, updated)
+      void hydrateIssue(state.issues[index])
     }
     return updated
   },

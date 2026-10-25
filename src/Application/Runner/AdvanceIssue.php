@@ -11,6 +11,7 @@ use App\Domain\Contract\Kanban\TransitionRepository;
 use App\Domain\Exception\NotFoundException;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueEvent;
+use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusType;
@@ -137,9 +138,11 @@ final readonly class AdvanceIssue
             IssueEventId::generate(),
             $issue->workspaceId(),
             $issue->id(),
+            IssueEventType::Status,
             $previous,
             $target->id(),
             $actor,
+            null,
             $at,
         ));
     }

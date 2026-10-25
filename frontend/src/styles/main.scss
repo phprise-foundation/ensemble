@@ -212,10 +212,6 @@ textarea {
   white-space: nowrap;
 }
 
-.leaf .sim-dot {
-  margin-left: auto;
-}
-
 .leaf:hover {
   background: var(--surface-2);
   color: var(--text);
@@ -444,21 +440,6 @@ textarea {
   }
 }
 
-/* Sim dot */
-.sim-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--sim);
-  flex: 0 0 auto;
-  display: inline-block;
-}
-
-.sim-dot.sm {
-  width: 6px;
-  height: 6px;
-}
-
 /* Content */
 .content {
   flex: 1;
@@ -504,25 +485,6 @@ textarea {
   min-height: 0;
   padding: 12px;
   font-size: 13px;
-}
-
-.sim-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 16px;
-  background: color-mix(in srgb, var(--sim) 22%, var(--surface));
-  border-bottom: 1px solid color-mix(in srgb, var(--sim) 45%, transparent);
-  color: var(--text);
-  font-size: 13px;
-}
-
-.sim-banner .sim-dot {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sim) 30%, transparent);
-}
-
-.sim-banner .spacer {
-  margin-left: auto;
 }
 
 .topbar {
@@ -644,11 +606,6 @@ textarea {
   font-weight: 600;
   background: var(--surface-2);
   color: var(--muted);
-}
-
-.badge.sim {
-  background: color-mix(in srgb, var(--sim) 22%, transparent);
-  color: color-mix(in srgb, var(--sim) 75%, var(--text));
 }
 
 /* Session ended */

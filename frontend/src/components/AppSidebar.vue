@@ -8,7 +8,6 @@ import { boardStore } from '../store/board.js'
 import { session } from '../store/session.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
-import { isSimulated } from '../api/index.js'
 import { isActiveLeaf, sidebarNavigation, railSections } from '../navigation.js'
 
 const props = defineProps({
@@ -179,7 +178,7 @@ async function switchWorkspace(workspaceId) {
 }
 
 function editWorkspace() {
-  openEditor('workspace', { ...workspace.value }, 'Edit workspace', [{ key: 'name', label: 'Name' }])
+  openEditor('workspace', { ...workspace.value, __existing: true }, 'Edit workspace', [{ key: 'name', label: 'Name' }])
 }
 
 function addBoard() {
@@ -225,17 +224,31 @@ function editTeam(team) {
   openEditor('team', { ...team, __existing: true }, 'Edit team', [{ key: 'name', label: 'Name' }])
 }
 
+const PROVIDERS = [
+  { value: 'github', label: 'GitHub' },
+  { value: 'gitlab', label: 'GitLab' },
+  { value: 'bitbucket', label: 'Bitbucket' },
+]
+
 function addSource() {
-  openEditor('source', { id: '', name: '', path: '', workspaceId: workspaceId.value }, 'New source', [
-    { key: 'path', label: 'Directory (local path)', hint: 'e.g. /home/you/src/my-project — the worker uses it as workdir' },
-    { key: 'name', label: 'Name', hint: 'optional, defaults to the folder name' },
-  ])
+  openEditor(
+    'source',
+    { id: '', name: '', provider: 'github', url: '', baseBranch: 'main', workspaceId: workspaceId.value },
+    'New source',
+    [
+      { key: 'name', label: 'Name' },
+      { key: 'provider', label: 'Provider', type: 'select', options: PROVIDERS },
+      { key: 'url', label: 'HTTPS URL', hint: 'https://github.com/owner/repository' },
+      { key: 'baseBranch', label: 'Base branch', hint: 'defaults to main' },
+    ],
+  )
 }
 
 function editSource(source) {
   openEditor('source', { ...source, __existing: true }, 'Edit source', [
-    { key: 'path', label: 'Directory (local path)' },
     { key: 'name', label: 'Name' },
+    { key: 'url', label: 'HTTPS URL' },
+    { key: 'baseBranch', label: 'Base branch' },
   ])
 }
 
@@ -301,13 +314,8 @@ async function saveEditor() {
     if (current.kind === 'team' && current.draft.__existing && !current.draft.id && current.draft.name) {
       current.draft.id = slugify(current.draft.name)
     }
-    if (current.kind === 'source') {
-      if (!current.draft.name && current.draft.path) {
-        current.draft.name = current.draft.path.split('/').filter(Boolean).pop() || 'source'
-      }
-      if (current.draft.__existing && !current.draft.id) {
-        current.draft.id = slugify(current.draft.name)
-      }
+    if (current.kind === 'source' && current.draft.__existing && !current.draft.id) {
+      current.draft.id = slugify(current.draft.name)
     }
     await boardStore.saveEntity(collectionOf(current.kind), current.draft)
     editor.value = null
@@ -428,7 +436,7 @@ async function removeEntity(kind, id, label) {
               <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
                 <AppIcon :name="leaf.icon" size="14" />
                 <span class="label">{{ leaf.label }}</span>
-                <span class="badge-id">{{ entry.entity.id }}</span>
+                <span class="badge-id">{{ entry.entity.key || entry.entity.id }}</span>
               </RouterLink>
               <span class="entry-actions">
                 <button class="icon-btn" title="Edit board" aria-label="Edit board" @click.stop="editBoard(entry.entity)"><AppIcon name="edit" size="14" /></button>
@@ -458,7 +466,6 @@ async function removeEntity(kind, id, label) {
                 <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
                   <AppIcon :name="leaf.icon" size="14" />
                   <span class="label">{{ leaf.label }}</span>
-                  <span class="sim-dot sm" v-if="leaf.feature && isSimulated(leaf.feature)"></span>
                 </RouterLink>
               </div>
             </div>
@@ -486,7 +493,6 @@ async function removeEntity(kind, id, label) {
                 <RouterLink v-for="leaf in entry.leaves" :key="leaf.key" class="leaf" :to="leaf.to" :title="leaf.title">
                   <AppIcon :name="leaf.icon" size="14" />
                   <span class="label">{{ leaf.label }}</span>
-                  <span class="sim-dot sm" v-if="leaf.feature && isSimulated(leaf.feature)"></span>
                 </RouterLink>
               </div>
             </div>
@@ -502,11 +508,11 @@ async function removeEntity(kind, id, label) {
             </span>
           </div>
           <div v-show="openSources" class="submenu">
-            <p v-if="!sources.length" class="nav-empty">Add a local project directory</p>
+            <p v-if="!sources.length" class="nav-empty">Add a repository</p>
             <div v-for="source in sources" :key="source.id" class="nav-entry" :title="source.name">
               <AppIcon name="folder" size="14" />
               <span class="label">{{ source.name }}</span>
-              <span class="source-path" :title="source.path">{{ source.path }}</span>
+              <span class="source-path" :title="source.url">{{ source.url }}</span>
               <span class="entry-actions">
                 <button class="icon-btn" title="Edit source" aria-label="Edit source" @click.stop="editSource(source)"><AppIcon name="edit" size="14" /></button>
                 <button class="icon-btn" title="Delete source" aria-label="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="delete" size="14" /></button>

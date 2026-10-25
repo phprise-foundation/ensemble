@@ -19,6 +19,7 @@ const { state, updateIssue, addComment, boardStore } = await vi.hoisted(async ()
       () => state.issues.find((issue) => issue.id === state.selectedIssueId) ?? null,
     ),
     status: () => ({ name: 'Coding', type: 'active' }),
+    issueType: () => ({ fields: [] }),
     agent: () => null,
     role: () => null,
     userTargets: () => [],

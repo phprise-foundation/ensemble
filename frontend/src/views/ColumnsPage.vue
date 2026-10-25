@@ -30,6 +30,7 @@ const schema = {
   ],
   fields: [
     { key: 'name', label: 'Name', type: 'text', required: true },
+    { key: 'position', label: 'Position', type: 'number' },
     { key: 'wip', label: 'WIP limit (empty = unlimited)', type: 'number' },
     {
       key: 'statusIds',

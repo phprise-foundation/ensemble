@@ -13,6 +13,7 @@ const ICON_BY_TYPE = {
   assignee: 'agents',
   summary: 'edit',
   description: 'issues',
+  comment: 'comment',
 }
 const FALLBACK_ICON = 'transitions'
 
@@ -44,9 +45,11 @@ function resolveText(id) {
 const TEXT_FOR = {
   created: (event) => event.summary ?? 'Issue created',
   status: (event) => `Status ${transitionLabel(event.from, event.to, resolveStatus)}`,
-  assignee: (event) => `Assignee ${transitionLabel(event.from, event.to, resolveAgent)}`,
+  assignee: (event) =>
+    event.summary ? `Assignee ${event.summary}` : `Assignee ${transitionLabel(event.from, event.to, resolveAgent)}`,
   summary: (event) => event.summary ?? `Summary changed to “${event.to}”`,
   description: (event) => event.summary ?? 'Description updated',
+  comment: (event) => (event.summary ? `Commented: ${event.summary}` : 'Comment added'),
   transition: (event) => `Status ${transitionLabel(event.from, event.to, resolveStatus)}`,
 }
 
