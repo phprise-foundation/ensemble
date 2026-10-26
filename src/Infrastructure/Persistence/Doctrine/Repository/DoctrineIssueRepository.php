@@ -130,7 +130,8 @@ final readonly class DoctrineIssueRepository implements IssueRepository
             ->andWhere('i.statusId IN (:statusIds)')
             ->setParameter('workspaceId', $workspaceId->value())
             ->setParameter('statusIds', $ids)
-            ->orderBy('i.key', 'ASC')
+            ->orderBy('i.position', 'ASC')
+            ->addOrderBy('i.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
 
@@ -147,7 +148,8 @@ final readonly class DoctrineIssueRepository implements IssueRepository
             ->from(IssueRecord::class, 'i')
             ->where('i.workspaceId = :workspaceId')
             ->setParameter('workspaceId', $workspaceId->value())
-            ->orderBy('i.createdAt', 'ASC')
+            ->orderBy('i.position', 'ASC')
+            ->addOrderBy('i.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
 

@@ -30,6 +30,7 @@ final class IssuePresenter
             'createdAt' => $issue->createdAt()->format(DATE_ATOM),
             'updatedAt' => $issue->updatedAt()->format(DATE_ATOM),
             'enteredAt' => $issue->enteredAt()->format(DATE_ATOM),
+            'position' => $issue->position(),
         ];
     }
 

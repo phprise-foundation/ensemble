@@ -68,6 +68,9 @@ final class IssueRecord
     #[ORM\Column(name: 'entered_at', type: 'datetime_immutable')]
     private DateTimeImmutable $enteredAt;
 
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $position;
+
     /** @param array<string, mixed> $fieldValues */
     public function __construct(
         string $id,
@@ -87,6 +90,7 @@ final class IssueRecord
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
+        int $position,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -105,6 +109,7 @@ final class IssueRecord
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
         $this->enteredAt = $enteredAt;
+        $this->position = $position;
     }
 
     public function id(): string { return $this->id; }
@@ -125,6 +130,7 @@ final class IssueRecord
     public function createdAt(): DateTimeImmutable { return $this->createdAt; }
     public function updatedAt(): DateTimeImmutable { return $this->updatedAt; }
     public function enteredAt(): DateTimeImmutable { return $this->enteredAt; }
+    public function position(): int { return $this->position; }
 
     /** @param array<string, mixed> $fieldValues */
     public function sync(
@@ -138,6 +144,7 @@ final class IssueRecord
         ?string $workdirId,
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
+        int $position,
     ): void {
         $this->statusId = $statusId;
         $this->summary = $summary;
@@ -149,5 +156,6 @@ final class IssueRecord
         $this->workdirId = $workdirId;
         $this->updatedAt = $updatedAt;
         $this->enteredAt = $enteredAt;
+        $this->position = $position;
     }
 }

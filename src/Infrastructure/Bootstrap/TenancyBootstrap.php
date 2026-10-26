@@ -35,6 +35,7 @@ use App\Application\Kanban\ListIssueTypes;
 use App\Application\Kanban\ListWorkflows;
 use App\Application\Kanban\ReadBoard;
 use App\Application\Kanban\ReadColumn;
+use App\Application\Kanban\ReorderColumns;
 use App\Application\Kanban\MoveIssue;
 use App\Application\Kanban\ReadFieldDefinition;
 use App\Application\Kanban\ReadIssue;
@@ -363,6 +364,7 @@ final readonly class TenancyBootstrap
                 new ReadColumn($boardColumns, $guard),
                 new UpdateColumn($boards, $boardColumns, $validateColumnStatuses, $guard),
                 new DeleteColumn($boardColumns, $guard),
+                new ReorderColumns($boards, $boardColumns, $guard),
                 $columnPresenter,
                 $this->responder,
             ),

@@ -19,6 +19,7 @@ use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\User;
@@ -36,35 +37,73 @@ final readonly class MoveIssue
     ) {
     }
 
-    public function execute(User $actor, WorkspaceId $workspaceId, IssueKey $key, StatusId $targetId): Issue
-    {
+    public function execute(
+        User $actor,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+        StatusId $targetId,
+        ?int $position = null,
+    ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
         $issue = $this->issues->find($workspaceId, $key) ?? throw NotFoundException::issue();
         $target = $this->statuses->find($workspaceId, $targetId) ?? throw NotFoundException::status();
         if ($target->issueTypeId()->value() !== $issue->issueTypeId()->value()) {
             throw new ValidationException('statusId', 'Status does not belong to the issue type.');
         }
-        if ($target->id()->value() === $issue->statusId()->value()) {
+        $previous = $issue->statusId();
+        $sameStatus = $target->id()->value() === $issue->statusId()->value();
+        if ($sameStatus && $position === null) {
             return $issue;
         }
-        $this->guardTransition($issue, $target->workflowId(), $target);
-        $at = new DateTimeImmutable();
-        $previous = $issue->statusId();
-        $issue->moveTo($target->id(), $at);
-        $this->issues->update($issue);
-        $this->events->add(new IssueEvent(
-            IssueEventId::generate(),
-            $workspaceId,
-            $issue->id(),
-            IssueEventType::Status,
-            $previous,
-            $target->id(),
-            $actor->login()->value(),
-            null,
-            $at,
-        ));
+        if (!$sameStatus) {
+            $this->guardTransition($issue, $target->workflowId(), $target);
+            $at = new DateTimeImmutable();
+            $issue->moveTo($target->id(), $at);
+            $this->issues->update($issue);
+            $this->events->add(new IssueEvent(
+                IssueEventId::generate(),
+                $workspaceId,
+                $issue->id(),
+                IssueEventType::Status,
+                $previous,
+                $target->id(),
+                $actor->login()->value(),
+                null,
+                $at,
+            ));
+            $this->reindex($workspaceId, $previous);
+        }
+        $this->place($workspaceId, $target->id(), $issue, $position);
 
         return $issue;
+    }
+
+    private function place(WorkspaceId $workspaceId, StatusId $statusId, Issue $issue, ?int $index): void
+    {
+        $others = array_values(array_filter(
+            $this->issues->forStatuses($workspaceId, new StatusIds([$statusId])),
+            static fn(Issue $candidate): bool => $candidate->id()->value() !== $issue->id()->value(),
+        ));
+        $target = $index === null ? count($others) : max(0, min($index, count($others)));
+        array_splice($others, $target, 0, [$issue]);
+        $this->reposition($others);
+    }
+
+    private function reindex(WorkspaceId $workspaceId, StatusId $statusId): void
+    {
+        $this->reposition($this->issues->forStatuses($workspaceId, new StatusIds([$statusId])));
+    }
+
+    /** @param list<Issue> $issues */
+    private function reposition(array $issues): void
+    {
+        foreach ($issues as $position => $candidate) {
+            if ($candidate->position() === $position) {
+                continue;
+            }
+            $candidate->reposition($position);
+            $this->issues->update($candidate);
+        }
     }
 
     private function guardTransition(Issue $issue, WorkflowId $workflowId, Status $target): void

@@ -14,6 +14,7 @@ use App\Domain\Kanban\IssueEvent;
 use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\Status;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Team\Agent;
@@ -133,6 +134,7 @@ final readonly class AdvanceIssue
         $at = new DateTimeImmutable();
         $previous = $issue->statusId();
         $issue->moveTo($target->id(), $at);
+        $issue->reposition(count($this->issues->forStatuses($issue->workspaceId(), new StatusIds([$target->id()]))));
         $this->issues->update($issue);
         $this->events->add(new IssueEvent(
             IssueEventId::generate(),

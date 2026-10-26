@@ -33,7 +33,7 @@ final readonly class CreateColumn
         WorkspaceId $workspaceId,
         BoardId $boardId,
         string $name,
-        Position $position,
+        ?Position $position,
         ?int $wip,
         StatusIds $statusIds,
     ): BoardColumn {
@@ -41,6 +41,8 @@ final readonly class CreateColumn
         $board = $this->boards->find($workspaceId, $boardId) ?? throw NotFoundException::board();
         $this->validateStatuses->execute($workspaceId, $board->workflowId(), $statusIds);
         $this->guardUniqueStatuses($workspaceId, $boardId, $statusIds, null);
+        $position ??= $this->nextPosition($workspaceId, $boardId);
+        $this->guardUniquePosition($workspaceId, $boardId, $position, null);
 
         $column = new BoardColumn(
             BoardColumnId::generate(),
@@ -54,6 +56,32 @@ final readonly class CreateColumn
         $this->columns->add($column);
 
         return $column;
+    }
+
+    private function nextPosition(WorkspaceId $workspaceId, BoardId $boardId): Position
+    {
+        $max = -1;
+        foreach ($this->columns->forBoard($workspaceId, $boardId) as $column) {
+            $max = max($max, $column->position()->value());
+        }
+
+        return new Position($max + 1);
+    }
+
+    private function guardUniquePosition(
+        WorkspaceId $workspaceId,
+        BoardId $boardId,
+        Position $position,
+        ?BoardColumnId $except,
+    ): void {
+        foreach ($this->columns->forBoard($workspaceId, $boardId) as $column) {
+            if ($except !== null && $column->id()->value() === $except->value()) {
+                continue;
+            }
+            if ($column->position()->value() === $position->value()) {
+                throw new ValidationException('position', 'Another column already uses this position.');
+            }
+        }
     }
 
     private function guardUniqueStatuses(

@@ -85,6 +85,53 @@ final class BoardApiTest extends TestCase
         )));
     }
 
+    public function testColumnsKeepUniquePositionsAndCanBeReordered(): void
+    {
+        $task = $this->createIssueType('Task', 'task');
+        $todo = $this->createStatus($task, 'Refining', 'initial');
+        $doing = $this->createStatus($task, 'Coding', 'transitional');
+        $done = $this->createStatus($task, 'Done', 'final');
+        $board = $this->createBoard('Kanban', 'kanban', [$task], [$todo, $doing, $done]);
+
+        $first = $this->createColumn($board, 'Todo', [$todo]);
+        $second = $this->createColumn($board, 'Doing', [$doing]);
+        $third = $this->createColumn($board, 'Done', [$done]);
+
+        $duplicate = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/boards/' . $board . '/columns',
+            ['name' => 'Duplicate', 'position' => 0, 'statusIds' => []],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $duplicate->getStatusCode());
+        self::assertSame('position', $this->app->json($duplicate, 422)['field']);
+
+        $reordered = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/boards/' . $board . '/columns/reorder',
+            ['columnIds' => [$third, $first, $second]],
+            $this->adminToken,
+        )));
+        self::assertSame([$third, $first, $second], array_column($reordered['columns'], 'id'));
+        self::assertSame([0, 1, 2], array_column($reordered['columns'], 'position'));
+
+        $detail = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/boards/' . $board,
+            [],
+            $this->adminToken,
+        )));
+        self::assertSame([$third, $first, $second], array_column($detail['columns'], 'id'));
+
+        $incomplete = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/boards/' . $board . '/columns/reorder',
+            ['columnIds' => [$first]],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $incomplete->getStatusCode());
+    }
+
     public function testBoardFiltersMustBelongToTheBoardWorkflow(): void
     {
         $otherWorkflow = $this->createWorkflow('Other', 'other');

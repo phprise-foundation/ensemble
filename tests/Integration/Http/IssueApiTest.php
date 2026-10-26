@@ -193,6 +193,51 @@ final class IssueApiTest extends TestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    public function testIssuesKeepPositionInsideTheStatusAndCanBeReordered(): void
+    {
+        $first = $this->createIssue(['summary' => 'First positioned']);
+        $second = $this->createIssue(['summary' => 'Second positioned']);
+        $third = $this->createIssue(['summary' => 'Third positioned']);
+
+        $byStatus = function (string $statusId): array {
+            $data = $this->app->json($this->app->handle($this->app->request(
+                'GET',
+                '/api/workspaces/' . $this->workspaceId . '/issues',
+                [],
+                $this->adminToken,
+            )));
+            $issues = array_values(array_filter(
+                $data['issues'],
+                static fn(array $issue): bool => $issue['statusId'] === $statusId,
+            ));
+            usort($issues, static fn(array $left, array $right): int => $left['position'] <=> $right['position']);
+
+            return array_map(
+                static fn(array $issue): array => [$issue['key'], $issue['position']],
+                $issues,
+            );
+        };
+
+        self::assertSame([[$first, 0], [$second, 1], [$third, 2]], $byStatus($this->refiningId));
+
+        $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $third . '/move',
+            ['statusId' => $this->refiningId, 'position' => 0],
+            $this->adminToken,
+        )));
+        self::assertSame([[$third, 0], [$first, 1], [$second, 2]], $byStatus($this->refiningId));
+
+        $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $first . '/move',
+            ['statusId' => $this->refinedId],
+            $this->adminToken,
+        )));
+        self::assertSame([[$third, 0], [$second, 1]], $byStatus($this->refiningId));
+        self::assertSame([[$first, 0]], $byStatus($this->refinedId));
+    }
+
     /** @param array<string, mixed> $overrides */
     private function createIssue(array $overrides): string
     {
