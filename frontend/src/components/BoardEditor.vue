@@ -19,6 +19,7 @@ function toggleStatus(column, statusId) {
 </script>
 
 <template>
+  <div class="modal" @click.self="emit('close')">
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="board-editor-title">
     <header class="modal-header">
       <h3 id="board-editor-title">{{ draft.__existing ? 'Edit board' : 'New board' }}</h3>
@@ -44,5 +45,6 @@ function toggleStatus(column, statusId) {
       <button class="button ghost" @click="emit('close')">Cancel</button>
       <button class="button" :disabled="!draft.name || !draft.workflowId" @click="emit('save')">Save</button>
     </footer>
+  </div>
   </div>
 </template>

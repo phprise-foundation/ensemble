@@ -118,6 +118,7 @@ describe('real backend session', () => {
 describe('real board mode', () => {
   it('boots from the workspace snapshot and scopes writes by key', async () => {
     mocks.tokenValue = 'stored'
+    let moved = false
     const issue = { id: 'i1', key: 'ONE-1', statusId: 's1' }
     mocks.request.mockImplementation(async (method, path) => {
       if (path === '/api/me') {
@@ -135,7 +136,7 @@ describe('real board mode', () => {
           transitions: [],
           boards: [{ id: 'b1', workflowId: 'wf1' }],
           columns: [{ id: 'c1', statusIds: ['s1'] }],
-          issues: [issue],
+          issues: [{ ...issue, statusId: moved ? 's2' : 's1' }],
           teams: [],
           roles: [],
           profiles: [],
@@ -143,6 +144,7 @@ describe('real board mode', () => {
         }
       }
       if (path === '/api/workspaces/w1/issues/ONE-1/move') {
+        moved = true
         return { issue: { ...issue, statusId: 's2' } }
       }
       if (path === '/api/workspaces/w1/issues/ONE-1') {

@@ -62,7 +62,7 @@ async function openCreate() {
     description: '',
     typeId: selectableTypes.value[0]?.id ?? null,
     statusId: '',
-    assigneeId: boardStore.state.agents[0]?.id || null,
+    assigneeId: null,
     fields: {},
   }
   error.value = ''
@@ -87,6 +87,14 @@ watch(
     fieldErrors.value = {}
   },
 )
+watch(selectableTypes, (types) => {
+  if (!editing.value || types.some((type) => type.id === draft.value.typeId)) {
+    return
+  }
+  draft.value.typeId = types[0]?.id ?? null
+  draft.value.fields = {}
+  draft.value.statusId = ''
+})
 watch(initialStatuses, (initials) => {
   if (!editing.value) return
   if (initials.some((status) => status.id === draft.value.statusId)) return
@@ -152,37 +160,42 @@ async function save() {
   editing.value = false
 }
 
-let draggingColumnId = null
+const draggingColumnId = ref(null)
+const columnDropTargetId = ref(null)
 
 function onColumnDragStart(column) {
-  draggingColumnId = column.id
+  draggingColumnId.value = column.id
+  columnDropTargetId.value = null
 }
 
-function onColumnDrop(targetColumn) {
-  if (!draggingColumnId || draggingColumnId === targetColumn.id) {
-    draggingColumnId = null
+function onColumnHeaderOver(column) {
+  if (!draggingColumnId.value || draggingColumnId.value === column.id) {
+    return
+  }
+  columnDropTargetId.value = column.id
+}
+
+function onColumnDragEnd() {
+  draggingColumnId.value = null
+  columnDropTargetId.value = null
+}
+
+async function onColumnDrop(targetColumn) {
+  const draggedId = draggingColumnId.value
+  onColumnDragEnd()
+  if (!draggedId || draggedId === targetColumn.id) {
     return
   }
   const ordered = columns.value.slice()
-  const from = ordered.findIndex((column) => column.id === draggingColumnId)
+  const from = ordered.findIndex((column) => column.id === draggedId)
   const to = ordered.findIndex((column) => column.id === targetColumn.id)
   if (from < 0 || to < 0) {
-    draggingColumnId = null
     return
   }
   const [moved] = ordered.splice(from, 1)
   ordered.splice(to, 0, moved)
-  draggingColumnId = null
-  void reorderColumns(ordered)
-}
-
-async function reorderColumns(ordered) {
   try {
-    for (let index = 0; index < ordered.length; index += 1) {
-      if (ordered[index].position !== index) {
-        await boardStore.saveEntity('columns', { ...ordered[index], __existing: true, position: index })
-      }
-    }
+    await boardStore.reorderColumns(board.value.id, ordered.map((column) => column.id))
   } catch (problem) {
     toast.error(problem.message)
   }
@@ -240,7 +253,7 @@ async function drop(columnId, beforeId) {
       index = position
     }
   }
-  await boardStore.moveIssue(id, { columnId, statusId, order: index })
+  await boardStore.moveIssue(id, { columnId, statusId, position: index })
   endDrag()
 }
 </script>
@@ -268,6 +281,8 @@ async function drop(columnId, beforeId) {
           :drag-over="dragOverColumn === column.id"
           :invalid="invalid(column.id)"
           :drop-before="dragOverColumn === column.id ? dropBefore : null"
+          :column-dragging="draggingColumnId === column.id"
+          :column-drop-target="columnDropTargetId === column.id"
           @over="onColumnOver"
           @drop="drop(column.id, null)"
           @drag-start="startDrag"
@@ -275,6 +290,8 @@ async function drop(columnId, beforeId) {
           @card-over="(issueId) => onCardOver(column.id, issueId)"
           @card-drop="(issueId) => drop(column.id, issueId)"
           @column-drag-start="onColumnDragStart"
+          @column-over="onColumnHeaderOver"
+          @column-drag-end="onColumnDragEnd"
           @column-drop="onColumnDrop"
         />
       </div>

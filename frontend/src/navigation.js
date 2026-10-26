@@ -3,9 +3,9 @@ const BOARD_PAGES = [
 ]
 
 const WORKFLOW_PAGES = [
+  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', path: (id) => `/workflows/${id}/issue-types` },
   { key: 'statuses', label: 'Statuses', icon: 'statuses', feature: 'statuses', path: (id) => `/workflows/${id}/statuses` },
   { key: 'transitions', label: 'Transitions', icon: 'transitions', feature: 'transitions', path: (id) => `/workflows/${id}/transitions` },
-  { key: 'issue-types', label: 'Issue types', icon: 'issues', feature: 'issueTypes', path: (id) => `/workflows/${id}/issue-types` },
 ]
 
 const TEAM_PAGES = [

@@ -14,6 +14,9 @@ const items = computed(() => {
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
+const dragRowId = ref(null)
+const dropRowId = ref(null)
+const canReorder = computed(() => typeof props.schema.reorder === 'function')
 
 function optionsFor(field) {
   return typeof field.options === 'function' ? field.options() : field.options || []
@@ -67,6 +70,39 @@ async function save() {
   }
 }
 
+function onRowDragStart(row) {
+  if (!canReorder.value) return
+  dragRowId.value = row.id
+  dropRowId.value = null
+}
+
+function onRowDragOver(row) {
+  if (!canReorder.value || !dragRowId.value || dragRowId.value === row.id) return
+  dropRowId.value = row.id
+}
+
+function onRowDragEnd() {
+  dragRowId.value = null
+  dropRowId.value = null
+}
+
+async function onRowDrop(row) {
+  const draggedId = dragRowId.value
+  onRowDragEnd()
+  if (!canReorder.value || !draggedId || draggedId === row.id) return
+  const ordered = items.value.slice()
+  const from = ordered.findIndex((item) => item.id === draggedId)
+  const to = ordered.findIndex((item) => item.id === row.id)
+  if (from < 0 || to < 0) return
+  const [moved] = ordered.splice(from, 1)
+  ordered.splice(to, 0, moved)
+  try {
+    await props.schema.reorder(ordered.map((item) => item.id))
+  } catch (problem) {
+    toast.error(problem.message)
+  }
+}
+
 async function remove(row) {
   const label = row.name ?? row.id
   const ok = await dialog.confirm({
@@ -98,7 +134,18 @@ async function remove(row) {
         <span v-for="column in schema.columns" :key="column.key">{{ column.label }}</span>
         <span class="actions">Actions</span>
       </div>
-      <div class="table-row" v-for="row in items" :key="row.id">
+      <div
+        v-for="row in items"
+        :key="row.id"
+        class="table-row"
+        :class="{ dragging: dragRowId === row.id, 'drop-target': dropRowId === row.id }"
+        :draggable="canReorder"
+        :title="canReorder ? 'Drag to reorder' : undefined"
+        @dragstart="onRowDragStart(row)"
+        @dragover.prevent="onRowDragOver(row)"
+        @dragend="onRowDragEnd"
+        @drop.prevent="onRowDrop(row)"
+      >
         <span v-for="column in schema.columns" :key="column.key">
           <span v-if="column.type === 'color'" class="swatch" :style="{ background: row[column.key] }"></span>
           <template v-else>{{ cellValue(row, column) }}</template>
