@@ -105,7 +105,7 @@ describe('description and comment limits', () => {
       cy.contains('.card', target.key).click()
     })
     cy.get('.issue-panel .body').invoke('text').then((original) => {
-      cy.get('.issue-panel').contains('button', 'Edit').click()
+      cy.get('.issue-panel [aria-label="Edit description"]').click()
       cy.get('.issue-panel textarea[aria-label="Description"]').should(
         'have.attr',
         'aria-describedby',
@@ -130,7 +130,7 @@ describe('description and comment limits', () => {
     cy.wsRequest('GET', '/issues/KANB-2').then((response) => {
       const baseline = response.body.issue.description
       cy.contains('.card', 'KANB-2').click()
-      cy.get('.issue-panel').contains('button', 'Edit').click()
+      cy.get('.issue-panel [aria-label="Edit description"]').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
         .invoke('val', `${baseline}
 E2E-SAVED`)
@@ -140,7 +140,7 @@ E2E-SAVED`)
         expect(text.trimEnd()).to.equal(`${baseline}
 E2E-SAVED`)
       })
-      cy.get('.issue-panel').contains('button', 'Edit').click()
+      cy.get('.issue-panel [aria-label="Edit description"]').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
         .invoke('val', baseline)
         .trigger('input')
@@ -203,7 +203,7 @@ E2E-SAVED`)
       expect(text).to.contain('LEGACY-COMMENT-START')
       expect(text).to.contain('LEGACY-COMMENT-END')
     })
-    cy.get('.issue-panel').contains('button', 'Edit').click()
+    cy.get('.issue-panel [aria-label="Edit description"]').click()
     cy.get('.issue-panel textarea[aria-label="Description"]')
       .invoke('val', `${'D'.repeat(4200)}`)
       .trigger('input')
@@ -235,11 +235,12 @@ E2E-SAVED`)
       const originalAssignee = before.body.issue.assigneeId
       cy.wsSnapshot().then((snapshot) => {
       const byName = Object.fromEntries(snapshot.agents.map((agent) => [agent.name, agent.id]))
+      const nameById = Object.fromEntries(snapshot.agents.map((agent) => [agent.id, agent.name]))
       const targetAssignee = originalAssignee === byName.Vivy ? byName.Mai : byName.Vivy
       const otherAssignee = targetAssignee
-      const restoreAssignee = originalAssignee ?? 'Unassigned'
+      const targetName = nameById[targetAssignee]
       cy.contains('.card', 'KANB-7').click()
-      cy.get('.issue-panel').contains('button', 'Edit').click()
+      cy.get('.issue-panel [aria-label="Edit description"]').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')
         .invoke('val', repeat('R', 200))
         .trigger('input')
@@ -250,13 +251,15 @@ E2E-SAVED`)
         expect(text).to.contain('LEGACY-DESCRIPTION-END')
       })
       cy.intercept('PATCH', '**/api/workspaces/*/issues/KANB-7').as('patchAssignee')
-      cy.get('.issue-panel select').eq(1).select(targetAssignee)
+      cy.get('.issue-panel [aria-label="Change assignee"]').click()
+      cy.get('.assignee-menu button').contains(targetName).click()
       cy.wait('@patchAssignee')
       cy.get('#issue-comment-limit').should('exist')
       cy.wsRequest('GET', '/issues/KANB-7').then((moved) => {
         expect(moved.body.issue.assigneeId).to.equal(otherAssignee)
       })
-      cy.get('.issue-panel select').eq(1).select(restoreAssignee)
+      cy.get('.issue-panel [aria-label="Change assignee"]').click()
+      cy.get('.assignee-menu button').contains('Unassigned').click()
       cy.wait('@patchAssignee')
       cy.wsRequest('GET', '/issues/KANB-7').then((after) => {
         expect(after.body.issue.assigneeId).to.equal(originalAssignee)

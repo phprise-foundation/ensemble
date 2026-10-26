@@ -10,24 +10,32 @@ const unique = (prefix) => `${prefix} ${Date.now()}`
 const field = (label) =>
   cy.get('.modal-card .field').filter((_, element) => element.querySelector('span')?.textContent.trim() === label)
 
+const todoColumn = () =>
+  cy.get('.column').filter((_, element) => element.querySelector('.column-title')?.textContent.trim() === 'Todo')
+
 describe('browser review: editors, columns and history', () => {
   let errors
   let kanban
   let workflowId
   let originalWorkspaceName
   let initialColumns = []
-  let todoColumn
+  let initialColumnIds = []
+  let todo
   const created = { boards: [], columns: [], issueTypes: [], statuses: [], transitions: [], repositories: [], fields: [] }
 
   before(() => {
     cy.wsSnapshot().then((snapshot) => {
       kanban = snapshot.boards.find((board) => board.name === 'Kanban')
-      todoColumn = snapshot.columns.find((column) => column.boardId === kanban.id && column.name === 'Todo')
+      todo = snapshot.columns.find((column) => column.boardId === kanban.id && column.name === 'Todo')
       workflowId = snapshot.workflows[0].id
       originalWorkspaceName = snapshot.workspaces[0].name
       initialColumns = snapshot.columns
         .filter((column) => column.boardId === kanban.id)
         .map((column) => ({ id: column.id, position: column.position }))
+      initialColumnIds = initialColumns
+        .slice()
+        .sort((left, right) => left.position - right.position)
+        .map((column) => column.id)
     })
   })
 
@@ -59,11 +67,11 @@ describe('browser review: editors, columns and history', () => {
     for (const id of created.boards.splice(0)) {
       cy.wsRequest('DELETE', `/boards/${id}`, undefined, { failOnStatusCode: false })
     }
-    for (const column of initialColumns) {
-      cy.wsRequest('PATCH', `/columns/${column.id}`, { position: column.position }, { failOnStatusCode: false })
+    if (initialColumnIds.length) {
+      cy.wsRequest('POST', `/boards/${kanban.id}/columns/reorder`, { columnIds: initialColumnIds }, { failOnStatusCode: false })
     }
-    if (todoColumn) {
-      cy.wsRequest('PATCH', `/columns/${todoColumn.id}`, { statusIds: todoColumn.statusIds }, { failOnStatusCode: false })
+    if (todo) {
+      cy.wsRequest('PATCH', `/columns/${todo.id}`, { statusIds: todo.statusIds }, { failOnStatusCode: false })
     }
     cy.wsSnapshot().then((snapshot) => {
       if (snapshot.workspaces[0].name !== originalWorkspaceName) {
@@ -81,7 +89,7 @@ describe('browser review: editors, columns and history', () => {
     cy.then(() => expect(errors, `erros de runtime:\n${errors.join('\n')}`).to.deep.equal([]))
   })
 
-  it('creates and edits a board and shows its key, not the hex id, in the sidebar', () => {
+  it('opens the board editor centered, creates and edits a board and shows its key', () => {
     const name = unique('Review board')
     cy.intercept('POST', '**/api/workspaces/*/boards').as('createBoard')
     cy.intercept('PATCH', '**/api/workspaces/*/boards/*').as('updateBoard')
@@ -90,6 +98,15 @@ describe('browser review: editors, columns and history', () => {
     cy.get('.leaf').should('have.length.greaterThan', 0)
     cy.get('button[title="New board"]').click({ force: true })
     cy.get('#board-editor-title').should('contain', 'New board')
+    cy.get('.modal').should('be.visible')
+    cy.get('.modal-card').then(($card) => {
+      cy.window().then((win) => {
+        const rect = $card[0].getBoundingClientRect()
+        expect(rect.top, 'modal visível na janela').to.be.at.least(0)
+        expect(rect.top).to.be.lessThan(win.innerHeight)
+        expect(rect.bottom).to.be.greaterThan(0)
+      })
+    })
     cy.get('.modal-card input[type="text"]').first().type(name)
     cy.get('.modal-card .button:not(.ghost)').click()
     cy.wait('@createBoard').then((call) => {
@@ -114,15 +131,15 @@ describe('browser review: editors, columns and history', () => {
     cy.contains('.leaf', `${name} renamed`).should('exist')
   })
 
-  it('edits the column position and reorders the columns by dragging the header', () => {
+  it('creates a unique column position, rejects duplicates and reorders from the board with feedback', () => {
     const name = unique('Review column')
     cy.intercept('POST', '**/api/workspaces/*/boards/*/columns').as('createColumn')
-    cy.intercept('PATCH', '**/api/workspaces/*/columns/*').as('updateColumn')
+    cy.intercept('POST', '**/api/workspaces/*/boards/*/columns/reorder').as('reorderColumns')
 
     cy.visitApp(`/#/boards/${kanban.id}/columns`)
     cy.contains('button', 'New column').click()
-    cy.get('.modal-card').contains('.field', 'Name').find('input').type(name)
-    cy.get('.modal-card').contains('.field', 'Position').find('input').clear().type('5')
+    field('Name').find('input').type(name)
+    field('Position').find('input').clear().type('5')
     cy.get('.modal-card .button:not(.ghost)').click()
     cy.wait('@createColumn').then((call) => {
       expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(201)
@@ -132,30 +149,156 @@ describe('browser review: editors, columns and history', () => {
     cy.get('.modal-card').should('not.exist')
     cy.contains('.table-row', name).should('contain', '5')
 
+    cy.contains('button', 'New column').click()
+    field('Name').find('input').type(unique('Duplicate column'))
+    field('Position').find('input').clear().type('5')
+    cy.get('.modal-card .button:not(.ghost)').click()
+    cy.wait('@createColumn').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(422)
+      expect(call.response.body.field).to.eq('position')
+    })
+    cy.get('.modal-card .error').should('contain', 'position')
+    cy.get('.modal-card').contains('button', 'Cancel').click()
+
     cy.visitApp(`/#/boards/${kanban.id}`)
     cy.get('.column-header').should('have.length.at.least', 4)
+    cy.intercept('GET', '**/api/workspaces/*/snapshot').as('snapshot')
     cy.get('.column-header').then(($headers) => {
       cy.wrap([...$headers].map((header) => header.textContent.trim())).as('beforeOrder')
     })
     cy.window().then((win) => {
       const headers = win.document.querySelectorAll('.column-header')
-      const first = headers[0]
-      const last = headers[headers.length - 1]
       const dataTransfer = new win.DataTransfer()
-      first.dispatchEvent(new win.DragEvent('dragstart', { bubbles: true, dataTransfer }))
-      last.dispatchEvent(new win.DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }))
-      last.dispatchEvent(new win.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }))
-      first.dispatchEvent(new win.DragEvent('dragend', { bubbles: true, dataTransfer }))
+      headers[0].dispatchEvent(new win.DragEvent('dragstart', { bubbles: true, dataTransfer }))
+      headers[headers.length - 1].dispatchEvent(
+        new win.DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }),
+      )
     })
-    cy.wait(800)
-    cy.get('@updateColumn.all').then((calls) => {
-      expect(calls.length, 'the drag must persist the new order').to.be.greaterThan(0)
-      calls.forEach((call) => expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(200))
+    cy.get('.column-header.drop-target').should('exist')
+    cy.window().then((win) => {
+      const headers = win.document.querySelectorAll('.column-header')
+      const dataTransfer = new win.DataTransfer()
+      headers[headers.length - 1].dispatchEvent(
+        new win.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }),
+      )
+      headers[0].dispatchEvent(new win.DragEvent('dragend', { bubbles: true, dataTransfer }))
     })
+    cy.wait('@reorderColumns').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(200)
+      expect(call.request.body.columnIds, 'the dragged column moves to the end').to.have.length(
+        initialColumnIds.length + 1,
+      )
+    })
+    cy.wait('@snapshot')
     cy.get('.column-header').then(($after) => {
       const after = [...$after].map((header) => header.textContent.trim())
       cy.get('@beforeOrder').then((before) => {
         expect(after, `order ${JSON.stringify(before)} -> ${JSON.stringify(after)}`).to.not.deep.equal(before)
+      })
+    })
+  })
+
+  it('reorders columns by dragging the rows in the columns editor', () => {
+    cy.intercept('POST', '**/api/workspaces/*/boards/*/columns/reorder').as('reorderColumns')
+
+    cy.visitApp(`/#/boards/${kanban.id}/columns`)
+    cy.get('.table-row[draggable="true"]').should('have.length', initialColumnIds.length)
+    cy.intercept('GET', '**/api/workspaces/*/snapshot').as('snapshot')
+    cy.get('.table-row[draggable="true"]').then(($rows) => {
+      cy.wrap([...$rows].map((row) => row.textContent.trim())).as('rowsBefore')
+    })
+    cy.window().then((win) => {
+      const rows = win.document.querySelectorAll('.table-row[draggable="true"]')
+      const dataTransfer = new win.DataTransfer()
+      rows[0].dispatchEvent(new win.DragEvent('dragstart', { bubbles: true, dataTransfer }))
+      rows[rows.length - 1].dispatchEvent(
+        new win.DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }),
+      )
+    })
+    cy.get('.table-row.drop-target').should('exist')
+    cy.window().then((win) => {
+      const rows = win.document.querySelectorAll('.table-row[draggable="true"]')
+      rows[rows.length - 1].dispatchEvent(
+        new win.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: new win.DataTransfer() }),
+      )
+    })
+    cy.wait('@reorderColumns').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(200)
+      expect(call.request.body.columnIds, 'the first row is sent in the last position').to.deep.eq([
+        initialColumnIds[1],
+        initialColumnIds[2],
+        initialColumnIds[0],
+      ])
+      expect(
+        call.response.body.columns.map((column) => column.id),
+        JSON.stringify(call.response.body),
+      ).to.deep.eq([initialColumnIds[1], initialColumnIds[2], initialColumnIds[0]])
+    })
+    cy.wait('@snapshot')
+    cy.get('.table-row[draggable="true"]').then(($rows) => {
+      const after = [...$rows].map((row) => row.textContent.trim())
+      cy.get('@rowsBefore').then((before) => {
+        expect(after, `rows ${JSON.stringify(before)} -> ${JSON.stringify(after)}`).to.not.deep.equal(before)
+      })
+    })
+  })
+
+  it('starts a new task with the assignee unassigned', () => {
+    const summary = unique('Unassigned task')
+    cy.intercept('POST', '**/api/workspaces/*/issues').as('createIssue')
+
+    cy.visitApp('/')
+    cy.get('.column', { timeout: 10000 }).should('have.length.at.least', 1)
+    cy.contains('button', 'New task').click()
+    cy.get('#create-assignee option:selected').should('contain.text', 'Unassigned')
+    cy.get('#create-summary').type(summary)
+    cy.get('.modal-footer').contains('button', 'Create').click()
+    cy.wait('@createIssue').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(201)
+      expect(call.request.body.assigneeId, JSON.stringify(call.request.body)).to.eq(undefined)
+    })
+    cy.get('.new-task-modal').should('not.exist')
+  })
+
+  it('reorders the cards inside a column and persists the position', () => {
+    cy.intercept('POST', '**/api/workspaces/*/issues/*/move').as('moveIssue')
+    let movedKey = null
+
+    cy.visitApp(`/#/boards/${kanban.id}`)
+    todoColumn().find('.card').should('have.length.at.least', 2)
+    cy.intercept('GET', '**/api/workspaces/*/snapshot').as('snapshot')
+    todoColumn().find('.card').then(($cards) => {
+      cy.wrap([...$cards].map((card) => card.querySelector('.card-id').textContent.trim())).as('cardsBefore')
+    })
+    cy.window().then((win) => {
+      const column = [...win.document.querySelectorAll('.column')].find(
+        (candidate) => candidate.querySelector('.column-title')?.textContent.trim() === 'Todo',
+      )
+      const cards = column.querySelectorAll('.card')
+      const dataTransfer = new win.DataTransfer()
+      cards[cards.length - 1].dispatchEvent(new win.DragEvent('dragstart', { bubbles: true, dataTransfer }))
+      cards[0].dispatchEvent(new win.DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }))
+      cards[0].dispatchEvent(new win.DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }))
+      cards[cards.length - 1].dispatchEvent(new win.DragEvent('dragend', { bubbles: true, dataTransfer }))
+    })
+    cy.wait('@moveIssue').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(200)
+      expect(call.request.body.position, JSON.stringify(call.request.body)).to.eq(0)
+      movedKey = call.request.url.split('/issues/')[1].split('/')[0]
+    })
+    cy.wait('@snapshot')
+    cy.get('@cardsBefore').then((before) => {
+      todoColumn().find('.card').then(($after) => {
+        const after = [...$after].map((card) => card.querySelector('.card-id').textContent.trim())
+        expect(after[0], `order ${JSON.stringify(before)} -> ${JSON.stringify(after)}`).to.eq(
+          before[before.length - 1],
+        )
+      })
+    })
+    cy.then(() => {
+      cy.wsRequest('GET', '/issues').then((response) => {
+        const moved = response.body.issues.find((issue) => issue.key === movedKey)
+        expect(moved.position, JSON.stringify(moved)).to.eq(0)
       })
     })
   })
@@ -260,6 +403,95 @@ describe('browser review: editors, columns and history', () => {
     })
   })
 
+  it('edits the summary and the description by clicking their text', () => {
+    cy.intercept('PATCH', '**/api/workspaces/*/issues/KANB-4').as('patchIssue')
+    let original = null
+    cy.wsRequest('GET', '/issues/KANB-4').then((response) => {
+      original = response.body.issue
+    })
+
+    cy.visitApp('/')
+    cy.contains('.card', 'KANB-4').click()
+    cy.get('.issue-panel').should('be.visible')
+    cy.get('.issue-panel [aria-label="Edit summary"]').click()
+    cy.get('.panel-summary-edit input[aria-label="Summary"]').clear().type('Review summary')
+    cy.get('.panel-summary-edit').contains('button', 'Save').click()
+    cy.wait('@patchIssue').its('response.statusCode').should('eq', 200)
+    cy.get('.panel-title').should('have.text', 'Review summary')
+
+    cy.get('.issue-panel [aria-label="Edit description"]').click()
+    cy.get('.issue-panel textarea[aria-label="Description"]').clear().type('Review description')
+    cy.get('.issue-panel').contains('button', 'Save').click()
+    cy.wait('@patchIssue').its('response.statusCode').should('eq', 200)
+    cy.get('.issue-panel .body').should('have.text', 'Review description')
+    cy.get('.issue-panel button').contains('Edit').should('not.exist')
+
+    cy.then(() => {
+      cy.wsRequest('PATCH', '/issues/KANB-4', {
+        summary: original.summary,
+        description: original.description,
+      })
+    })
+  })
+
+  it('changes the assignee through the avatar picker without duplicating the field', () => {
+    cy.intercept('PATCH', '**/api/workspaces/*/issues/KANB-1').as('patchIssue')
+    cy.visitApp('/')
+    cy.contains('.card', 'KANB-1').click()
+    cy.get('.issue-panel select').should('have.length', 1)
+
+    cy.get('.issue-panel [aria-label="Change assignee"]').click()
+    cy.get('.assignee-menu [role="option"]').contains('Unassigned').click()
+    cy.wait('@patchIssue').then((call) => {
+      expect(call.request.body.assigneeId, JSON.stringify(call.request.body)).to.eq(null)
+    })
+    cy.get('.issue-panel .assignee-name').should('have.text', 'Unassigned')
+
+    cy.get('.issue-panel [aria-label="Change assignee"]').click()
+    cy.get('.assignee-menu [role="option"]').contains('Vivy').click()
+    cy.wait('@patchIssue').then((call) => {
+      expect(call.request.body.assigneeId, JSON.stringify(call.request.body)).to.not.eq(null)
+    })
+    cy.get('.issue-panel .assignee-name').should('have.text', 'Vivy')
+  })
+
+  it('mentions an agent in a comment and allows only one mention', () => {
+    const text = unique('Mention review')
+    cy.intercept('POST', '**/api/workspaces/*/issues/KANB-2/comments').as('postComment')
+    cy.visitApp('/')
+    cy.contains('.card', 'KANB-2').click()
+    cy.get('.issue-panel textarea[aria-label="Comment"]').type(`${text} @Vi`)
+    cy.get('.mention-menu').should('be.visible')
+    cy.get('.mention-menu button').contains('Vivy').click()
+    cy.get('.issue-panel textarea[aria-label="Comment"]').should(
+      'have.value',
+      `${text} @Vivy `,
+    )
+    cy.get('.issue-panel').contains('One mention per comment').should('exist')
+    cy.get('.issue-panel textarea[aria-label="Comment"]').type(' @K')
+    cy.get('.mention-menu').should('not.exist')
+    cy.get('.comments-body > button.button').click()
+    cy.wait('@postComment').its('response.statusCode').should('eq', 201)
+    cy.wsRequest('GET', '/issues/KANB-2/comments').then((response) => {
+      const last = response.body.comments[response.body.comments.length - 1]
+      expect(last.body, JSON.stringify(last)).to.contain('@Vivy')
+    })
+  })
+
+  it('orders the workflow submenu as issue types, statuses and transitions', () => {
+    cy.visitApp('/')
+    cy.get('#app-sidebar .leaf').should('have.length.greaterThan', 0)
+    cy.get('#app-sidebar .leaf').then(($leaves) => {
+      const labels = [...$leaves].map((leaf) => leaf.textContent.trim())
+      const issueTypes = labels.indexOf('Issue types')
+      const statuses = labels.indexOf('Statuses')
+      const transitions = labels.indexOf('Transitions')
+      expect(issueTypes, JSON.stringify(labels)).to.be.greaterThan(-1)
+      expect(statuses).to.be.greaterThan(issueTypes)
+      expect(transitions).to.be.greaterThan(statuses)
+    })
+  })
+
   it('adds a comment to the issue history', () => {
     const body = unique('Review comment')
     cy.visitApp('/')
@@ -356,8 +588,8 @@ describe('browser review: editors, columns and history', () => {
       }).then((statusResponse) => {
         const statusId = statusResponse.body.status.id
         created.statuses.push(statusId)
-        cy.wsRequest('PATCH', `/columns/${todoColumn.id}`, {
-          statusIds: [...todoColumn.statusIds, statusId],
+        cy.wsRequest('PATCH', `/columns/${todo.id}`, {
+          statusIds: [...todo.statusIds, statusId],
         })
       })
     })
