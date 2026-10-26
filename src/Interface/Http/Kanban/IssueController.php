@@ -144,11 +144,13 @@ final readonly class IssueController
     ): ResponseInterface {
         $user = $this->currentUser->execute(BearerToken::fromRequest($request));
         $body = JsonBody::from($request);
+        $position = JsonBody::integer($body, 'position');
         $issue = $this->moveIssue->execute(
             $user,
             $workspaceId,
             $key,
             new StatusId(JsonBody::string($body, 'statusId') ?? ''),
+            $position,
         );
 
         return $this->responder->respond([

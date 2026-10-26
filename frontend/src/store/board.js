@@ -5,7 +5,7 @@ import { session } from './session.js'
 const scoped = (path) => `/api/workspaces/${session.workspaceId}${path}`
 const issueOf = (issueId) => state.issues.find((issue) => issue.id === issueId)
 const presented = (payload) => normalizeEntity('issues', payload?.issue ?? payload ?? null)
-const orderKeyOf = (issue) => issue.order ?? Date.parse(issue.enteredAt ?? '') ?? 0
+const orderKeyOf = (issue) => issue.position ?? Date.parse(issue.enteredAt ?? '') ?? 0
 
 const REAL_ROUTES = {
   workspaces: { key: 'workspace', path: () => '/api/workspaces', editPath: (data) => `/api/workspaces/${data.id}` },
@@ -120,7 +120,11 @@ async function moveReal(issueId, target) {
     throw new Error('Unknown issue')
   }
   const statusId = typeof target === 'string' ? target : target?.statusId
-  await request('POST', scoped(`/issues/${issue.key}/move`), { statusId })
+  const position = typeof target === 'object' ? target?.position : undefined
+  await request('POST', scoped(`/issues/${issue.key}/move`), {
+    statusId,
+    ...(position === undefined ? {} : { position }),
+  })
   return presented(await request('GET', scoped(`/issues/${issue.key}`)))
 }
 
@@ -310,10 +314,10 @@ export const boardStore = {
   },
 
   async moveIssue(issueId, target) {
-    const moved = await moveReal(issueId, target)
+    await moveReal(issueId, target)
+    await boardStore.load()
     const index = state.issues.findIndex((issue) => issue.id === issueId)
     if (index >= 0) {
-      state.issues.splice(index, 1, moved)
       void hydrateIssue(state.issues[index])
     }
   },
@@ -341,6 +345,11 @@ export const boardStore = {
       state.issues.splice(index, 1, updated)
       void hydrateIssue(state.issues[index])
     }
+  },
+
+  async reorderColumns(boardId, columnIds) {
+    await request('POST', scoped(`/boards/${boardId}/columns/reorder`), { columnIds })
+    await boardStore.load()
   },
 
   async saveEntity(collection, data) {

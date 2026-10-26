@@ -46,6 +46,7 @@ final readonly class UpdateColumn
             $column->rename($name);
         }
         if ($position !== null) {
+            $this->guardUniquePosition($workspaceId, $column, $position);
             $column->placeAt($position);
         }
         if ($wipProvided) {
@@ -60,6 +61,21 @@ final readonly class UpdateColumn
         $this->columns->update($column);
 
         return $column;
+    }
+
+    private function guardUniquePosition(
+        WorkspaceId $workspaceId,
+        BoardColumn $column,
+        Position $position,
+    ): void {
+        foreach ($this->columns->forBoard($workspaceId, $column->boardId()) as $other) {
+            if ($other->id()->value() === $column->id()->value()) {
+                continue;
+            }
+            if ($other->position()->value() === $position->value()) {
+                throw new ValidationException('position', 'Another column already uses this position.');
+            }
+        }
     }
 
     private function guardUniqueStatuses(WorkspaceId $workspaceId, BoardColumn $column, StatusIds $statusIds): void

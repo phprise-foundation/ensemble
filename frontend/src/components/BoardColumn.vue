@@ -9,9 +9,22 @@ const props = defineProps({
   dragOver: { type: Boolean, default: false },
   invalid: { type: Boolean, default: false },
   dropBefore: { type: String, default: null },
+  columnDragging: { type: Boolean, default: false },
+  columnDropTarget: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['over', 'drop', 'drag-start', 'drag-end', 'card-over', 'card-drop', 'column-drag-start', 'column-drop'])
+const emit = defineEmits([
+  'over',
+  'drop',
+  'drag-start',
+  'drag-end',
+  'card-over',
+  'card-drop',
+  'column-drag-start',
+  'column-over',
+  'column-drag-end',
+  'column-drop',
+])
 
 const issues = computed(() => boardStore.issuesForColumn(props.column.id))
 </script>
@@ -19,16 +32,19 @@ const issues = computed(() => boardStore.issuesForColumn(props.column.id))
 <template>
   <section
     class="column"
-    :class="{ 'drag-over': dragOver, invalid }"
+    :class="{ 'drag-over': dragOver, invalid, dragging: columnDragging }"
     @dragover.prevent="emit('over', column.id)"
     @drop.prevent="emit('drop', column.id)"
   >
     <header
       class="column-header"
+      :class="{ 'drop-target': columnDropTarget }"
       draggable="true"
-      :title="'Reorder column'"
+      title="Reorder column"
       @dragstart="emit('column-drag-start', column)"
-      @drop.stop="emit('column-drop', column)"
+      @dragover.prevent="emit('column-over', column)"
+      @dragend="emit('column-drag-end')"
+      @drop="emit('column-drop', column)"
     >
       <span class="column-title">{{ column.name }}</span>
       <span class="column-count">

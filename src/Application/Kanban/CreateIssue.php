@@ -24,6 +24,7 @@ use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Kanban\WorkdirId;
 use App\Domain\Kanban\WorkdirKind;
@@ -78,6 +79,7 @@ final readonly class CreateIssue
         $issueId = IssueId::generate();
         $key = $this->keys->next($workspaceId, $prefix);
         $workdirId = $this->resolveWorkdir($workspaceId, $issueId, $key, $parentKey, $repositoryId);
+        $position = $this->nextPosition($workspaceId, $status->id());
 
         $issue = new Issue(
             $issueId,
@@ -92,6 +94,7 @@ final readonly class CreateIssue
             $values,
             workdirId: $workdirId,
             parentKey: $parentKey,
+            position: $position,
         );
         $this->issues->add($issue);
         $this->events->add(new IssueEvent(
@@ -105,6 +108,16 @@ final readonly class CreateIssue
         ));
 
         return $issue;
+    }
+
+    private function nextPosition(WorkspaceId $workspaceId, StatusId $statusId): int
+    {
+        $position = 0;
+        foreach ($this->issues->forStatuses($workspaceId, new StatusIds([$statusId])) as $issue) {
+            $position = max($position, $issue->position() + 1);
+        }
+
+        return $position;
     }
 
     /** The chain grows one level down at a time; the frontier is the deepest configured issue type. */

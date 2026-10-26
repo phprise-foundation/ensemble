@@ -34,6 +34,7 @@ final class IssueRecordMapper
             $record->createdAt(),
             $workdirId === null ? null : new WorkdirId($workdirId),
             $parentKey === null ? null : new IssueKey($parentKey),
+            $record->position(),
         );
         $issue->restoreTimestamps($record->updatedAt(), $record->enteredAt());
 
@@ -60,6 +61,7 @@ final class IssueRecordMapper
             $issue->createdAt(),
             $issue->updatedAt(),
             $issue->enteredAt(),
+            $issue->position(),
         );
     }
 
@@ -76,6 +78,7 @@ final class IssueRecordMapper
             $issue->workdirId()?->value(),
             $issue->updatedAt(),
             $issue->enteredAt(),
+            $issue->position(),
         );
     }
 }

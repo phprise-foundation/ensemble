@@ -64,7 +64,7 @@ const buttonByText = (wrapper, label) =>
   wrapper.findAll('button').find((button) => button.text() === label)
 
 const editDescription = async (wrapper, value) => {
-  await buttonByText(wrapper, 'Edit').trigger('click')
+  await wrapper.find('[aria-label="Edit description"]').trigger('click')
   await wrapper.find('textarea[aria-label="Description"]').setValue(value)
 }
 
@@ -73,7 +73,7 @@ describe('IssuePanel limites', () => {
     select(buildIssue())
     const wrapper = mountPanel()
 
-    await buttonByText(wrapper, 'Edit').trigger('click')
+    await wrapper.find('[aria-label="Edit description"]').trigger('click')
 
     const textarea = wrapper.find('textarea[aria-label="Description"]')
     expect(textarea.exists()).toBe(true)
@@ -140,7 +140,7 @@ describe('IssuePanel limites', () => {
   it('trocar de issue sai do modo de edição', async () => {
     select(buildIssue())
     const wrapper = mountPanel()
-    await buttonByText(wrapper, 'Edit').trigger('click')
+    await wrapper.find('[aria-label="Edit description"]').trigger('click')
     expect(wrapper.find('textarea[aria-label="Description"]').exists()).toBe(true)
 
     const other = buildIssue({ id: 'KAN-2', summary: 'Issue Doutro', description: 'Another issue' })

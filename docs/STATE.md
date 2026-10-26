@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **138 PHPUnit tests / 895 assertions**, Psalm level 1, **0 errors**.
+- Backend: **140 PHPUnit tests / 937 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **112/112 across 18 specs**, green.
+- Real E2E: **119/119 across 18 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -118,6 +118,42 @@ editors still failing. Root causes and fixes:
   save.
 - Removed the remaining "Sim/Prototype" UI (`SimBanner`, badges, `sim-dot`,
   `simulation.js`); the `?sim` switch is gone for good.
+
+### Third browser pass (2026-10-26)
+
+Round of UX and behaviour fixes from the product owner's manual pass:
+
+- **Board editor off-screen**: `BoardEditor` rendered its card without the
+  `.modal` overlay, so the new/edit board dialogs were appended at the bottom
+  of the document. It now uses the same fixed, centered modal as the other
+  editors.
+- **Unique column positions**: `CreateColumn`/`UpdateColumn` reject a position
+  already used by another column (`422 field=position`); a new column without
+  a position is appended (`max + 1`). `POST /boards/{id}/columns/reorder`
+  reorders the whole board atomically, so the drag no longer writes transient
+  duplicate positions.
+- **Column drag & drop**: the board header shows a drop indicator
+  (`.column-header.drop-target`) and the admin Columns table now reorders rows
+  by dragging (`.table-row.drop-target`); both call the batch endpoint.
+- **New task defaults to Unassigned**; the modal only lists types with an
+  initial status and only that type's initial statuses (the open-before-load
+  race is also covered by a watcher).
+- **Card ordering**: `issues.position` is per status. Creation appends, a move
+  accepts a target `position`, both statuses are renumbered, and the repository
+  reads by position so the runner picks the top card first. The board persists
+  card drags and re-fetches the snapshot to re-sync every position.
+- **Inline editing**: the summary and the description are edited by clicking
+  the text (no separate "Edit" button); it has `role="button"` and
+  Enter/Space support.
+- **Assignee picker**: the duplicated avatar/name block plus the assignee
+  select became one avatar picker (`AssigneePicker.vue`) with a menu of agents
+  and Unassigned.
+- **Mentions**: typing `@` in a comment opens a suggestion menu of agents and
+  the current user (filtered as you type, arrow keys/Enter, Escape); the chosen
+  name is inserted at the caret and only one mention is allowed per comment.
+  The mention is textual for now (no notification pipeline).
+- **Workflow submenu order**: Issue types → Statuses → Transitions, the order
+  in which they must be configured.
 
 ### Next moves
 

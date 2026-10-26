@@ -132,6 +132,7 @@ final readonly class TenancyRouter
             $method === 'PATCH' && $this->isBoard($segments) => $this->boards->update($request, $this->workspaceId($segments), $this->boardId($segments)),
             $method === 'DELETE' && $this->isBoard($segments) => $this->boards->delete($request, $this->workspaceId($segments), $this->boardId($segments)),
             $method === 'GET' && $this->isBoardColumns($segments) => $this->columns->list($request, $this->workspaceId($segments), $this->boardId($segments)),
+            $method === 'POST' && $this->isBoardColumnsReorder($segments) => $this->columns->reorder($request, $this->workspaceId($segments), $this->boardId($segments)),
             $method === 'POST' && $this->isBoardColumns($segments) => $this->columns->create($request, $this->workspaceId($segments), $this->boardId($segments)),
             $method === 'GET' && $this->isColumn($segments) => $this->columns->show($request, $this->workspaceId($segments), $this->columnId($segments)),
             $method === 'PATCH' && $this->isColumn($segments) => $this->columns->update($request, $this->workspaceId($segments), $this->columnId($segments)),
@@ -338,6 +339,17 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'boards'
             && $segments[5] === 'columns';
+    }
+
+    /** @param list<string> $segments */
+    private function isBoardColumnsReorder(array $segments): bool
+    {
+        return count($segments) === 7
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'boards'
+            && $segments[5] === 'columns'
+            && $segments[6] === 'reorder';
     }
 
     /** @param list<string> $segments */

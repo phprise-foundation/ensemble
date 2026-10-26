@@ -8,6 +8,7 @@ use App\Application\Kanban\CreateColumn;
 use App\Application\Kanban\DeleteColumn;
 use App\Application\Kanban\ListColumns;
 use App\Application\Kanban\ReadColumn;
+use App\Application\Kanban\ReorderColumns;
 use App\Application\Kanban\UpdateColumn;
 use App\Application\Security\ReadCurrentUser;
 use App\Domain\Kanban\BoardColumnId;
@@ -31,6 +32,7 @@ final readonly class ColumnController
         private ReadColumn $readColumn,
         private UpdateColumn $updateColumn,
         private DeleteColumn $deleteColumn,
+        private ReorderColumns $reorderColumns,
         private ColumnPresenter $presenter,
         private JsonResponder $responder,
     ) {
@@ -60,7 +62,7 @@ final readonly class ColumnController
             $workspaceId,
             $boardId,
             JsonBody::string($body, 'name') ?? '',
-            new Position(JsonBody::integer($body, 'position') ?? 0),
+            JsonBody::integer($body, 'position') === null ? null : new Position(JsonBody::integer($body, 'position') ?? 0),
             JsonBody::integer($body, 'wip'),
             $this->statusIds($body),
         );
@@ -101,6 +103,25 @@ final readonly class ColumnController
                 array_key_exists('statusIds', $body),
                 $this->statusIds($body),
             )),
+        ]);
+    }
+
+    public function reorder(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        BoardId $boardId,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $columns = $this->reorderColumns->execute(
+            $user,
+            $workspaceId,
+            $boardId,
+            JsonBody::stringList($body, 'columnIds') ?? [],
+        );
+
+        return $this->responder->respond([
+            'columns' => $this->presenter->presentMany($columns),
         ]);
     }
 

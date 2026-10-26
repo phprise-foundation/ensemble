@@ -19,6 +19,7 @@ final class Issue
     private bool $blocked;
     private FieldValues $fieldValues;
     private StatusId $statusId;
+    private int $position;
     private ?WorkdirId $workdirId;
     private DateTimeImmutable $updatedAt;
     private DateTimeImmutable $enteredAt;
@@ -37,6 +38,7 @@ final class Issue
         private readonly ?DateTimeImmutable $createdAt = null,
         ?WorkdirId $workdirId = null,
         private readonly ?IssueKey $parentKey = null,
+        int $position = 0,
     ) {
         $this->summary = new StringObject($this->validSummary($summary));
         $this->description = new StringObject($this->validDescription($description));
@@ -46,6 +48,7 @@ final class Issue
         $this->blocked = false;
         $this->fieldValues = $fieldValues;
         $this->statusId = $statusId;
+        $this->position = $position;
         $this->workdirId = $workdirId;
         $this->updatedAt = $this->createdAt();
         $this->enteredAt = $this->createdAt();
@@ -74,6 +77,19 @@ final class Issue
     public function statusId(): StatusId
     {
         return $this->statusId;
+    }
+
+    public function position(): int
+    {
+        return $this->position;
+    }
+
+    public function reposition(int $position): void
+    {
+        if ($position < 0) {
+            throw new ValidationException('position', 'Position must not be negative.');
+        }
+        $this->position = $position;
     }
 
     public function workdirId(): ?WorkdirId

@@ -12,7 +12,12 @@ const schema = {
   singular: 'column',
   title: 'Columns',
   feature: null,
-  items: () => boardStore.state.columns.filter((column) => column.boardId === route.params.boardId),
+  items: () =>
+    boardStore.state.columns
+      .filter((column) => column.boardId === route.params.boardId)
+      .slice()
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+  reorder: (columnIds) => boardStore.reorderColumns(route.params.boardId, columnIds),
   inject: () => ({ boardId: route.params.boardId }),
   columns: [
     { key: 'name', label: 'Name' },
@@ -43,7 +48,9 @@ const schema = {
     name: '',
     wip: null,
     statusIds: [],
-    position: boardStore.state.columns.filter((column) => column.boardId === route.params.boardId).length,
+    position: boardStore.state.columns
+      .filter((column) => column.boardId === route.params.boardId)
+      .reduce((max, column) => Math.max(max, column.position ?? 0), -1) + 1,
   }),
 }
 </script>

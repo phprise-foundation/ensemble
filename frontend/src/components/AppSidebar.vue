@@ -256,9 +256,6 @@ function normalizeBoard(board) {
   if (!board.name) {
     throw new Error('Name is required')
   }
-  if (!board.name) {
-    throw new Error('Name is required')
-  }
   board.columns = (board.columns || []).map((column) => ({
     id: column.id || slugify(column.name),
     name: column.name,

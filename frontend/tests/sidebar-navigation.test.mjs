@@ -34,7 +34,7 @@ test('rail expoe as folhas de boards, workflows e teams', () => {
 
 test('cada workflow e team expoe suas tres paginas', () => {
   const navigation = sidebarNavigation(store, 'ws')
-  assert.deepEqual(navigation.workflows[0].leaves.map((leaf) => leaf.label), ['Statuses', 'Transitions', 'Issue types'])
+  assert.deepEqual(navigation.workflows[0].leaves.map((leaf) => leaf.label), ['Issue types', 'Statuses', 'Transitions'])
   assert.deepEqual(navigation.teams[0].leaves.map((leaf) => leaf.label), ['Agents', 'Roles', 'Profiles'])
 })
 
@@ -45,7 +45,7 @@ test('Sources nao entra no rail', () => {
 
 test('railTitle do workflow e unico e prefixado pelo nome', () => {
   const leaf = sidebarNavigation(store, 'ws').workflows[1].leaves[0]
-  assert.equal(leaf.railTitle, 'Flow B · Statuses')
+  assert.equal(leaf.railTitle, 'Flow B · Issue types')
 })
 
 test('link ativo considera o id do pai e destaca uma folha por vez', () => {

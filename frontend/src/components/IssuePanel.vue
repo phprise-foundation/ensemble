@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
 import Avatar from './Avatar.vue'
+import AssigneePicker from './AssigneePicker.vue'
 import FieldLimit from './FieldLimit.vue'
 import FieldValueInput from './FieldValueInput.vue'
 import IssueHistory from './IssueHistory.vue'
@@ -20,6 +21,11 @@ import {
 const issue = boardStore.selectedIssue
 const summaryInput = ref(null)
 const comment = ref('')
+const commentInput = ref(null)
+const mentionOpen = ref(false)
+const mentionSearch = ref('')
+const mentionIndex = ref(0)
+const mentionUsed = ref(false)
 const activeTab = ref('comments')
 const commentsTab = ref(null)
 const historyTab = ref(null)
@@ -75,6 +81,32 @@ const typeFields = computed(
 const fieldsDirty = computed(
   () => Boolean(issue.value) && JSON.stringify(fieldsDraft.value) !== JSON.stringify(issue.value.fields ?? {}),
 )
+const mentionCandidates = computed(() => {
+  const query = mentionSearch.value.toLowerCase()
+  const people = [
+    ...boardStore.state.agents.map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      image: agent.portrait ?? null,
+      color: agent.avatarColor,
+    })),
+    {
+      id: 'user',
+      name: session.displayName || session.login,
+      image: session.avatar || null,
+      color: session.avatarColor,
+    },
+  ]
+  const seen = new Set()
+  return people.filter((person) => {
+    const key = person.name.toLowerCase()
+    if (!person.name || seen.has(key) || !key.includes(query)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+})
 
 watch(
   () => issue.value?.id,
@@ -86,6 +118,9 @@ watch(
     descriptionError.value = ''
     fieldsDraft.value = JSON.parse(JSON.stringify(issue.value?.fields ?? {}))
     fieldsError.value = ''
+    mentionOpen.value = false
+    mentionUsed.value = false
+    mentionSearch.value = ''
   },
   { immediate: true },
 )
@@ -142,8 +177,62 @@ async function changeStatus(event) {
   await boardStore.moveIssue(issue.value.id, { columnId: boardStore.columnOf(statusId), statusId })
 }
 
-async function changeAssignee(event) {
-  await boardStore.updateIssue(issue.value.id, { assigneeId: event.target.value || null })
+async function changeAssignee(assigneeId) {
+  await boardStore.updateIssue(issue.value.id, { assigneeId: assigneeId || null })
+}
+
+function onCommentInput(event) {
+  const value = event.target.value
+  const caret = event.target.selectionStart ?? value.length
+  const before = value.slice(0, caret)
+  const match = before.match(/(?:^|\s)@([^\s@]*)$/)
+  if (!match || mentionUsed.value) {
+    mentionOpen.value = false
+    return
+  }
+  mentionSearch.value = match[1]
+  mentionIndex.value = 0
+  mentionOpen.value = true
+}
+
+function onCommentKeydown(event) {
+  if (!mentionOpen.value) {
+    return
+  }
+  if (event.key === 'Escape') {
+    mentionOpen.value = false
+    return
+  }
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    if (!mentionCandidates.value.length) {
+      return
+    }
+    event.preventDefault()
+    const offset = event.key === 'ArrowDown' ? 1 : -1
+    mentionIndex.value =
+      (mentionIndex.value + offset + mentionCandidates.value.length) % mentionCandidates.value.length
+    return
+  }
+  if (event.key === 'Enter' && mentionCandidates.value.length) {
+    event.preventDefault()
+    chooseMention(mentionCandidates.value[mentionIndex.value] ?? mentionCandidates.value[0])
+  }
+}
+
+function chooseMention(person) {
+  const input = commentInput.value
+  const caret = input?.selectionStart ?? comment.value.length
+  const before = comment.value.slice(0, caret).replace(/(?:^|\s)@[^\s@]*$/, (token) => {
+    const prefix = token.startsWith('@') ? '' : token.charAt(0)
+    return `${prefix}@${person.name} `
+  })
+  comment.value = before + comment.value.slice(caret)
+  mentionOpen.value = false
+  mentionUsed.value = true
+  nextTick(() => {
+    input?.focus()
+    input?.setSelectionRange(before.length, before.length)
+  })
 }
 
 function startSummaryEdit() {
@@ -219,6 +308,8 @@ async function submitComment() {
   }
   comment.value = ''
   commentError.value = ''
+  mentionOpen.value = false
+  mentionUsed.value = false
 }
 
 </script>
@@ -234,8 +325,16 @@ async function submitComment() {
     </header>
 
     <div class="panel-title-row" v-if="!editingSummary">
-      <h2 class="panel-title">{{ issue.summary }}</h2>
-      <button class="icon-btn" title="Edit summary" aria-label="Edit summary" @click="startSummaryEdit"><AppIcon name="edit" size="14" /></button>
+      <h2
+        class="panel-title editable"
+        role="button"
+        tabindex="0"
+        title="Click to edit"
+        aria-label="Edit summary"
+        @click="startSummaryEdit"
+        @keydown.enter.prevent="startSummaryEdit"
+        @keydown.space.prevent="startSummaryEdit"
+      >{{ issue.summary }}</h2>
     </div>
     <form v-else class="panel-summary-edit" @submit.prevent="saveSummary">
       <input
@@ -254,31 +353,18 @@ async function submitComment() {
     </form>
 
     <div class="panel-meta">
-      <Avatar
-        size="md"
-        :name="agent ? agent.name : '?'"
-        :image="agent?.portrait"
-        :color="agent?.avatarColor || 'var(--surface-3)'"
-        decorative
+      <AssigneePicker
+        :assignee="agent"
+        :agents="boardStore.state.agents"
+        @select="changeAssignee"
       />
-      <div>
-        <div class="panel-assignee">{{ agent ? agent.name : 'Unassigned' }}</div>
-        <div class="muted small">{{ role || 'No role' }}</div>
-      </div>
+      <span class="muted small">{{ role || 'No role' }}</span>
     </div>
 
     <label class="field">
       <span>Status</span>
       <select :value="issue.statusId" @change="changeStatus">
         <option v-for="option in targets" :key="option.id" :value="option.id">{{ option.name }}</option>
-      </select>
-    </label>
-
-    <label class="field">
-      <span>Assignee</span>
-      <select :value="issue.assigneeId || ''" @change="changeAssignee">
-        <option value="">Unassigned</option>
-        <option v-for="member in boardStore.state.agents" :key="member.id" :value="member.id">{{ member.name }}</option>
       </select>
     </label>
 
@@ -289,14 +375,6 @@ async function submitComment() {
     <section class="panel-section">
       <div class="section-heading">
         <h3>Description</h3>
-        <button
-          v-if="!editingDescription"
-          type="button"
-          class="link-button"
-          @click="startDescriptionEdit"
-        >
-          Edit
-        </button>
       </div>
 
       <template v-if="editingDescription">
@@ -320,7 +398,17 @@ async function submitComment() {
         </div>
       </template>
 
-      <p v-else class="body">{{ issue.description || 'No description' }}</p>
+      <p
+        v-else
+        class="body editable"
+        role="button"
+        tabindex="0"
+        title="Click to edit"
+        aria-label="Edit description"
+        @click="startDescriptionEdit"
+        @keydown.enter.prevent="startDescriptionEdit"
+        @keydown.space.prevent="startDescriptionEdit"
+      >{{ issue.description || 'No description' }}</p>
     </section>
 
     <section v-if="typeFields.length" class="panel-section panel-fields">
@@ -399,14 +487,45 @@ async function submitComment() {
             <p>{{ row.body }}</p>
           </div>
           <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
-          <textarea
-            v-model="comment"
-            rows="3"
-            placeholder="Write a comment..."
-            aria-label="Comment"
-            aria-describedby="issue-comment-limit"
-            :aria-invalid="commentOver || Boolean(commentError)"
-          ></textarea>
+          <div class="comment-editor">
+            <textarea
+              ref="commentInput"
+              v-model="comment"
+              rows="3"
+              placeholder="Write a comment... use @ to mention"
+              aria-label="Comment"
+              aria-describedby="issue-comment-limit"
+              :aria-invalid="commentOver || Boolean(commentError)"
+              @input="onCommentInput"
+              @keydown="onCommentKeydown"
+            ></textarea>
+            <ul
+              v-if="mentionOpen && mentionCandidates.length"
+              class="mention-menu"
+              role="listbox"
+              aria-label="Mention"
+            >
+              <li v-for="(person, index) in mentionCandidates" :key="person.id">
+                <button
+                  type="button"
+                  role="option"
+                  :aria-selected="index === mentionIndex"
+                  :class="{ active: index === mentionIndex }"
+                  @mousedown.prevent="chooseMention(person)"
+                >
+                  <Avatar
+                    size="sm"
+                    :name="person.name"
+                    :image="person.image"
+                    :color="person.color"
+                    decorative
+                  />
+                  <span>{{ person.name }}</span>
+                </button>
+              </li>
+            </ul>
+            <p v-if="mentionUsed" class="muted small">One mention per comment.</p>
+          </div>
           <FieldLimit
             id="issue-comment-limit"
             field="comment"

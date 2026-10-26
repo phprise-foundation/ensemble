@@ -35,8 +35,8 @@ describe('sidebarNavigation', () => {
     const navigation = sidebarNavigation(store, 'ws')
     expect(navigation.boards.map((entry) => entry.leaves.map((leaf) => leaf.title))).toEqual([['Kanban', 'Columns'], ['Board 2', 'Columns']])
     expect(navigation.workflows.map((entry) => entry.leaves.map((leaf) => leaf.label))).toEqual([
-      ['Statuses', 'Transitions', 'Issue types'],
-      ['Statuses', 'Transitions', 'Issue types'],
+      ['Issue types', 'Statuses', 'Transitions'],
+      ['Issue types', 'Statuses', 'Transitions'],
     ])
     expect(navigation.teams.map((entry) => entry.leaves.map((leaf) => leaf.label))).toEqual([
       ['Agents', 'Roles', 'Profiles'],
@@ -65,8 +65,8 @@ describe('railSections', () => {
     expect(sections.map((leaves) => leaves.map((leaf) => leaf.railTitle))).toEqual([
       ['Kanban', 'Kanban · Columns'],
       ['Board 2', 'Board 2 · Columns'],
-      ['Standard · Statuses', 'Standard · Transitions', 'Standard · Issue types'],
-      ['Flow B · Statuses', 'Flow B · Transitions', 'Flow B · Issue types'],
+      ['Standard · Issue types', 'Standard · Statuses', 'Standard · Transitions'],
+      ['Flow B · Issue types', 'Flow B · Statuses', 'Flow B · Transitions'],
       ['Default team · Agents', 'Default team · Roles', 'Default team · Profiles'],
       ['Design · Agents', 'Design · Roles', 'Design · Profiles'],
     ])
