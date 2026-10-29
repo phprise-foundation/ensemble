@@ -62,6 +62,51 @@ final class RunApiTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    public function testRequestsARunForTheAssignee(): void
+    {
+        $agent = $this->createAgent($this->createTeam('Runner'), ['name' => 'Kaio']);
+        $issue = $this->createIssue($agent['id']);
+
+        $requested = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        )), 201);
+        self::assertSame('claimed', $requested['run']['state']);
+        self::assertSame($agent['id'], $requested['run']['agentId']);
+        self::assertNull($requested['run']['prompt']);
+
+        $history = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        )));
+        self::assertCount(1, $history['runs']);
+
+        $again = $this->app->handle($this->app->request(
+            'POST',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        ));
+        self::assertSame(409, $again->getStatusCode());
+    }
+
+    public function testRejectsARunRequestWithoutAnAssignee(): void
+    {
+        $issue = $this->createIssue();
+        $response = $this->app->handle($this->app->request(
+            'POST',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame('assigneeId', $this->app->json($response, 422)['field']);
+    }
+
     public function testResolveRejectsBadStrategiesAndUnknownIssues(): void
     {
         $issue = $this->createIssue();
@@ -126,19 +171,55 @@ final class RunApiTest extends TestCase
         return $data['status']['id'];
     }
 
-    private function createIssue(): array
+    private function createIssue(?string $assigneeId = null): array
     {
+        $body = array_filter([
+            'issueTypeId' => $this->issueTypeId,
+            'summary' => 'Run me',
+            'description' => 'The agent should run me.',
+            'assigneeId' => $assigneeId,
+        ], static fn(mixed $value): bool => $value !== null);
+
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
             '/api/workspaces/' . $this->workspaceId . '/issues',
-            [
-                'issueTypeId' => $this->issueTypeId,
-                'summary' => 'Run me',
-                'description' => 'The agent should run me.',
-            ],
+            $body,
             $this->adminToken,
         )), 201);
 
         return $data['issue'];
+    }
+
+    private function createTeam(string $name): string
+    {
+        $data = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/teams',
+            ['name' => $name],
+            $this->adminToken,
+        )), 201);
+
+        return $data['team']['id'];
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     * @return array<string, mixed>
+     */
+    private function createAgent(string $teamId, array $fields): array
+    {
+        $data = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/teams/' . $teamId . '/agents',
+            $fields,
+            $this->adminToken,
+        )), 201);
+
+        return $data['agent'];
+    }
+
+    private function runsPath(string $key): string
+    {
+        return '/api/workspaces/' . $this->workspaceId . '/issues/' . $key . '/runs';
     }
 }

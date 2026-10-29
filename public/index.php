@@ -59,6 +59,7 @@ use App\Interface\Http\InfractionPresenter;
 use App\Interface\Http\ItemArrayPresenter;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\ResponseEmitter;
+use App\Infrastructure\Runner\HeartbeatFile;
 use App\Interface\Http\WorkflowController;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
@@ -72,7 +73,16 @@ $request = ServerRequest::fromGlobals();
 $path = $request->getUri()->getPath();
 
 if ($path === '/api/health') {
-    ResponseEmitter::emit($responder->respond(['ok' => true]));
+    $heartbeatPath = getenv('ENSEMBLE_RUNNER_HEARTBEAT');
+    $heartbeatPath = $heartbeatPath === false || $heartbeatPath === ''
+        ? __DIR__ . '/../var/runner-heartbeat'
+        : $heartbeatPath;
+    $staleAfter = getenv('RUNNER_STALE_AFTER_SECONDS');
+    $heartbeat = new HeartbeatFile(
+        $heartbeatPath,
+        $staleAfter === false || $staleAfter === '' ? 30 : (int) $staleAfter,
+    );
+    ResponseEmitter::emit($responder->respond(['ok' => true, 'runner' => $heartbeat->read()]));
 
     return;
 }

@@ -62,6 +62,25 @@ final readonly class DoctrineRunRepository implements RunRepository
     }
 
     #[Override]
+    public function requested(): array
+    {
+        /** @var list<RunRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('r')
+            ->from(RunRecord::class, 'r')
+            ->where('r.state = :state')
+            ->andWhere('r.prompt IS NULL')
+            ->andWhere('r.leaseExpiresAt IS NULL')
+            ->setParameter('state', 'claimed')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(fn(RunRecord $record): Run => $this->mapper->toDomain($record), $records);
+    }
+
+    #[Override]
     public function latestFor(AgentId $agentId, IssueId $issueId): ?Run
     {
         /** @var RunRecord|null $record */

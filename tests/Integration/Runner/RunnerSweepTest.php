@@ -347,6 +347,48 @@ final class RunnerSweepTest extends TestCase
         );
     }
 
+    public function testRequestedRunRetriesAfterAFailedRun(): void
+    {
+        $this->attachPending();
+        $failed = new Run(RunId::generate(), $this->workspaceId, $this->agent->id(), $this->issue->id());
+        $failed->start('old prompt', new DateTimeImmutable('-5 minutes'), 1800);
+        $failed->complete(Outcome::failed('boom'), new DateTimeImmutable('-4 minutes'));
+        $this->runs->add($failed);
+
+        $this->runs->add(new Run(
+            RunId::generate(),
+            $this->workspaceId,
+            $this->agent->id(),
+            $this->issue->id(),
+        ));
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(2, $runs);
+        self::assertSame('failed', $runs[0]->state()->value);
+        self::assertSame('succeeded', $runs[1]->state()->value);
+        self::assertCount(1, $this->executor->executions);
+    }
+
+    public function testRequestedRunSkipsWhenTheWorkdirIsScratch(): void
+    {
+        $this->runs->add(new Run(
+            RunId::generate(),
+            $this->workspaceId,
+            $this->agent->id(),
+            $this->issue->id(),
+        ));
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('skipped', $runs[0]->state()->value);
+        self::assertSame('the issue workdir is not bound yet (scratch)', $runs[0]->reason());
+        self::assertCount(0, $this->executor->executions);
+    }
+
     public function testFailsAtTheReclaimCeiling(): void
     {
         $run = new Run(
