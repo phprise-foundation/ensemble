@@ -74,6 +74,7 @@ use App\Application\Runner\PromptComposer;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\VarWorkdirPaths;
+use App\Application\Runner\RequestRun;
 use App\Application\Runner\ResolveProfile;
 use App\Application\Team\CreateAgent;
 use App\Application\Team\DeleteAgent;
@@ -447,6 +448,10 @@ final readonly class TenancyBootstrap
                     $guard,
                 ),
                 $workdirPresenter,
+                new RequestRun(
+                    new ReadIssue($issueRepository, $guard),
+                    $runs,
+                ),
             ),
             new SnapshotController(
                 $currentUser,

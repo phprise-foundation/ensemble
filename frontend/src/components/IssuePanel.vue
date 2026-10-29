@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { boardStore } from '../store/board.js'
 import AppIcon from './AppIcon.vue'
 import Avatar from './Avatar.vue'
@@ -92,6 +92,31 @@ const runs = computed(() =>
 const repositoryDraft = ref('')
 const attaching = ref(false)
 const resolving = ref('')
+const requesting = ref(false)
+let runPoll = null
+
+watch(
+  () => (issue.value?.runs ?? []).some((run) => run.state === 'claimed' || run.state === 'running'),
+  (active) => {
+    if (runPoll) {
+      clearInterval(runPoll)
+      runPoll = null
+    }
+    if (active) {
+      runPoll = setInterval(() => {
+        void refreshRuns().catch(() => {})
+      }, 5000)
+    }
+  },
+  { immediate: true },
+)
+
+onUnmounted(() => {
+  if (runPoll) {
+    clearInterval(runPoll)
+    runPoll = null
+  }
+})
 const mentionCandidates = computed(() => {
   const query = mentionSearch.value.toLowerCase()
   const people = [
@@ -175,7 +200,25 @@ async function resolveWorkdir(strategy) {
 }
 
 async function refreshRuns() {
-  await boardStore.refreshIssue(issue.value.id)
+  if (issue.value) {
+    await boardStore.refreshIssue(issue.value.id)
+  }
+}
+
+async function requestRun() {
+  if (!issue.value?.assigneeId) {
+    toast.error('Assign an agent before running this issue.')
+    return
+  }
+  requesting.value = true
+  try {
+    await boardStore.requestRun(issue.value.id)
+    toast.success('Run requested.')
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not request a run.')
+  } finally {
+    requesting.value = false
+  }
 }
 
 async function saveFields() {
@@ -525,15 +568,34 @@ async function submitComment() {
     <section class="panel-section panel-runs">
       <div class="section-heading">
         <h3>Runs</h3>
-        <button type="button" class="link-button" @click="refreshRuns">Refresh</button>
+        <div class="section-actions-inline">
+          <button
+            type="button"
+            class="button ghost"
+            :disabled="!issue.assigneeId || requesting"
+            @click="requestRun"
+          >
+            Run now
+          </button>
+          <button type="button" class="link-button" @click="refreshRuns">Refresh</button>
+        </div>
       </div>
-      <p v-if="!runs.length" class="muted small">No runs yet.</p>
+      <p v-if="!issue.assigneeId" class="muted small">Assign an agent to run this issue.</p>
+      <p v-else-if="!runs.length" class="muted small">No runs yet.</p>
       <ol v-else class="run-list">
         <li v-for="run in runs" :key="run.id" class="run-entry" :data-run-state="run.state">
           <div class="run-head">
             <span class="run-state" :class="'run-' + run.state">{{ run.state }}</span>
             <span class="muted small">{{ agentName(run.agentId) }}</span>
             <span class="spacer"></span>
+            <button
+              v-if="run.state === 'failed'"
+              type="button"
+              class="link-button"
+              @click="requestRun"
+            >
+              Retry
+            </button>
             <time class="muted small" :datetime="run.createdAt">
               {{ formatRunTime(run.finishedAt || run.startedAt || run.createdAt) }}
             </time>

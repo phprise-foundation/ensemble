@@ -18,6 +18,9 @@ interface RunRepository
     /** The run that currently holds the issue, or null when free to work. */
     public function activeForIssue(IssueId $issueId): ?Run;
 
+    /** @return list<Run> Claimed runs created by an explicit request (no lease), oldest first. */
+    public function requested(): array;
+
     /** The most recent run of this agent on this issue, or null. */
     public function latestFor(AgentId $agentId, IssueId $issueId): ?Run;
 

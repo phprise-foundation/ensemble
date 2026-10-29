@@ -148,6 +148,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isIssueRuns($segments) => $this->runHistory->request($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isIssueRuns($segments) => $this->runHistory->list($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isTeams($segments) => $this->teams->create($request, $this->workspaceId($segments)),

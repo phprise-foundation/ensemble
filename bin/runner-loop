@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Long-running runner. Keep exactly one process per workspace database: the
+# sweep is not a distributed lock until the trigger queue lands (RFC-0002).
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+if [ -f .env ]; then
+  set -a
+  . .env
+  set +a
+fi
+
+if ! command -v opencode >/dev/null 2>&1; then
+  echo "opencode is not on PATH; install it and authenticate before running agents" >&2
+  exit 1
+fi
+
+export XDEBUG_MODE=off
+export DATABASE_URL="${DATABASE_URL:-pgsql://phprise:phprise@127.0.0.1:5432/phprise}"
+export ENSEMBLE_WORKDIR_ROOT="${ENSEMBLE_WORKDIR_ROOT:-var/workdirs}"
+
+HEARTBEAT="${ENSEMBLE_RUNNER_HEARTBEAT:-var/runner-heartbeat}"
+POLL="${RUNNER_POLL_SECONDS:-10}"
+mkdir -p "$(dirname "$HEARTBEAT")"
+
+beat() {
+  date +%s >"$HEARTBEAT"
+}
+
+if [ "${1:-}" = "--once" ]; then
+  beat
+  php bin/runner
+  beat
+  exit 0
+fi
+
+heartbeat_pid=""
+cleanup() {
+  if [ -n "$heartbeat_pid" ]; then
+    kill "$heartbeat_pid" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT INT TERM
+
+(
+  while true; do
+    beat
+    sleep "$POLL"
+  done
+) &
+heartbeat_pid=$!
+
+while true; do
+  if ! php bin/runner >/dev/null; then
+    echo "runner sweep failed at $(date -Iseconds)" >&2
+  fi
+  sleep "$POLL"
+done

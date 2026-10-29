@@ -54,6 +54,7 @@ final readonly class ExecuteSweep
     {
         $now = new DateTimeImmutable();
         $this->reclaimExpired($now);
+        $this->runRequested($now);
 
         foreach ($this->workspaces->all() as $workspace) {
             foreach ($this->agents->forWorkspace($workspace->id()) as $agent) {
@@ -64,6 +65,46 @@ final readonly class ExecuteSweep
 
             $this->advanceWaitingParents($workspace->id());
         }
+    }
+
+    private function runRequested(DateTimeImmutable $now): void
+    {
+        foreach ($this->runs->requested() as $run) {
+            $this->executeRequested($run, $now);
+        }
+    }
+
+    private function executeRequested(Run $run, DateTimeImmutable $now): void
+    {
+        $agent = $this->agents->find($run->workspaceId(), $run->agentId());
+        $issue = $this->issues->findById($run->workspaceId(), $run->issueId());
+        if ($agent === null || $issue === null || ! $agent->active()) {
+            $this->finishRequested($run, 'the requested run is no longer available', $now);
+
+            return;
+        }
+
+        $workdir = $this->workdirFor($issue);
+        if ($workdir === null) {
+            $this->finishRequested($run, 'the issue has no workdir', $now);
+
+            return;
+        }
+
+        $reason = $this->prepare($workdir);
+        if ($reason !== null) {
+            $this->finishRequested($run, $reason, $now);
+
+            return;
+        }
+
+        $this->executeRun($run->workspaceId(), $agent, $issue, $now, $run);
+    }
+
+    private function finishRequested(Run $run, string $reason, DateTimeImmutable $now): void
+    {
+        $run->skip($reason, $now);
+        $this->runs->update($run);
     }
 
     /** The subtasks-done trigger: parents outside agent statuses move when their latest child activity allows. */
@@ -210,14 +251,23 @@ final readonly class ExecuteSweep
             : $this->workdirs->find($issue->workspaceId(), $issue->workdirId());
     }
 
-    private function executeRun(WorkspaceId $workspaceId, Agent $agent, Issue $issue, DateTimeImmutable $now): void
-    {
+    private function executeRun(
+        WorkspaceId $workspaceId,
+        Agent $agent,
+        Issue $issue,
+        DateTimeImmutable $now,
+        ?Run $requested = null,
+    ): void {
         $workdir = $this->workdirFor($issue) ?? throw new RuntimeException('The bound workdir vanished.');
-        $run = new Run(RunId::generate(), $workspaceId, $agent->id(), $issue->id());
+        $run = $requested ?? new Run(RunId::generate(), $workspaceId, $agent->id(), $issue->id());
         $workdirPath = $this->paths->ensure($workspaceId, $workdir->id());
         $prompt = $this->prompts->compose($workspaceId, $agent, $issue);
         $run->start($prompt, $now, self::LEASE_SECONDS);
-        $this->runs->add($run);
+        if ($requested === null) {
+            $this->runs->add($run);
+        } else {
+            $this->runs->update($run);
+        }
 
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt);
         if ($outcome->ok) {
