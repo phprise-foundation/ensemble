@@ -29,6 +29,7 @@ const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
 const statuses = computed(() => boardStore.boardStatuses.value)
 const issueTypes = computed(() => boardStore.boardIssueTypes.value)
+const repositories = computed(() => boardStore.state.sources)
 const selectableTypes = computed(() =>
   issueTypes.value.filter((type) =>
     statuses.value.some((status) => status.issueTypeId === type.id && status.type === 'initial'),
@@ -63,6 +64,7 @@ async function openCreate() {
     typeId: selectableTypes.value[0]?.id ?? null,
     statusId: '',
     assigneeId: null,
+    repositoryId: '',
     fields: {},
   }
   error.value = ''
@@ -151,6 +153,7 @@ async function save() {
       summary: draft.value.summary,
       description: draft.value.description,
       ...(draft.value.assigneeId ? { assigneeId: draft.value.assigneeId } : {}),
+      ...(draft.value.repositoryId ? { repositoryId: draft.value.repositoryId } : {}),
       ...(typeFields.value.length ? { fields: draft.value.fields } : {}),
     })
   } catch (failure) {
@@ -378,6 +381,18 @@ async function drop(columnId, beforeId) {
               <option v-for="agent in boardStore.state.agents" :key="agent.id" :value="agent.id">{{ agent.name }}</option>
             </select>
           </label>
+          <label class="field" for="create-repository">
+            <span>Repository (optional)</span>
+            <select id="create-repository" v-model="draft.repositoryId">
+              <option value="">No repository (scratch)</option>
+              <option v-for="repository in repositories" :key="repository.id" :value="repository.id">
+                {{ repository.name }}
+              </option>
+            </select>
+          </label>
+          <p v-if="!draft.repositoryId" class="muted small">
+            Tasks without a repository run in a scratch workdir and are not executed by agents.
+          </p>
           <p v-if="error" id="create-form-error" class="error" role="alert">{{ error }}</p>
         </div>
         <footer class="modal-footer">

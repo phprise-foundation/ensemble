@@ -81,6 +81,17 @@ const typeFields = computed(
 const fieldsDirty = computed(
   () => Boolean(issue.value) && JSON.stringify(fieldsDraft.value) !== JSON.stringify(issue.value.fields ?? {}),
 )
+const repositories = computed(() => boardStore.state.sources ?? [])
+const repository = computed(
+  () => repositories.value.find((candidate) => candidate.id === issue.value?.repositoryId) ?? null,
+)
+const workdirState = computed(() => issue.value?.workdirState ?? null)
+const runs = computed(() =>
+  (issue.value?.runs ?? []).slice().sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)),
+)
+const repositoryDraft = ref('')
+const attaching = ref(false)
+const resolving = ref('')
 const mentionCandidates = computed(() => {
   const query = mentionSearch.value.toLowerCase()
   const people = [
@@ -121,11 +132,51 @@ watch(
     mentionOpen.value = false
     mentionUsed.value = false
     mentionSearch.value = ''
+    repositoryDraft.value = ''
+    resolving.value = ''
   },
   { immediate: true },
 )
 watch(descriptionDraft, () => { descriptionError.value = '' })
 watch(comment, () => { commentError.value = '' })
+
+function agentName(id) {
+  return boardStore.agent(id)?.name ?? id
+}
+
+function formatRunTime(value) {
+  return value ? new Date(value).toLocaleString() : '—'
+}
+
+async function attachRepository() {
+  if (!repositoryDraft.value) return
+  attaching.value = true
+  try {
+    await boardStore.attachRepository(issue.value.id, repositoryDraft.value)
+    toast.success('Repository attached.')
+    repositoryDraft.value = ''
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not attach the repository.')
+  } finally {
+    attaching.value = false
+  }
+}
+
+async function resolveWorkdir(strategy) {
+  resolving.value = strategy
+  try {
+    await boardStore.resolveWorkdir(issue.value.id, strategy)
+    toast.success('Workdir resolved.')
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not resolve the workdir.')
+  } finally {
+    resolving.value = ''
+  }
+}
+
+async function refreshRuns() {
+  await boardStore.refreshIssue(issue.value.id)
+}
 
 async function saveFields() {
   if (!fieldsDirty.value || fieldsSaving.value) return
@@ -368,6 +419,48 @@ async function submitComment() {
       </select>
     </label>
 
+    <section class="panel-section panel-repository">
+      <div class="section-heading"><h3>Repository</h3></div>
+      <template v-if="issue.repositoryId">
+        <p class="body">{{ repository?.name ?? issue.repositoryId }}</p>
+        <p class="muted small">Workdir: {{ workdirState }}</p>
+      </template>
+      <template v-else>
+        <p class="muted small">
+          Scratch workdir: agents do not execute this issue until a repository is attached.
+        </p>
+        <template v-if="repositories.length">
+          <label class="field">
+            <span>Attach repository</span>
+            <select v-model="repositoryDraft">
+              <option value="">Choose a repository</option>
+              <option v-for="candidate in repositories" :key="candidate.id" :value="candidate.id">
+                {{ candidate.name }}
+              </option>
+            </select>
+          </label>
+          <button class="button" :disabled="!repositoryDraft || attaching" @click="attachRepository">
+            Attach
+          </button>
+        </template>
+        <p v-else class="muted small">Register a repository in Sources first.</p>
+      </template>
+      <div v-if="workdirState === 'conflict'" class="conflict-box">
+        <p class="error small">The workdir is in conflict. Choose how to resolve it:</p>
+        <div class="conflict-actions">
+          <button class="button" :disabled="Boolean(resolving)" @click="resolveWorkdir('remote_wins')">
+            Remote wins
+          </button>
+          <button class="button" :disabled="Boolean(resolving)" @click="resolveWorkdir('local_wins')">
+            Local wins
+          </button>
+          <button class="button" :disabled="Boolean(resolving)" @click="resolveWorkdir('merge')">
+            Merge
+          </button>
+        </div>
+      </div>
+    </section>
+
     <div v-if="overdue" class="panel-flag">
       <AppIcon name="warning" size="16" /> More than 24h without activity
     </div>
@@ -427,6 +520,31 @@ async function submitComment() {
           Save fields
         </button>
       </div>
+    </section>
+
+    <section class="panel-section panel-runs">
+      <div class="section-heading">
+        <h3>Runs</h3>
+        <button type="button" class="link-button" @click="refreshRuns">Refresh</button>
+      </div>
+      <p v-if="!runs.length" class="muted small">No runs yet.</p>
+      <ol v-else class="run-list">
+        <li v-for="run in runs" :key="run.id" class="run-entry" :data-run-state="run.state">
+          <div class="run-head">
+            <span class="run-state" :class="'run-' + run.state">{{ run.state }}</span>
+            <span class="muted small">{{ agentName(run.agentId) }}</span>
+            <span class="spacer"></span>
+            <time class="muted small" :datetime="run.createdAt">
+              {{ formatRunTime(run.finishedAt || run.startedAt || run.createdAt) }}
+            </time>
+          </div>
+          <p v-if="run.reason" class="small">{{ run.reason }}</p>
+          <details v-if="run.message" class="run-output">
+            <summary>Output</summary>
+            <pre>{{ run.message }}</pre>
+          </details>
+        </li>
+      </ol>
     </section>
 
     <section class="panel-section panel-tabs">

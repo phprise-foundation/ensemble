@@ -52,6 +52,9 @@ function normalizeEntity(collection, entity) {
       id: entity.key ?? entity.id,
       comments: entity.comments ?? [],
       history: entity.history ?? [],
+      runs: entity.runs ?? [],
+      repositoryId: entity.repositoryId ?? null,
+      workdirState: entity.workdirState ?? null,
     }
   }
   const map = LEGACY_TO_REAL_KEYS[collection]
@@ -141,9 +144,10 @@ async function hydrateIssue(issue) {
   if (!issue?.key) {
     return
   }
-  const [comments, events] = await Promise.all([
+  const [comments, events, runs] = await Promise.all([
     request('GET', scoped(`/issues/${issue.key}/comments`)).catch(() => ({ comments: [] })),
     request('GET', scoped(`/issues/${issue.key}/events`)).catch(() => ({ events: [] })),
+    request('GET', scoped(`/issues/${issue.key}/runs`)).catch(() => ({ runs: [] })),
   ])
   const target = issueOf(issue.id)
   if (!target) {
@@ -158,6 +162,7 @@ async function hydrateIssue(issue) {
     to: event.toStatusId,
     summary: event.summary ?? null,
   }))
+  target.runs = runs?.runs ?? []
 }
 
 async function updateReal(issueId, patch) {
@@ -375,6 +380,37 @@ export const boardStore = {
 
   async probeRepository({ provider, url, secretId }) {
     return request('POST', scoped('/repositories/test'), { provider, url, secretId })
+  },
+
+  async refreshIssue(issueId) {
+    const issue = issueOf(issueId)
+    if (issue) {
+      await hydrateIssue(issue)
+    }
+  },
+
+  async attachRepository(issueId, repositoryId) {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const payload = await request('POST', scoped(`/issues/${issue.key}/repository`), { repositoryId })
+    issue.repositoryId = payload?.binding?.repositoryId ?? repositoryId
+    issue.workdirState = payload?.binding?.state ?? issue.workdirState
+    await hydrateIssue(issue)
+    return payload
+  },
+
+  async resolveWorkdir(issueId, strategy) {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const payload = await request('POST', scoped(`/issues/${issue.key}/workdir/resolve`), { strategy })
+    issue.repositoryId = payload?.binding?.repositoryId ?? issue.repositoryId
+    issue.workdirState = payload?.binding?.state ?? issue.workdirState
+    await hydrateIssue(issue)
+    return payload
   },
 
   async reorderColumns(boardId, columnIds) {

@@ -34,6 +34,7 @@ final class IssueWorkdirApiTest extends TestCase
         $issue = $this->createIssue();
 
         self::assertNull($issue['repositoryId']);
+        self::assertSame('scratch', $issue['workdirState']);
         self::assertNull($issue['parentKey']);
     }
 
@@ -43,6 +44,7 @@ final class IssueWorkdirApiTest extends TestCase
         $issue = $this->createIssue(repositoryId: $repository);
 
         self::assertSame($repository, $issue['repositoryId']);
+        self::assertSame('pending', $issue['workdirState']);
     }
 
     public function testChildInheritsTheParentWorkdir(): void
