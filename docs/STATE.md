@@ -155,16 +155,48 @@ Round of UX and behaviour fixes from the product owner's manual pass:
 - **Workflow submenu order**: Issue types → Statuses → Transitions, the order
   in which they must be configured.
 
+### Autonomy plan and RFCs (2026-10-29)
+
+The target is no longer "agent that codes": it is an agent that **delivers,
+reviews, merges and deploys** like a team member. The design is now RFC-driven:
+
+- **[RFC-2026-0001](RFC-2026-0001-communication.md) (accepted)** — channels,
+  messages, replies, mentions and notifications. Issue channels are automatic;
+  messages are INFO/ASK/INSTRUCT; users get ASK by mentioning and INFO without
+  a mention and can never create INSTRUCT; agents choose the type via CLI. One
+  structured mention per message; replies never mention or trigger and are
+  capped at 5. The ASK author is notified of every reply (user: unread
+  notification; agent: REPLY trigger) and closes the message.
+- **[RFC-2026-0002](RFC-2026-0002-orchestration.md) (accepted)** — event-driven
+  orchestration: a central durable trigger/run queue with a scheduler,
+  single-flight per agent and global concurrency, immediate wake via
+  `LISTEN/NOTIFY` plus a safety poll. Triggers: status entry, ASK/INSTRUCT
+  message, reply to an agent-authored ASK, manual and (future) ceremony. Agents
+  act only through the scoped `ens` CLI; provider tokens never reach the agent.
+  Status runs only advance through an explicit transition; message/reply runs
+  never do.
+- **[RFC-2026-0003](RFC-2026-0003-delivery.md) (draft)** — delivery capabilities:
+  PR open/review/merge and deploy (staging/production) under role flags and
+  repository/environment policy, with a board↔PR mirror of the same Markdown,
+  GitHub first (PAT now, GitHub App before production).
+
+Foundation still required before the autonomy gates: secrets/repositories UI
+with a connection test, issue↔repository binding and runs/conflict panels, a
+runner loop with a real model and retry, and automatic PR creation.
+
+Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
+RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +
+deploys) → P5 → P6. Console, copilot, design polish, i18n and metrics are out of
+the critical path.
+
 ### Next moves
 
-1. The product owner continues the browser pass on the merged fix and reports
-   anything else before release.
-2. Then **P5 — Cloudflare single image**: image roles (`web`/`runner`/`all`),
-   external PostgreSQL, R2 artifacts, cron/queue-triggered runner, secrets,
-   health, no compose in production.
-3. Deferred from P3 and still open: the configurable transition triggers
-   (`spawn`, `voting`, `subtasks-done`) and the open-warden execution path;
-   P6 imports the 161 local issues and dogfoods the product.
+1. Continue the browser pass on the merged fixes and report anything else.
+2. Implement the autonomy foundation and RFC-2026-0001 → 0002 → 0003, with the
+   use gate at the end.
+3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
+   PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
+   161 local issues and dogfood).
 
 ### How to run locally (dev)
 

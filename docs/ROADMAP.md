@@ -84,7 +84,8 @@ Order and exit criteria:
      secrets decrypt to the `Authorization: Basic x-access-token` git header).
      `GitClient` is tested against a real local git binary. Remaining: open-warden
      execution binary, issue status moves and the triggers (spawn, voting,
-     `subtasks-done`) — P3c.
+     `subtasks-done`) — P3c. The remaining runtime work is re-scoped by the
+     autonomy plan below (RFC-2026-0001..0003).
 5. **P4 — frontend cutover** — login/token, workspace switcher, snapshot +
    resource writes, feature flags flipped in dependency order, fake backend out
    of production, Vite build served by PHP, real-backend E2E; console and
@@ -96,6 +97,36 @@ Order and exit criteria:
 7. **P6 — migration and dogfooding** — import the 161 local issues and agent
    configuration, run the project on the real board, archive `kanban.local`,
    clean historical `phrise` references.
+
+## Active plan — agent autonomy (RFC-driven)
+
+Goal: agents work as a real team member — deliver code, review, merge and
+deploy — with a communication fabric, explicit permissions and guardrails.
+This plan orders the remaining runtime and productization work before P5.
+
+Gates:
+
+1. **Foundation** — secrets/repositories UI with a connection test, issue↔
+   repository binding, runs/conflict panels, a runner loop with a real model and
+   retry, automatic PR creation (GitHub).
+2. **Communication — [RFC-2026-0001](RFC-2026-0001-communication.md)** (accepted):
+   channels, messages (INFO/ASK/INSTRUCT), replies (max 5, no mention), one
+   structured mention per message, notifications to the ASK author. Users get
+   ASK by mentioning and INFO without it and never create INSTRUCT; agents
+   choose the type via CLI.
+3. **Orchestration — [RFC-2026-0002](RFC-2026-0002-orchestration.md)** (accepted):
+   triggers (status entry, ASK/INSTRUCT, reply to an agent-authored ASK, manual,
+   ceremony), a durable queue with a central scheduler, single-flight per agent,
+   immediate wake via LISTEN/NOTIFY, scoped `ens` CLI, per-run permissions.
+4. **Delivery — [RFC-2026-0003](RFC-2026-0003-delivery.md)** (draft): PR open/
+   review/merge and deploy (staging/production) under role flags and repository/
+   environment policy; board↔PR mirror with the same Markdown; GitHub first.
+5. **Use gate** — on a private GitHub repository, a configured agent delivers,
+   reviews, merges and deploys with no manual API/terminal step; failures are
+   visible and retryable.
+
+Out of the critical path: console, copilot/chat, design polish, i18n, metrics,
+GitLab/Bitbucket, OAuth/GitHub App before production, issue sync/webhooks.
 
 Superseded/absorbed: the old board-driven agent-watcher plan is historical;
 the open-warden runner replaces it. UX items 7–9 are folded into P4/later; the
