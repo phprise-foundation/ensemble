@@ -235,9 +235,9 @@ describe('browser review: editors, columns and history', () => {
       ).to.deep.eq([initialColumnIds[1], initialColumnIds[2], initialColumnIds[0]])
     })
     cy.wait('@snapshot')
-    cy.get('.table-row[draggable="true"]').then(($rows) => {
-      const after = [...$rows].map((row) => row.textContent.trim())
-      cy.get('@rowsBefore').then((before) => {
+    cy.get('@rowsBefore').then((before) => {
+      cy.get('.table-row[draggable="true"]').should(($rows) => {
+        const after = [...$rows].map((row) => row.textContent.trim())
         expect(after, `rows ${JSON.stringify(before)} -> ${JSON.stringify(after)}`).to.not.deep.equal(before)
       })
     })
