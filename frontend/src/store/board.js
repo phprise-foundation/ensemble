@@ -389,6 +389,17 @@ export const boardStore = {
     }
   },
 
+  async requestRun(issueId) {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const payload = await request('POST', scoped(`/issues/${issue.key}/runs`))
+    issue.runs = [...(issue.runs ?? []), payload.run]
+    await hydrateIssue(issue)
+    return payload.run
+  },
+
   async attachRepository(issueId, repositoryId) {
     const issue = issueOf(issueId)
     if (!issue) {

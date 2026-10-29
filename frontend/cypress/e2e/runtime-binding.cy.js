@@ -66,6 +66,21 @@ describe('issue workdir binding, runs and conflicts', () => {
     cy.contains('.panel-repository', 'Workdir: pending').should('exist')
   })
 
+  it('requests a run for the current assignee', () => {
+    cy.intercept('POST', '**/issues/KANB-4/runs').as('requestRun')
+
+    cy.visitApp('/')
+    cy.contains('.card', 'Card shows aging flag').click()
+    cy.contains('.panel-runs button', 'Run now').click()
+    cy.wait('@requestRun').then((call) => {
+      expect(call.response.statusCode, JSON.stringify(call.response.body)).to.eq(201)
+      expect(call.response.body.run.state).to.eq('claimed')
+    })
+    cy.get('.toast').should('contain', 'Run requested.')
+    cy.get('.run-entry[data-run-state="claimed"]').should('exist')
+    cy.contains('.panel-runs', 'Run now').should('exist')
+  })
+
   it('lists runs and resolves a workdir conflict', () => {
     createRepository('Conflict repository').then((repositoryId) => {
       cy.wsSnapshot().then((snapshot) => {
