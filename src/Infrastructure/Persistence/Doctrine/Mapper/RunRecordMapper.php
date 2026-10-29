@@ -30,6 +30,7 @@ final class RunRecordMapper
             $record->createdAt(),
             $record->message(),
             $record->finishedAt(),
+            $record->pullRequestUrl(),
         );
     }
 
@@ -49,6 +50,7 @@ final class RunRecordMapper
             $run->startedAt(),
             $run->finishedAt(),
             $run->createdAt(),
+            $run->pullRequestUrl(),
         );
     }
 
@@ -63,6 +65,7 @@ final class RunRecordMapper
             $run->leaseExpiresAt(),
             $run->startedAt(),
             $run->finishedAt(),
+            $run->pullRequestUrl(),
         );
     }
 }

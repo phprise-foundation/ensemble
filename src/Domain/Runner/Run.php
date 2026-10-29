@@ -32,6 +32,7 @@ final class Run
         private readonly ?DateTimeImmutable $createdAt = null,
         private ?string $message = null,
         private ?DateTimeImmutable $finishedAt = null,
+        private ?string $pullRequestUrl = null,
     ) {
         if ($state === RunState::Running && ($startedAt === null || $leaseExpiresAt === null)) {
             throw new RuntimeException('A running run requires its start time and lease.');
@@ -106,6 +107,16 @@ final class Run
     public function finishedAt(): ?DateTimeImmutable
     {
         return $this->finishedAt;
+    }
+
+    public function pullRequestUrl(): ?string
+    {
+        return $this->pullRequestUrl;
+    }
+
+    public function attachPullRequest(string $url): void
+    {
+        $this->pullRequestUrl = $url;
     }
 
     public function lease(DateTimeImmutable $now, int $seconds): void

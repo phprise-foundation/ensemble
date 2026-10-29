@@ -51,6 +51,9 @@ final class RunRecord
     #[ORM\Column(name: 'finished_at', type: 'datetime_immutable', nullable: true)]
     private ?DateTimeImmutable $finishedAt;
 
+    #[ORM\Column(name: 'pull_request_url', type: 'string', length: 255, nullable: true)]
+    private ?string $pullRequestUrl;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -68,6 +71,7 @@ final class RunRecord
         ?DateTimeImmutable $startedAt,
         ?DateTimeImmutable $finishedAt,
         DateTimeImmutable $createdAt,
+        ?string $pullRequestUrl = null,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -82,6 +86,7 @@ final class RunRecord
         $this->startedAt = $startedAt;
         $this->finishedAt = $finishedAt;
         $this->createdAt = $createdAt;
+        $this->pullRequestUrl = $pullRequestUrl;
     }
 
     public function id(): string
@@ -158,6 +163,7 @@ final class RunRecord
         ?DateTimeImmutable $leaseExpiresAt,
         ?DateTimeImmutable $startedAt,
         ?DateTimeImmutable $finishedAt,
+        ?string $pullRequestUrl,
     ): void {
         $this->state = $state;
         $this->reason = $reason;
@@ -167,5 +173,11 @@ final class RunRecord
         $this->leaseExpiresAt = $leaseExpiresAt;
         $this->startedAt = $startedAt;
         $this->finishedAt = $finishedAt;
+        $this->pullRequestUrl = $pullRequestUrl;
+    }
+
+    public function pullRequestUrl(): ?string
+    {
+        return $this->pullRequestUrl;
     }
 }

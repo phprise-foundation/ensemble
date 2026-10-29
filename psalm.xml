@@ -27,6 +27,8 @@
                 <file name="src/Infrastructure/Runner/OpenCodeExecutor.php" />
                 <file name="src/Infrastructure/Runner/GitWorkdirVcs.php" />
                 <file name="src/Infrastructure/Runner/VarWorkdirPaths.php" />
+                <file name="src/Infrastructure/Vcs/GitHubPullRequests.php" />
+                <file name="src/Infrastructure/Vcs/StreamGitHubHttp.php" />
             </errorLevel>
         </UnusedClass>
     </issueHandlers>

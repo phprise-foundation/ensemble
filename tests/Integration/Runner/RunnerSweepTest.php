@@ -57,6 +57,8 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Domain\Vcs\GitRepositoryId;
+use App\Domain\Vcs\PullRequestResult;
+use App\Domain\Vcs\PullRequests;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
@@ -101,6 +103,7 @@ final class RunnerSweepTest extends TestCase
     private DoctrineEntityManagerFactory $factory;
     private RecordedExecutor $executor;
     private RecordedVcs $vcs;
+    private RecordedPullRequests $pullRequests;
     private WorkdirPathsForTest $paths;
     private WorkspaceId $workspaceId;
     private WorkdirId $workdirId;
@@ -125,6 +128,7 @@ final class RunnerSweepTest extends TestCase
         $this->factory = DoctrineEntityManagerFactory::fromEnvironment(true);
         $this->paths = new WorkdirPathsForTest();
         $this->vcs = new RecordedVcs();
+        $this->pullRequests = new RecordedPullRequests();
         $this->executor = new RecordedExecutor();
         $this->workspaceId = new WorkspaceId(bin2hex(random_bytes(16)));
 
@@ -430,6 +434,7 @@ final class RunnerSweepTest extends TestCase
                 new DoctrineTransitionRepository($this->entityManager, new TransitionRecordMapper()),
                 new DoctrineIssueEventRepository($this->entityManager, new IssueEventRecordMapper()),
             ),
+            $this->pullRequests,
         ))->execute();
     }
 
@@ -544,6 +549,21 @@ final class RunnerSweepTest extends TestCase
         self::assertSame('bound', $this->workdirs->find($this->workspaceId, $this->workdirId)->state()->value);
         self::assertSame([$this->paths->path($this->workspaceId, $this->workdirId)], $this->vcs->prepared);
         self::assertSame([$this->paths->path($this->workspaceId, $this->workdirId)], $this->executor->executions);
+        self::assertSame('https://github.com/acme/app/pull/1', $runs[0]->pullRequestUrl());
+        self::assertSame(['KAN-1'], $this->pullRequests->opened);
+    }
+
+    public function testPullRequestFailureFailsTheRun(): void
+    {
+        $this->attachPending();
+        $this->pullRequests->failure = 'GitHub rejected the pull request (422): No commits between main and agent/KAN-1';
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('failed', $runs[0]->state()->value);
+        self::assertStringContainsString('GitHub rejected the pull request', (string) $runs[0]->reason());
+        self::assertNull($runs[0]->pullRequestUrl());
     }
 
     public function testFailedPreparationConflictsTheWorkdirWithVisibleReason(): void
@@ -629,6 +649,24 @@ final class RecordedVcs implements WorkdirVcs
         $this->resolved[] = $strategy->value;
 
         return Outcome::succeeded('resolved with ' . $strategy->value);
+    }
+}
+
+final class RecordedPullRequests implements PullRequests
+{
+    /** @var list<string> */
+    public array $opened = [];
+
+    public ?string $failure = null;
+
+    #[Override]
+    public function open(Workdir $workdir, Issue $issue): PullRequestResult
+    {
+        $this->opened[] = $issue->key()->value();
+
+        return $this->failure === null
+            ? PullRequestResult::opened('https://github.com/acme/app/pull/1')
+            : PullRequestResult::failed($this->failure);
     }
 }
 

@@ -24,6 +24,7 @@ final class RunPresenter
             'createdAt' => $run->createdAt()->format(DATE_ATOM),
             'startedAt' => $run->startedAt()?->format(DATE_ATOM),
             'finishedAt' => $run->finishedAt()?->format(DATE_ATOM),
+            'pullRequestUrl' => $run->pullRequestUrl(),
         ];
     }
 

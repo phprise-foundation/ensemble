@@ -52,8 +52,8 @@ trap cleanup EXIT INT TERM
 heartbeat_pid=$!
 
 while true; do
-  if ! php bin/runner >/dev/null; then
-    echo "runner sweep failed at $(date -Iseconds)" >&2
+  if ! output=$(php bin/runner 2>&1 >/dev/null); then
+    echo "runner sweep failed at $(date -Iseconds): $output" >&2
   fi
   sleep "$POLL"
 done
