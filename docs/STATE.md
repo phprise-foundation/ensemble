@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **142 PHPUnit tests / 955 assertions**, Psalm level 1, **0 errors**.
+- Backend: **149 PHPUnit tests / 991 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **124/124 across 22 specs**, green.
+- Real E2E: **125/125 across 23 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -192,8 +192,15 @@ Foundation progress:
   attaches a repository to a scratch issue, the runs section lists the run
   history, and a workdir in conflict offers remote-wins/local-wins/merge.
   The issue payload now exposes the derived `workdirState` (never the workdir).
-- Still required: **U3** runner loop with a real model and retry, **U4**
-  automatic PR.
+- **U3 — runner loop, retry and health (done):** `bin/runner-loop` runs the
+  sweep continuously (one process per database) and writes
+  `var/runner-heartbeat`; `GET /api/health` reports `runner.online`/`lastSeenAt`.
+  `POST /issues/{key}/runs` queues a claimed request for the current assignee
+  (Run now/Retry in the issue panel); the sweep executes requests before the
+  normal pass and the panel polls claimed/running runs. `bin/runner` was also
+  repaired (constructor order and missing `AdvanceIssue`). Dev agents now use
+  `deepseek/deepseek-flash`; any model listed by `opencode models` works.
+- Still required: **U4** automatic PR creation.
 
 Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
 RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +
@@ -202,9 +209,9 @@ the critical path.
 
 ### Next moves
 
-1. Continue the browser pass on the merged fixes and report anything else.
-2. Implement the autonomy foundation and RFC-2026-0001 → 0002 → 0003, with the
-   use gate at the end.
+1. Implement **U4** (automatic GitHub PR after a run) and verify the first real
+   gate: bind a private repository, trigger a run and see the branch + PR.
+2. Implement RFC-2026-0001 → 0002 → 0003, with the use gate at the end.
 3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
    161 local issues and dogfood).
@@ -215,8 +222,15 @@ the critical path.
 docker compose -f docker-compose.dev.yml up -d
 set -a && source .env && set +a && php bin/install
 php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
+bin/runner-loop               # in another terminal; writes var/runner-heartbeat
 cd frontend && npm run dev     # needs VITE_API_URL=http://127.0.0.1:8081 in .env.local
 ```
+
+`GET /api/health` returns `runner.online` and `runner.lastSeenAt`. Set each
+agent's model to a model listed by `opencode models` (the dev agents use
+`deepseek/deepseek-flash`); `test-model` is only a placeholder and makes
+`opencode run` fail. Keep exactly one runner loop per database until the
+RFC-2026-0002 scheduler lands.
 
 Login: `admin` / `admin1234`. Build-and-serve: `npm run build` then
 `http://127.0.0.1:8081/app/`.
