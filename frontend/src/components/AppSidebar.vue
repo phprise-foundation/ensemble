@@ -138,6 +138,7 @@ const openWorkflows = ref(true)
 const openTeams = ref(true)
 const openSources = ref(true)
 const editor = ref(null)
+const testing = ref(false)
 
 const workspace = computed(() => boardStore.workspace.value)
 const workspaceId = computed(() => workspace.value?.id)
@@ -230,26 +231,64 @@ const PROVIDERS = [
   { value: 'bitbucket', label: 'Bitbucket' },
 ]
 
+const secretOptions = () => [
+  { value: '', label: 'None' },
+  ...boardStore.state.secrets.map((secret) => ({ value: secret.id, label: secret.name })),
+]
+
 function addSource() {
+  void boardStore.loadSecrets().catch(() => {})
   openEditor(
     'source',
-    { id: '', name: '', provider: 'github', url: '', baseBranch: 'main', workspaceId: workspaceId.value },
+    { id: '', name: '', provider: 'github', url: '', baseBranch: 'main', workspaceId: workspaceId.value, secretId: '' },
     'New source',
     [
       { key: 'name', label: 'Name' },
       { key: 'provider', label: 'Provider', type: 'select', options: PROVIDERS },
       { key: 'url', label: 'HTTPS URL', hint: 'https://github.com/owner/repository' },
       { key: 'baseBranch', label: 'Base branch', hint: 'defaults to main' },
+      { key: 'secretId', label: 'Credential (optional)', type: 'select', options: secretOptions },
     ],
   )
 }
 
 function editSource(source) {
-  openEditor('source', { ...source, __existing: true }, 'Edit source', [
+  void boardStore.loadSecrets().catch(() => {})
+  openEditor('source', { ...source, secretId: source.secretId ?? '', __existing: true }, 'Edit source', [
     { key: 'name', label: 'Name' },
     { key: 'url', label: 'HTTPS URL' },
     { key: 'baseBranch', label: 'Base branch' },
+    { key: 'secretId', label: 'Credential (optional)', type: 'select', options: secretOptions },
   ])
+}
+
+async function testSource() {
+  const current = editor.value
+  if (!current) {
+    return
+  }
+  current.error = ''
+  if (!current.draft.url) {
+    current.error = 'HTTPS URL is required.'
+    return
+  }
+  testing.value = true
+  try {
+    const result = await boardStore.probeRepository({
+      provider: current.draft.provider || 'github',
+      url: current.draft.url,
+      secretId: current.draft.secretId || null,
+    })
+    if (result?.ok) {
+      toast.success('Connection OK.')
+    } else {
+      current.error = result?.message || 'Could not reach the repository.'
+    }
+  } catch (problem) {
+    current.error = problem?.message ?? 'Could not test the repository.'
+  } finally {
+    testing.value = false
+  }
 }
 
 function normalizeBoard(board) {
@@ -515,6 +554,10 @@ async function removeEntity(kind, id, label) {
                 <button class="icon-btn" title="Delete source" aria-label="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="delete" size="14" /></button>
               </span>
             </div>
+            <RouterLink class="nav-entry secrets-entry" to="/secrets" title="Secrets">
+              <AppIcon name="roles" size="14" />
+              <span class="label">Secrets</span>
+            </RouterLink>
           </div>
         </div>
       </div>
@@ -528,6 +571,9 @@ async function removeEntity(kind, id, label) {
       :fields="editor.fields"
       :draft="editor.draft"
       :error="editor.error"
+      :extra-label="editor.kind === 'source' ? 'Test connection' : ''"
+      :extra-busy="testing"
+      @extra="testSource"
       @save="saveEditor"
       @close="close"
     />

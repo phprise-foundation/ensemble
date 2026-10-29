@@ -187,6 +187,7 @@ const state = reactive({
   agents: [],
   experiences: [],
   sources: [],
+  secrets: [],
   issues: [],
   columns: [],
   boardId: null,
@@ -345,6 +346,35 @@ export const boardStore = {
       state.issues.splice(index, 1, updated)
       void hydrateIssue(state.issues[index])
     }
+  },
+
+  async loadSecrets() {
+    const payload = await request('GET', scoped('/secrets'))
+    state.secrets = payload.secrets ?? []
+  },
+
+  async createSecret(name, value) {
+    const payload = await request('POST', scoped('/secrets'), { name, value })
+    state.secrets.push(payload.secret)
+    return payload.secret
+  },
+
+  async rotateSecret(id, value) {
+    const payload = await request('PATCH', scoped(`/secrets/${id}`), { value })
+    const index = state.secrets.findIndex((secret) => secret.id === id)
+    if (index >= 0) {
+      state.secrets.splice(index, 1, payload.secret)
+    }
+    return payload.secret
+  },
+
+  async deleteSecret(id) {
+    await request('DELETE', scoped(`/secrets/${id}`))
+    state.secrets = state.secrets.filter((secret) => secret.id !== id)
+  },
+
+  async probeRepository({ provider, url, secretId }) {
+    return request('POST', scoped('/repositories/test'), { provider, url, secretId })
   },
 
   async reorderColumns(boardId, columnIds) {
