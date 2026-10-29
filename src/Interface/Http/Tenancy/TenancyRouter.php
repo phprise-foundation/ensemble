@@ -175,6 +175,7 @@ final readonly class TenancyRouter
             $method === 'PATCH' && $this->isSecret($segments) => $this->secrets->rotate($request, $this->workspaceId($segments), $this->secretId($segments)),
             $method === 'DELETE' && $this->isSecret($segments) => $this->secrets->delete($request, $this->workspaceId($segments), $this->secretId($segments)),
             $method === 'GET' && $this->isRepositories($segments) => $this->repositories->list($request, $this->workspaceId($segments)),
+            $method === 'POST' && $this->isRepositoryProbe($segments) => $this->repositories->probe($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isRepositories($segments) => $this->repositories->create($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isRepository($segments) => $this->repositories->show($request, $this->workspaceId($segments), $this->repositoryId($segments)),
             $method === 'PATCH' && $this->isRepository($segments) => $this->repositories->update($request, $this->workspaceId($segments), $this->repositoryId($segments)),
@@ -555,6 +556,16 @@ final readonly class TenancyRouter
             && $segments[0] === 'api'
             && $segments[1] === 'workspaces'
             && $segments[3] === 'repositories';
+    }
+
+    /** @param list<string> $segments */
+    private function isRepositoryProbe(array $segments): bool
+    {
+        return count($segments) === 5
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'repositories'
+            && $segments[4] === 'test';
     }
 
     /** @param list<string> $segments */

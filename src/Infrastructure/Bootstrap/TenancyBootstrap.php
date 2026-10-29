@@ -64,6 +64,7 @@ use App\Application\Security\ReadCurrentUser;
 use App\Application\Vcs\CreateRepository;
 use App\Application\Vcs\DeleteRepository;
 use App\Application\Vcs\ListRepositories;
+use App\Application\Vcs\ProbeRepository;
 use App\Application\Vcs\ReadRepository;
 use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
@@ -492,6 +493,7 @@ final readonly class TenancyBootstrap
                 new ReadRepository($gitRepositories, $guard),
                 new UpdateRepository($gitRepositories, $workspaceSecrets, $guard),
                 new DeleteRepository($gitRepositories, $guard),
+                new ProbeRepository($workspaceSecrets, $secretCipher, new GitClient(), $guard),
                 $repositoryPresenter,
                 $this->responder,
             ),

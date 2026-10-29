@@ -135,6 +135,40 @@ final class RepositoryApiTest extends TestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    public function testProbeValidatesTheDraftAndReportsAnUnreachableRepository(): void
+    {
+        $invalidUrl = $this->app->handle($this->app->request(
+            'POST',
+            $this->repositoryPath() . '/test',
+            ['provider' => 'github', 'url' => 'git@github.com:acme/app.git'],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $invalidUrl->getStatusCode());
+        self::assertSame('url', $this->app->json($invalidUrl, 422)['field']);
+
+        $unknownSecret = $this->app->handle($this->app->request(
+            'POST',
+            $this->repositoryPath() . '/test',
+            [
+                'provider' => 'github',
+                'url' => 'https://github.com/acme/app.git',
+                'secretId' => '00000000000000000000000000000000',
+            ],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $unknownSecret->getStatusCode());
+        self::assertSame('secretId', $this->app->json($unknownSecret, 422)['field']);
+
+        $unreachable = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            $this->repositoryPath() . '/test',
+            ['provider' => 'github', 'url' => 'https://127.0.0.1:1/acme/app.git'],
+            $this->adminToken,
+        )));
+        self::assertFalse($unreachable['ok']);
+        self::assertStringContainsString('could not reach the repository', $unreachable['message']);
+    }
+
     public function testMemberCanReadButNotWrite(): void
     {
         $this->createRepository('App');

@@ -8,6 +8,7 @@ use App\Application\Security\ReadCurrentUser;
 use App\Application\Vcs\CreateRepository;
 use App\Application\Vcs\DeleteRepository;
 use App\Application\Vcs\ListRepositories;
+use App\Application\Vcs\ProbeRepository;
 use App\Application\Vcs\ReadRepository;
 use App\Application\Vcs\UpdateRepository;
 use App\Domain\Security\WorkspaceSecretId;
@@ -29,6 +30,7 @@ final readonly class RepositoryController
         private ReadRepository $readRepository,
         private UpdateRepository $updateRepository,
         private DeleteRepository $deleteRepository,
+        private ProbeRepository $probeRepository,
         private RepositoryPresenter $presenter,
         private JsonResponder $responder,
     ) {
@@ -58,6 +60,24 @@ final readonly class RepositoryController
         );
 
         return $this->responder->respond(['repository' => $this->presenter->present($repository)], 201);
+    }
+
+    public function probe(ServerRequestInterface $request, WorkspaceId $workspaceId): ResponseInterface
+    {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $result = $this->probeRepository->execute(
+            $user,
+            $workspaceId,
+            JsonBody::string($body, 'url') ?? '',
+            Provider::fromString(JsonBody::string($body, 'provider') ?? ''),
+            $this->secretIdFrom($body),
+        );
+
+        return $this->responder->respond([
+            'ok' => $result->ok(),
+            'message' => $result->message(),
+        ]);
     }
 
     public function show(
