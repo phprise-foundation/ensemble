@@ -97,6 +97,7 @@ describe('issue workdir binding, runs and conflicts', () => {
             reason: null,
             message: 'applied the change to the board',
             prompt: 'do the work',
+            pullRequestUrl: 'https://github.com/example/board/pull/9',
             createdAt: '2026-10-29T11:00:00+00:00',
             startedAt: '2026-10-29T11:00:01+00:00',
             finishedAt: '2026-10-29T11:00:30+00:00',
@@ -111,6 +112,7 @@ describe('issue workdir binding, runs and conflicts', () => {
             reason: 'the issue workdir is in conflict',
             message: null,
             prompt: null,
+            pullRequestUrl: null,
             createdAt: '2026-10-29T12:00:00+00:00',
             startedAt: null,
             finishedAt: null,
@@ -138,6 +140,8 @@ describe('issue workdir binding, runs and conflicts', () => {
         cy.get('.run-entry').first().should('have.attr', 'data-run-state', 'skipped')
         cy.contains('.run-entry', 'the issue workdir is in conflict').should('exist')
         cy.contains('.run-entry', 'Kaio').should('exist')
+        cy.get('.run-entry[data-run-state="succeeded"] a.run-pr')
+          .should('have.attr', 'href', 'https://github.com/example/board/pull/9')
         cy.get('.run-entry[data-run-state="succeeded"] summary').click()
         cy.get('.run-entry[data-run-state="succeeded"] pre').should(
           'contain',

@@ -35,6 +35,8 @@ use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\OpenCodeExecutor;
 use App\Infrastructure\Runner\VarWorkdirPaths;
 use App\Infrastructure\Security\SodiumSecretCipher;
+use App\Infrastructure\Vcs\GitHubPullRequests;
+use App\Infrastructure\Vcs\StreamGitHubHttp;
 
 require 'vendor/autoload.php';
 
@@ -43,11 +45,21 @@ $workdirs = new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMappe
 $issues = new DoctrineIssueRepository($entityManager, new IssueRecordMapper());
 $statuses = new DoctrineStatusRepository($entityManager, new StatusRecordMapper());
 $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
+$gitRepositories = new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper());
+$workspaceSecrets = new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper());
+$cipher = SodiumSecretCipher::fromEnvironment();
 $vcs = new GitWorkdirVcs(
     new GitClient(),
-    new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper()),
-    new DoctrineWorkspaceSecretRepository($entityManager, new WorkspaceSecretRecordMapper()),
-    SodiumSecretCipher::fromEnvironment(),
+    $gitRepositories,
+    $workspaceSecrets,
+    $cipher,
+);
+$pullRequests = new GitHubPullRequests(
+    $gitRepositories,
+    $workspaceSecrets,
+    $cipher,
+    new StreamGitHubHttp(),
+    (string) (getenv('GITHUB_API_URL') ?: 'https://api.github.com'),
 );
 
 (new BackfillIssueWorkdirs($issues, $workdirs))->execute();
@@ -69,6 +81,7 @@ $vcs = new GitWorkdirVcs(
         new DoctrineTransitionRepository($entityManager, new TransitionRecordMapper()),
         new DoctrineIssueEventRepository($entityManager, new IssueEventRecordMapper()),
     ),
+    $pullRequests,
 ))->execute();
 
 echo "sweep ok\n";

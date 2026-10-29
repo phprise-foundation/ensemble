@@ -24,6 +24,7 @@ use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
 use App\Domain\Runner\WorkdirPaths;
 use App\Domain\Runner\WorkdirVcs;
+use App\Domain\Vcs\PullRequests;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Team\Agent;
 use DateTimeImmutable;
@@ -47,6 +48,7 @@ final readonly class ExecuteSweep
         private AgentExecutor $executor,
         private PromptComposer $prompts,
         private AdvanceIssue $advance,
+        private PullRequests $pullRequests,
     ) {
     }
 
@@ -275,7 +277,15 @@ final readonly class ExecuteSweep
             if (! $published->ok) {
                 $outcome = Outcome::failed('the branch was not published: ' . $published->message);
             } else {
-                $this->advance->afterRun($agent, $issue);
+                $delivery = $this->pullRequests->open($workdir, $issue);
+                if ($delivery->isFailed()) {
+                    $outcome = Outcome::failed($delivery->message());
+                } else {
+                    if ($delivery->url() !== null) {
+                        $run->attachPullRequest($delivery->url());
+                    }
+                    $this->advance->afterRun($agent, $issue);
+                }
             }
         }
 

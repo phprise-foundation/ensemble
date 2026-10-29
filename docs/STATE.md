@@ -42,7 +42,7 @@ before P5.
 
 ### Current bar
 
-- Backend: **149 PHPUnit tests / 991 assertions**, Psalm level 1, **0 errors**.
+- Backend: **155 PHPUnit tests / 1018 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
@@ -200,7 +200,13 @@ Foundation progress:
   normal pass and the panel polls claimed/running runs. `bin/runner` was also
   repaired (constructor order and missing `AdvanceIssue`). Dev agents now use
   `deepseek/deepseek-flash`; any model listed by `opencode models` works.
-- Still required: **U4** automatic PR creation.
+- **U4 — automatic GitHub PR (done):** after a successful publish the runner
+  opens a PR from the workdir branch to the repository base branch, reusing an
+  existing open PR. The run stores `pullRequestUrl` and the issue panel links
+  to it. GitHub only for now; other providers are skipped (RFC-2026-0003).
+  A PR failure fails the run with the GitHub reason; the branch stays pushed.
+  The new `pull_request_url` column lands through `bin/install` (schema update).
+
 
 Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
 RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +
@@ -209,8 +215,10 @@ the critical path.
 
 ### Next moves
 
-1. Implement **U4** (automatic GitHub PR after a run) and verify the first real
-   gate: bind a private repository, trigger a run and see the branch + PR.
+1. Verify the first real gate: add a PAT secret, bind a private repository,
+   trigger a run and see the branch + PR. The dev database has the runner
+   running and agents on `deepseek/deepseek-flash`; its repository has no
+   credential and every issue is still scratch, so add the secret and bind one.
 2. Implement RFC-2026-0001 → 0002 → 0003, with the use gate at the end.
 3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the

@@ -588,6 +588,15 @@ async function submitComment() {
             <span class="run-state" :class="'run-' + run.state">{{ run.state }}</span>
             <span class="muted small">{{ agentName(run.agentId) }}</span>
             <span class="spacer"></span>
+            <a
+              v-if="run.pullRequestUrl"
+              class="run-pr"
+              :href="run.pullRequestUrl"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Pull request
+            </a>
             <button
               v-if="run.state === 'failed'"
               type="button"

@@ -1176,6 +1176,11 @@ body.drawer-locked {
   color: var(--muted);
 }
 
+.run-pr {
+  font-size: 12px;
+  color: var(--accent);
+}
+
 .run-output summary {
   cursor: pointer;
   font-size: 12px;
