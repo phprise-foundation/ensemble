@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **140 PHPUnit tests / 937 assertions**, Psalm level 1, **0 errors**.
+- Backend: **142 PHPUnit tests / 953 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **119/119 across 18 specs**, green.
+- Real E2E: **121/121 across 20 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -180,9 +180,15 @@ reviews, merges and deploys** like a team member. The design is now RFC-driven:
   repository/environment policy, with a board↔PR mirror of the same Markdown,
   GitHub first (PAT now, GitHub App before production).
 
-Foundation still required before the autonomy gates: secrets/repositories UI
-with a connection test, issue↔repository binding and runs/conflict panels, a
-runner loop with a real model and retry, and automatic PR creation.
+Foundation progress:
+
+- **U1 — secrets and repositories (done):** Secrets page (create/rotate/delete;
+  values never shown), credential selector on the repository editor,
+  `POST /repositories/test` (`git ls-remote` probe) and provider-aware git auth
+  (GitHub `x-access-token`, GitLab `oauth2`, Bitbucket `x-token-auth`) used by
+  the runner's clone/push/conflict paths.
+- Still required: **U2** issue↔repository binding and runs/conflict panels,
+  **U3** runner loop with a real model and retry, **U4** automatic PR.
 
 Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
 RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +

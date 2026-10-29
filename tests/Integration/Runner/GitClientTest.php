@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Runner;
 
+use App\Domain\Vcs\Provider;
 use App\Infrastructure\Runner\GitClient;
 use PHPUnit\Framework\TestCase;
 
@@ -73,6 +74,16 @@ final class GitClientTest extends TestCase
             . ' config user.email t@t && git -C ' . escapeshellarg($path)
             . ' config user.name t'
         );
+    }
+
+    public function testProbesALocalRepositoryAndMapsProviderTokenUsers(): void
+    {
+        self::assertTrue($this->git->probe('file://' . $this->base . '/bare.git', Provider::GitHub, null)->ok());
+        self::assertFalse($this->git->probe('file://' . $this->base . '/missing.git', Provider::GitHub, null)->ok());
+
+        self::assertSame('x-access-token', Provider::GitHub->gitTokenUser());
+        self::assertSame('oauth2', Provider::GitLab->gitTokenUser());
+        self::assertSame('x-token-auth', Provider::Bitbucket->gitTokenUser());
     }
 
     public function testCloneRefusalBecomesAFailedOutcome(): void

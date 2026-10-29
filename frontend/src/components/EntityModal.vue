@@ -6,9 +6,11 @@ const props = defineProps({
   fields: { type: Array, default: () => [] },
   draft: { type: Object, required: true },
   error: { type: String, default: '' },
+  extraLabel: { type: String, default: '' },
+  extraBusy: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['save', 'close'])
+const emit = defineEmits(['save', 'close', 'extra'])
 
 function optionsFor(field) {
   return typeof field.options === 'function' ? field.options() : field.options || []
@@ -54,6 +56,10 @@ function toggle(field, value) {
       </div>
 
       <footer class="modal-footer">
+        <button v-if="extraLabel" class="button ghost" :disabled="extraBusy" @click="emit('extra')">
+          {{ extraLabel }}
+        </button>
+        <span v-if="extraLabel" class="spacer"></span>
         <button class="button ghost" @click="emit('close')">Cancel</button>
         <button class="button" @click="emit('save')"><AppIcon name="check" size="16" /> Save</button>
       </footer>

@@ -85,6 +85,12 @@ if [ -f "$ROOT/.env" ]; then
   . "$ROOT/.env"
   set +a
 fi
+# Secrets are encrypted with APP_ENCRYPTION_KEY; the ephemeral suite must not
+# depend on a developer .env being present (CI has none).
+if [ -z "${APP_ENCRYPTION_KEY:-}" ]; then
+  APP_ENCRYPTION_KEY="$(php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;')"
+  export APP_ENCRYPTION_KEY
+fi
 DATABASE_URL="$E2E_DATABASE_URL" php -d variables_order=EGPCS -S "127.0.0.1:$API_PORT" -t "$ROOT/public" "$ROOT/public/router.php" >"$API_LOG" 2>&1 &
 API_PID=$!
 

@@ -40,6 +40,7 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
             $this->branchOr($workdir),
             $path,
             $this->token($repository->workspaceId(), $repository->secretId()),
+            $repository->provider(),
         );
     }
 
@@ -55,6 +56,7 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
             $path,
             $this->branchOr($workdir),
             $this->token($repository->workspaceId(), $repository->secretId()),
+            $repository->provider(),
         );
     }
 
@@ -72,6 +74,7 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
             $repository->baseBranch()->value(),
             $strategy,
             $this->token($repository->workspaceId(), $repository->secretId()),
+            $repository->provider(),
         );
     }
 
