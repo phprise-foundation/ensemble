@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **142 PHPUnit tests / 953 assertions**, Psalm level 1, **0 errors**.
+- Backend: **142 PHPUnit tests / 955 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **121/121 across 20 specs**, green.
+- Real E2E: **124/124 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -187,8 +187,13 @@ Foundation progress:
   `POST /repositories/test` (`git ls-remote` probe) and provider-aware git auth
   (GitHub `x-access-token`, GitLab `oauth2`, Bitbucket `x-token-auth`) used by
   the runner's clone/push/conflict paths.
-- Still required: **U2** issue↔repository binding and runs/conflict panels,
-  **U3** runner loop with a real model and retry, **U4** automatic PR.
+- **U2 — issue binding, runs and conflicts (done):** the new-task modal can
+  bind a repository, the issue panel shows the repository/workdir state and
+  attaches a repository to a scratch issue, the runs section lists the run
+  history, and a workdir in conflict offers remote-wins/local-wins/merge.
+  The issue payload now exposes the derived `workdirState` (never the workdir).
+- Still required: **U3** runner loop with a real model and retry, **U4**
+  automatic PR.
 
 Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
 RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +
