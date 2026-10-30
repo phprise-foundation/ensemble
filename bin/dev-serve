@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Development supervisor: API, Vite and the runner loop.
+# Run it under systemd-run --user so it survives the terminal that started it.
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+set -a
+if [ -f .env ]; then
+  . .env
+fi
+set +a
+
+export PATH="$HOME/.opencode/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+export XDEBUG_MODE=off
+mkdir -p var
+
+for _ in $(seq 1 60); do
+  docker compose -f docker-compose.dev.yml up -d >/dev/null 2>&1 || true
+  if [ "$(docker inspect -f '{{.State.Health.Status}}' ensemble-postgres-1 2>/dev/null || true)" = "healthy" ]; then
+    break
+  fi
+  sleep 1
+done
+
+php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php >var/api.log 2>&1 &
+api=$!
+
+(
+  cd frontend
+  exec ./node_modules/.bin/vite --host 127.0.0.1 --port 5173
+) >var/vite.log 2>&1 &
+vite=$!
+
+bin/runner-loop >var/runner.log 2>&1 &
+runner=$!
+
+cleanup() {
+  kill "$api" "$vite" "$runner" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+wait
