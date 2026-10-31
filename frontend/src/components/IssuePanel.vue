@@ -205,6 +205,15 @@ async function refreshRuns() {
   }
 }
 
+async function unblockIssue() {
+  try {
+    await boardStore.updateIssue(issue.value.id, { blocked: false })
+    toast.success('Issue unblocked.')
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not unblock the issue.')
+  }
+}
+
 async function requestRun() {
   if (!issue.value?.assigneeId) {
     toast.error('Assign an agent before running this issue.')
@@ -446,6 +455,15 @@ async function submitComment() {
       </div>
     </form>
 
+    <div v-if="issue.blocked" class="panel-blocked">
+      <AppIcon name="warning" size="16" />
+      <div>
+        <strong>Blocked</strong>
+        <p class="muted small">Check the latest run/comment; unblock when the impediment is resolved.</p>
+      </div>
+      <button class="button ghost" @click="unblockIssue">Unblock</button>
+    </div>
+
     <div class="panel-meta">
       <AssigneePicker
         :assignee="agent"
@@ -572,7 +590,7 @@ async function submitComment() {
           <button
             type="button"
             class="button ghost"
-            :disabled="!issue.assigneeId || requesting"
+            :disabled="issue.blocked || !issue.assigneeId || requesting"
             @click="requestRun"
           >
             Run now
