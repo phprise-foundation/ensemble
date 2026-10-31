@@ -19,6 +19,11 @@ final class RolePresenter
             'description' => $role->description(),
             'unblock' => $role->unblock(),
             'interactive' => $role->interactive(),
+            'implement' => $role->implement(),
+            'review' => $role->review(),
+            'test' => $role->test(),
+            'merge' => $role->merge(),
+            'deploy' => $role->deploy(),
             'createdAt' => $role->createdAt()->format(DATE_ATOM),
             'updatedAt' => $role->updatedAt()->format(DATE_ATOM),
         ];

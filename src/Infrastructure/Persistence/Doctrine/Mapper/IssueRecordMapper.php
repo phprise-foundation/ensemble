@@ -37,6 +37,7 @@ final class IssueRecordMapper
             $record->position(),
         );
         $issue->restoreTimestamps($record->updatedAt(), $record->enteredAt());
+        $issue->restoreBlocked($record->blocked());
 
         return $issue;
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Runner;
 
 use App\Domain\Runner\AgentExecutor;
+use App\Domain\Runner\AgentRunContext;
 use App\Domain\Runner\Outcome;
 use App\Domain\Team\Agent;
 use Override;
@@ -19,7 +20,12 @@ final readonly class OpenCodeExecutor implements AgentExecutor
     }
 
     #[Override]
-    public function execute(Agent $agent, string $workdirPath, string $prompt): Outcome
+    public function execute(
+        Agent $agent,
+        string $workdirPath,
+        string $prompt,
+        AgentRunContext $context,
+    ): Outcome
     {
         $failure = 'no model is configured for this agent';
         foreach ([$agent->model(), $agent->fallbackModel()] as $model) {
@@ -27,7 +33,7 @@ final readonly class OpenCodeExecutor implements AgentExecutor
                 continue;
             }
 
-            $result = $this->run(['opencode', 'run', '--model', $model, $prompt], $workdirPath);
+            $result = $this->run(['opencode', 'run', '--model', $model, $prompt], $workdirPath, $context);
             if ($result['exit'] === 0) {
                 return Outcome::succeeded($this->trim($result['output']));
             }
@@ -42,14 +48,23 @@ final readonly class OpenCodeExecutor implements AgentExecutor
      * @param list<string> $command
      * @return array{exit: int, output: string}
      */
-    private function run(array $command, string $workdirPath): array
+    private function run(array $command, string $workdirPath, AgentRunContext $context): array
     {
+        $root = dirname(__DIR__, 3);
+        $path = $root . '/bin/agent:' . $root . '/bin:' . (string) getenv('PATH');
         $pipe = proc_open(
             $command,
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
             $workdirPath,
-            ['HOME' => (string) getenv('HOME'), 'PATH' => (string) getenv('PATH')],
+            [
+                'HOME' => (string) getenv('HOME'),
+                'PATH' => $path,
+                'ENS_OUTCOME_FILE' => $context->outcomePath(),
+                'ENS_STAGE' => $context->stage(),
+                'ENS_ROLE' => $context->role(),
+                'ENS_ALLOWED_OUTCOMES' => implode(',', $context->allowedOutcomes()),
+            ],
         );
         if ($pipe === false) {
             return ['exit' => 127, 'output' => 'proc_open failed'];

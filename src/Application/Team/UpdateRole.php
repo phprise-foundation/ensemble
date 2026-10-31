@@ -29,6 +29,11 @@ final readonly class UpdateRole
         ?string $description,
         ?bool $unblock,
         ?bool $interactive,
+        ?bool $implement = null,
+        ?bool $review = null,
+        ?bool $test = null,
+        ?bool $merge = null,
+        ?bool $deploy = null,
     ): Role {
         $this->guard->assertManager($actor, $workspaceId);
         $role = $this->roles->find($workspaceId, $id) ?? throw NotFoundException::role();
@@ -43,6 +48,21 @@ final readonly class UpdateRole
         }
         if ($interactive !== null) {
             $role->allowInteractive($interactive);
+        }
+        if ($implement !== null) {
+            $role->allowImplement($implement);
+        }
+        if ($review !== null) {
+            $role->allowReview($review);
+        }
+        if ($test !== null) {
+            $role->allowTest($test);
+        }
+        if ($merge !== null) {
+            $role->allowMerge($merge);
+        }
+        if ($deploy !== null) {
+            $role->allowDeploy($deploy);
         }
         $role->touch(new DateTimeImmutable());
         $this->roles->update($role);

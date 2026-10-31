@@ -8,8 +8,11 @@ use App\Application\Runner\AdvanceIssue;
 use App\Application\Runner\ExecuteSweep;
 use App\Application\Runner\ResolveWorkdirConflict;
 use App\Application\Runner\PromptComposer;
+use App\Application\Runner\ReadAgentOutcome;
+use App\Application\Runner\ReportStage;
 use App\Application\Runner\ResolveProfile;
 use App\Domain\Runner\AgentExecutor;
+use App\Domain\Runner\AgentRunContext;
 use App\Domain\Kanban\FieldValues;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueId;
@@ -64,9 +67,11 @@ use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueCommentRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\IssueEventRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\RunRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
@@ -74,10 +79,12 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueCommentRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueEventRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
@@ -104,6 +111,10 @@ final class RunnerSweepTest extends TestCase
     private RecordedExecutor $executor;
     private RecordedVcs $vcs;
     private RecordedPullRequests $pullRequests;
+    private DoctrineRoleRepository $roleRepository;
+    private DoctrineIssueCommentRepository $comments;
+    private string $teamId;
+    private RoleId $coderRoleId;
     private WorkdirPathsForTest $paths;
     private WorkspaceId $workspaceId;
     private WorkdirId $workdirId;
@@ -142,6 +153,8 @@ final class RunnerSweepTest extends TestCase
         $this->agents = new DoctrineAgentRepository($this->entityManager, new AgentRecordMapper());
         $this->profiles = new DoctrineProfileRepository($this->entityManager, new ProfileRecordMapper());
         $this->workspaces = new DoctrineWorkspaceRepository($this->entityManager, new WorkspaceRecordMapper());
+        $this->roleRepository = new DoctrineRoleRepository($this->entityManager, new RoleRecordMapper());
+        $this->comments = new DoctrineIssueCommentRepository($this->entityManager, new IssueCommentRecordMapper());
 
         $this->workspaces->add(new Workspace($this->workspaceId, 'Dev', new WorkspacePrefix('KAN')));
         $workflow = new Workflow(WorkflowId::generate(), $this->workspaceId, Slug::fromName('Delivery'), 'Delivery');
@@ -159,7 +172,10 @@ final class RunnerSweepTest extends TestCase
         $this->issueTypeId = $issueType->id();
         $team = new Team(TeamId::generate(), $this->workspaceId, 'Squad');
         $teams->add($team);
-        $role = new Role(RoleId::generate(), $this->workspaceId, $team->id(), 'Coder');
+        $this->teamId = $team->id()->value();
+        $role = new Role(RoleId::generate(), $this->workspaceId, $team->id(), 'Coder', implement: true);
+        $this->roleRepository->add($role);
+        $this->coderRoleId = $role->id();
         $status = new Status(
             StatusId::generate(),
             $this->workspaceId,
@@ -435,6 +451,15 @@ final class RunnerSweepTest extends TestCase
                 new DoctrineIssueEventRepository($this->entityManager, new IssueEventRecordMapper()),
             ),
             $this->pullRequests,
+            $this->roleRepository,
+            new ReportStage(
+                $this->issues,
+                $this->comments,
+                new DoctrineIssueEventRepository($this->entityManager, new IssueEventRecordMapper()),
+                $this->agents,
+                $this->roleRepository,
+            ),
+            new ReadAgentOutcome(),
         ))->execute();
     }
 
@@ -599,6 +624,211 @@ final class RunnerSweepTest extends TestCase
         self::assertSame('failed', $runs[0]->state()->value);
         self::assertSame('the branch was not published: remote rejected', $runs[0]->reason());
     }
+
+
+    public function testOnlyOneAgentPerStageRunsAndTheAssigneeIsSet(): void
+    {
+        $second = new Agent(AgentId::generate(), $this->workspaceId, new TeamId($this->teamId), 'Second Coder', 'Another builder.');
+        $second->assignRoles(new RoleIds([$this->coderRoleId]));
+        $this->agents->add($second);
+        $this->attachPending();
+
+        $this->sweep();
+
+        self::assertCount(1, $this->runs->forIssue($this->workspaceId, $this->issue->id()));
+        self::assertCount(1, $this->executor->executions);
+        $issue = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertNotNull($issue->assigneeId());
+        self::assertContains($issue->assigneeId(), [$this->agent->id()->value(), $second->id()->value()]);
+    }
+
+    public function testPromptNamesTheRoleStageAndOutcomeCommands(): void
+    {
+        $this->attachPending();
+        $this->sweep();
+
+        $prompt = $this->executor->prompts[0] ?? self::fail('prompt was not composed');
+        self::assertStringContainsString('Status: Inbox', $prompt);
+        self::assertStringContainsString('Role: Coder', $prompt);
+        self::assertStringContainsString('ens block --reason', $prompt);
+        self::assertStringContainsString('Definition of done', $prompt);
+    }
+
+    public function testPoStageDoesNotPublishAndDiscardsLocalEdits(): void
+    {
+        [$statusId] = $this->addStage('Product Owner', ['interactive' => true]);
+        $this->seedTransition($statusId, $this->inboxId, TransitionActor::Agent);
+        $this->moveIssueTo($statusId);
+        $this->attachPending();
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        self::assertSame([], $this->vcs->published);
+        self::assertCount(1, $this->vcs->discarded);
+        $stored = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertSame($this->inboxId->value(), $stored->statusId()->value());
+    }
+
+    public function testReviewApprovalAdvancesWithoutPublishing(): void
+    {
+        [$reviewId] = $this->addStage('Reviewer', ['review' => true]);
+        $this->seedTransition($reviewId, $this->testingId, TransitionActor::Agent);
+        $this->moveIssueTo($reviewId);
+        $this->attachPending();
+        $this->executor->outcome = ['outcome' => 'review_approved', 'reason' => 'looks good'];
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        $stored = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertSame($this->testingId->value(), $stored->statusId()->value());
+        self::assertSame([], $this->vcs->published);
+        self::assertCount(1, $this->vcs->discarded);
+    }
+
+    public function testQaPassKeepsTheIssueForMerge(): void
+    {
+        [$testId] = $this->addStage('Quality Assurance', ['test' => true]);
+        $this->moveIssueTo($testId);
+        $this->attachPending();
+        $this->executor->outcome = ['outcome' => 'test_passed', 'reason' => ''];
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('succeeded', $runs[0]->state()->value);
+        self::assertSame($testId->value(), $this->issue->statusId()->value());
+        self::assertSame([], $this->vcs->published);
+        self::assertCount(1, $this->vcs->discarded);
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertStringContainsString('QA passed', $comments[0]->body());
+    }
+
+    public function testQaFailureBlocksAndMentionsTheUnblocker(): void
+    {
+        [$testId] = $this->addStage('Quality Assurance', ['test' => true]);
+        $lead = $this->addUnblocker('Lead');
+        $this->moveIssueTo($testId);
+        $this->attachPending();
+        $this->executor->outcome = ['outcome' => 'test_failed', 'reason' => 'tests are red'];
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('failed', $runs[0]->state()->value);
+        self::assertStringContainsString('QA failed', (string) $runs[0]->reason());
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertNotEmpty($comments, 'the failure comment was not written');
+        $issue = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertTrue($issue->blocked());
+        self::assertSame($lead->id()->value(), $issue->assigneeId());
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertStringContainsString('QA failed', $comments[0]->body());
+        self::assertStringContainsString('@Lead please unblock.', $comments[0]->body());
+        self::assertSame([], $this->vcs->published);
+    }
+
+    public function testQaWithoutAResultBlocks(): void
+    {
+        [$testId] = $this->addStage('Quality Assurance', ['test' => true]);
+        $this->moveIssueTo($testId);
+        $this->attachPending();
+
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $runs);
+        self::assertSame('failed', $runs[0]->state()->value);
+        $issue = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertTrue($issue->blocked());
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertStringContainsString('missing stage result', $comments[0]->body());
+    }
+
+    public function testExecutionFailureRetriesThenBlocks(): void
+    {
+        $this->addUnblocker('Lead');
+        $this->attachPending();
+        $this->executor->failure = 'opencode failed: model unavailable';
+
+        $this->sweep();
+        $this->sweep();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(3, $runs);
+        self::assertSame([1, 2, 3], array_map(static fn(Run $run): int => $run->attempt(), $runs));
+        self::assertSame('failed', $runs[2]->state()->value);
+        $issue = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertTrue($issue->blocked());
+        self::assertSame([], $this->vcs->published);
+    }
+
+    private function moveIssueTo(StatusId $statusId): void
+    {
+        $this->issue->moveTo($statusId, new DateTimeImmutable());
+        $this->issues->update($this->issue);
+    }
+
+    /** @param array<string, bool> $flags */
+    private function addStage(string $name, array $flags): array
+    {
+        $teamId = new TeamId($this->teamId);
+        $role = new Role(
+            RoleId::generate(),
+            $this->workspaceId,
+            $teamId,
+            $name,
+            '',
+            $flags['unblock'] ?? false,
+            $flags['interactive'] ?? false,
+            implement: $flags['implement'] ?? false,
+            review: $flags['review'] ?? false,
+            test: $flags['test'] ?? false,
+            merge: $flags['merge'] ?? false,
+            deploy: $flags['deploy'] ?? false,
+        );
+        $this->roleRepository->add($role);
+        $status = new Status(
+            StatusId::generate(),
+            $this->workspaceId,
+            $this->workflowId,
+            $this->issueTypeId,
+            Slug::fromName($name),
+            $name,
+            StatusType::Transitional,
+            '#4c9aff',
+            new Position(100),
+            null,
+            null,
+            new RoleIds([$role->id()]),
+        );
+        $this->statuses->add($status);
+        $agent = new Agent(AgentId::generate(), $this->workspaceId, $teamId, $name . ' agent', 'A teammate.');
+        $agent->assignRoles(new RoleIds([$role->id()]));
+        $this->agents->add($agent);
+
+        return [$status->id(), $agent->id()];
+    }
+
+    private function addUnblocker(string $name): Agent
+    {
+        $teamId = new TeamId($this->teamId);
+        $role = new Role(RoleId::generate(), $this->workspaceId, $teamId, $name, '', true);
+        $this->roleRepository->add($role);
+        $agent = new Agent(AgentId::generate(), $this->workspaceId, $teamId, $name, 'The unblocker.');
+        $agent->assignRoles(new RoleIds([$role->id()]));
+        $this->agents->add($agent);
+
+        return $agent;
+    }
 }
 
 final class RecordedVcs implements WorkdirVcs
@@ -611,6 +841,9 @@ final class RecordedVcs implements WorkdirVcs
 
     /** @var list<string> */
     public array $resolved = [];
+
+    /** @var list<string> */
+    public array $discarded = [];
 
     public ?string $prepareFailure = null;
 
@@ -641,6 +874,14 @@ final class RecordedVcs implements WorkdirVcs
         $this->published[] = $path;
 
         return Outcome::succeeded('pushed ' . $workdir->branch()->value());
+    }
+
+    #[Override]
+    public function discard(Workdir $workdir, string $path): Outcome
+    {
+        $this->discarded[] = $path;
+
+        return Outcome::succeeded('local changes discarded');
     }
 
     #[Override]
@@ -675,10 +916,31 @@ final class RecordedExecutor implements AgentExecutor
     /** @var list<string> */
     public array $executions = [];
 
+    /** @var list<AgentRunContext> */
+    public array $contexts = [];
+
+    /** @var list<string> */
+    public array $prompts = [];
+
+    /** @var array<string, string>|null */
+    public ?array $outcome = null;
+
+    public ?string $failure = null;
+
     #[Override]
-    public function execute(Agent $agent, string $workdirPath, string $prompt): Outcome
+    public function execute(Agent $agent, string $workdirPath, string $prompt, AgentRunContext $context): Outcome
     {
         $this->executions[] = $workdirPath;
+        $this->contexts[] = $context;
+        $this->prompts[] = $prompt;
+
+        if ($this->failure !== null) {
+            return Outcome::failed($this->failure);
+        }
+
+        if ($this->outcome !== null) {
+            file_put_contents($context->outcomePath(), (string) json_encode($this->outcome));
+        }
 
         return Outcome::succeeded('changes pushed');
     }

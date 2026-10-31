@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+$args = array_slice($argv, 1);
+$command = $args[0] ?? '';
+$sub = $args[1] ?? '';
+$reason = '';
+foreach ($args as $index => $argument) {
+    if ($argument === '--reason') {
+        $reason = $args[$index + 1] ?? '';
+    }
+}
+
+$outcome = match ($command . ' ' . $sub) {
+    'test pass' => 'test_passed',
+    'test fail' => 'test_failed',
+    'review approve' => 'review_approved',
+    'review request-changes' => 'changes_requested',
+    'block ' => 'blocked',
+    default => null,
+};
+if ($outcome === null) {
+    fwrite(STDERR, "usage: ens test pass|fail, ens review approve|request-changes, ens block --reason \"...\"\n");
+    exit(1);
+}
+
+$allowed = explode(',', (string) (getenv('ENS_ALLOWED_OUTCOMES') ?: 'blocked'));
+if (! in_array($outcome, $allowed, true)) {
+    fwrite(STDERR, 'this stage does not allow the outcome ' . $outcome . "\n");
+    exit(1);
+}
+
+if (in_array($outcome, ['test_failed', 'changes_requested', 'blocked'], true) && trim($reason) === '') {
+    fwrite(STDERR, "this outcome requires --reason \"...\"\n");
+    exit(1);
+}
+
+$path = getenv('ENS_OUTCOME_FILE');
+if ($path === false || $path === '') {
+    fwrite(STDERR, "ENS_OUTCOME_FILE is not configured\n");
+    exit(1);
+}
+
+file_put_contents($path, (string) json_encode([
+    'outcome' => $outcome,
+    'reason' => mb_substr(trim($reason), 0, 500),
+]));
+
+echo 'Outcome registered: ' . $outcome . "\n";

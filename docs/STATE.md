@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **155 PHPUnit tests / 1018 assertions**, Psalm level 1, **0 errors**.
+- Backend: **172 PHPUnit tests / 1092 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **125/125 across 23 specs**, green.
+- Real E2E: **127/127 across 21 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -207,6 +207,42 @@ Foundation progress:
   A PR failure fails the run with the GitHub reason; the branch stays pushed.
   The new `pull_request_url` column lands through `bin/install` (schema update).
 
+### Flow guardrails (2026-10-31)
+
+The first real integrations exposed four gaps: every agent with the status role
+ran, roles were only prose, every run published, and a failure left the card
+parked. The guardrails now in place:
+
+- **Role capabilities:** `implement`, `review`, `test`, `merge`, `deploy` plus
+  the existing `unblock`/`interactive`, editable on **Roles**. Capabilities are
+  a role contract, not a per-agent exception.
+- **One actor per stage:** the sweep selects the stage owner (assignee if it has
+  the status role, otherwise one agent from that role) and assigns the issue to
+  it. A stage cannot fan out across every agent with the same role.
+- **Stage prompt:** `PromptComposer` now includes the status, role, role
+  description, allowed actions, definition of done and the `ens` commands.
+- **No publish for read-only stages:** only `implement` roles publish/PR. PO,
+  reviewer and QA run without touching the branch; local edits are discarded.
+- **QA at the branch HEAD, merge after QA:** the reviewer approves without
+  merging; QA tests the branch and reports `ens test pass|fail`. A pass leaves
+  the issue **In Test** with a “QA passed; ready to merge” comment, so the branch
+  stays until the merge. Smoke on `main` remains a later phase.
+- **Structured outcomes:** agents report with `ens test pass|fail`,
+  `ens review approve|request-changes` or `ens block --reason`. A missing
+  review/test result blocks instead of silently advancing.
+- **Failure handling:** execution/publish failures retry automatically up to
+  three attempts; terminal failures or explicit blocked outcomes mark the issue
+  blocked, write a runner comment mentioning the `unblock` role (Alan) and stop.
+  The panel shows a Blocked banner with **Unblock**.
+- **Merge boundary:** the runner has no agent merge action; `bin/agent/gh`
+  allows PR inspection/commenting but denies `pr merge`, `api` and other
+  mutations. The human merges after QA until RFC-2026-0003 lands.
+
+The dev database has the role flags set (Coder implement, Tech Lead review +
+unblock, QA test, PO interactive), the schema was updated with `bin/install`,
+and the runner loop is live. `KAN-13` exercised the QA gate: the QA run passed
+at the branch HEAD without publishing and left the issue In Test.
+
 
 Implementation order: foundation → RFC-2026-0001 → RFC-2026-0002 →
 RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges +
@@ -215,11 +251,11 @@ the critical path.
 
 ### Next moves
 
-1. Verify the first real gate: add a PAT secret, bind a private repository,
-   trigger a run and see the branch + PR. The dev database has the runner
-   running and agents on `deepseek/deepseek-flash`; its repository has no
-   credential and every issue is still scratch, so add the secret and bind one.
-2. Implement RFC-2026-0001 → 0002 → 0003, with the use gate at the end.
+1. Re-run the real integrations with the role flags: a private repository,
+   PO → Coder PR → reviewer approval → QA at HEAD → unblock path on failure.
+2. Add the explicit merge action/Ready to Merge gate (RFC-2026-0003) and keep
+   the post-merge smoke for the deployment phase.
+3. Implement RFC-2026-0001 → 0002 → 0003 with the use gate at the end.
 3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
    161 local issues and dogfood).

@@ -15,6 +15,11 @@ final class Role
     private StringObject $description;
     private bool $unblock;
     private bool $interactive;
+    private bool $implement;
+    private bool $review;
+    private bool $test;
+    private bool $merge;
+    private bool $deploy;
     private ?DateTimeImmutable $updatedAt;
 
     public function __construct(
@@ -27,11 +32,21 @@ final class Role
         bool $interactive = false,
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
+        bool $implement = false,
+        bool $review = false,
+        bool $test = false,
+        bool $merge = false,
+        bool $deploy = false,
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->description = new StringObject($this->validDescription($description));
         $this->unblock = $unblock;
         $this->interactive = $interactive;
+        $this->implement = $implement;
+        $this->review = $review;
+        $this->test = $test;
+        $this->merge = $merge;
+        $this->deploy = $deploy;
         $this->updatedAt = $updatedAt;
     }
 
@@ -70,6 +85,31 @@ final class Role
         return $this->interactive;
     }
 
+    public function implement(): bool
+    {
+        return $this->implement;
+    }
+
+    public function review(): bool
+    {
+        return $this->review;
+    }
+
+    public function test(): bool
+    {
+        return $this->test;
+    }
+
+    public function merge(): bool
+    {
+        return $this->merge;
+    }
+
+    public function deploy(): bool
+    {
+        return $this->deploy;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt ?? new DateTimeImmutable();
@@ -98,6 +138,31 @@ final class Role
     public function allowInteractive(bool $interactive): void
     {
         $this->interactive = $interactive;
+    }
+
+    public function allowImplement(bool $implement): void
+    {
+        $this->implement = $implement;
+    }
+
+    public function allowReview(bool $review): void
+    {
+        $this->review = $review;
+    }
+
+    public function allowTest(bool $test): void
+    {
+        $this->test = $test;
+    }
+
+    public function allowMerge(bool $merge): void
+    {
+        $this->merge = $merge;
+    }
+
+    public function allowDeploy(bool $deploy): void
+    {
+        $this->deploy = $deploy;
     }
 
     public function touch(DateTimeImmutable $at): void

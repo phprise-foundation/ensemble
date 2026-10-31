@@ -74,6 +74,7 @@ final readonly class DoctrineRunRepository implements RunRepository
             ->andWhere('r.leaseExpiresAt IS NULL')
             ->setParameter('state', 'claimed')
             ->orderBy('r.createdAt', 'ASC')
+            ->addOrderBy('r.attempt', 'ASC')
             ->getQuery()
             ->getResult();
 
@@ -93,6 +94,7 @@ final readonly class DoctrineRunRepository implements RunRepository
             ->setParameter('issueId', $issueId->value())
             ->setParameter('agentId', $agentId->value())
             ->orderBy('r.createdAt', 'DESC')
+            ->addOrderBy('r.attempt', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -132,6 +134,7 @@ final readonly class DoctrineRunRepository implements RunRepository
             ->setParameter('workspaceId', $workspaceId->value())
             ->setParameter('issueId', $issueId->value())
             ->orderBy('r.createdAt', 'ASC')
+            ->addOrderBy('r.attempt', 'ASC')
             ->getQuery()
             ->getResult();
 
