@@ -24,6 +24,7 @@ final class IssuePresenter
             'assigneeId' => $issue->assigneeId(),
             'worker' => $issue->worker(),
             'blocked' => $issue->blocked(),
+            'readyToMerge' => $issue->readyToMerge(),
             'fields' => $issue->fieldValues()->all(),
             'parentKey' => $issue->parentKey()?->value(),
             'repositoryId' => $workdir?->repositoryId()?->value(),

@@ -694,6 +694,7 @@ final class RunnerSweepTest extends TestCase
     public function testQaPassKeepsTheIssueForMerge(): void
     {
         [$testId] = $this->addStage('Quality Assurance', ['test' => true]);
+        $merger = $this->addMerger('Merger');
         $this->moveIssueTo($testId);
         $this->attachPending();
         $this->executor->outcome = ['outcome' => 'test_passed', 'reason' => ''];
@@ -703,11 +704,17 @@ final class RunnerSweepTest extends TestCase
         $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
         self::assertCount(1, $runs);
         self::assertSame('succeeded', $runs[0]->state()->value);
-        self::assertSame($testId->value(), $this->issue->statusId()->value());
+        $stored = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertSame($testId->value(), $stored->statusId()->value());
+        self::assertTrue($stored->readyToMerge());
+        self::assertSame($merger->id()->value(), $stored->assigneeId());
         self::assertSame([], $this->vcs->published);
         self::assertCount(1, $this->vcs->discarded);
         $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
         self::assertStringContainsString('QA passed', $comments[0]->body());
+
+        $this->sweep();
+        self::assertCount(1, $this->runs->forIssue($this->workspaceId, $this->issue->id()));
     }
 
     public function testQaFailureBlocksAndMentionsTheUnblocker(): void
@@ -816,6 +823,18 @@ final class RunnerSweepTest extends TestCase
         $this->agents->add($agent);
 
         return [$status->id(), $agent->id()];
+    }
+
+    private function addMerger(string $name): Agent
+    {
+        $teamId = new TeamId($this->teamId);
+        $role = new Role(RoleId::generate(), $this->workspaceId, $teamId, $name, '', false, false, merge: true);
+        $this->roleRepository->add($role);
+        $agent = new Agent(AgentId::generate(), $this->workspaceId, $teamId, $name, 'The merger.');
+        $agent->assignRoles(new RoleIds([$role->id()]));
+        $this->agents->add($agent);
+
+        return $agent;
     }
 
     private function addUnblocker(string $name): Agent

@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **172 PHPUnit tests / 1092 assertions**, Psalm level 1, **0 errors**.
+- Backend: **174 PHPUnit tests / 1118 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **127/127 across 21 specs**, green.
+- Real E2E: **128/128 across 21 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -224,9 +224,12 @@ parked. The guardrails now in place:
 - **No publish for read-only stages:** only `implement` roles publish/PR. PO,
   reviewer and QA run without touching the branch; local edits are discarded.
 - **QA at the branch HEAD, merge after QA:** the reviewer approves without
-  merging; QA tests the branch and reports `ens test pass|fail`. A pass leaves
-  the issue **In Test** with a “QA passed; ready to merge” comment, so the branch
-  stays until the merge. Smoke on `main` remains a later phase.
+  merging; QA tests the branch and reports `ens test pass|fail`. A pass marks
+  the issue **Ready to merge**, assigns the merge-capable agent, writes the
+  “QA passed” comment and disables **Run now**; the stage does not rerun. Moving
+  the issue to another status clears the flag. The branch stays until the merge;
+  smoke on `main` remains a later phase. The explicit merge action is still
+  manual (RFC-2026-0003).
 - **Structured outcomes:** agents report with `ens test pass|fail`,
   `ens review approve|request-changes` or `ens block --reason`. A missing
   review/test result blocks instead of silently advancing.
@@ -237,6 +240,19 @@ parked. The guardrails now in place:
 - **Merge boundary:** the runner has no agent merge action; `bin/agent/gh`
   allows PR inspection/commenting but denies `pr merge`, `api` and other
   mutations. The human merges after QA until RFC-2026-0003 lands.
+- **Workdir isolation:** agent workdirs now default to
+  `~/.local/share/ensemble/workdirs`, outside the Ensemble checkout. Nested
+  `var/workdirs` made the agent project resolve to the Ensemble repo itself:
+  agents switched this checkout to `agent/<KEY>` and could reset uncommitted
+  work. `ENSEMBLE_WORKDIR_ROOT` still overrides the location.
+
+The 2026-10-31 user tests (`KAN-14` to `KAN-17`) exercised the flow with the
+private `test-repo`: PO refinement, Coder PR, review approval, QA at HEAD and
+the ready handoff. `KAN-17` completed all four stages and reached Ready to merge
+with the tech lead assigned; the Ensemble checkout stayed on its branch. The
+old `KAN-14`/`KAN-15`/`KAN-16` issues were marked ready manually after the
+earlier rerun bug.
+
 
 The dev database has the role flags set (Coder implement, Tech Lead review +
 unblock, QA test, PO interactive), the schema was updated with `bin/install`,
@@ -251,10 +267,11 @@ the critical path.
 
 ### Next moves
 
-1. Re-run the real integrations with the role flags: a private repository,
-   PO → Coder PR → reviewer approval → QA at HEAD → unblock path on failure.
-2. Add the explicit merge action/Ready to Merge gate (RFC-2026-0003) and keep
-   the post-merge smoke for the deployment phase.
+1. Add the explicit merge action/Ready to Merge gate (RFC-2026-0003) so the
+   ready handoff can be completed from the board, and keep the post-merge smoke
+   for the deployment phase.
+2. Give agents a scoped identity for issue/PR comments (the `ens` CLI) instead
+   of the current admin-authenticated comment path.
 3. Implement RFC-2026-0001 → 0002 → 0003 with the use gate at the end.
 3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
@@ -267,6 +284,8 @@ docker compose -f docker-compose.dev.yml up -d
 set -a && source .env && set +a && php bin/install
 php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
 bin/runner-loop               # in another terminal; writes var/runner-heartbeat
+# workdirs default to ~/.local/share/ensemble/workdirs; keep them outside the
+# Ensemble checkout so the agent project never points at this repository.
 cd frontend && npm run dev     # needs VITE_API_URL=http://127.0.0.1:8081 in .env.local
 ```
 

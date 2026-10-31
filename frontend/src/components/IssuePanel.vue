@@ -455,6 +455,14 @@ async function submitComment() {
       </div>
     </form>
 
+    <div v-if="issue.readyToMerge && !issue.blocked" class="panel-ready">
+      <AppIcon name="check" size="16" />
+      <div>
+        <strong>Ready to merge</strong>
+        <p class="muted small">QA passed on the branch. Merge the PR and move the issue to Done.</p>
+      </div>
+    </div>
+
     <div v-if="issue.blocked" class="panel-blocked">
       <AppIcon name="warning" size="16" />
       <div>
@@ -590,7 +598,7 @@ async function submitComment() {
           <button
             type="button"
             class="button ghost"
-            :disabled="issue.blocked || !issue.assigneeId || requesting"
+            :disabled="issue.blocked || issue.readyToMerge || !issue.assigneeId || requesting"
             @click="requestRun"
           >
             Run now

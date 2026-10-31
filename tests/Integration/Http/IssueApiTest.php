@@ -112,6 +112,24 @@ final class IssueApiTest extends TestCase
         self::assertSame(409, $invalid->getStatusCode());
     }
 
+    public function testMovingAReadyIssueClearsTheMergeFlag(): void
+    {
+        $issue = $this->createIssue(['summary' => 'Ready to merge']);
+        $this->app->json($this->app->handle($this->app->request(
+            'PATCH',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue,
+            ['readyToMerge' => true],
+            $this->adminToken,
+        )));
+        $moved = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue . '/move',
+            ['statusId' => $this->refinedId],
+            $this->adminToken,
+        )));
+        self::assertFalse($moved['issue']['readyToMerge']);
+    }
+
     public function testRequiredAndChoiceFieldsAreValidated(): void
     {
         $this->createField($this->taskTypeId, [

@@ -49,6 +49,9 @@ final class IssueRecord
     #[ORM\Column(type: 'boolean')]
     private bool $blocked;
 
+    #[ORM\Column(name: 'ready_to_merge', type: 'boolean', options: ['default' => false])]
+    private bool $readyToMerge = false;
+
     /** @var array<string, mixed> */
     #[ORM\Column(name: 'field_values', type: 'json')]
     private array $fieldValues;
@@ -91,6 +94,7 @@ final class IssueRecord
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
         int $position,
+        bool $readyToMerge = false,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -103,6 +107,7 @@ final class IssueRecord
         $this->assigneeId = $assigneeId;
         $this->worker = $worker;
         $this->blocked = $blocked;
+        $this->readyToMerge = $readyToMerge;
         $this->fieldValues = $fieldValues;
         $this->workdirId = $workdirId;
         $this->parentKey = $parentKey;
@@ -123,6 +128,8 @@ final class IssueRecord
     public function assigneeId(): ?string { return $this->assigneeId; }
     public function worker(): string { return $this->worker; }
     public function blocked(): bool { return $this->blocked; }
+
+    public function readyToMerge(): bool { return $this->readyToMerge; }
     public function workdirId(): ?string { return $this->workdirId; }
     public function parentKey(): ?string { return $this->parentKey; }
     /** @return array<string, mixed> */
@@ -145,6 +152,7 @@ final class IssueRecord
         DateTimeImmutable $updatedAt,
         DateTimeImmutable $enteredAt,
         int $position,
+        bool $readyToMerge,
     ): void {
         $this->statusId = $statusId;
         $this->summary = $summary;
@@ -152,6 +160,7 @@ final class IssueRecord
         $this->assigneeId = $assigneeId;
         $this->worker = $worker;
         $this->blocked = $blocked;
+        $this->readyToMerge = $readyToMerge;
         $this->fieldValues = $fieldValues;
         $this->workdirId = $workdirId;
         $this->updatedAt = $updatedAt;

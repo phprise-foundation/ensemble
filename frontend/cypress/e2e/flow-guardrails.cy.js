@@ -36,6 +36,17 @@ describe('role capabilities and blocked issues', () => {
     cy.contains('.table-row', name).should('not.exist')
   })
 
+  it('shows a ready-to-merge issue and disables new runs', () => {
+    cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: true }).its('status').should('eq', 200)
+
+    cy.visitApp('/')
+    cy.contains('.card', 'Frame the onboarding intent').click()
+    cy.get('.panel-ready').should('contain', 'Ready to merge')
+    cy.contains('.panel-runs button', 'Run now').should('be.disabled')
+
+    cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: false })
+  })
+
   it('blocks and unblocks an issue from the panel', () => {
     cy.wsRequest('PATCH', '/issues/KANB-1', { blocked: true }).its('status').should('eq', 200)
     cy.intercept('PATCH', '**/issues/KANB-1').as('updateIssue')

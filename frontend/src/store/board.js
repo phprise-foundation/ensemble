@@ -55,6 +55,7 @@ function normalizeEntity(collection, entity) {
       runs: entity.runs ?? [],
       repositoryId: entity.repositoryId ?? null,
       workdirState: entity.workdirState ?? null,
+      readyToMerge: entity.readyToMerge ?? false,
     }
   }
   const map = LEGACY_TO_REAL_KEYS[collection]

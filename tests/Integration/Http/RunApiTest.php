@@ -94,6 +94,26 @@ final class RunApiTest extends TestCase
         self::assertSame(409, $again->getStatusCode());
     }
 
+    public function testRejectsARunRequestWhenTheIssueIsReadyToMerge(): void
+    {
+        $agent = $this->createAgent($this->createTeam('Runner'), ['name' => 'Kaio']);
+        $issue = $this->createIssue($agent['id']);
+        $this->app->json($this->app->handle($this->app->request(
+            'PATCH',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue['key'],
+            ['readyToMerge' => true],
+            $this->adminToken,
+        )));
+
+        $response = $this->app->handle($this->app->request(
+            'POST',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        ));
+        self::assertSame(409, $response->getStatusCode());
+    }
+
     public function testRejectsARunRequestWithoutAnAssignee(): void
     {
         $issue = $this->createIssue();

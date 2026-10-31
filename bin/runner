@@ -84,7 +84,7 @@ $pullRequests = new GitHubPullRequests(
     $workdirs,
     $vcs,
     $runs,
-    new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: 'var/workdirs')),
+    new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: (getenv('HOME') . '/.local/share/ensemble/workdirs'))),
     new OpenCodeExecutor(),
     new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
     new AdvanceIssue(

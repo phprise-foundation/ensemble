@@ -47,6 +47,8 @@ final readonly class UpdateIssue
         ?bool $blocked,
         bool $fieldsProvided,
         array $fieldValues,
+        bool $readyToMergeProvided = false,
+        ?bool $readyToMerge = null,
     ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
         $issue = $this->issues->find($workspaceId, $key) ?? throw NotFoundException::issue();
@@ -66,6 +68,9 @@ final readonly class UpdateIssue
         }
         if ($blockedProvided && $blocked !== null) {
             $issue->block($blocked);
+        }
+        if ($readyToMergeProvided && $readyToMerge !== null) {
+            $readyToMerge ? $issue->markReadyToMerge() : $issue->clearReadyToMerge();
         }
         if ($fieldsProvided) {
             $issue->changeFieldValues($this->validateFields->execute(

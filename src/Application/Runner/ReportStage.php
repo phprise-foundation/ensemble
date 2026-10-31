@@ -45,6 +45,12 @@ final readonly class ReportStage
 
     public function readyToMerge(Issue $issue, string $branch): void
     {
+        $issue->markReadyToMerge();
+        $mergeAgent = $this->mergeAgentOf($issue->workspaceId());
+        if ($mergeAgent !== null) {
+            $issue->assign($mergeAgent);
+        }
+        $this->issues->update($issue);
         $this->comment(
             $issue,
             'QA passed on ' . $branch . '. Ready to merge; the branch stays until the merge.',
@@ -71,6 +77,24 @@ final readonly class ReportStage
             'runner',
             mb_substr($summary, 0, 140),
         ));
+    }
+
+    private function mergeAgentOf(WorkspaceId $workspaceId): ?string
+    {
+        foreach ($this->agents->forWorkspace($workspaceId) as $agent) {
+            if (! $agent->active()) {
+                continue;
+            }
+
+            foreach ($agent->roleIds()->all() as $roleId) {
+                $role = $this->roles->find($workspaceId, $roleId);
+                if ($role !== null && $role->merge()) {
+                    return $agent->id()->value();
+                }
+            }
+        }
+
+        return null;
     }
 
     private function unblockerOf(WorkspaceId $workspaceId): ?string
