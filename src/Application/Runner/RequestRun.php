@@ -26,6 +26,10 @@ final readonly class RequestRun
     public function execute(User $actor, WorkspaceId $workspaceId, IssueKey $key): Run
     {
         $issue = $this->issues->execute($actor, $workspaceId, $key);
+        if ($issue->readyToMerge()) {
+            throw new ConflictException('the issue is ready to merge; merge it instead of rerunning');
+        }
+
         $assignee = $issue->assigneeId()
             ?? throw new ValidationException('assigneeId', 'Assign an agent before running this issue.');
 

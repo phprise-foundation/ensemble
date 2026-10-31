@@ -77,7 +77,7 @@ final readonly class ExecuteSweep
     private function sweepWorkspace(WorkspaceId $workspaceId, DateTimeImmutable $now, array $requestedIssues): void
     {
         foreach ($this->issues->forWorkspace($workspaceId) as $issue) {
-            if ($issue->blocked() || in_array($issue->id()->value(), $requestedIssues, true)) {
+            if ($issue->blocked() || $issue->readyToMerge() || in_array($issue->id()->value(), $requestedIssues, true)) {
                 continue;
             }
 
@@ -182,6 +182,12 @@ final readonly class ExecuteSweep
 
         if ($issue->blocked()) {
             $this->finishRequested($run, 'the issue is blocked', $now);
+
+            return;
+        }
+
+        if ($issue->readyToMerge()) {
+            $this->finishRequested($run, 'the issue is ready to merge', $now);
 
             return;
         }

@@ -17,6 +17,7 @@ final class Issue
     private ?string $assigneeId;
     private string $worker;
     private bool $blocked;
+    private bool $readyToMerge;
     private FieldValues $fieldValues;
     private StatusId $statusId;
     private int $position;
@@ -46,6 +47,7 @@ final class Issue
         $this->assigneeId = $this->validAssignee($assigneeId);
         $this->worker = '';
         $this->blocked = false;
+        $this->readyToMerge = false;
         $this->fieldValues = $fieldValues;
         $this->statusId = $statusId;
         $this->position = $position;
@@ -137,6 +139,11 @@ final class Issue
         return $this->blocked;
     }
 
+    public function readyToMerge(): bool
+    {
+        return $this->readyToMerge;
+    }
+
     public function fieldValues(): FieldValues
     {
         return $this->fieldValues;
@@ -190,6 +197,21 @@ final class Issue
     public function restoreBlocked(bool $blocked): void
     {
         $this->blocked = $blocked;
+    }
+
+    public function markReadyToMerge(): void
+    {
+        $this->readyToMerge = true;
+    }
+
+    public function clearReadyToMerge(): void
+    {
+        $this->readyToMerge = false;
+    }
+
+    public function restoreReadyToMerge(bool $readyToMerge): void
+    {
+        $this->readyToMerge = $readyToMerge;
     }
 
     public function changeFieldValues(FieldValues $fieldValues): void

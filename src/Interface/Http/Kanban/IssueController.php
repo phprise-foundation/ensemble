@@ -130,6 +130,8 @@ final readonly class IssueController
             JsonBody::boolean($body, 'blocked'),
             array_key_exists('fields', $body),
             $this->fieldValues($body),
+            array_key_exists('readyToMerge', $body),
+            JsonBody::boolean($body, 'readyToMerge'),
         );
 
         return $this->responder->respond([
