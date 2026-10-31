@@ -58,6 +58,7 @@ final readonly class MoveIssue
         if (!$sameStatus) {
             $this->guardTransition($issue, $target->workflowId(), $target);
             $at = new DateTimeImmutable();
+            $issue->clearReadyToMerge();
             $issue->moveTo($target->id(), $at);
             $this->issues->update($issue);
             $this->events->add(new IssueEvent(
