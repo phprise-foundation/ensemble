@@ -187,6 +187,11 @@ final class Issue
         $this->blocked = $blocked;
     }
 
+    public function restoreBlocked(bool $blocked): void
+    {
+        $this->blocked = $blocked;
+    }
+
     public function changeFieldValues(FieldValues $fieldValues): void
     {
         $this->fieldValues = $fieldValues;

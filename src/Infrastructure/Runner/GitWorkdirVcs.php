@@ -61,6 +61,12 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
     }
 
     #[Override]
+    public function discard(Workdir $workdir, string $path): Outcome
+    {
+        return $this->git->discard($path);
+    }
+
+    #[Override]
     public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome
     {
         $repository = $this->bound($workdir);

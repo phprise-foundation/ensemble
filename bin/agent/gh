@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# The runner owns GitHub mutations (PR open/merge). Agents may inspect and
+# comment, but they must not merge or bypass the delivery policy.
+set -euo pipefail
+
+real="${GH_REAL:-/usr/bin/gh}"
+case "${1:-} ${2:-}" in
+  "pr view"|"pr diff"|"pr comment"|"pr list"|"pr status"|"pr checks"|"issue view"|"issue comment"|"repo view")
+    exec "$real" "$@"
+    ;;
+  *)
+    echo "gh $* is not permitted for agents; use the Ensemble flow" >&2
+    exit 1
+    ;;
+esac

@@ -72,6 +72,21 @@ final class GitClient implements RepositoryProbe
         return $this->push($path, $branch, false, $token, $provider);
     }
 
+    public function discard(string $path): Outcome
+    {
+        $reset = $this->git($path, ['reset', '--hard', 'HEAD']);
+        if ($reset['exit'] !== 0) {
+            return Outcome::failed('git reset failed: ' . $this->trailing($reset['output']));
+        }
+
+        $clean = $this->git($path, ['clean', '-fd']);
+        if ($clean['exit'] !== 0) {
+            return Outcome::failed('git clean failed: ' . $this->trailing($clean['output']));
+        }
+
+        return Outcome::succeeded('local changes discarded');
+    }
+
     #[Override]
     public function probe(string $url, Provider $provider, ?string $token): ProbeResult
     {
