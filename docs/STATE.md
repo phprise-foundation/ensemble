@@ -267,6 +267,8 @@ docker compose -f docker-compose.dev.yml up -d
 set -a && source .env && set +a && php bin/install
 php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
 bin/runner-loop               # in another terminal; writes var/runner-heartbeat
+# workdirs default to ~/.local/share/ensemble/workdirs; keep them outside the
+# Ensemble checkout so the agent project never points at this repository.
 cd frontend && npm run dev     # needs VITE_API_URL=http://127.0.0.1:8081 in .env.local
 ```
 

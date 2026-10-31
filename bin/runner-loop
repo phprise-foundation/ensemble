@@ -18,7 +18,7 @@ fi
 
 export XDEBUG_MODE=off
 export DATABASE_URL="${DATABASE_URL:-pgsql://phprise:phprise@127.0.0.1:5432/phprise}"
-export ENSEMBLE_WORKDIR_ROOT="${ENSEMBLE_WORKDIR_ROOT:-var/workdirs}"
+export ENSEMBLE_WORKDIR_ROOT="${ENSEMBLE_WORKDIR_ROOT:-$HOME/.local/share/ensemble/workdirs}"
 
 HEARTBEAT="${ENSEMBLE_RUNNER_HEARTBEAT:-var/runner-heartbeat}"
 POLL="${RUNNER_POLL_SECONDS:-10}"
