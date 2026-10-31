@@ -52,6 +52,11 @@ final class TeamApiTest extends TestCase
         self::assertSame([$role], array_column($roles['roles'], 'id'));
         self::assertTrue($roles['roles'][0]['unblock']);
         self::assertFalse($roles['roles'][0]['interactive']);
+        self::assertFalse($roles['roles'][0]['implement']);
+        self::assertFalse($roles['roles'][0]['review']);
+        self::assertFalse($roles['roles'][0]['test']);
+        self::assertFalse($roles['roles'][0]['merge']);
+        self::assertFalse($roles['roles'][0]['deploy']);
 
         $profiles = $this->app->json($this->app->handle($this->app->request(
             'GET',
@@ -65,12 +70,17 @@ final class TeamApiTest extends TestCase
         $updated = $this->app->json($this->app->handle($this->app->request(
             'PATCH',
             '/api/workspaces/' . $this->workspaceId . '/roles/' . $role,
-            ['name' => 'Builder', 'unblock' => false, 'interactive' => true],
+            ['name' => 'Builder', 'unblock' => false, 'interactive' => true, 'implement' => true, 'review' => true, 'test' => true, 'merge' => true, 'deploy' => true],
             $this->adminToken,
         )));
         self::assertSame('Builder', $updated['role']['name']);
         self::assertFalse($updated['role']['unblock']);
         self::assertTrue($updated['role']['interactive']);
+        self::assertTrue($updated['role']['implement']);
+        self::assertTrue($updated['role']['review']);
+        self::assertTrue($updated['role']['test']);
+        self::assertTrue($updated['role']['merge']);
+        self::assertTrue($updated['role']['deploy']);
         self::assertSame('Implements the planned work.', $updated['role']['description']);
 
         $updatedProfile = $this->app->json($this->app->handle($this->app->request(
@@ -250,6 +260,11 @@ final class TeamApiTest extends TestCase
         bool $unblock,
         bool $interactive,
         ?string $workspaceId = null,
+        bool $implement = false,
+        bool $review = false,
+        bool $test = false,
+        bool $merge = false,
+        bool $deploy = false,
     ): string {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
@@ -259,6 +274,11 @@ final class TeamApiTest extends TestCase
                 'description' => $description,
                 'unblock' => $unblock,
                 'interactive' => $interactive,
+                'implement' => $implement,
+                'review' => $review,
+                'test' => $test,
+                'merge' => $merge,
+                'deploy' => $deploy,
             ],
             $this->adminToken,
         )), 201);

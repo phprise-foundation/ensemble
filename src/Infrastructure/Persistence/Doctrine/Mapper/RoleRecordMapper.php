@@ -24,6 +24,11 @@ final class RoleRecordMapper
             $record->interactive(),
             $record->createdAt(),
             $record->updatedAt(),
+            $record->implement(),
+            $record->review(),
+            $record->test(),
+            $record->merge(),
+            $record->deploy(),
         );
     }
 
@@ -39,6 +44,11 @@ final class RoleRecordMapper
             $role->interactive(),
             $role->createdAt(),
             $role->updatedAt(),
+            $role->implement(),
+            $role->review(),
+            $role->test(),
+            $role->merge(),
+            $role->deploy(),
         );
     }
 
@@ -50,6 +60,11 @@ final class RoleRecordMapper
             $role->unblock(),
             $role->interactive(),
             $role->updatedAt(),
+            $role->implement(),
+            $role->review(),
+            $role->test(),
+            $role->merge(),
+            $role->deploy(),
         );
     }
 }

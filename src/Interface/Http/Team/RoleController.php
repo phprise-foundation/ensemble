@@ -60,6 +60,11 @@ final readonly class RoleController
             JsonBody::string($body, 'description') ?? '',
             JsonBody::boolean($body, 'unblock') ?? false,
             JsonBody::boolean($body, 'interactive') ?? false,
+            JsonBody::boolean($body, 'implement') ?? false,
+            JsonBody::boolean($body, 'review') ?? false,
+            JsonBody::boolean($body, 'test') ?? false,
+            JsonBody::boolean($body, 'merge') ?? false,
+            JsonBody::boolean($body, 'deploy') ?? false,
         );
 
         return $this->responder->respond(['role' => $this->presenter->present($role)], 201);
@@ -94,6 +99,11 @@ final readonly class RoleController
                 JsonBody::string($body, 'description'),
                 JsonBody::boolean($body, 'unblock'),
                 JsonBody::boolean($body, 'interactive'),
+                JsonBody::boolean($body, 'implement'),
+                JsonBody::boolean($body, 'review'),
+                JsonBody::boolean($body, 'test'),
+                JsonBody::boolean($body, 'merge'),
+                JsonBody::boolean($body, 'deploy'),
             )),
         ]);
     }

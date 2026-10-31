@@ -26,9 +26,9 @@ WS=$(api GET /api/workspaces | field "['workspaces'][0]['id']")
 # Workflow Standard + issue type + statuses (roles come before statuses).
 TEAM=$(api POST "/api/workspaces/$WS/teams" '{"name":"Default team"}' | field "['team']['id']")
 ROLE_PO=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Product Owner","description":"Turns intent into a framed problem.","interactive":true}' | field "['role']['id']")
-ROLE_TL=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Tech Lead","description":"Reviews changes and unblocks impediments.","unblock":true}' | field "['role']['id']")
-ROLE_CODER=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Coder","description":"Implements the planned work."}' | field "['role']['id']")
-ROLE_QA=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Quality Assurance","description":"Refines acceptance and verifies outcomes."}' | field "['role']['id']")
+ROLE_TL=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Tech Lead","description":"Reviews changes and unblocks impediments.","unblock":true,"review":true}' | field "['role']['id']")
+ROLE_CODER=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Coder","description":"Implements the planned work.","implement":true}' | field "['role']['id']")
+ROLE_QA=$(api POST "/api/workspaces/$WS/teams/$TEAM/roles" '{"name":"Quality Assurance","description":"Refines acceptance and verifies outcomes.","test":true}' | field "['role']['id']")
 
 WF=$(api POST "/api/workspaces/$WS/workflows" '{"name":"Standard"}' | field "['workflow']['id']")
 TASK=$(api POST "/api/workspaces/$WS/workflows/$WF/issue-types" '{"name":"Task","level":1}' | field "['issueType']['id']")

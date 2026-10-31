@@ -31,6 +31,11 @@ final readonly class CreateRole
         string $description,
         bool $unblock,
         bool $interactive,
+        bool $implement = false,
+        bool $review = false,
+        bool $test = false,
+        bool $merge = false,
+        bool $deploy = false,
     ): Role {
         $this->guard->assertManager($actor, $workspaceId);
         $this->teams->find($workspaceId, $teamId) ?? throw NotFoundException::team();
@@ -43,6 +48,11 @@ final readonly class CreateRole
             $description,
             $unblock,
             $interactive,
+            implement: $implement,
+            review: $review,
+            test: $test,
+            merge: $merge,
+            deploy: $deploy,
         );
         $this->roles->add($role);
 

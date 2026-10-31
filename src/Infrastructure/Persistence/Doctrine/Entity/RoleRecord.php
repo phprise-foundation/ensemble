@@ -35,6 +35,21 @@ final class RoleRecord
     #[ORM\Column(type: 'boolean')]
     private bool $interactive;
 
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $implement;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $review;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $test;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $merge;
+
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $deploy;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -51,6 +66,11 @@ final class RoleRecord
         bool $interactive,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
+        bool $implement = false,
+        bool $review = false,
+        bool $test = false,
+        bool $merge = false,
+        bool $deploy = false,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -59,6 +79,11 @@ final class RoleRecord
         $this->description = $description;
         $this->unblock = $unblock;
         $this->interactive = $interactive;
+        $this->implement = $implement;
+        $this->review = $review;
+        $this->test = $test;
+        $this->merge = $merge;
+        $this->deploy = $deploy;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -98,6 +123,31 @@ final class RoleRecord
         return $this->interactive;
     }
 
+    public function implement(): bool
+    {
+        return $this->implement;
+    }
+
+    public function review(): bool
+    {
+        return $this->review;
+    }
+
+    public function test(): bool
+    {
+        return $this->test;
+    }
+
+    public function merge(): bool
+    {
+        return $this->merge;
+    }
+
+    public function deploy(): bool
+    {
+        return $this->deploy;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
@@ -114,11 +164,21 @@ final class RoleRecord
         bool $unblock,
         bool $interactive,
         DateTimeImmutable $updatedAt,
+        bool $implement,
+        bool $review,
+        bool $test,
+        bool $merge,
+        bool $deploy,
     ): void {
         $this->name = $name;
         $this->description = $description;
         $this->unblock = $unblock;
         $this->interactive = $interactive;
         $this->updatedAt = $updatedAt;
+        $this->implement = $implement;
+        $this->review = $review;
+        $this->test = $test;
+        $this->merge = $merge;
+        $this->deploy = $deploy;
     }
 }
