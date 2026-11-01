@@ -15,6 +15,7 @@ use App\Domain\Kanban\IssueCommentId;
 use App\Domain\Kanban\IssueEvent;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueEventType;
+use App\Domain\Team\Agent;
 use App\Domain\Team\AgentId;
 use App\Domain\Tenancy\WorkspaceId;
 
@@ -41,6 +42,32 @@ final readonly class ReportStage
         $mention = $unblocker === null ? '' : "\n@" . $this->agentName($issue->workspaceId(), $unblocker) . ' please unblock.';
         $body = mb_substr('Run failed: ' . $summary . ($detail === '' ? '' : "\n" . $detail), 0, 900) . $mention;
         $this->comment($issue, $body, 'Run failed: ' . $summary);
+    }
+
+    public function agentComment(Issue $issue, Agent $agent, string $body): void
+    {
+        $trimmed = trim($body);
+        if ($trimmed === '') {
+            return;
+        }
+
+        $this->comments->add(new IssueComment(
+            IssueCommentId::generate(),
+            $issue->workspaceId(),
+            $issue->id(),
+            $agent->name(),
+            mb_substr($trimmed, 0, 1023),
+        ));
+        $this->events->add(new IssueEvent(
+            IssueEventId::generate(),
+            $issue->workspaceId(),
+            $issue->id(),
+            IssueEventType::Comment,
+            null,
+            null,
+            $agent->name(),
+            mb_substr($trimmed, 0, 140),
+        ));
     }
 
     public function readyToMerge(Issue $issue, string $branch): void

@@ -64,6 +64,7 @@ final readonly class PromptComposer
             $lines[] = 'Definition of done: the issue/specification you own is updated or clarified.';
         }
 
+        $lines[] = 'To leave a note or refinement on the issue, run `ens comment --body "..."`. Do not use the board API or act as an administrator.';
         $lines[] = 'If you are blocked, run `ens block --reason "..."`. Do not move the issue to another status yourself.';
 
         return implode("\n", $lines);

@@ -60,6 +60,7 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Domain\Vcs\GitRepositoryId;
+use App\Domain\Vcs\MergeResult;
 use App\Domain\Vcs\PullRequestResult;
 use App\Domain\Vcs\PullRequests;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
@@ -651,7 +652,21 @@ final class RunnerSweepTest extends TestCase
         self::assertStringContainsString('Status: Inbox', $prompt);
         self::assertStringContainsString('Role: Coder', $prompt);
         self::assertStringContainsString('ens block --reason', $prompt);
+        self::assertStringContainsString('ens comment --body', $prompt);
         self::assertStringContainsString('Definition of done', $prompt);
+    }
+
+    public function testAgentCommentsAreStoredWithTheAgentIdentity(): void
+    {
+        $this->attachPending();
+        $this->executor->comments = ['A refinement from the coder'];
+
+        $this->sweep();
+
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertCount(1, $comments);
+        self::assertSame('Kaio', $comments[0]->author());
+        self::assertSame('A refinement from the coder', $comments[0]->body());
     }
 
     public function testPoStageDoesNotPublishAndDiscardsLocalEdits(): void
@@ -928,6 +943,12 @@ final class RecordedPullRequests implements PullRequests
             ? PullRequestResult::opened('https://github.com/acme/app/pull/1')
             : PullRequestResult::failed($this->failure);
     }
+
+    #[Override]
+    public function merge(Workdir $workdir, int $number, string $method): MergeResult
+    {
+        return MergeResult::merged('merged');
+    }
 }
 
 final class RecordedExecutor implements AgentExecutor
@@ -946,6 +967,9 @@ final class RecordedExecutor implements AgentExecutor
 
     public ?string $failure = null;
 
+    /** @var list<string> */
+    public array $comments = [];
+
     #[Override]
     public function execute(Agent $agent, string $workdirPath, string $prompt, AgentRunContext $context): Outcome
     {
@@ -959,6 +983,9 @@ final class RecordedExecutor implements AgentExecutor
 
         if ($this->outcome !== null) {
             file_put_contents($context->outcomePath(), (string) json_encode($this->outcome));
+        }
+        foreach ($this->comments as $body) {
+            file_put_contents($context->commentPath(), (string) json_encode(['body' => $body]) . "\n", FILE_APPEND);
         }
 
         return Outcome::succeeded('changes pushed');

@@ -29,6 +29,25 @@ final class EnsCommandTest extends TestCase
         self::assertSame('test_passed', $data['outcome']);
     }
 
+    public function testQueuesAnAgentComment(): void
+    {
+        $commentPath = sys_get_temp_dir() . '/ensemble-comment-test-' . bin2hex(random_bytes(6)) . '.jsonl';
+        $bin = dirname(__DIR__, 4) . '/bin/ens';
+        $line = sprintf(
+            'ENS_COMMENT_FILE=%s %s %s comment --body %s',
+            escapeshellarg($commentPath),
+            escapeshellarg(PHP_BINARY),
+            escapeshellarg($bin),
+            escapeshellarg('A refinement from the coder'),
+        );
+        exec($line . ' 2>&1', $output, $code);
+        $data = json_decode((string) file_get_contents($commentPath), true);
+        @unlink($commentPath);
+
+        self::assertSame(0, $code, implode("\n", $output));
+        self::assertSame('A refinement from the coder', $data['body']);
+    }
+
     public function testRequiresAReasonForAFailure(): void
     {
         [$code] = $this->runCommand('test fail', 'test_passed,test_failed,blocked');

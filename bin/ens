@@ -7,10 +7,34 @@ $args = array_slice($argv, 1);
 $command = $args[0] ?? '';
 $sub = $args[1] ?? '';
 $reason = '';
+$body = '';
 foreach ($args as $index => $argument) {
     if ($argument === '--reason') {
         $reason = $args[$index + 1] ?? '';
     }
+    if ($argument === '--body') {
+        $body = $args[$index + 1] ?? '';
+    }
+}
+
+if ($command === 'comment') {
+    $body = trim($body === '' ? $sub : $body);
+    if ($body === '') {
+        fwrite(STDERR, "usage: ens comment --body \"...\"\n");
+        exit(1);
+    }
+    if (mb_strlen($body) > 1023) {
+        fwrite(STDERR, "comments must have at most 1023 characters\n");
+        exit(1);
+    }
+    $commentPath = getenv('ENS_COMMENT_FILE');
+    if ($commentPath === false || $commentPath === '') {
+        fwrite(STDERR, "ENS_COMMENT_FILE is not configured\n");
+        exit(1);
+    }
+    file_put_contents($commentPath, (string) json_encode(['body' => $body]) . "\n", FILE_APPEND);
+    echo "Comment queued.\n";
+    exit(0);
 }
 
 $outcome = match ($command . ' ' . $sub) {
