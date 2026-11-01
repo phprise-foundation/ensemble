@@ -57,7 +57,7 @@ onUnmounted(() => {
       role="separator"
       tabindex="0"
       aria-orientation="horizontal"
-      aria-label="Redimensionar console"
+      aria-label="Resize console"
       @keydown="onKeydown"
       @pointerdown="onPointerDown"
       @dblclick="emit('reset')"
@@ -85,7 +85,7 @@ onUnmounted(() => {
           Agents
         </button>
       </div>
-      <button class="icon-btn" type="button" title="Fechar console" aria-label="Fechar console" @click="emit('close')">
+      <button class="icon-btn" type="button" title="Close console" aria-label="Close console" @click="emit('close')">
         ×
       </button>
     </div>

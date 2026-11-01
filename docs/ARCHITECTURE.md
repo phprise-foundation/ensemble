@@ -25,8 +25,12 @@ renders `consoleStore` as a `role="log"` stream, and `ConsoleInput.vue`
 forwards the typed text to `store/commands.js::runCommand` (closed catalog),
 disabling input and submit while `consoleStore.state.busy` is set. `ConsoleOutput.vue`
 renders the log with a 24px autoscroll anchor, a render-only actor filter and a
-jump pill for unread messages; message text is always interpolated; the console
-labels follow the board's pt-BR contract. The header has two tabs: the unchanged
+jump pill for unread messages; message text is always interpolated. Console
+chrome labels are English (the app's default language); persisted board data
+and agent messages keep their authored language until the translation layer
+lands. Error toasts are sticky and copyable and `toast.error` also appends the
+same text to the console history, so closing the notice does not lose it. The
+header has two tabs: the unchanged
 console and **Agents**, a simplified monitor (`AgentMonitor.vue`) fed by the
 activity poll — running (active run, issue, stage), sleeping (active agent with
 no run) and inactive. `store/console.js` owns
@@ -37,7 +41,7 @@ both comment payloads (camelCase fake backend and PHP presenter), deduplicating
 by comment key and pausing while the tab is hidden; `store/commands.js` executes
 the closed command catalog locally against `boardStore`. The grid is proven the
 way the user uses it: `tests/console.feature` is the single source of acceptance
-(16 scenarios, pt-BR) mapped one-to-one onto `tests/console.test.mjs` (node:test
+(16 BDD scenarios in pt-BR with English UI labels) mapped one-to-one onto `tests/console.test.mjs` (node:test
 integration), `tests/console.spec.js` and `tests/console-output.spec.js`
 (vitest components) and `cypress/e2e/console.cy.js` (real browser). The E2E
 harness (`run-e2e.sh`) aborts with status 1 when the requested port is busy or

@@ -42,11 +42,11 @@ before P5.
 
 ### Current bar
 
-- Backend: **190 PHPUnit tests / 1191 assertions**, Psalm level 1, **0 errors**.
+- Backend: **191 PHPUnit tests / 1193 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
-- Frontend unit: **248/248** (vitest).
+- Frontend unit: **249/249** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
 - Real E2E: **131/131 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
@@ -314,6 +314,16 @@ earlier rerun bug.
   comment, PR mirror, description identity and non-interactive rejection,
   commit author/message assertions, branch-name/PR/merge/deletion coverage,
   and an `activity-monitor.cy.js` spec for board movement and the monitor.
+- **Error visibility:** error toasts are sticky, larger, `role="alert"`, have a
+  **Copy** button and a “Saved to the console.” hint. `toast.error` appends the
+  same text to the console history, so the message survives closing the toast.
+  Provider 405 merge failures now explain the likely conflict and include the
+  PR URL (for example, KAN-14/PR #2 was `CONFLICTING`). The console chrome
+  (filter, empty state, input, jump pill) is English; only persisted board data
+  and agent-authored messages stay in Portuguese until the translation layer.
+- **Console wording:** the filter default is **All**, the input is **Console
+  input**/“Type a command…”, and the command responses (`/status`, `/list`,
+  `/help`, unknown command) are English. The BDD remains the test contract.
 - **Merge hotfix (2026-11-01):** the first live merges answered 500 because
   `MergePullRequest` called `CommitMessage::typeForBranch` without importing
   `App\Domain\Runner\CommitMessage`; PHP looked for the class in the

@@ -11,6 +11,7 @@ use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Tenancy\WorkspaceId;
+use App\Domain\Vcs\MergeResult;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -35,6 +36,22 @@ final class MergePullRequestTest extends TestCase
         $title = $method->invoke($merge, $issue, 'Kaio', 'feat/KAN-19-novo-teste-de-integracao', 7);
 
         self::assertSame('feat(Kaio/KAN-19): Novo teste de integração (#7)', $title);
+    }
+
+    public function testExplainsAProvider405AsMergeConflictsWithThePullRequestUrl(): void
+    {
+        $reflection = new ReflectionClass(MergePullRequest::class);
+        $merge = $reflection->newInstanceWithoutConstructor();
+        $method = $reflection->getMethod('mergeFailure');
+
+        $message = $method->invoke(
+            $merge,
+            MergeResult::failed('GitHub rejected the merge (405): Pull Request is not mergeable'),
+            'https://github.com/acme/app/pull/2',
+        );
+
+        self::assertStringContainsString('conflicts with the base branch', $message);
+        self::assertStringContainsString('https://github.com/acme/app/pull/2', $message);
     }
 
     public function testLegacyAgentBranchesFallBackToFeat(): void

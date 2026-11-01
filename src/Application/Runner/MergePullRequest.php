@@ -22,6 +22,7 @@ use App\Domain\Runner\CommitMessage;
 use App\Domain\Team\AgentId;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
+use App\Domain\Vcs\MergeResult;
 use App\Domain\Vcs\PullRequests;
 
 final readonly class MergePullRequest
@@ -73,7 +74,7 @@ final readonly class MergePullRequest
         ]);
         $merge = $this->pullRequests->merge($workdir, $number, $method, $mergeTitle, $mergeBody);
         if ($merge->isFailed()) {
-            throw new ConflictException($merge->message());
+            throw new ConflictException($this->mergeFailure($merge, $url));
         }
 
         $moved = $this->moveIssue->execute($actor, $workspaceId, $key, $target->id());
@@ -104,6 +105,18 @@ final readonly class MergePullRequest
                 'branchDeleted' => $branchDeleted,
             ],
         ];
+    }
+
+    private function mergeFailure(MergeResult $merge, string $url): string
+    {
+        $message = $merge->message();
+        $message = rtrim($message, " \t\n\r.") . '.';
+        if (str_contains($message, '(405)')) {
+            return $message . ' GitHub reports the pull request is not mergeable; it usually has conflicts with the base branch. Resolve them at '
+                . $url . ' and try again.';
+        }
+
+        return $message . ' Pull request: ' . $url;
     }
 
     private function mergeCommitTitle(Issue $issue, string $implementerName, string $branch, int $number): string

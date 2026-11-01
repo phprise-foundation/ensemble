@@ -99,7 +99,7 @@ function reportFailure(error) {
   consoleStore.append({
     actor: SYSTEM_ACTOR,
     kind: 'error',
-    text: `Falha ao consultar o board: ${error?.message ?? error}`,
+    text: `Failed to read the board: ${error?.message ?? error}`,
     at: new Date().toISOString(),
   })
 }
@@ -142,6 +142,19 @@ export const consoleStore = {
   resetDedupe() {
     seen.clear()
     failureReported = false
+  },
+
+  recordError(text) {
+    const trimmed = String(text ?? '').trim()
+    if (trimmed === '') {
+      return
+    }
+    consoleStore.append({
+      actor: SYSTEM_ACTOR,
+      kind: 'error',
+      text: trimmed,
+      at: new Date().toISOString(),
+    })
   },
 
   clear() {

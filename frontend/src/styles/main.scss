@@ -2145,7 +2145,7 @@ textarea[aria-invalid='true'] {
   flex-direction: column;
   gap: 8px;
   z-index: 70;
-  max-width: 320px;
+  max-width: 420px;
 }
 
 .toast {
@@ -2160,6 +2160,59 @@ textarea[aria-invalid='true'] {
   gap: 8px;
   box-shadow: var(--shadow);
   animation: toast-in 0.18s ease;
+}
+
+.toast.error {
+  border-left-width: 5px;
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface-2));
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--danger) 18%, transparent), var(--shadow);
+}
+
+.toast-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.toast-title {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--danger);
+}
+
+.toast-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.toast-hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.toast-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.toast-action {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.toast-action:hover {
+  border-color: var(--muted);
 }
 
 .toast.success {
@@ -2189,10 +2242,17 @@ textarea[aria-invalid='true'] {
 .toast.warning .toast-icon { color: var(--warning); }
 
 .toast-close {
-  margin-left: auto;
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  .toast-host {
+    left: 12px;
+    right: 12px;
+    max-width: none;
+  }
 }
 
 @keyframes toast-in {

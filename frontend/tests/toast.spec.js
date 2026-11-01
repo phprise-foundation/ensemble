@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { toast } from '../src/store/toast.js'
+import { consoleStore } from '../src/store/console.js'
 
 describe('toast', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     toast.toasts.splice(0)
+    consoleStore.clear()
   })
 
   afterEach(() => {
     toast.toasts.splice(0)
+    consoleStore.clear()
     vi.useRealTimers()
   })
 
@@ -31,13 +34,23 @@ describe('toast', () => {
     expect(toast.toasts).to.have.length(0)
   })
 
-  it('expira erro e aviso em 6s', () => {
+  it('keeps errors visible until dismissed and expires warnings in 6s', () => {
     toast.error('falhou')
     toast.warning('atenção')
-    vi.advanceTimersByTime(5999)
-    expect(toast.toasts).to.have.length(2)
-    vi.advanceTimersByTime(1)
+    vi.advanceTimersByTime(6000)
+
+    expect(toast.toasts.map((item) => item.kind)).to.deep.equal(['error'])
+    toast.dismiss(toast.toasts[0].id)
     expect(toast.toasts).to.have.length(0)
+  })
+
+  it('records errors in the console history', () => {
+    toast.error('GitHub rejected the merge (405)')
+
+    expect(consoleStore.state.messages).to.have.length(1)
+    expect(consoleStore.state.messages[0].kind).to.equal('error')
+    expect(consoleStore.state.messages[0].actor).to.equal('system')
+    expect(consoleStore.state.messages[0].text).to.equal('GitHub rejected the merge (405)')
   })
 
   it('dismiss remove pelo id', () => {
