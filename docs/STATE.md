@@ -42,7 +42,7 @@ before P5.
 
 ### Current bar
 
-- Backend: **188 PHPUnit tests / 1189 assertions**, Psalm level 1, **0 errors**.
+- Backend: **190 PHPUnit tests / 1191 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
@@ -314,6 +314,13 @@ earlier rerun bug.
   comment, PR mirror, description identity and non-interactive rejection,
   commit author/message assertions, branch-name/PR/merge/deletion coverage,
   and an `activity-monitor.cy.js` spec for board movement and the monitor.
+- **Merge hotfix (2026-11-01):** the first live merges answered 500 because
+  `MergePullRequest` called `CommitMessage::typeForBranch` without importing
+  `App\Domain\Runner\CommitMessage`; PHP looked for the class in the
+  Application namespace before reaching GitHub. The import is fixed and
+  `MergePullRequestTest` now exercises the merge-title builder, which would
+  fail on the missing class. The three failed attempts happened before any
+  provider call, so the PRs and ready flags were untouched.
 
 
 

@@ -253,8 +253,9 @@ final readonly class TenancyBootstrap
         $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
         $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
         $workdirRoot = getenv('ENSEMBLE_WORKDIR_ROOT');
+        $home = getenv('HOME');
         $workdirRoot = $workdirRoot === false || $workdirRoot === ''
-            ? (string) (getenv('HOME') ?: '.') . '/.local/share/ensemble/workdirs'
+            ? ($home === false || $home === '' ? '.' : $home) . '/.local/share/ensemble/workdirs'
             : $workdirRoot;
         $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());

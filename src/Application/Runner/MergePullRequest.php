@@ -18,6 +18,8 @@ use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusType;
+use App\Domain\Runner\CommitMessage;
+use App\Domain\Team\AgentId;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Vcs\PullRequests;
@@ -63,11 +65,7 @@ final readonly class MergePullRequest
         $this->moveIssue->assertCanMove($issue, $target);
 
         $branch = $workdir->branch()?->value() ?? '';
-        $mergeTitle = mb_substr(
-            CommitMessage::typeForBranch($branch) . '(' . $implementerName . '/' . $issue->key()->value() . '): ' . $issue->summary() . ' (#' . $number . ')',
-            0,
-            240,
-        );
+        $mergeTitle = $this->mergeCommitTitle($issue, $implementerName, $branch, $number);
         $mergeBody = implode("\n", [
             'Implemented by: ' . $implementerName,
             'Merged by: ' . $actor->login()->value(),
@@ -106,6 +104,15 @@ final readonly class MergePullRequest
                 'branchDeleted' => $branchDeleted,
             ],
         ];
+    }
+
+    private function mergeCommitTitle(Issue $issue, string $implementerName, string $branch, int $number): string
+    {
+        return mb_substr(
+            CommitMessage::typeForBranch($branch) . '(' . $implementerName . '/' . $issue->key()->value() . '): ' . $issue->summary() . ' (#' . $number . ')',
+            0,
+            240,
+        );
     }
 
     /** @return array{0: string, 1: AgentId} */
