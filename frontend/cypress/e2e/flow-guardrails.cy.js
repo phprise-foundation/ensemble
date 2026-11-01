@@ -47,6 +47,39 @@ describe('role capabilities and blocked issues', () => {
     cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: false })
   })
 
+  it('merges a ready issue from the panel', () => {
+    cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: true }).its('status').should('eq', 200)
+
+    cy.wsSnapshot().then((snapshot) => {
+      const issue = snapshot.issues.find((candidate) => candidate.key === 'KANB-1')
+      const done = snapshot.statuses.find(
+        (status) => status.issueTypeId === issue.issueTypeId && status.name === 'Done',
+      )
+      cy.intercept('POST', '**/issues/KANB-1/merge', {
+        statusCode: 200,
+        body: {
+          issue: { ...issue, statusId: done.id, readyToMerge: false },
+          merge: { url: 'https://github.com/example/repo/pull/1', sha: 'abc123', message: 'merged' },
+        },
+      }).as('merge')
+
+      cy.visitApp('/')
+      cy.contains('.card', 'Frame the onboarding intent').click()
+      cy.get('.panel-ready').should('exist')
+      cy.contains('.panel-ready button', 'Merge PR').click()
+      cy.get('.dialog-confirm').click()
+      cy.wait('@merge').its('request.body.method').should('eq', 'merge')
+      cy.get('.toast').should('contain', 'Pull request merged.')
+      cy.get('.panel-ready').should('not.exist')
+      cy.get('.issue-panel .field')
+        .filter((_, element) => element.querySelector('span')?.textContent.trim() === 'Status')
+        .find('select')
+        .should('have.value', done.id)
+
+      cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: false })
+    })
+  })
+
   it('blocks and unblocks an issue from the panel', () => {
     cy.wsRequest('PATCH', '/issues/KANB-1', { blocked: true }).its('status').should('eq', 200)
     cy.intercept('PATCH', '**/issues/KANB-1').as('updateIssue')

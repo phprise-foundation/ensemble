@@ -390,6 +390,21 @@ export const boardStore = {
     }
   },
 
+  async mergeIssue(issueId, method = 'merge') {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const payload = await request('POST', scoped(`/issues/${issue.key}/merge`), { method })
+    const updated = presented(payload.issue)
+    const index = state.issues.findIndex((item) => item.id === issueId)
+    if (index >= 0) {
+      state.issues.splice(index, 1, updated)
+      await hydrateIssue(state.issues[index])
+    }
+    return payload
+  },
+
   async requestRun(issueId) {
     const issue = issueOf(issueId)
     if (!issue) {
