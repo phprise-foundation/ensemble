@@ -107,6 +107,11 @@ final readonly class MoveIssue
         }
     }
 
+    public function assertCanMove(Issue $issue, Status $target): void
+    {
+        $this->guardTransition($issue, $target->workflowId(), $target);
+    }
+
     private function guardTransition(Issue $issue, WorkflowId $workflowId, Status $target): void
     {
         foreach ($this->transitions->forWorkflow($issue->workspaceId(), $workflowId) as $transition) {

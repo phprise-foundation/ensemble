@@ -115,6 +115,37 @@ final class GitHubPullRequestsTest extends TestCase
         self::assertCount(0, $this->http->requests);
     }
 
+    public function testMergesAPullRequestWithTheStoredToken(): void
+    {
+        $this->repositories->repository = $this->repository();
+        $this->http->responses = [
+            new GitHubResponse(200, '{"sha":"abc123","message":"Pull Request successfully merged"}'),
+        ];
+
+        $result = $this->client()->merge($this->workdir, 7, 'merge');
+
+        self::assertFalse($result->isFailed());
+        self::assertSame('abc123', $result->sha());
+        self::assertCount(1, $this->http->requests);
+        self::assertSame('PUT', $this->http->requests[0]['method']);
+        self::assertStringContainsString('/repos/acme/app/pulls/7/merge', $this->http->requests[0]['url']);
+        self::assertSame('merge', $this->http->requests[0]['payload']['merge_method']);
+        self::assertSame('secret-token', $this->http->requests[0]['token']);
+    }
+
+    public function testReportsAMergeRejection(): void
+    {
+        $this->repositories->repository = $this->repository();
+        $this->http->responses = [
+            new GitHubResponse(405, '{"message":"Pull Request is not mergeable"}'),
+        ];
+
+        $result = $this->client()->merge($this->workdir, 7, 'merge');
+
+        self::assertTrue($result->isFailed());
+        self::assertStringContainsString('not mergeable', $result->message());
+    }
+
     public function testFailsWhenGitHubRejectsThePullRequest(): void
     {
         $this->repositories->repository = $this->repository();

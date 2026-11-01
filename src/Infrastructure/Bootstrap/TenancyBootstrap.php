@@ -74,6 +74,7 @@ use App\Application\Runner\PromptComposer;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\VarWorkdirPaths;
+use App\Application\Runner\MergePullRequest;
 use App\Application\Runner\RequestRun;
 use App\Application\Runner\ResolveProfile;
 use App\Application\Team\CreateAgent;
@@ -154,6 +155,8 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRe
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineGitRepositories;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
 use App\Infrastructure\Security\SodiumSecretCipher;
+use App\Infrastructure\Vcs\GitHubPullRequests;
+use App\Infrastructure\Vcs\StreamGitHubHttp;
 use App\Interface\Http\JsonResponder;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
@@ -260,6 +263,8 @@ final readonly class TenancyBootstrap
         $gitRepositories = new DoctrineGitRepositories($entityManager, new GitRepositoryRecordMapper());
         $workdirs = new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMapper());
         $secretCipher = SodiumSecretCipher::fromEnvironment();
+        $githubApiUrl = getenv('GITHUB_API_URL');
+        $githubApiUrl = $githubApiUrl === false || $githubApiUrl === '' ? 'https://api.github.com' : $githubApiUrl;
         $secretPresenter = new SecretPresenter();
         $repositoryPresenter = new RepositoryPresenter();
         $workdirPresenter = new WorkdirPresenter();
@@ -387,6 +392,22 @@ final readonly class TenancyBootstrap
                 $workdirPresenter,
                 $issueCommentPresenter,
                 $issueEventPresenter,
+                new MergePullRequest(
+                    new ReadIssue($issueRepository, $guard),
+                    $runs,
+                    $workdirs,
+                    $statuses,
+                    new MoveIssue($issueRepository, $statuses, $transitions, $issueEvents, $guard),
+                    new CommentIssue($issueRepository, $issueComments, $issueEvents, $guard),
+                    new GitHubPullRequests(
+                        $gitRepositories,
+                        $workspaceSecrets,
+                        $secretCipher,
+                        new StreamGitHubHttp(),
+                        $githubApiUrl,
+                    ),
+                    $guard,
+                ),
                 $this->responder,
             ),
             new TeamController(
