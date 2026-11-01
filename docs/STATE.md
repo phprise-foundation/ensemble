@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **174 PHPUnit tests / 1118 assertions**, Psalm level 1, **0 errors**.
+- Backend: **181 PHPUnit tests / 1144 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **128/128 across 21 specs**, green.
+- Real E2E: **129/129 across 21 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -237,9 +237,17 @@ parked. The guardrails now in place:
   three attempts; terminal failures or explicit blocked outcomes mark the issue
   blocked, write a runner comment mentioning the `unblock` role (Alan) and stop.
   The panel shows a Blocked banner with **Unblock**.
-- **Merge boundary:** the runner has no agent merge action; `bin/agent/gh`
-  allows PR inspection/commenting but denies `pr merge`, `api` and other
-  mutations. The human merges after QA until RFC-2026-0003 lands.
+- **Merge action:** a manager can merge a ready issue from the panel. The
+  backend uses the repository secret, calls the GitHub merge API (respecting
+  branch protection), moves the issue to the final Done status, clears the
+  ready flag and comments with the merge SHA. Agents still cannot merge:
+  `bin/agent/gh` denies `pr merge`, `api` and other mutations; deploy remains
+  the next policy slice.
+- **Agent identity on comments:** agents use `ens comment --body "..."`; the
+  runner records the comment with the agent name (Vivy, Alan, Mai) instead of
+  `admin`. The prompt tells agents not to use the board API or admin
+  credentials. Issue-description edits and PR comment mirroring still need a
+  scoped identity.
 - **Workdir isolation:** agent workdirs now default to
   `~/.local/share/ensemble/workdirs`, outside the Ensemble checkout. Nested
   `var/workdirs` made the agent project resolve to the Ensemble repo itself:
@@ -252,6 +260,22 @@ the ready handoff. `KAN-17` completed all four stages and reached Ready to merge
 with the tech lead assigned; the Ensemble checkout stayed on its branch. The
 old `KAN-14`/`KAN-15`/`KAN-16` issues were marked ready manually after the
 earlier rerun bug.
+
+### Merge action and agent comments (2026-11-01)
+
+- **Board merge:** `POST /issues/{key}/merge` validates the manager, the ready
+  flag, the latest PR URL, the current-to-Done transition and the workdir, then
+  merges on GitHub and moves the issue to Done. The panel has a confirmed
+  **Merge PR** button. The PR merge respects branch protection; failures leave
+  the issue ready and show the provider reason.
+- **Agent comments:** `ens comment --body` writes a comment report; the runner
+  records it with the agent's name. `KAN-18` showed the PO, reviewer and QA
+  comments as **Vivy**, **Alan** and **Mai**, while the human merge comment is
+  `admin`.
+- **Real runs:** `KAN-17` (PR #5) and `KAN-18` (PR #6) were merged through the
+  board action into `test-repo`; both issues reached Done with the ready flag
+  cleared. `KAN-14`/`KAN-15`/`KAN-16` remain ready with their PRs #2/#3/#4.
+
 
 
 The dev database has the role flags set (Coder implement, Tech Lead review +
@@ -267,11 +291,11 @@ the critical path.
 
 ### Next moves
 
-1. Add the explicit merge action/Ready to Merge gate (RFC-2026-0003) so the
-   ready handoff can be completed from the board, and keep the post-merge smoke
-   for the deployment phase.
-2. Give agents a scoped identity for issue/PR comments (the `ens` CLI) instead
-   of the current admin-authenticated comment path.
+1. Keep the post-merge smoke for the deployment phase and implement deploy
+   policy (RFC-2026-0003).
+2. Mirror agent comments to the PR and use a scoped identity for issue
+   description edits (the current `ens comment` already fixes comment
+   authorship).
 3. Implement RFC-2026-0001 → 0002 → 0003 with the use gate at the end.
 3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the

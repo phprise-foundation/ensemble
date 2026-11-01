@@ -12,6 +12,7 @@ use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Security\WorkspaceSecretId;
 use App\Domain\Vcs\GitHubSlug;
+use App\Domain\Vcs\MergeResult;
 use App\Domain\Vcs\Provider;
 use App\Domain\Vcs\PullRequestResult;
 use App\Domain\Vcs\PullRequests;
@@ -97,6 +98,64 @@ final readonly class GitHubPullRequests implements PullRequests
         return $url === ''
             ? PullRequestResult::failed('GitHub created the pull request without returning its URL')
             : PullRequestResult::opened($url);
+    }
+
+    #[Override]
+    public function merge(Workdir $workdir, int $number, string $method): MergeResult
+    {
+        if ($number < 1) {
+            return MergeResult::failed('the pull request number is invalid');
+        }
+        if (! in_array($method, ['merge', 'squash', 'rebase'], true)) {
+            return MergeResult::failed('the merge method must be merge, squash or rebase');
+        }
+
+        $repositoryId = $workdir->repositoryId();
+        if ($repositoryId === null) {
+            return MergeResult::failed('the workdir has no repository');
+        }
+
+        $repository = $this->repositories->find($workdir->workspaceId(), $repositoryId);
+        if ($repository === null) {
+            return MergeResult::failed('the workdir repository is no longer registered');
+        }
+        if ($repository->provider() !== Provider::GitHub) {
+            return MergeResult::failed('pull request merges are only implemented for GitHub');
+        }
+
+        try {
+            $slug = GitHubSlug::fromUrl($repository->url());
+        } catch (ValidationException $invalid) {
+            return MergeResult::failed($invalid->getMessage());
+        }
+
+        $token = $this->token($repository->workspaceId(), $repository->secretId());
+        $response = $this->http->request(
+            'PUT',
+            $this->apiBase . '/repos/' . $slug->path() . '/pulls/' . $number . '/merge',
+            $token,
+            ['merge_method' => $method],
+        );
+        if ($response->status() !== 200) {
+            return MergeResult::failed(
+                'GitHub rejected the merge (' . $response->status() . '): ' . $this->reason($response->body()),
+            );
+        }
+
+        /** @var mixed $merged */
+        $merged = json_decode($response->body(), true);
+        $sha = null;
+        $message = 'pull request merged';
+        if (is_array($merged)) {
+            if (isset($merged['sha']) && is_string($merged['sha'])) {
+                $sha = $merged['sha'];
+            }
+            if (isset($merged['message']) && is_string($merged['message'])) {
+                $message = $merged['message'];
+            }
+        }
+
+        return MergeResult::merged($message, $sha);
     }
 
     private function token(\App\Domain\Tenancy\WorkspaceId $workspaceId, ?WorkspaceSecretId $secretId): ?string

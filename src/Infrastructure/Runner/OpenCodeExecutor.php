@@ -64,6 +64,7 @@ final readonly class OpenCodeExecutor implements AgentExecutor
                 'ENS_STAGE' => $context->stage(),
                 'ENS_ROLE' => $context->role(),
                 'ENS_ALLOWED_OUTCOMES' => implode(',', $context->allowedOutcomes()),
+                'ENS_COMMENT_FILE' => $context->commentPath(),
             ],
         );
         if ($pipe === false) {

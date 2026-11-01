@@ -364,6 +364,7 @@ final readonly class ExecuteSweep
         );
         $workdirPath = $this->paths->ensure($workspaceId, $workdir->id());
         $outcomePath = $this->outcomePath($run);
+        $commentPath = $this->commentPath($run);
         $run->start($prompt, $now, self::LEASE_SECONDS);
         if ($requested === null) {
             $this->runs->add($run);
@@ -376,8 +377,13 @@ final readonly class ExecuteSweep
             $status->name(),
             $role->name(),
             $this->allowedOutcomes($capabilities),
+            $commentPath,
         );
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt, $context);
+        foreach ((new ReadAgentComments())->execute($commentPath) as $body) {
+            $this->report->agentComment($issue, $agent, $body);
+        }
+        @unlink($commentPath);
         $failure = null;
         if ($outcome->ok) {
             if ($capabilities->implement()) {
@@ -533,6 +539,19 @@ final readonly class ExecuteSweep
         }
 
         $path = $directory . '/' . $run->id()->value() . '.json';
+        @unlink($path);
+
+        return $path;
+    }
+
+    private function commentPath(Run $run): string
+    {
+        $directory = sys_get_temp_dir() . '/ensemble-comments';
+        if (! is_dir($directory)) {
+            @mkdir($directory, 0775, true);
+        }
+
+        $path = $directory . '/' . $run->id()->value() . '.jsonl';
         @unlink($path);
 
         return $path;

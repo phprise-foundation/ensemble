@@ -10,6 +10,7 @@ import IssueHistory from './IssueHistory.vue'
 import { formatCommentTimestamp, resolveAuthor } from '../lib/comment-author.js'
 import { session } from '../store/session.js'
 import { toast } from '../store/toast.js'
+import { dialog } from '../store/dialog.js'
 import {
   COMMENT_LIMIT,
   DESCRIPTION_LIMIT,
@@ -93,6 +94,7 @@ const repositoryDraft = ref('')
 const attaching = ref(false)
 const resolving = ref('')
 const requesting = ref(false)
+const merging = ref(false)
 let runPoll = null
 
 watch(
@@ -202,6 +204,29 @@ async function resolveWorkdir(strategy) {
 async function refreshRuns() {
   if (issue.value) {
     await boardStore.refreshIssue(issue.value.id)
+  }
+}
+
+async function mergePullRequest() {
+  if (!issue.value?.readyToMerge || merging.value) {
+    return
+  }
+  const confirmed = await dialog.confirm({
+    title: 'Merge pull request?',
+    message: 'The pull request is merged on the provider and the issue moves to Done.',
+    confirmLabel: 'Merge',
+  })
+  if (!confirmed) {
+    return
+  }
+  merging.value = true
+  try {
+    await boardStore.mergeIssue(issue.value.id)
+    toast.success('Pull request merged.')
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not merge the pull request.')
+  } finally {
+    merging.value = false
   }
 }
 
@@ -459,8 +484,11 @@ async function submitComment() {
       <AppIcon name="check" size="16" />
       <div>
         <strong>Ready to merge</strong>
-        <p class="muted small">QA passed on the branch. Merge the PR and move the issue to Done.</p>
+        <p class="muted small">QA passed on the branch. Merge the PR to move the issue to Done.</p>
       </div>
+      <button class="button" :disabled="merging" @click="mergePullRequest">
+        {{ merging ? 'Merging…' : 'Merge PR' }}
+      </button>
     </div>
 
     <div v-if="issue.blocked" class="panel-blocked">

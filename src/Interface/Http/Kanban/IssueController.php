@@ -15,6 +15,7 @@ use App\Application\Kanban\ReadIssue;
 use App\Application\Kanban\ResolveWorkdirs;
 use App\Application\Tenancy\ReadWorkspace;
 use App\Application\Kanban\UpdateIssue;
+use App\Application\Runner\MergePullRequest;
 use App\Application\Security\ReadCurrentUser;
 use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\Issue;
@@ -50,6 +51,7 @@ final readonly class IssueController
         private WorkdirPresenter $bindingPresenter,
         private IssueCommentPresenter $commentPresenter,
         private IssueEventPresenter $eventPresenter,
+        private MergePullRequest $mergePullRequest,
         private JsonResponder $responder,
     ) {
     }
@@ -157,6 +159,26 @@ final readonly class IssueController
 
         return $this->responder->respond([
             'issue' => $this->presenter->present($issue, $this->binding($user, $workspaceId, $issue)),
+        ]);
+    }
+
+    public function merge(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $result = $this->mergePullRequest->execute(
+            $user,
+            $workspaceId,
+            $key,
+            JsonBody::string($body, 'method') ?? 'merge',
+        );
+
+        return $this->responder->respond([
+            'issue' => $this->presenter->present($result['issue'], $this->binding($user, $workspaceId, $result['issue'])),
+            'merge' => $result['merge'],
         ]);
     }
 

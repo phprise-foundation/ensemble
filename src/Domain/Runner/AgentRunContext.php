@@ -12,6 +12,7 @@ final readonly class AgentRunContext
         private string $role,
         /** @var list<string> */
         private array $allowedOutcomes,
+        private string $commentPath,
     ) {
     }
 
@@ -34,5 +35,10 @@ final readonly class AgentRunContext
     public function allowedOutcomes(): array
     {
         return $this->allowedOutcomes;
+    }
+
+    public function commentPath(): string
+    {
+        return $this->commentPath;
     }
 }
