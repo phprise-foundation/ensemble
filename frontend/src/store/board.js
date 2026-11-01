@@ -174,6 +174,7 @@ async function updateReal(issueId, patch) {
   return presented(await request('PATCH', scoped(`/issues/${issue.key}`), patch))
 }
 
+let activityTimer = null
 const OVERDUE_MS = 24 * 60 * 60 * 1000
 const find = (list, id) => list.find((item) => item.id === id) ?? null
 
@@ -194,6 +195,8 @@ const state = reactive({
   experiences: [],
   sources: [],
   secrets: [],
+  activityRuns: [],
+  activityAgents: [],
   issues: [],
   columns: [],
   boardId: null,
@@ -352,6 +355,46 @@ export const boardStore = {
       state.issues.splice(index, 1, updated)
       void hydrateIssue(state.issues[index])
     }
+  },
+
+  activityRunFor(issueKey) {
+    return state.activityRuns.find((run) => run.issueKey === issueKey) ?? null
+  },
+
+  activityAgent(agentId) {
+    return state.activityAgents.find((agent) => agent.id === agentId) ?? null
+  },
+
+  async refreshActivity() {
+    const payload = await request('GET', scoped('/activity'))
+    for (const update of payload.issues ?? []) {
+      const issue = state.issues.find((candidate) => candidate.id === update.key)
+      if (!issue) continue
+      issue.statusId = update.statusId
+      issue.assigneeId = update.assigneeId ?? null
+      issue.blocked = Boolean(update.blocked)
+      issue.readyToMerge = Boolean(update.readyToMerge)
+      issue.position = update.position
+      issue.enteredAt = update.enteredAt
+      issue.updatedAt = update.updatedAt
+    }
+    state.activityRuns = payload.runs ?? []
+    state.activityAgents = payload.agents ?? []
+    return payload
+  },
+
+  startActivityPolling(interval = 3000) {
+    if (activityTimer !== null) return
+    void this.refreshActivity().catch(() => {})
+    activityTimer = setInterval(() => {
+      void this.refreshActivity().catch(() => {})
+    }, interval)
+  },
+
+  stopActivityPolling() {
+    if (activityTimer === null) return
+    clearInterval(activityTimer)
+    activityTimer = null
   },
 
   async loadSecrets() {

@@ -158,6 +158,7 @@ use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Infrastructure\Vcs\GitHubPullRequests;
 use App\Infrastructure\Vcs\StreamGitHubHttp;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\ActivityController;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
 use App\Interface\Http\Kanban\ColumnController;
@@ -252,7 +253,9 @@ final readonly class TenancyBootstrap
         $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
         $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
         $workdirRoot = getenv('ENSEMBLE_WORKDIR_ROOT');
-        $workdirRoot = $workdirRoot === false || $workdirRoot === '' ? 'var/workdirs' : $workdirRoot;
+        $workdirRoot = $workdirRoot === false || $workdirRoot === ''
+            ? (string) (getenv('HOME') ?: '.') . '/.local/share/ensemble/workdirs'
+            : $workdirRoot;
         $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
         $teamPresenter = new TeamPresenter();
@@ -386,7 +389,7 @@ final readonly class TenancyBootstrap
                 new CommentIssue($issueRepository, $issueComments, $issueEvents, $guard),
                 new ListIssueComments($issueRepository, $issueComments, $guard),
                 new ListIssueEvents($issueRepository, $issueEvents, $guard),
-                new AttachRepository($issueRepository, $workdirs, $gitRepositories, $guard),
+                new AttachRepository($issueRepository, $workdirs, $gitRepositories, $issueTypes, $guard),
                 new ResolveWorkdirs($workdirs, $guard),
                 $issuePresenter,
                 $workdirPresenter,
@@ -406,6 +409,7 @@ final readonly class TenancyBootstrap
                         new StreamGitHubHttp(),
                         $githubApiUrl,
                     ),
+                    $agents,
                     $guard,
                 ),
                 $this->responder,
@@ -438,6 +442,14 @@ final readonly class TenancyBootstrap
                 new UpdateProfile($profiles, $guard),
                 new DeleteProfile($profiles, $guard),
                 $profilePresenter,
+                $this->responder,
+            ),
+            new ActivityController(
+                $currentUser,
+                $guard,
+                $issueRepository,
+                $agents,
+                $runs,
                 $this->responder,
             ),
             new AgentController(

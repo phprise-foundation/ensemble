@@ -104,12 +104,14 @@ onMounted(() => {
   }
   updateViewportFlags()
   window.addEventListener('resize', updateViewportFlags)
-  session.load().then(() => {
-    boardStore.load()
+  session.load().then(async () => {
+    await boardStore.load()
+    boardStore.startActivityPolling?.()
   })
 })
 
 onUnmounted(() => {
+  boardStore.stopActivityPolling?.()
   window.removeEventListener('keydown', handleKeyboardShortcut)
   window.removeEventListener('resize', updateViewportFlags)
   sidebarQuery?.removeEventListener('change', updateViewportFlags)

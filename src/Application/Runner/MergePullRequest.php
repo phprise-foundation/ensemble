@@ -11,6 +11,7 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\StatusRepository;
 use App\Domain\Contract\Kanban\WorkdirRepository;
 use App\Domain\Contract\Runner\RunRepository;
+use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Exception\ConflictException;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Issue;
@@ -31,11 +32,12 @@ final readonly class MergePullRequest
         private MoveIssue $moveIssue,
         private CommentIssue $commentIssue,
         private PullRequests $pullRequests,
+        private AgentRepository $agents,
         private WorkspaceGuard $guard,
     ) {
     }
 
-    /** @return array{issue: Issue, merge: array{url: string, sha: ?string, message: string}} */
+    /** @return array{issue: Issue, merge: array{url: string, sha: ?string, message: string, branchDeleted: bool}} */
     public function execute(
         User $actor,
         WorkspaceId $workspaceId,
@@ -48,8 +50,10 @@ final readonly class MergePullRequest
             throw new ValidationException('readyToMerge', 'The issue is not ready to merge.');
         }
 
-        $url = $this->latestPullRequest($workspaceId, $issue);
+        [$url, $implementerId] = $this->latestPullRequest($workspaceId, $issue);
         $number = $this->pullRequestNumber($url);
+        $implementer = $this->agents->find($workspaceId, $implementerId);
+        $implementerName = $implementer?->name() ?? 'agent';
         $workdirId = $issue->workdirId()
             ?? throw new ValidationException('workdir', 'The issue has no workdir.');
         $workdir = $this->workdirs->find($workspaceId, $workdirId)
@@ -58,18 +62,39 @@ final readonly class MergePullRequest
         $target = $this->doneStatus($workspaceId, $issue);
         $this->moveIssue->assertCanMove($issue, $target);
 
-        $merge = $this->pullRequests->merge($workdir, $number, $method);
+        $branch = $workdir->branch()?->value() ?? '';
+        $mergeTitle = mb_substr(
+            CommitMessage::typeForBranch($branch) . '(' . $implementerName . '/' . $issue->key()->value() . '): ' . $issue->summary() . ' (#' . $number . ')',
+            0,
+            240,
+        );
+        $mergeBody = implode("\n", [
+            'Implemented by: ' . $implementerName,
+            'Merged by: ' . $actor->login()->value(),
+            'Issue: ' . $issue->key()->value(),
+        ]);
+        $merge = $this->pullRequests->merge($workdir, $number, $method, $mergeTitle, $mergeBody);
         if ($merge->isFailed()) {
             throw new ConflictException($merge->message());
         }
 
         $moved = $this->moveIssue->execute($actor, $workspaceId, $key, $target->id());
+        $branchDeleted = false;
+        $branchNote = '';
+        if ($branch !== '') {
+            $deletion = $this->pullRequests->deleteBranch($workdir, $branch);
+            $branchDeleted = $deletion->ok;
+            $branchNote = $deletion->ok
+                ? ' The work branch was deleted.'
+                : ' The branch could not be deleted: ' . $deletion->message;
+        }
+
         $detail = $merge->sha() === null ? '' : ' (' . mb_substr($merge->sha(), 0, 12) . ')';
         $this->commentIssue->execute(
             $actor,
             $workspaceId,
             $key,
-            'Merged pull request #' . $number . $detail . ' into the base branch.',
+            'Merged pull request #' . $number . $detail . ' from ' . $implementerName . ' into the base branch.' . $branchNote,
         );
 
         return [
@@ -78,16 +103,18 @@ final readonly class MergePullRequest
                 'url' => $url,
                 'sha' => $merge->sha(),
                 'message' => $merge->message(),
+                'branchDeleted' => $branchDeleted,
             ],
         ];
     }
 
-    private function latestPullRequest(WorkspaceId $workspaceId, Issue $issue): string
+    /** @return array{0: string, 1: AgentId} */
+    private function latestPullRequest(WorkspaceId $workspaceId, Issue $issue): array
     {
         foreach (array_reverse($this->runs->forIssue($workspaceId, $issue->id())) as $run) {
             $url = $run->pullRequestUrl();
             if ($url !== null) {
-                return $url;
+                return [$url, $run->agentId()];
             }
         }
 

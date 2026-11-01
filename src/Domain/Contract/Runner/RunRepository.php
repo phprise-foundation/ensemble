@@ -29,4 +29,7 @@ interface RunRepository
 
     /** @return list<Run> */
     public function forIssue(WorkspaceId $workspaceId, IssueId $issueId): array;
+
+    /** @return list<Run> Active runs across the workspace, newest first. */
+    public function activeForWorkspace(WorkspaceId $workspaceId): array;
 }

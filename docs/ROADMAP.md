@@ -121,6 +121,11 @@ Gates:
 4. **Delivery — [RFC-2026-0003](RFC-2026-0003-delivery.md)** (draft): PR open/
    review/merge and deploy (staging/production) under role flags and repository/
    environment policy; board↔PR mirror with the same Markdown; GitHub first.
+   Delivered slice (2026-11-01): agent comments mirrored to the PR through the
+   provider API (no `gh`), agent identity in commits/PRs/merges, branch cleanup
+   after merge, scoped description edits with history, and the live activity
+   read model behind the real-time board and console agent monitor. Open:
+   inbound PR comment mirroring, deploy/post-merge smoke, PAT vs GitHub App.
 5. **Use gate** — on a private GitHub repository, a configured agent delivers,
    reviews, merges and deploys with no manual API/terminal step; failures are
    visible and retryable.

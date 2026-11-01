@@ -75,7 +75,7 @@ final class IssueWorkdirApiTest extends TestCase
 
         $binding = $this->attach($issue['key'], $first);
         self::assertSame($first, $binding['repositoryId']);
-        self::assertSame('agent/' . $issue['key'], $binding['branch']);
+        self::assertSame('feat/ALP-1-framed-work', $binding['branch']);
 
         $again = $this->attach($issue['key'], $first);
         self::assertSame($first, $again['repositoryId']);

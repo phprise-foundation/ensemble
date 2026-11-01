@@ -44,6 +44,27 @@ final readonly class ReportStage
         $this->comment($issue, $body, 'Run failed: ' . $summary);
     }
 
+    public function agentDescription(Issue $issue, Agent $agent, string $body): void
+    {
+        $trimmed = trim($body);
+        if ($trimmed === '') {
+            return;
+        }
+
+        $issue->describe(mb_substr($trimmed, 0, 4095));
+        $this->issues->update($issue);
+        $this->events->add(new IssueEvent(
+            IssueEventId::generate(),
+            $issue->workspaceId(),
+            $issue->id(),
+            IssueEventType::Description,
+            null,
+            null,
+            $agent->name(),
+            'Description updated by ' . $agent->name(),
+        ));
+    }
+
     public function agentComment(Issue $issue, Agent $agent, string $body): void
     {
         $trimmed = trim($body);

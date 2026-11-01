@@ -11,6 +11,8 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\Workdir;
 use App\Domain\Security\WorkspaceSecretId;
+use App\Domain\Runner\CommitMessage;
+use App\Domain\Runner\Outcome;
 use App\Domain\Vcs\GitHubSlug;
 use App\Domain\Vcs\MergeResult;
 use App\Domain\Vcs\Provider;
@@ -30,7 +32,7 @@ final readonly class GitHubPullRequests implements PullRequests
     }
 
     #[Override]
-    public function open(Workdir $workdir, Issue $issue): PullRequestResult
+    public function open(Workdir $workdir, Issue $issue, CommitMessage $message): PullRequestResult
     {
         $repositoryId = $workdir->repositoryId();
         if ($repositoryId === null) {
@@ -76,11 +78,13 @@ final readonly class GitHubPullRequests implements PullRequests
             return PullRequestResult::opened($existing[0]['html_url']);
         }
 
+        $body = trim($issue->description());
+        $body = $body === '' ? $message->body() : $body . "\n\n" . $message->body();
         $created = $this->http->request('POST', $pullsUrl, $token, [
-            'title' => $this->title($issue),
+            'title' => $message->subject(),
             'head' => $branch,
             'base' => $repository->baseBranch()->value(),
-            'body' => $this->body($issue),
+            'body' => mb_substr($body, 0, 60000),
         ]);
         if ($created->status() !== 201) {
             return PullRequestResult::failed(
@@ -101,8 +105,13 @@ final readonly class GitHubPullRequests implements PullRequests
     }
 
     #[Override]
-    public function merge(Workdir $workdir, int $number, string $method): MergeResult
-    {
+    public function merge(
+        Workdir $workdir,
+        int $number,
+        string $method,
+        ?string $commitTitle = null,
+        ?string $commitMessage = null,
+    ): MergeResult {
         if ($number < 1) {
             return MergeResult::failed('the pull request number is invalid');
         }
@@ -134,7 +143,11 @@ final readonly class GitHubPullRequests implements PullRequests
             'PUT',
             $this->apiBase . '/repos/' . $slug->path() . '/pulls/' . $number . '/merge',
             $token,
-            ['merge_method' => $method],
+            array_filter([
+                'merge_method' => $method,
+                'commit_title' => $commitTitle,
+                'commit_message' => $commitMessage,
+            ], static fn(mixed $value): bool => $value !== null),
         );
         if ($response->status() !== 200) {
             return MergeResult::failed(
@@ -156,6 +169,84 @@ final readonly class GitHubPullRequests implements PullRequests
         }
 
         return MergeResult::merged($message, $sha);
+    }
+
+    #[Override]
+    public function deleteBranch(Workdir $workdir, string $branch): Outcome
+    {
+        if (trim($branch) === '') {
+            return Outcome::failed('the work branch is empty');
+        }
+
+        $repositoryId = $workdir->repositoryId();
+        if ($repositoryId === null) {
+            return Outcome::failed('the workdir has no repository');
+        }
+
+        $repository = $this->repositories->find($workdir->workspaceId(), $repositoryId);
+        if ($repository === null) {
+            return Outcome::failed('the workdir repository is no longer registered');
+        }
+        if ($repository->provider() !== Provider::GitHub) {
+            return Outcome::failed('branch deletion is only implemented for GitHub');
+        }
+
+        try {
+            $slug = GitHubSlug::fromUrl($repository->url());
+        } catch (ValidationException $invalid) {
+            return Outcome::failed($invalid->getMessage());
+        }
+
+        $encoded = implode('/', array_map('rawurlencode', explode('/', $branch)));
+        $token = $this->token($repository->workspaceId(), $repository->secretId());
+        $response = $this->http->request(
+            'DELETE',
+            $this->apiBase . '/repos/' . $slug->path() . '/git/refs/heads/' . $encoded,
+            $token,
+        );
+
+        return in_array($response->status(), [200, 204], true)
+            ? Outcome::succeeded('work branch deleted')
+            : Outcome::failed('GitHub could not delete the branch (' . $response->status() . '): ' . $this->reason($response->body()));
+    }
+
+    #[Override]
+    public function comment(Workdir $workdir, int $number, string $body): Outcome
+    {
+        if ($number < 1 || trim($body) === '') {
+            return Outcome::failed('the pull request comment is invalid');
+        }
+
+        $repositoryId = $workdir->repositoryId();
+        if ($repositoryId === null) {
+            return Outcome::failed('the workdir has no repository');
+        }
+
+        $repository = $this->repositories->find($workdir->workspaceId(), $repositoryId);
+        if ($repository === null) {
+            return Outcome::failed('the workdir repository is no longer registered');
+        }
+        if ($repository->provider() !== Provider::GitHub) {
+            return Outcome::failed('pull request comments are only implemented for GitHub');
+        }
+
+        try {
+            $slug = GitHubSlug::fromUrl($repository->url());
+        } catch (ValidationException $invalid) {
+            return Outcome::failed($invalid->getMessage());
+        }
+
+        $token = $this->token($repository->workspaceId(), $repository->secretId());
+        $response = $this->http->request(
+            'POST',
+            $this->apiBase . '/repos/' . $slug->path() . '/issues/' . $number . '/comments',
+            $token,
+            ['body' => mb_substr($body, 0, 60000)],
+        );
+
+        return $response->status() === 201
+            ? Outcome::succeeded('pull request comment posted')
+            : Outcome::failed('GitHub rejected the pull request comment (' . $response->status() . '): ' . $this->reason($response->body()));
     }
 
     private function token(\App\Domain\Tenancy\WorkspaceId $workspaceId, ?WorkspaceSecretId $secretId): ?string

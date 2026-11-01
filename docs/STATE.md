@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **181 PHPUnit tests / 1144 assertions**, Psalm level 1, **0 errors**.
+- Backend: **188 PHPUnit tests / 1189 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
 - Frontend unit: **248/248** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **129/129 across 21 specs**, green.
+- Real E2E: **131/131 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -240,14 +240,14 @@ parked. The guardrails now in place:
 - **Merge action:** a manager can merge a ready issue from the panel. The
   backend uses the repository secret, calls the GitHub merge API (respecting
   branch protection), moves the issue to the final Done status, clears the
-  ready flag and comments with the merge SHA. Agents still cannot merge:
-  `bin/agent/gh` denies `pr merge`, `api` and other mutations; deploy remains
-  the next policy slice.
+  ready flag and comments with the merge SHA, then deletes the work branch.
+  Agents never use `gh`: `bin/agent/gh` denies every call and provider actions
+  run through the runner/board. Deploy remains the next policy slice.
 - **Agent identity on comments:** agents use `ens comment --body "..."`; the
   runner records the comment with the agent name (Vivy, Alan, Mai) instead of
   `admin`. The prompt tells agents not to use the board API or admin
-  credentials. Issue-description edits and PR comment mirroring still need a
-  scoped identity.
+  credentials. Description edits and PR comment mirroring now use the same
+  scoped identity (see 2026-11-01 below).
 - **Workdir isolation:** agent workdirs now default to
   `~/.local/share/ensemble/workdirs`, outside the Ensemble checkout. Nested
   `var/workdirs` made the agent project resolve to the Ensemble repo itself:
@@ -276,6 +276,45 @@ earlier rerun bug.
   board action into `test-repo`; both issues reached Done with the ready flag
   cleared. `KAN-14`/`KAN-15`/`KAN-16` remain ready with their PRs #2/#3/#4.
 
+### Live board, agent monitor and delivery identity (2026-11-01)
+
+- **Real-time board:** `GET /api/workspaces/{ws}/activity` returns the volatile
+  issue fields, the agents and the active runs. `App.vue` polls it every three
+  seconds; cards move with the status, and a pulsing badge names the agent
+  running the issue. The panel's own five-second run poll is unchanged.
+- **Console agent monitor:** a second tab next to the existing console (left
+  untouched), showing **Running** (active run, issue, stage), **Sleeping**
+  (active agents with no run) and **Inactive** agents; no runner internals.
+- **Branch and commit convention:** agent branches are
+  `<type>/<KEY>-<slug>` (e.g. `feat/KAN-19-novo-teste-de-integracao-4`), with
+  the type derived from the issue type. Commits are Conventional Commits,
+  multi-line, scoped to the agent and issue:
+  `feat(Kaio/KAN-19): …` plus `Agent`, `Role`, `Stage` and `Issue` in the body;
+  the git author is the agent. PR titles use the same subject and the PR body
+  carries the issue description plus the agent metadata. SemVer stays reserved
+  for tags/releases. The rule is documented in `docs/GITFLOW.md`.
+- **Merge identity and cleanup:** the merge commit title is
+  `<type>(<Agent>/<KEY>): <summary> (#PR)`, the body records the implementer
+  and the merging manager, the board comment says `from <Agent>`, and the work
+  branch is deleted after a successful merge (the panel warns about it).
+- **Agent comments on the PR, no `gh`:** `ens comment` writes the board comment
+  and the runner mirrors the same `**Agent (Role):** …` Markdown to the PR
+  through the GitHub API/token. `bin/agent/gh` now denies every call, so a
+  container without `gh` loses nothing.
+- **Description edits with history:** interactive roles (today the PO) use
+  `ens description --body "…"`. The runner updates the issue and records a
+  `description` event with the agent as actor; non-interactive roles are
+  ignored. No path writes agent work as `admin`.
+- **Agent language:** agents carry `language` (`pt-BR` default, `en`, `es`),
+  editable on **Agents**. The prompt tells the model to write user-facing
+  comments/notes in that language; user translation remains a separate track.
+- **Comment order:** the issue panel lists comments newest first, matching the
+  "last activity on top" expectation.
+- **Tests:** new activity API coverage, RunnerSweep checks for the formatted
+  comment, PR mirror, description identity and non-interactive rejection,
+  commit author/message assertions, branch-name/PR/merge/deletion coverage,
+  and an `activity-monitor.cy.js` spec for board movement and the monitor.
+
 
 
 The dev database has the role flags set (Coder implement, Tech Lead review +
@@ -293,11 +332,10 @@ the critical path.
 
 1. Keep the post-merge smoke for the deployment phase and implement deploy
    policy (RFC-2026-0003).
-2. Mirror agent comments to the PR and use a scoped identity for issue
-   description edits (the current `ens comment` already fixes comment
-   authorship).
+2. Run the real `test-repo` flow again with the new branch/commit/PR identity,
+   PR comment mirroring, description edits and branch cleanup.
 3. Implement RFC-2026-0001 → 0002 → 0003 with the use gate at the end.
-3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
+4. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
    161 local issues and dogfood).
 

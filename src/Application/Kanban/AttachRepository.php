@@ -6,6 +6,7 @@ namespace App\Application\Kanban;
 
 use App\Application\Tenancy\WorkspaceGuard;
 use App\Domain\Contract\Kanban\IssueRepository;
+use App\Domain\Contract\Kanban\IssueTypeRepository;
 use App\Domain\Contract\Kanban\WorkdirRepository;
 use App\Domain\Contract\Vcs\GitRepositories;
 use App\Domain\Exception\ConflictException;
@@ -18,6 +19,7 @@ use App\Domain\Kanban\WorkdirKind;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Vcs\BaseBranch;
+use App\Domain\Vcs\BranchName;
 use App\Domain\Vcs\GitRepositoryId;
 
 final readonly class AttachRepository
@@ -26,6 +28,7 @@ final readonly class AttachRepository
         private IssueRepository $issues,
         private WorkdirRepository $workdirs,
         private GitRepositories $repositories,
+        private IssueTypeRepository $issueTypes,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -49,7 +52,8 @@ final readonly class AttachRepository
         }
 
         $root = $this->issues->findById($workspaceId, $workdir->ownerIssueId()) ?? throw NotFoundException::issue();
-        $workdir->bind($repositoryId, new BaseBranch('agent/' . $root->key()->value()));
+        $type = $this->issueTypes->find($workspaceId, $root->issueTypeId()) ?? throw NotFoundException::issueType();
+        $workdir->bind($repositoryId, new BaseBranch(BranchName::forIssue($root, $type)->value()));
         $this->workdirs->update($workdir);
 
         return $workdir;

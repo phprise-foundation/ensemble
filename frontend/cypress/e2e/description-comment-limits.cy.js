@@ -173,7 +173,7 @@ E2E-SAVED`)
         cy.get('#issue-comment-limit .field-limit-error').should('have.text', '')
         cy.get('.comments-body > button.button').should('have.text', 'Comment').and('not.be.disabled').click()
         cy.get('.issue-panel .comment', { timeout: 10000 }).should('have.length', commentCount + 1)
-        cy.get('.issue-panel .comment p').last().should('have.text', comment1023)
+        cy.get('.issue-panel .comment p').first().should('have.text', comment1023)
         cy.wsRequest('GET', '/issues/KANB-1').then((after) => {
           expect(after.body.comments.length).to.equal(commentCount + 1)
         })

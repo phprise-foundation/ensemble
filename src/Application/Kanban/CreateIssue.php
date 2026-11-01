@@ -21,6 +21,7 @@ use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueEventId;
 use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueKey;
+use App\Domain\Kanban\IssueType;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
@@ -31,6 +32,7 @@ use App\Domain\Kanban\WorkdirKind;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Tenancy\WorkspacePrefix;
+use App\Domain\Vcs\BranchName;
 use App\Domain\Vcs\GitRepositoryId;
 
 final readonly class CreateIssue
@@ -64,7 +66,7 @@ final readonly class CreateIssue
         ?GitRepositoryId $repositoryId = null,
     ): Issue {
         $this->guard->assertMember($actor, $workspaceId);
-        $this->issueTypes->find($workspaceId, $issueTypeId) ?? throw NotFoundException::issueType();
+        $issueType = $this->issueTypes->find($workspaceId, $issueTypeId) ?? throw NotFoundException::issueType();
         if ($parentKey !== null) {
             $this->guardParentDepth($workspaceId, $parentKey, $issueTypeId);
         }
@@ -78,7 +80,7 @@ final readonly class CreateIssue
 
         $issueId = IssueId::generate();
         $key = $this->keys->next($workspaceId, $prefix);
-        $workdirId = $this->resolveWorkdir($workspaceId, $issueId, $key, $parentKey, $repositoryId);
+        $workdirId = $this->resolveWorkdir($workspaceId, $issueId, $key, $parentKey, $repositoryId, $issueType, $summary);
         $position = $this->nextPosition($workspaceId, $status->id());
 
         $issue = new Issue(
@@ -140,6 +142,8 @@ final readonly class CreateIssue
         IssueKey $key,
         ?IssueKey $parentKey,
         ?GitRepositoryId $repositoryId,
+        IssueType $issueType,
+        string $summary,
     ): WorkdirId {
         if ($parentKey !== null) {
             $parent = $this->issues->find($workspaceId, $parentKey) ?? throw NotFoundException::issue();
@@ -151,7 +155,7 @@ final readonly class CreateIssue
 
         $workdir = $repositoryId === null
             ? new Workdir(WorkdirId::generate(), $workspaceId, $issueId, WorkdirKind::Scratch)
-            : $this->repositoryWorkdir($workspaceId, $issueId, $key, $repositoryId);
+            : $this->repositoryWorkdir($workspaceId, $issueId, $key, $repositoryId, $issueType, $summary);
         $this->workdirs->add($workdir);
 
         return $workdir->id();
@@ -162,6 +166,8 @@ final readonly class CreateIssue
         IssueId $issueId,
         IssueKey $key,
         GitRepositoryId $repositoryId,
+        IssueType $issueType,
+        string $summary,
     ): Workdir {
         $this->repositories->find($workspaceId, $repositoryId) ?? throw NotFoundException::repository();
 
@@ -171,7 +177,7 @@ final readonly class CreateIssue
             $issueId,
             WorkdirKind::Repository,
             $repositoryId,
-            'agent/' . $key->value(),
+            BranchName::forValues($key, $summary, $issueType)->value(),
         );
     }
 

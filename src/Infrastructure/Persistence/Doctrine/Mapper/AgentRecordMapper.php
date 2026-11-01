@@ -45,6 +45,7 @@ final class AgentRecordMapper
             $record->active(),
             $record->createdAt(),
             $record->updatedAt(),
+            $record->language(),
         );
 
         $agent->touch($record->updatedAt());
@@ -71,6 +72,7 @@ final class AgentRecordMapper
             $agent->active(),
             $agent->createdAt(),
             $agent->updatedAt(),
+            $agent->language(),
         );
     }
 
@@ -90,6 +92,7 @@ final class AgentRecordMapper
             $agent->interval()->value(),
             $agent->active(),
             $agent->updatedAt(),
+            $agent->language(),
         );
     }
 }

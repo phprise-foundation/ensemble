@@ -54,7 +54,9 @@ const fieldsSaving = ref(false)
 const fieldsError = ref('')
 
 const commentRows = computed(() =>
-  issue.value.comments.map((entry) => ({
+  [...issue.value.comments]
+    .sort((left, right) => Date.parse(right.at ?? 0) - Date.parse(left.at ?? 0))
+    .map((entry) => ({
     id: entry.id,
     author: resolveAuthor({
       agents: boardStore.state.agents,
@@ -213,7 +215,7 @@ async function mergePullRequest() {
   }
   const confirmed = await dialog.confirm({
     title: 'Merge pull request?',
-    message: 'The pull request is merged on the provider and the issue moves to Done.',
+    message: 'The pull request is merged, the work branch is deleted and the issue moves to Done.',
     confirmLabel: 'Merge',
   })
   if (!confirmed) {
@@ -221,8 +223,8 @@ async function mergePullRequest() {
   }
   merging.value = true
   try {
-    await boardStore.mergeIssue(issue.value.id)
-    toast.success('Pull request merged.')
+    const result = await boardStore.mergeIssue(issue.value.id)
+    toast.success(result?.merge?.branchDeleted ? 'Pull request merged and branch deleted.' : 'Pull request merged.')
   } catch (failure) {
     toast.error(failure?.message ?? 'Could not merge the pull request.')
   } finally {

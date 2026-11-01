@@ -54,6 +54,7 @@ final readonly class UpdateAgent
         ?string $fallbackModel,
         ?int $interval,
         ?bool $active,
+        ?string $language = null,
     ): Agent {
         $this->guard->assertManager($actor, $workspaceId);
         $agent = $this->agents->find($workspaceId, $id) ?? throw NotFoundException::agent();
@@ -94,6 +95,9 @@ final readonly class UpdateAgent
         }
         if ($active !== null) {
             $agent->activate($active);
+        }
+        if ($language !== null) {
+            $agent->changeLanguage($language);
         }
 
         $agent->touch(new DateTimeImmutable());

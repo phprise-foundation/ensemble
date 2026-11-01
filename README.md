@@ -129,14 +129,16 @@ attempts) in the `runs` table. The executable-stage rule (ADR-003) is enforced
 with visible reasons: an issue whose workdir is not `bound` gets a `skipped`
 run (`GET /issues/{key}/runs` shows the history). Repeat sweeps redrive a
 skipped issue only when the reason changes, and never re-run a succeeded or
-failed one. `ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`) is where the
-runner materializes workdirs.
+failed one. `ENSEMBLE_WORKDIR_ROOT` (default
+`~/.local/share/ensemble/workdirs`, outside the checkouts) is where the runner
+materializes workdirs.
 
 Since P3b the runner also drives the repository: a `pending` workdir is
-prepared on the sweep (clone of the base branch + checkout of
-`agent/<issue-key>` → `bound`, or failure → `conflict` with the git error on
-the skip run), and a successful agent run is committed (`git add -A`) and
-pushed to the agent branch. A workspace secret referenced by the repository
+prepared on the sweep (clone of the base branch + `<type>/<KEY>-<slug>` such as
+`feat/KAN-19-add-the-checkout` → `bound`, or failure → `conflict` with the git
+error on the skip run), and a successful agent run is committed with the agent
+identity (`feat(Kaio/KAN-19): …`, multi-line body) and pushed to the work
+branch. A workspace secret referenced by the repository
 authenticates `git` through an `Authorization: Basic x-access-token:<PAT>`
 extra header.
 

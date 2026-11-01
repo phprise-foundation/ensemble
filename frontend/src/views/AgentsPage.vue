@@ -18,7 +18,7 @@ const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff' }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR' }
   error.value = ''
   editing.value = true
 }
@@ -167,6 +167,15 @@ onMounted(() => {
             <select v-model="draft.profileId">
               <option v-for="profile in profiles" :key="profile.id" :value="profile.id">{{ profile.name }}</option>
             </select>
+          </label>
+          <label class="field">
+            <span>Language</span>
+            <select v-model="draft.language">
+              <option value="pt-BR">Português (Brasil)</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+            </select>
+            <small class="muted">The agent writes comments and notes in this language.</small>
           </label>
 
           <p v-if="error" class="error">{{ error }}</p>

@@ -33,6 +33,7 @@ final readonly class PromptComposer
             $issue->description(),
             $agent->whoAmI(),
             $this->whoBlock($agent, $this->resolveProfile->execute($workspaceId, $agent->profileId())),
+            'Always write user-facing comments, notes and messages in ' . $agent->language() . '.',
             $this->stageBlock($status, $role, $capabilities),
         ])));
     }
@@ -65,6 +66,9 @@ final readonly class PromptComposer
         }
 
         $lines[] = 'To leave a note or refinement on the issue, run `ens comment --body "..."`. Do not use the board API or act as an administrator.';
+        if ($capabilities->interactive()) {
+            $lines[] = 'To update the issue description, run `ens description --body "..."`; the history records you.';
+        }
         $lines[] = 'If you are blocked, run `ens block --reason "..."`. Do not move the issue to another status yourself.';
 
         return implode("\n", $lines);

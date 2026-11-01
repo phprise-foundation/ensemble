@@ -13,6 +13,7 @@ final readonly class AgentRunContext
         /** @var list<string> */
         private array $allowedOutcomes,
         private string $commentPath,
+        private string $descriptionPath,
     ) {
     }
 
@@ -40,5 +41,10 @@ final readonly class AgentRunContext
     public function commentPath(): string
     {
         return $this->commentPath;
+    }
+
+    public function descriptionPath(): string
+    {
+        return $this->descriptionPath;
     }
 }

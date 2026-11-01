@@ -12,6 +12,7 @@ use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Contract\Team\RoleRepository;
 use App\Domain\Contract\Tenancy\WorkspaceRepository;
 use App\Domain\Kanban\Issue;
+use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusType;
@@ -21,6 +22,7 @@ use App\Domain\Runner\AgentExecutor;
 use App\Domain\Runner\AgentOutcome;
 use App\Domain\Runner\AgentOutcomeType;
 use App\Domain\Runner\AgentRunContext;
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
@@ -365,6 +367,7 @@ final readonly class ExecuteSweep
         $workdirPath = $this->paths->ensure($workspaceId, $workdir->id());
         $outcomePath = $this->outcomePath($run);
         $commentPath = $this->commentPath($run);
+        $descriptionPath = $this->descriptionPath($run);
         $run->start($prompt, $now, self::LEASE_SECONDS);
         if ($requested === null) {
             $this->runs->add($run);
@@ -378,12 +381,23 @@ final readonly class ExecuteSweep
             $role->name(),
             $this->allowedOutcomes($capabilities),
             $commentPath,
+            $descriptionPath,
         );
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt, $context);
+
+        $description = (new ReadAgentDescription())->execute($descriptionPath);
+        if ($description !== null && $capabilities->interactive()) {
+            $this->report->agentDescription($issue, $agent, $description);
+        }
+
+        $prComments = [];
         foreach ((new ReadAgentComments())->execute($commentPath) as $body) {
-            $this->report->agentComment($issue, $agent, $body);
+            $text = mb_substr('**' . $agent->name() . ' (' . $role->name() . '):** ' . $body, 0, 1023);
+            $this->report->agentComment($issue, $agent, $text);
+            $prComments[] = $text;
         }
         @unlink($commentPath);
+        @unlink($descriptionPath);
         $failure = null;
         if ($outcome->ok) {
             if ($capabilities->implement()) {
@@ -395,11 +409,12 @@ final readonly class ExecuteSweep
                     $outcome = Outcome::failed('blocked: ' . $blocked->reason());
                     $failure = ['run blocked', $blocked->reason()];
                 } else {
-                    $published = $this->vcs->publish($workdir, $workdirPath);
+                    $commit = CommitMessage::forAgent($issue, $agent, $role, $status, $workdir->branch()?->value() ?? '');
+                    $published = $this->vcs->publish($workdir, $workdirPath, $commit);
                     if (! $published->ok) {
                         $outcome = Outcome::failed('the branch was not published: ' . $published->message);
                     } else {
-                        $delivery = $this->pullRequests->open($workdir, $issue);
+                        $delivery = $this->pullRequests->open($workdir, $issue, $commit);
                         if ($delivery->isFailed()) {
                             $outcome = Outcome::failed($delivery->message());
                         } else {
@@ -431,6 +446,8 @@ final readonly class ExecuteSweep
                 }
             }
         }
+
+        $this->mirrorComments($workdir, $run, $prComments);
 
         @unlink($outcomePath);
         $run->complete($outcome, new DateTimeImmutable());
@@ -555,6 +572,52 @@ final readonly class ExecuteSweep
         @unlink($path);
 
         return $path;
+    }
+
+    private function descriptionPath(Run $run): string
+    {
+        $directory = sys_get_temp_dir() . '/ensemble-descriptions';
+        if (! is_dir($directory)) {
+            @mkdir($directory, 0775, true);
+        }
+
+        $path = $directory . '/' . $run->id()->value() . '.json';
+        @unlink($path);
+
+        return $path;
+    }
+
+    /** @param list<string> $bodies */
+    private function mirrorComments(Workdir $workdir, Run $run, array $bodies): void
+    {
+        if ($bodies === []) {
+            return;
+        }
+
+        $url = $run->pullRequestUrl()
+            ?? $this->latestPullRequestUrl($workdir->workspaceId(), $run->issueId());
+        if ($url === null || preg_match('#/pull/(\d+)(?:\D|$)#', $url, $matches) !== 1) {
+            return;
+        }
+
+        foreach ($bodies as $body) {
+            $mirrored = $this->pullRequests->comment($workdir, (int) $matches[1], $body);
+            if (! $mirrored->ok) {
+                error_log('pull request comment mirror failed: ' . $mirrored->message);
+            }
+        }
+    }
+
+    private function latestPullRequestUrl(WorkspaceId $workspaceId, IssueId $issueId): ?string
+    {
+        foreach (array_reverse($this->runs->forIssue($workspaceId, $issueId)) as $run) {
+            $url = $run->pullRequestUrl();
+            if ($url !== null) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /** The subtasks-done trigger: parents outside agent statuses move when their latest child activity allows. */

@@ -74,6 +74,7 @@ final readonly class AgentController
             JsonBody::string($body, 'fallbackModel') ?? '',
             $interval,
             JsonBody::boolean($body, 'active') ?? true,
+            JsonBody::string($body, 'language'),
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)], 201);
@@ -120,6 +121,7 @@ final readonly class AgentController
             JsonBody::string($body, 'fallbackModel'),
             $interval,
             JsonBody::boolean($body, 'active'),
+            JsonBody::string($body, 'language'),
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)]);

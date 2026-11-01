@@ -50,6 +50,34 @@ Naming rules:
 - `feat/<description>` — new feature
 - `fix/<description>` — bug fix
 - Use `kebab-case`, descriptive and short.
+- When the work belongs to a tracked issue, include the key:
+  `<type>/<KEY>-<slug>` (for example `feat/BOARD-123-close-endpoint`).
+
+### 2.2.1 Automated agent work (Ensemble runner)
+
+Agent worktrees follow the same convention without a human choosing names:
+
+- **Branch:** `<type>/<KEY>-<slug>`, where `<type>` comes from the issue type
+  (`Task`/`Feat`/`Story`/`Epic` → `feat`; `Bug`/`Fix` → `fix`; `Docs`,
+  `Refactor`, `Test`, `Chore` when the type is named so). The slug is the
+  normalised issue summary, capped so the branch stays readable. Example:
+  `feat/KAN-19-novo-teste-de-integracao-4`.
+- **Commit subject:** `<type>(<Agent>/<KEY>): <summary>`, for example
+  `feat(Kaio/KAN-19): Adicionar teste de integração`.
+- **Commit body:** one line each for `Agent`, `Role`, `Stage` and `Issue`, so
+  the history identifies who acted and where.
+- **Commit author:** the agent name and `<agent>@ensemble.local`; no commit is
+  authored as the shared admin.
+- **PR title:** the commit subject. **PR body:** the issue description followed
+  by the same agent metadata.
+- **Merge commit:** `<type>(<Agent>/<KEY>): <summary> (#PR)` with
+  `Implemented by`/`Merged by` in the body. The board merge deletes the work
+  branch after success.
+- **SemVer is not used in branches or commits.** SemVer belongs to tags and
+  releases (§3); branches and commits use Conventional Commits.
+- **No `gh` in the runner container.** `bin/agent/gh` fails for every command;
+  the runner performs PR/comment/merge/branch operations through the provider
+  API with the repository secret.
 
 ### 2.3 Implement and stage
 
@@ -66,6 +94,7 @@ Format:
 
 ```
 <type>(<ID>): <imperative description>
+<type>(<Agent>/<ID>): <imperative description>   # automated agent work
 ```
 
 Examples:
@@ -79,7 +108,11 @@ docs(BOARD-125): document the REST API
 Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
 
 - `<ID>` is the task identifier (e.g. `BOARD-123`); omit it when there is none.
+- `<Agent>` is required when a runner agent authored the change; it makes the
+  commit scannable and attributable.
 - The description is short, imperative, lowercased.
+- Multi-line bodies carry context (agent, role, stage, issue) instead of
+  stuffing everything into the subject.
 
 ### 2.5 Push and PR
 

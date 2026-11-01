@@ -11,7 +11,7 @@ interface WorkdirVcs
 {
     public function prepare(Workdir $workdir, string $path): Outcome;
 
-    public function publish(Workdir $workdir, string $path): Outcome;
+    public function publish(Workdir $workdir, string $path, CommitMessage $message): Outcome;
 
     /** Discards local edits made by a stage that must not publish (PO, review, QA). */
     public function discard(Workdir $workdir, string $path): Outcome;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Runner;
 
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\ResolutionStrategy;
 use App\Domain\Vcs\ProbeResult;
@@ -63,8 +64,10 @@ final class GitClient implements RepositoryProbe
         string $branch,
         ?string $token = null,
         ?Provider $provider = null,
+        ?CommitMessage $message = null,
     ): Outcome {
-        $committed = $this->commitAll($path, 'run: apply agent work on ' . $branch);
+        $message ??= CommitMessage::system('run: apply agent work on ' . $branch);
+        $committed = $this->commitAll($path, $message);
         if ($committed !== null) {
             return $committed;
         }
@@ -138,7 +141,7 @@ final class GitClient implements RepositoryProbe
 
     private function localWins(string $path, string $branch, ?string $token, ?Provider $provider): Outcome
     {
-        $committed = $this->commitAll($path, 'run: keep the local work on ' . $branch);
+        $committed = $this->commitAll($path, CommitMessage::system('run: keep the local work on ' . $branch));
         if ($committed !== null) {
             return $committed;
         }
@@ -153,7 +156,7 @@ final class GitClient implements RepositoryProbe
         ?string $token,
         ?Provider $provider,
     ): Outcome {
-        $committed = $this->commitAll($path, 'run: keep the local work on ' . $branch);
+        $committed = $this->commitAll($path, CommitMessage::system('run: keep the local work on ' . $branch));
         if ($committed !== null) {
             return $committed;
         }
@@ -166,7 +169,7 @@ final class GitClient implements RepositoryProbe
         return $this->push($path, $branch, false, $token, $provider);
     }
 
-    private function commitAll(string $path, string $message): ?Outcome
+    private function commitAll(string $path, CommitMessage $message): ?Outcome
     {
         $add = $this->git($path, ['add', '-A']);
         if ($add['exit'] !== 0) {
@@ -178,7 +181,18 @@ final class GitClient implements RepositoryProbe
             return null;
         }
 
-        $commit = $this->git($path, ['commit', '-q', '-m', $message]);
+        $arguments = [
+            '-c', 'user.name=' . $message->authorName(),
+            '-c', 'user.email=' . $message->authorEmail(),
+            'commit',
+            '-q',
+            '-m', $message->subject(),
+        ];
+        if ($message->body() !== '') {
+            $arguments[] = '-m';
+            $arguments[] = $message->body();
+        }
+        $commit = $this->git($path, $arguments);
         if ($commit['exit'] !== 0) {
             return Outcome::failed('git commit failed: ' . $this->trailing($commit['output']));
         }

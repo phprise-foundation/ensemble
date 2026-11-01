@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Runner;
 
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Vcs\Provider;
 use App\Infrastructure\Runner\GitClient;
 use PHPUnit\Framework\TestCase;
@@ -56,8 +57,17 @@ final class GitClientTest extends TestCase
         $this->configureIdentity($workdir);
 
         file_put_contents($workdir . '/feature.md', 'agent work');
-        $published = $this->git->commitAndPush($workdir, 'agent/KAN-1');
+        $message = new CommitMessage(
+            'feat(Kaio/KAN-1): Ship the feature',
+            "Agent: Kaio\nRole: Coder",
+            'Kaio',
+            'kaio@ensemble.local',
+        );
+        $published = $this->git->commitAndPush($workdir, 'agent/KAN-1', message: $message);
         self::assertTrue($published->ok);
+        $log = (string) shell_exec('git -C ' . escapeshellarg($workdir) . ' log -1 --format=%an%n%s%n%b');
+        self::assertStringContainsString("Kaio\nfeat(Kaio/KAN-1): Ship the feature", $log);
+        self::assertStringContainsString('Agent: Kaio', $log);
         shell_exec(
             'git -C ' . escapeshellarg($this->base) . '/bare.git update-ref refs/heads/main refs/heads/agent/KAN-1 2>/dev/null'
         );

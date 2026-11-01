@@ -26,7 +26,10 @@ forwards the typed text to `store/commands.js::runCommand` (closed catalog),
 disabling input and submit while `consoleStore.state.busy` is set. `ConsoleOutput.vue`
 renders the log with a 24px autoscroll anchor, a render-only actor filter and a
 jump pill for unread messages; message text is always interpolated; the console
-labels follow the board's pt-BR contract. `store/console.js` owns
+labels follow the board's pt-BR contract. The header has two tabs: the unchanged
+console and **Agents**, a simplified monitor (`AgentMonitor.vue`) fed by the
+activity poll — running (active run, issue, stage), sleeping (active agent with
+no run) and inactive. `store/console.js` owns
 the message log and the 5s polling of the existing `GET /api/issues` (started
 with an immediate tick so the grid opens filled), normalising every message
 timestamp to ISO 8601 UTC, adapting
@@ -313,7 +316,9 @@ optional `age` (1–120), `maritalStatus` (single/married/divorced/widowed/other
 parsed case-insensitively), `avatarColor` (hex `#rrggbb`) and `portrait` ('' or
 a png/jpeg/webp data URL that decodes to ≤2 MiB — the same rules the frontend
 enforces when uploading). Runtime: `model`, `fallbackModel` (≤120 chars), loop
-`interval` (30–86400 seconds, default 300) and `active`.
+`interval` (30–86400 seconds, default 300), `active` and `language`
+(`pt-BR` default, `en`, `es`; the prompt asks the agent to write user-facing
+text in it).
 
 Every agent lives inside a `teamId` and owns `roleIds` (`agent_roles` join,
 same sync pattern as `status_roles`) and an optional workspace `profileId`.
@@ -334,7 +339,8 @@ contract, `DoctrineRunRepository`). `AgentExecutor` (contract) runs the
 composed prompt in a workdir path; `Infrastructure/Runner/OpenCodeExecutor`
 executes `opencode run --model <model>` there and falls back once to
 `fallbackModel`; `VarWorkdirPaths` derives workdir paths from
-`ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`). `Application/Runner/
+`ENSEMBLE_WORKDIR_ROOT` (default `~/.local/share/ensemble/workdirs`, outside
+the Ensemble checkout). `Application/Runner/
 ExecuteSweep` is one deterministic pass: reclaim expired leases, then for every
 active agent find the statuses owned by the agent's roles, find the issues in
 those statuses and run those whose workdir is ready. The executable-stage rule
@@ -347,12 +353,25 @@ re-executed. `bin/runner` (single pass; install-schema first) and the
 Since P3b the runner also owns the repository lifecycle through the
 `WorkdirVcs` contract (`Infrastructure/Runner/GitWorkdirVcs` + `GitClient`):
 a `pending` workdir is prepared on the sweep — `git clone --no-checkout` of the
-base branch, then `checkout -B agent/<issue-key> origin/<base>` — which moves
-the workdir to `bound`, and a clone/fetch failure moves it to `conflict` with
-the git error recorded on the skip run. After a successful agent run the runner
-commits everything changed in the workdir (`git add -A`, `commit`, empty commit
-tolerated as nothing-to-do) and pushes the branch with `git push -u origin`;
-a push failure fails the run with the grep of the git output. Workspace secrets
+base branch, then creates `<type>/<KEY>-<slug>` from `origin/<base>` — which
+moves the workdir to `bound`, and a clone/fetch failure moves it to `conflict`
+with the git error recorded on the skip run. `<type>` follows the issue type
+(Task/Feat/Story/Epic → `feat`, Bug/Fix → `fix`, docs/refactor/test/chore when
+named so) and the slug is the normalised summary. After a successful agent run
+the runner commits everything changed in the workdir (`git add -A`, `commit`,
+empty commit tolerated as nothing-to-do) with a Conventional Commit subject
+scoped to the agent and issue (`feat(Kaio/KAN-19): …`) and a body carrying
+`Agent`/`Role`/`Stage`/`Issue`; the commit author is the agent. It then pushes
+the branch with `git push -u origin`; a push failure fails the run with the grep
+of the git output. Only `implement` roles publish and open the PR; the PR title
+is the commit subject and its body carries the issue description plus the agent
+metadata. Agent comments (`ens comment`) are recorded with the agent name and
+mirrored to the PR through the provider API, not `gh`. Interactive roles may
+rewrite the description with `ens description`; the update is an issue event
+whose actor is the agent. On a board merge the runner uses the latest PR, sets a
+merge commit title/body with the implementer and manager, and deletes the work
+branch. `GET /api/workspaces/{ws}/activity` is the real-time read model used by
+the board and the console monitor (volatile issue fields, agents, active runs). Workspace secrets
 decrypt into an `Authorization: Basic x-access-token:<PAT>` extra header, so
 private providers authenticate without URL credentials (ADR-003 item 8 keeps
 the `RepositoryProvider` upgrade path). Conflict resolution strategies
