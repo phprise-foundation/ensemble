@@ -124,8 +124,11 @@ Gates:
    Delivered slice (2026-11-01): agent comments mirrored to the PR through the
    provider API (no `gh`), agent identity in commits/PRs/merges, branch cleanup
    after merge, scoped description edits with history, and the live activity
-   read model behind the real-time board and console agent monitor. Open:
-   inbound PR comment mirroring, deploy/post-merge smoke, PAT vs GitHub App.
+   read model behind the real-time board and console agent monitor. UI slice
+   (2026-11-02): Ensemble brand/logo, safe Markdown renderer and full-width
+   Markdown editor across every multi-line field, and merge-conflict branch
+   sync (Update/Keep branch/Keep base) from the issue panel. Open: inbound PR
+   comment mirroring, deploy/post-merge smoke, PAT vs GitHub App.
 5. **Use gate** — on a private GitHub repository, a configured agent delivers,
    reviews, merges and deploys with no manual API/terminal step; failures are
    visible and retryable.

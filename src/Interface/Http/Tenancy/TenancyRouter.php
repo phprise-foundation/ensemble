@@ -149,6 +149,7 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isIssueEvents($segments) => $this->issues->events($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMerge($segments) => $this->issues->merge($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueMergeResolve($segments) => $this->runHistory->resolveMerge($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isActivity($segments) => $this->activity->show($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
@@ -489,6 +490,17 @@ final readonly class TenancyRouter
             && $segments[0] === 'api'
             && $segments[1] === 'workspaces'
             && $segments[3] === 'snapshot';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueMergeResolve(array $segments): bool
+    {
+        return count($segments) === 7
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'merge'
+            && $segments[6] === 'resolve';
     }
 
     /** @param list<string> $segments */

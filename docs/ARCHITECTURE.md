@@ -378,10 +378,33 @@ branch. `GET /api/workspaces/{ws}/activity` is the real-time read model used by
 the board and the console monitor (volatile issue fields, agents, active runs). Workspace secrets
 decrypt into an `Authorization: Basic x-access-token:<PAT>` extra header, so
 private providers authenticate without URL credentials (ADR-003 item 8 keeps
-the `RepositoryProvider` upgrade path). Conflict resolution strategies
-(`remote_wins`/`local_wins`/`merge`) remain P3c. The `GitClient` is exercised
-against a real local git binary in the tests; the https-only `RepositoryUrl`
-rule is unchanged.
+the `RepositoryProvider` upgrade path). Workdir preparation conflicts still
+use `remote_wins`/`local_wins`/`merge`. A pull-request merge conflict is
+different: `POST /issues/{key}/merge/resolve` runs `BranchSyncStrategy`
+(`merge`, `keep_work`, `keep_base`), fetches the base branch, merges it into the
+published work branch (with `-X ours`/`-X theirs` when requested), aborts the
+merge on unresolvable conflicts and pushes the branch; the UI exposes those
+three choices after a GitHub 405, plus a link to the PR. The `GitClient` is
+exercised against a real local git binary in the tests, including the branch
+sync; the https-only `RepositoryUrl` rule is unchanged.
+
+## UI shell, brand and rich text
+
+`frontend/index.html` titles the app **Ensemble** and loads the favicon from
+`public/favicon.svg`; the inline `EnsembleLogo.vue` carries the supplied
+vector mark (crop `20 10 262 190`) and the full lockup (mark + wordmark +
+tagline) for the session gate, using `currentColor` so the dark/light themes
+work. The sidebar brand is the mark plus **Ensemble**; the retired
+Multi-Agent name is gone.
+
+Markdown is intentionally local rather than a dependency: `lib/markdown.js`
+escapes raw HTML, emits only an allowlist of tags and accepts only
+`http(s)`/`mailto` links. `MarkdownText.vue` renders the safe HTML and
+`MarkdownTextarea.vue` is the single multi-line editor (Write/Preview,
+full-width, exposed textarea for mentions and counters). Every textarea in
+`frontend/src` goes through it; the issue description/comments, agent whoAmI,
+role description, profile style, custom textarea fields and CRUD tables render
+through `MarkdownText`.
 
 ## Domain packages
 

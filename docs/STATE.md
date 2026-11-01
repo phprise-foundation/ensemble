@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **191 PHPUnit tests / 1193 assertions**, Psalm level 1, **0 errors**.
+- Backend: **193 PHPUnit tests / 1208 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
-- Frontend unit: **249/249** (vitest).
+- Frontend unit: **256/256** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **131/131 across 22 specs**, green.
+- Real E2E: **132/132 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -331,6 +331,35 @@ earlier rerun bug.
   `MergePullRequestTest` now exercises the merge-title builder, which would
   fail on the missing class. The three failed attempts happened before any
   provider call, so the PRs and ready flags were untouched.
+
+### Brand, Markdown and merge-conflict UI (2026-11-02)
+
+- **Brand:** the app title is **Ensemble** (document title, topbar fallback,
+  session gate) and the supplied vector mark is in `EnsembleLogo.vue` with
+  `mark`/`full` crops, a `currentColor` path that follows the theme, a brand
+  icon in the sidebar and a favicon. The sidebar wordmark and logo are the
+  Ensemble brand, not the retired Multi-Agent name.
+- **Markdown:** a dependency-free, allowlist renderer (`lib/markdown.js`)
+  handles headings, paragraphs/line breaks, lists, blockquotes, fenced code,
+  emphasis, inline code and safe `http(s)`/`mailto` links; raw HTML is escaped
+  and unsafe URLs are rejected. `MarkdownText` renders it and
+  `MarkdownTextarea` provides a full-width Write/Preview editor with Markdown
+  hint. It replaced every multi-line textarea (issue description and comments,
+  agent whoAmI, role description, profile style, custom textarea fields and
+  the new-task description); the same text is rendered through `MarkdownText`
+  in the issue panel, comments, agent cards and CRUD tables.
+- **Textarea space:** the shared component owns `width: 100%`, a useful
+  minimum height and resize/preview, so modal fields no longer collapse to a
+  small native textarea. Existing `FieldLimit` counters and mention handling
+  stay attached to the real textarea (the component exposes it).
+- **Merge conflict UI:** a merge failure containing GitHub 405/conflict shows
+  a persistent panel under Ready to merge with **Update branch**, **Keep
+  branch**, **Keep base** and **Open PR**. The backend
+  `POST /issues/{key}/merge/resolve` runs `BranchSyncStrategy`
+  (`merge`/`keep_work`/`keep_base`), fetch/merges the repository base into the
+  work branch with `-X ours|theirs` when requested, aborts cleanly on an
+  unresolvable conflict, pushes the branch and returns the binding. The PR can
+  then be merged normally; the runner does not bypass branch protection.
 
 
 

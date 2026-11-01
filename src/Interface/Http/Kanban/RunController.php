@@ -6,6 +6,7 @@ namespace App\Interface\Http\Kanban;
 
 use App\Application\Runner\RequestRun;
 use App\Application\Runner\ResolveWorkdirConflict;
+use App\Application\Runner\SyncWorkBranch;
 use App\Application\Kanban\ReadIssue;
 use App\Application\Security\ReadCurrentUser;
 use App\Domain\Contract\Runner\RunRepository;
@@ -26,6 +27,7 @@ final readonly class RunController
         private RunPresenter $presenter,
         private JsonResponder $responder,
         private ResolveWorkdirConflict $resolveConflict,
+        private SyncWorkBranch $syncBranch,
         private WorkdirPresenter $bindings,
         private RequestRun $requestRun,
     ) {
@@ -40,6 +42,19 @@ final readonly class RunController
         $body = JsonBody::from($request);
         $strategy = JsonBody::string($body, 'strategy') ?? '';
         $workdir = $this->resolveConflict->execute($user, $workspaceId, $key, $strategy);
+
+        return $this->responder->respond(['binding' => $this->bindings->present($workdir)]);
+    }
+
+    public function resolveMerge(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $body = JsonBody::from($request);
+        $strategy = JsonBody::string($body, 'strategy') ?? '';
+        $workdir = $this->syncBranch->execute($user, $workspaceId, $key, $strategy);
 
         return $this->responder->respond(['binding' => $this->bindings->present($workdir)]);
     }

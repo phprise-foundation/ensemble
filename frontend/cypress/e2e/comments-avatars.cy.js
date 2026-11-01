@@ -105,14 +105,19 @@ describe('comments avatars e2e', () => {
     )
   })
 
-  it('os comentários do seed aparecem em ordem cronológica', () => {
-    cy.get('.issue-panel .comment .comment-author').should(($authors) => {
-      const names = [...$authors].map((element) => element.textContent)
-      expect(names.every((name) => name === 'admin')).to.be.true
+  it('os comentários aparecem do mais novo para o mais antigo', () => {
+    cy.get('.issue-panel .comment .comment-author-info .muted.small').then(($stamps) => {
+      const parse = (text) => {
+        const [date, time] = text.trim().split(' ')
+        const [day, month, year] = date.split('/')
+        return Date.parse(`${year}-${month}-${day}T${time}:00`)
+      }
+      const values = [...$stamps].map((element) => parse(element.textContent))
+      expect(values[0]).to.be.at.least(values[values.length - 1])
     })
   })
 
-  it('o comentário publicado logado surge com admin e preserva a ordem', () => {
+  it('o comentário publicado logado surge com admin no topo', () => {
     cy.intercept('POST', '**/api/workspaces/*/issues/KANB-1/comments').as('postComment')
     cy.get('.issue-panel textarea[aria-label="Comment"]')
       .type('E2E KAN-128: comentário publicado logado')
@@ -123,10 +128,11 @@ describe('comments avatars e2e', () => {
       expect(names).to.deep.equal(['admin', 'admin', 'admin', 'admin', 'admin', 'admin'])
     })
     cy.get('.issue-panel .comment')
-      .last()
+      .first()
       .find('.muted.small')
       .invoke('text')
       .should('match', TIMESTAMP_PATTERN)
+    cy.get('.issue-panel .comment').first().should('contain', 'E2E KAN-128')
   })
 
   it('nenhuma imagem do painel está quebrada', () => {

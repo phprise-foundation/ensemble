@@ -18,4 +18,7 @@ interface WorkdirVcs
 
     /** Reconciles a conflicting workdir with the base branch and the agent branch. */
     public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome;
+
+    /** Updates a published work branch with the repository base branch. */
+    public function sync(Workdir $workdir, string $path, BranchSyncStrategy $strategy): Outcome;
 }

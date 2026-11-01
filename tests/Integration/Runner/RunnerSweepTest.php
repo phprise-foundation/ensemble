@@ -13,6 +13,7 @@ use App\Application\Runner\ReportStage;
 use App\Application\Runner\ResolveProfile;
 use App\Domain\Runner\AgentExecutor;
 use App\Domain\Runner\AgentRunContext;
+use App\Domain\Runner\BranchSyncStrategy;
 use App\Domain\Runner\CommitMessage;
 use App\Domain\Kanban\FieldValues;
 use App\Domain\Kanban\Issue;
@@ -965,6 +966,17 @@ final class RecordedVcs implements WorkdirVcs
 
         return Outcome::succeeded('local changes discarded');
     }
+
+    #[Override]
+    public function sync(Workdir $workdir, string $path, BranchSyncStrategy $strategy): Outcome
+    {
+        $this->synced[] = $strategy->value;
+
+        return Outcome::succeeded('work branch synced');
+    }
+
+    /** @var list<string> */
+    public array $synced = [];
 
     #[Override]
     public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome

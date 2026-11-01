@@ -137,8 +137,8 @@ E2E-SAVED`)
         .trigger('input')
       cy.get('.issue-panel').contains('button', 'Save').click()
       cy.get('.issue-panel .body').invoke('text').then((text) => {
-        expect(text.trimEnd()).to.equal(`${baseline}
-E2E-SAVED`)
+        expect(text).to.contain(baseline.trimEnd())
+        expect(text).to.contain('E2E-SAVED')
       })
       cy.get('.issue-panel [aria-label="Edit description"]').click()
       cy.get('.issue-panel textarea[aria-label="Description"]')

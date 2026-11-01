@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import AppIcon from './components/AppIcon.vue'
+import EnsembleLogo from './components/EnsembleLogo.vue'
 import AppCopilot from './components/AppCopilot.vue'
 import AppConsole from './components/AppConsole.vue'
 import DialogHost from './components/DialogHost.vue'
@@ -152,7 +153,7 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
         >
           <AppIcon name="menu" />
         </button>
-        <h1>{{ route.meta.title || 'Multi-Agent' }}</h1>
+        <h1>{{ route.meta.title || 'Ensemble' }}</h1>
         <div class="spacer"></div>
         <div class="topbar-actions">
           <button
@@ -226,7 +227,7 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
   </div>
   <div class="session-ended" v-else>
     <form class="session-ended-box" @submit.prevent="submitSignIn">
-      <h1 class="session-ended-title">Multi-Agent</h1>
+      <EnsembleLogo variant="full" class="session-ended-logo" />
       <p class="session-ended-message">Sign in to your workspace</p>
       <input v-model="signInLogin" class="input session-ended-field" aria-label="Login" autocomplete="username" />
       <input v-model="signInPassword" class="input session-ended-field" type="password" aria-label="Password" autocomplete="current-password" />

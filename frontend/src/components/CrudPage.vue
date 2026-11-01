@@ -4,6 +4,8 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
+import MarkdownText from './MarkdownText.vue'
+import MarkdownTextarea from './MarkdownTextarea.vue'
 
 const props = defineProps({ schema: { type: Object, required: true } })
 
@@ -37,6 +39,11 @@ function openEdit(row) {
 
 function cellValue(row, column) {
   return column.format ? column.format(row) : row[column.key]
+}
+
+function isMarkdownColumn(column) {
+  return column.type === 'markdown'
+    || (props.schema.fields ?? []).some((field) => field.key === column.key && field.type === 'textarea')
 }
 
 function isChecked(field, value) {
@@ -148,6 +155,11 @@ async function remove(row) {
       >
         <span v-for="column in schema.columns" :key="column.key">
           <span v-if="column.type === 'color'" class="swatch" :style="{ background: row[column.key] }"></span>
+          <MarkdownText
+            v-else-if="isMarkdownColumn(column)"
+            class="cell-markdown"
+            :text="String(cellValue(row, column) ?? '')"
+          />
           <template v-else>{{ cellValue(row, column) }}</template>
         </span>
         <span class="actions">
@@ -172,7 +184,7 @@ async function remove(row) {
             <input v-if="field.type === 'color'" type="color" v-model="draft[field.key]" />
             <input v-else-if="field.type === 'number'" type="number" v-model.number="draft[field.key]" />
             <input v-else-if="field.type === 'text' || !field.type" type="text" v-model="draft[field.key]" />
-            <textarea v-else-if="field.type === 'textarea'" rows="3" v-model="draft[field.key]"></textarea>
+            <MarkdownTextarea v-else-if="field.type === 'textarea'" v-model="draft[field.key]" :rows="5" :aria-label="field.label" />
 
             <select v-else-if="field.type === 'select'" v-model="draft[field.key]">
               <option v-for="option in optionsFor(field)" :key="option.value" :value="option.value">{{ option.label }}</option>

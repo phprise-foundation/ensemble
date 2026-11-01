@@ -138,7 +138,29 @@ textarea {
 
 .brand-icon {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
   color: var(--accent);
+}
+
+.brand-icon .ensemble-logo {
+  width: 100%;
+  height: 100%;
+}
+
+.ensemble-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.session-ended-logo {
+  width: 172px;
+  max-width: 60vw;
+  height: auto;
+  color: var(--text);
 }
 
 .nav {
@@ -2295,4 +2317,183 @@ textarea[aria-invalid='true'] {
 
 .comment-author-info .muted.small {
   flex: 0 0 auto;
+}
+
+/* Markdown editor and rendered content */
+.markdown-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.markdown-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.markdown-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.markdown-tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+}
+
+.markdown-tab.active {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.markdown-hint {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.markdown-input {
+  width: 100%;
+  min-height: 7rem;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.markdown-preview {
+  width: 100%;
+  min-height: 7rem;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+
+.markdown {
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p {
+  margin: 0 0 0.55em;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4,
+.markdown h5,
+.markdown h6 {
+  margin: 0.7em 0 0.35em;
+  line-height: 1.2;
+}
+
+.markdown h1 { font-size: 1.35em; }
+.markdown h2 { font-size: 1.2em; }
+.markdown h3 { font-size: 1.08em; }
+
+.markdown ul,
+.markdown ol {
+  margin: 0.35em 0 0.6em;
+  padding-left: 1.35em;
+}
+
+.markdown li + li {
+  margin-top: 0.15em;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  background: var(--surface-3);
+}
+
+.markdown pre {
+  overflow-x: auto;
+  margin: 0.5em 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-3);
+}
+
+.markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: 12px;
+  white-space: pre;
+}
+
+.markdown blockquote {
+  margin: 0.5em 0;
+  padding: 0.1em 0.8em;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.markdown a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0.8em 0;
+}
+
+.markdown del {
+  color: var(--muted);
+}
+
+.panel-section .body.markdown {
+  white-space: normal;
+}
+
+.agent-info .markdown p {
+  margin: 0;
+}
+
+.comment .markdown {
+  font-size: 13px;
+}
+
+.new-task-modal .markdown-field,
+.modal-body .markdown-field,
+.panel-section .markdown-field {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .markdown-input,
+  .markdown-preview {
+    min-height: 9rem;
+  }
 }

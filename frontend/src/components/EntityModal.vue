@@ -1,5 +1,6 @@
 <script setup>
 import AppIcon from './AppIcon.vue'
+import MarkdownTextarea from './MarkdownTextarea.vue'
 
 const props = defineProps({
   title: { type: String, default: '' },
@@ -39,7 +40,7 @@ function toggle(field, value) {
           <span>{{ field.label }}</span>
           <input v-if="field.type === 'number'" type="number" v-model.number="draft[field.key]" />
           <input v-else-if="field.type === 'color'" type="color" v-model="draft[field.key]" />
-          <textarea v-else-if="field.type === 'textarea'" rows="3" v-model="draft[field.key]"></textarea>
+          <MarkdownTextarea v-else-if="field.type === 'textarea'" v-model="draft[field.key]" :rows="5" :aria-label="field.label" />
           <select v-else-if="field.type === 'select'" v-model="draft[field.key]">
             <option v-for="option in optionsFor(field)" :key="option.value" :value="option.value">{{ option.label }}</option>
           </select>

@@ -70,6 +70,7 @@ use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
 use App\Application\Runner\ExecuteSweep;
 use App\Application\Runner\ResolveWorkdirConflict;
+use App\Application\Runner\SyncWorkBranch;
 use App\Application\Runner\PromptComposer;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
@@ -470,6 +471,18 @@ final readonly class TenancyBootstrap
                 $runHistoryPresenter,
                 $this->responder,
                 new ResolveWorkdirConflict(
+                    $issueRepository,
+                    $workdirs,
+                    new VarWorkdirPaths($workdirRoot),
+                    new GitWorkdirVcs(
+                        new GitClient(),
+                        $gitRepositories,
+                        $workspaceSecrets,
+                        $secretCipher,
+                    ),
+                    $guard,
+                ),
+                new SyncWorkBranch(
                     $issueRepository,
                     $workdirs,
                     new VarWorkdirPaths($workdirRoot),

@@ -471,6 +471,16 @@ export const boardStore = {
     return payload
   },
 
+  async syncWorkBranch(issueId, strategy) {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const payload = await request('POST', scoped(`/issues/${issue.key}/merge/resolve`), { strategy })
+    await hydrateIssue(issue)
+    return payload
+  },
+
   async resolveWorkdir(issueId, strategy) {
     const issue = issueOf(issueId)
     if (!issue) {

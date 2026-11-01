@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Runner;
 
+use App\Domain\Runner\BranchSyncStrategy;
 use App\Domain\Runner\CommitMessage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\ResolutionStrategy;
@@ -122,6 +123,54 @@ final class GitClient implements RepositoryProbe
             ResolutionStrategy::LocalWins => $this->localWins($path, $branch, $token, $provider),
             ResolutionStrategy::Merge => $this->mergeAndPush($path, $branch, $base, $token, $provider),
         };
+    }
+
+    public function syncWithBase(
+        string $path,
+        string $branch,
+        string $base,
+        BranchSyncStrategy $strategy,
+        ?string $token = null,
+        ?Provider $provider = null,
+    ): Outcome {
+        $fetch = $this->git($path, $this->auth(['fetch', 'origin'], $token, $provider));
+        if ($fetch['exit'] !== 0) {
+            return Outcome::failed('git fetch failed: ' . $this->trailing($fetch['output']));
+        }
+
+        $checkout = $this->git($path, $this->auth(['checkout', $branch], $token, $provider));
+        if ($checkout['exit'] !== 0) {
+            return Outcome::failed('git checkout failed: ' . $this->trailing($checkout['output']));
+        }
+
+        $committed = $this->commitAll($path, CommitMessage::system('run: save local work before syncing ' . $base));
+        if ($committed !== null) {
+            return $committed;
+        }
+
+        $arguments = [
+            '-c', 'user.name=Ensemble',
+            '-c', 'user.email=ensemble@ensemble.local',
+            'merge', '--no-edit',
+        ];
+        if ($strategy === BranchSyncStrategy::KeepWork) {
+            $arguments[] = '-X';
+            $arguments[] = 'ours';
+        }
+        if ($strategy === BranchSyncStrategy::KeepBase) {
+            $arguments[] = '-X';
+            $arguments[] = 'theirs';
+        }
+        $arguments[] = 'origin/' . $base;
+
+        $merge = $this->git($path, $arguments);
+        if ($merge['exit'] !== 0) {
+            $this->git($path, ['merge', '--abort']);
+
+            return Outcome::failed('git merge failed: ' . $this->trailing($merge['output']));
+        }
+
+        return $this->push($path, $branch, false, $token, $provider);
     }
 
     private function remoteWins(

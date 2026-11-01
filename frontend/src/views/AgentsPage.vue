@@ -6,6 +6,8 @@ import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
 import Avatar from '../components/Avatar.vue'
+import MarkdownText from '../components/MarkdownText.vue'
+import MarkdownTextarea from '../components/MarkdownTextarea.vue'
 import { imageFileError, readImageFile } from '../lib/image-upload.js'
 
 const route = useRoute()
@@ -118,7 +120,7 @@ onMounted(() => {
           <strong>{{ agent.name }}</strong>
           <div class="muted small">{{ roleNames(agent) }}</div>
           <div class="muted small">{{ boardStore.profile(agent.profileId)?.name || 'No profile' }}</div>
-          <p class="muted small">{{ agent.whoAmI }}</p>
+          <MarkdownText class="muted small" :text="agent.whoAmI" />
           <div class="agent-actions">
             <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(agent)"><AppIcon name="edit" size="14" /></button>
             <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(agent)"><AppIcon name="delete" size="14" /></button>
@@ -145,7 +147,7 @@ onMounted(() => {
           </div>
 
           <label class="field"><span>Name</span><input type="text" v-model="draft.name" /></label>
-          <label class="field"><span>Who am I</span><textarea rows="2" v-model="draft.whoAmI"></textarea></label>
+          <label class="field"><span>Who am I</span><MarkdownTextarea v-model="draft.whoAmI" :rows="4" aria-label="Who am I" /></label>
           <label class="field"><span>Age</span><input type="number" v-model.number="draft.age" /></label>
           <label class="field">
             <span>Marital status</span>

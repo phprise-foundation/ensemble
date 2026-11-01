@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, Teleport, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppIcon from './AppIcon.vue'
+import EnsembleLogo from './EnsembleLogo.vue'
 import EntityModal from './EntityModal.vue'
 import BoardEditor from './BoardEditor.vue'
 import { boardStore } from '../store/board.js'
@@ -407,8 +408,8 @@ async function removeEntity(kind, id, label) {
     aria-label="Menu"
   >
     <div class="brand">
-      <span class="brand-icon"><AppIcon name="smartboard" size="18" /></span>
-      <span>Multi Agent</span>
+      <span class="brand-icon"><EnsembleLogo variant="mark" /></span>
+      <span>Ensemble</span>
       <button
         v-if="narrow && isMobile"
         class="icon-btn sidebar-close"
