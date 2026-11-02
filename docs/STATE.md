@@ -46,7 +46,7 @@ before P5.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
-- Frontend unit: **256/256** (vitest).
+- Frontend unit: **257/257** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
 - Real E2E: **132/132 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
@@ -337,8 +337,8 @@ earlier rerun bug.
 - **Brand:** the app title is **Ensemble** (document title, topbar fallback,
   session gate) and the supplied vector mark is in `EnsembleLogo.vue` with
   `mark`/`full` crops, a `currentColor` path that follows the theme, a brand
-  icon in the sidebar and a favicon. The sidebar wordmark and logo are the
-  Ensemble brand, not the retired Multi-Agent name.
+  icon in the sidebar, the mark in the page header and a favicon. The sidebar
+  wordmark and logo are the Ensemble brand, not the retired Multi-Agent name.
 - **Markdown:** a dependency-free, allowlist renderer (`lib/markdown.js`)
   handles headings, paragraphs/line breaks, lists, blockquotes, fenced code,
   emphasis, inline code and safe `http(s)`/`mailto` links; raw HTML is escaped
@@ -352,6 +352,11 @@ earlier rerun bug.
   minimum height and resize/preview, so modal fields no longer collapse to a
   small native textarea. Existing `FieldLimit` counters and mention handling
   stay attached to the real textarea (the component exposes it).
+- **Console time:** the poll now reads `createdAt` from the issue-comment API
+  as well as the legacy `at`/`created_at`, so agent messages no longer use the
+  poll instant; every line is rendered through `toLocaleTimeString()` in the
+  client's local timezone, alongside command and error lines that already used
+  an explicit instant.
 - **Merge conflict UI:** a merge failure containing GitHub 405/conflict shows
   a persistent panel under Ready to merge with **Update branch**, **Keep
   branch**, **Keep base** and **Open PR**. The backend

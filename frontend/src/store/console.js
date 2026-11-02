@@ -18,7 +18,7 @@ let failureReported = false
 const seen = new Set()
 
 function stampOf(comment) {
-  return comment.created_at ?? comment.at
+  return comment.created_at ?? comment.at ?? comment.createdAt
 }
 
 function textOf(comment) {

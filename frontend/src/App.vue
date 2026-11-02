@@ -153,6 +153,7 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
         >
           <AppIcon name="menu" />
         </button>
+        <span class="topbar-brand" aria-hidden="true"><EnsembleLogo variant="mark" title="Ensemble" /></span>
         <h1>{{ route.meta.title || 'Ensemble' }}</h1>
         <div class="spacer"></div>
         <div class="topbar-actions">

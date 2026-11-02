@@ -358,6 +358,21 @@ describe('AppConsole resizing', () => {
 })
 
 describe('console reopen', () => {
+  it('uses createdAt from the API and renders it in the client local timezone', async () => {
+    const at = '2026-10-19T12:00:00.000Z'
+    setIssues([
+      { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c-time', author: 'Vivy', body: 'timestamp', createdAt: at }] },
+    ])
+
+    await consoleStore.pollOnce()
+
+    expect(consoleStore.state.messages.at(-1).at).to.equal(at)
+    const wrapper = mount(ConsoleOutput, { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('.console-line .console-time').text()).to.equal(new Date(at).toLocaleTimeString())
+    wrapper.unmount()
+  })
+
   it('an immediate poll after reopening fills the log with the agent comments', async () => {
     setIssues([
       { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c1', author: 'Vivy', body: 'revisão pronta', at: '2026-10-19T10:00:00.000Z' }] },
