@@ -823,7 +823,7 @@ final class RunnerSweepTest extends TestCase
     {
         $this->addUnblocker('Lead');
         $this->attachPending();
-        $this->executor->failure = 'opencode failed: model unavailable';
+        $this->executor->failure = 'open-warden failed: model unavailable';
 
         $this->sweep();
         $this->sweep();

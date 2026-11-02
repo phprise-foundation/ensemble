@@ -11,8 +11,8 @@ if [ -f .env ]; then
   set +a
 fi
 
-if ! command -v opencode >/dev/null 2>&1; then
-  echo "opencode is not on PATH; install it and authenticate before running agents" >&2
+if ! command -v open-warden >/dev/null 2>&1; then
+  echo "open-warden is not on PATH; install it before running agents" >&2
   exit 1
 fi
 

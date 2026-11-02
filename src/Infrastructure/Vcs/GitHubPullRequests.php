@@ -260,18 +260,6 @@ final readonly class GitHubPullRequests implements PullRequests
         return $secret === null ? null : $this->cipher->decrypt($secret->ciphertext()->value());
     }
 
-    private function title(Issue $issue): string
-    {
-        return mb_substr($issue->key()->value() . ': ' . $issue->summary(), 0, 240);
-    }
-
-    private function body(Issue $issue): string
-    {
-        $body = trim($issue->description());
-
-        return mb_substr($body === '' ? 'Automated delivery from Ensemble.' : $body, 0, 60000);
-    }
-
     private function reason(string $body): string
     {
         /** @var mixed $decoded */

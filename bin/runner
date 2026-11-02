@@ -38,7 +38,7 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceReposito
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
-use App\Infrastructure\Runner\OpenCodeExecutor;
+use App\Infrastructure\Runner\OpenWardenExecutor;
 use App\Infrastructure\Runner\VarWorkdirPaths;
 use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Infrastructure\Vcs\GitHubPullRequests;
@@ -85,7 +85,7 @@ $pullRequests = new GitHubPullRequests(
     $vcs,
     $runs,
     new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: (getenv('HOME') . '/.local/share/ensemble/workdirs'))),
-    new OpenCodeExecutor(),
+    new OpenWardenExecutor(),
     new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
     new AdvanceIssue(
         $issues,
