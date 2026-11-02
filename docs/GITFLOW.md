@@ -201,20 +201,26 @@ git push origin v0.1.1
 
 ---
 
-## 4. Publication (GitHub + Docker Hub)
+## 4. Publication (GitHub + Docker Hub + Cloudflare)
 
-The Docker image is published **locally** via `docker build` / `docker push`
-(the repository has no GitHub Actions workflow as of `v0.10.1` — this was
-verified; the tag only feeds the semver release below).
+Releases are driven by the `v*` tag through `.github/workflows/release.yml`
+(since the v1 production plan — `docs/ROADMAP.md`):
 
-```bash
-# local image
-docker build -t esdrasschonevald/ensemble:latest .
+1. **`docker-hub` job** — builds the image (`Dockerfile`), pushes
+   `esdrasschonevald/ensemble:<tag>` and `:latest`, and creates the GitHub
+   release notes (`gh release create --generate-notes`).
+2. **`cloudflare` job** (needs the first; gated by the `production`
+   environment) — `wrangler deploy` in `deploy/cloudflare` builds the image
+   from the same `Dockerfile`, pushes it to the Cloudflare managed registry
+   and updates the Worker + Container.
 
-# tag + release
-git tag v0.1.1 && git push origin v0.1.1
-gh release create v0.1.1 --generate-notes
-```
+Production therefore always runs the **latest published release tag**, never
+`main`; rollback is a redeploy of the previous tag. Required repository
+secrets: `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` and
+`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` (with the runtime secrets —
+`DATABASE_URL`, `APP_ENCRYPTION_KEY` and friends — configured once with
+`wrangler secret put`, see `deploy/cloudflare/README.md`).
+
 
 ---
 

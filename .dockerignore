@@ -4,4 +4,12 @@
 /tests/
 /.phpunit.cache/
 /.git/
+/.github/
+/deploy/
+/docs/
 .DS_Store
+/node_modules/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/cypress/screenshots/
+/frontend/cypress/videos/

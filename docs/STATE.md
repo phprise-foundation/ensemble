@@ -380,6 +380,44 @@ RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges 
 deploys) → P5 → P6. Console, copilot, design polish, i18n and metrics are out of
 the critical path.
 
+### v1 production launch (2026-11-02, `feat/v1-production-launch`)
+
+The target is a functional v1 on the public web (Cloudflare Containers), with
+production running the **latest release tag** and the project itself driving
+everything else afterwards. Delivered on the branch:
+
+- **`OpenWardenExecutor`** replaces `OpenCodeExecutor` (the user-facing
+  execution front is `open-warden run`; `opencode` is now only the embedded
+  warden engine, installed statically into the image). Same `AgentExecutor`
+  contract, same model/fallback two-attempt loop, `ENS_*` channels intact.
+- **Production `Dockerfile`**: composer vendor, Vite build into
+  `public/app/`, `go install github.com/esdras-schonevald/open-warden@v0.7.0`,
+  pinned `opencode` engine, `php:8.4-apache` + `git` + `pdo_pgsql` +
+  `mod_rewrite`. `apache.conf` routes the SPA (`/`, `/app/*`) and the API.
+  `Dockerfile.standalone` (SQLite era) was removed.
+- **`bin/entrypoint`** now honors `ENSEMBLE_ROLE` (`web`/`runner`/`all`),
+  requires `DATABASE_URL`, runs `bin/install` at boot and starts Apache and
+  `bin/runner-loop` accordingly.
+- **`deploy/cloudflare`**: Worker + `EnsembleContainer` Durable Object
+  (`scheduling_policy: durable_object`) that starts the image with the secret
+  allowlist (`DATABASE_URL`, `APP_ENCRYPTION_KEY`, bootstrap admin, provider
+  keys) and proxies every request; a 1-minute cron pings `/api/health` to keep
+  the runner alive. Account setup lives in `deploy/cloudflare/README.md`.
+- **`.github/workflows/release.yml`**: on `v*` tags → Docker Hub
+  (`esdrasschonevald/ensemble:<tag>` + `:latest`) → GitHub release →
+  `wrangler deploy` to Cloudflare. Rollback = redeploy the previous tag.
+  Requires the `DOCKERHUB_*` and `CLOUDFLARE_*` secrets plus the `production`
+  environment; repository setup steps are in `docs/ROADMAP.md` (v1 plan) and
+  `deploy/cloudflare/README.md`.
+- Runner docs updated: README (new Components/Run/Production sections),
+  `docs/ARCHITECTURE.md` (executor section), `docs/GITFLOW.md` (release),
+  `docs/ROADMAP.md` (v1 plan + post-v1 backlog), `.env.example` (runner role,
+  workdir root, provider keys).
+
+Everything explicitly postponed after v1 (`deploy` policy, RFC-0001/0002
+implementation, R2, PAT→GitHub App, onboarding, i18n, P6 import) is listed in
+the ROADMAP "Post-v1 backlog" section.
+
 ### Next moves
 
 1. Keep the post-merge smoke for the deployment phase and implement deploy

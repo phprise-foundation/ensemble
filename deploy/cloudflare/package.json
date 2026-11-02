@@ -1,0 +1,13 @@
+{
+  "name": "ensemble-cloudflare",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.10.0",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.60.0"
+  }
+}

@@ -340,9 +340,11 @@ outcome message, `skipped` keeps a visible reason) and carries `prompt` and
 `attempt`. Leases expire after 30 minutes; `reclaim` bumps the attempt and
 fails the run at the ceiling of 3 attempts (`runs` table, `RunRepository`
 contract, `DoctrineRunRepository`). `AgentExecutor` (contract) runs the
-composed prompt in a workdir path; `Infrastructure/Runner/OpenCodeExecutor`
-executes `opencode run --model <model>` there and falls back once to
-`fallbackModel`; `VarWorkdirPaths` derives workdir paths from
+composed prompt in a workdir path; `Infrastructure/Runner/OpenWardenExecutor`
+executes `open-warden run --model <model> --prompt-file <file>` there
+(`opencode` is the embedded engine, never user-facing) so the shell that
+agents spawn still resolves the repo `bin/agent` wrappers from `PATH`;
+if that fails the runner retries once with `fallbackModel`; `VarWorkdirPaths` derives workdir paths from
 `ENSEMBLE_WORKDIR_ROOT` (default `~/.local/share/ensemble/workdirs`, outside
 the Ensemble checkout). `Application/Runner/
 ExecuteSweep` is one deterministic pass: reclaim expired leases, then for every
