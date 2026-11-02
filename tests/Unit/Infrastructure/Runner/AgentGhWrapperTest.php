@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 final class AgentGhWrapperTest extends TestCase
 {
-    public function testDeniesMergeAndRawApiAccess(): void
+    public function testDeniesAllGitHubCliAccess(): void
     {
         $gh = dirname(__DIR__, 4) . '/bin/agent/gh';
 

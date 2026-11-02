@@ -122,21 +122,24 @@ initial status and carry custom field values, comments and status history.
 `bin/runner` (after `bin/install` applied the schema) performs one deterministic
 sweep: it reclaims expired run leases, then every **active** agent looks at the
 statuses owned by its roles, takes the issues sitting in them and runs those
-whose workdir is ready — executing `opencode run --model <model>` (fallback
-model as second attempt) in the workdir path and recording the outcome. Each
+whose workdir is ready — executing `open-warden run --model <model>`
+(`opencode` is the embedded warden engine and never user-facing; the fallback
+model is the second attempt) in the workdir path and recording the outcome. Each
 attempt is a `Run` with claim/lease (30 minutes) and reclaim ceiling (3
 attempts) in the `runs` table. The executable-stage rule (ADR-003) is enforced
 with visible reasons: an issue whose workdir is not `bound` gets a `skipped`
 run (`GET /issues/{key}/runs` shows the history). Repeat sweeps redrive a
 skipped issue only when the reason changes, and never re-run a succeeded or
-failed one. `ENSEMBLE_WORKDIR_ROOT` (default `var/workdirs`) is where the
-runner materializes workdirs.
+failed one. `ENSEMBLE_WORKDIR_ROOT` (default
+`~/.local/share/ensemble/workdirs`, outside the checkouts) is where the runner
+materializes workdirs.
 
 Since P3b the runner also drives the repository: a `pending` workdir is
-prepared on the sweep (clone of the base branch + checkout of
-`agent/<issue-key>` → `bound`, or failure → `conflict` with the git error on
-the skip run), and a successful agent run is committed (`git add -A`) and
-pushed to the agent branch. A workspace secret referenced by the repository
+prepared on the sweep (clone of the base branch + `<type>/<KEY>-<slug>` such as
+`feat/KAN-19-add-the-checkout` → `bound`, or failure → `conflict` with the git
+error on the skip run), and a successful agent run is committed with the agent
+identity (`feat(Kaio/KAN-19): …`, multi-line body) and pushed to the work
+branch. A workspace secret referenced by the repository
 authenticates `git` through an `Authorization: Basic x-access-token:<PAT>`
 extra header.
 
@@ -147,112 +150,56 @@ removed in the productization phases described in `docs/ROADMAP.md` and
 
 ## Components
 
-## Components
+- **The Ensemble product** — multi-tenant REST API (PostgreSQL + Doctrine),
+  the Vue SPA built into `public/app/`, and the agent runner
+  (`bin/runner` + `bin/runner-loop`) driving agents through `open-warden`
+  (git, PRs, merges) in external workdirs.
+- **Legacy board** — the SQLite-era routes under the same `public/index.php`
+  remain temporarily; their removal is part of the P5/P6 tail (see
+  `docs/ROADMAP.md`).
 
-- **board** — the PHP application in this repository: a REST API plus a static,
-  Jira-like board UI, protected by a single admin password. Data lives in SQLite.
-- **docker-compose.yml** — brings up the board and, under the `agents` profile,
-  the [agent-watcher](https://github.com/phprise-foundation/agent-watcher)
-  `agent-runner`, which materializes the agents defined on the board.
-
-## Run
+## Run locally (development)
 
 ```bash
-cp .env.example .env   # set BOARD_PASSWORD (and DEEPSEEK_API_KEY for agents)
-docker compose up -d --build
+docker compose -f docker-compose.dev.yml up -d   # PostgreSQL
+set -a && source .env && set +a && php bin/install
+php -d variables_order=EGPCS -S 127.0.0.1:8081 -t public public/router.php
+bin/runner-loop                                  # second terminal
+cd frontend && npm run dev                       # needs VITE_API_URL in .env.local
 ```
 
-Open <http://localhost:8080> and sign in with `BOARD_PASSWORD`.
+Sign in with `BOOTSTRAP_ADMIN_LOGIN`/`BOOTSTRAP_ADMIN_PASSWORD` (default
+`admin`/`admin1234`). Agent execution needs `open-warden` on `PATH` and one
+provider key in the environment (for example `DEEPSEEK_API_KEY`); discover
+models with `open-warden models`.
 
-The SQLite database is created on first boot at `BOARD_DB_FILE`
-(default `var/board.sqlite`) and seeded with a default board, its columns and the
-agent registry.
+## Production (v1)
 
-### Agents
-
-Agents are defined on the board (the `Agents` view: profile, model,
-fallback model, interval, workspace). They are opt-in via the `agents` profile
-(the default `up` only starts the board):
-
-```bash
-docker compose --profile agents up -d --build
-```
-
-The `runner` service reads the registry from `http://board`
-(`AW_KANBAN_URL`, `AW_KANBAN_TOKEN=$BOARD_PASSWORD`) and keeps one
-`agent-watcher` subprocess per active agent, in parallel. Each agent polls the
-columns whose role it owns and advances items along the configured transitions.
-The agents edit the project mounted at `AW_WORKSPACE` (default `./workspace`).
-Provide the provider keys (e.g. `DEEPSEEK_API_KEY`, `SILICONFLOW_API_KEY`,
-`GOOGLE_API_KEY`) in `.env`.
-
-## Single container (standalone image)
-
-The board **and** the agent runner can run in one container, so you only need a
-single `docker run`. The image is built on the Alpine `agent-watcher` image (the
-bundled opencode binary is musl-linked, so a glibc base cannot run it) and serves
-the board with PHP's built-in server. See `Dockerfile.standalone` and
-`bin/entrypoint`.
-
-Build the agent-watcher image first (it carries `agent-runner`), then the
-standalone image:
+The image is built by the multi-stage `Dockerfile` (frontend build,
+open-warden + pinned opencode engine, Apache + `pdo_pgsql`) and published by
+the release workflow on `v*` tags to `esdrasschonevald/ensemble` (Docker Hub)
+and the Cloudflare managed registry:
 
 ```bash
-docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
-docker build -f Dockerfile.standalone -t esdrasschonevald/ensemble:standalone .
-```
-
-Run it:
-
-```bash
-docker run -d --name ensemble \
-  -p 8080:80 \
-  -v "$PWD/workspace:/workspace" \
-  -v ensemble-var:/var/www/html/var \
-  -e BOARD_PASSWORD=change-me \
-  -e DEEPSEEK_API_KEY=... \
-  -e SILICONFLOW_API_KEY=... \
-  -e GOOGLE_API_KEY=... \
-  esdrasschonevald/ensemble:standalone
-```
-
-Open <http://localhost:8080>. Agents, roles and transitions are configured in the
-UI; the embedded runner starts one `agent-watcher` process per **active** agent
-that has a `model` set (the seeded agents ship with an empty model, so nothing
-runs until you fill it in on the `Agents` screen).
-
-Environment: `BOARD_PASSWORD` (board login and runner token), `BOARD_DB_FILE`
-(default `/var/www/html/var/board.sqlite`), `BOARD_PORT` (default `80`),
-`AW_RUNNER_POLL` (default `30`), `DATABASE_URL`/`APP_ENCRYPTION_KEY` for the new
-API and the provider keys the agents need.
-
-### Local test checklist (before pushing to Docker Hub)
-
-```bash
-docker build -t esdrasschonevald/agent-watcher:latest ../agent-watcher
-docker build -f Dockerfile.standalone -t esdrasschonevald/ensemble:standalone .
+docker build -t esdrasschonevald/ensemble:local .
 
 docker run -d --name ensemble -p 8080:80 \
-  -v "$PWD/workspace:/workspace" -v ensemble-var:/var/www/html/var \
-  -e BOARD_PASSWORD=change-me esdrasschonevald/ensemble:standalone
-
-curl -s localhost:8080/api/health            # {"ok":true}
-curl -s -o /dev/null -w '%{http_code}\n' localhost:8080/   # 200 (board UI)
-docker logs -f ensemble                   # board + runner logs
+  -e ENSEMBLE_ROLE=all \
+  -e DATABASE_URL="pgsql://..." \
+  -e APP_ENCRYPTION_KEY="base64:..." \
+  -e BOOTSTRAP_ADMIN_LOGIN=admin -e BOOTSTRAP_ADMIN_PASSWORD=... \
+  -e DEEPSEEK_API_KEY=... \
+  -v ensemble-var:/var/www/html/var \
+  -v ensemble-workdirs:/var/lib/ensemble/workdirs \
+  esdrasschonevald/ensemble:local
 ```
 
-Then, in the UI: set a `model` on an agent (`Agents`), pick its role on a column
-(`Boards`), create a task in that column and watch the runner pick it up
-(`docker logs -f ensemble`).
-
-Publish to Docker Hub once it looks good:
-
-```bash
-docker tag esdrasschonevald/agent-watcher:latest esdrasschonevald/agent-watcher:<tag>
-docker push esdrasschonevald/agent-watcher:<tag>
-docker tag esdrasschonevald/ensemble:standalone esdrasschonevald/ensemble:<tag>
-docker push esdrasschonevald/ensemble:<tag>
-```
+`ENSEMBLE_ROLE` = `web` | `runner` | `all` (default `all`); start-up applies
+the schema (`bin/install`) and the entrypoint fails fast without
+`DATABASE_URL`. The Cloudflare Containers deployment lives in
+`deploy/cloudflare` (see its README) and the release pipeline is
+`.github/workflows/release.yml` — production always runs the latest `v*`
+release tag, never `main`.
 
 ## API
 

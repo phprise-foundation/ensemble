@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Runner;
 
+use App\Domain\Runner\BranchSyncStrategy;
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Vcs\Provider;
 use App\Infrastructure\Runner\GitClient;
 use PHPUnit\Framework\TestCase;
@@ -56,8 +58,17 @@ final class GitClientTest extends TestCase
         $this->configureIdentity($workdir);
 
         file_put_contents($workdir . '/feature.md', 'agent work');
-        $published = $this->git->commitAndPush($workdir, 'agent/KAN-1');
+        $message = new CommitMessage(
+            'feat(Kaio/KAN-1): Ship the feature',
+            "Agent: Kaio\nRole: Coder",
+            'Kaio',
+            'kaio@ensemble.local',
+        );
+        $published = $this->git->commitAndPush($workdir, 'agent/KAN-1', message: $message);
         self::assertTrue($published->ok);
+        $log = (string) shell_exec('git -C ' . escapeshellarg($workdir) . ' log -1 --format=%an%n%s%n%b');
+        self::assertStringContainsString("Kaio\nfeat(Kaio/KAN-1): Ship the feature", $log);
+        self::assertStringContainsString('Agent: Kaio', $log);
         shell_exec(
             'git -C ' . escapeshellarg($this->base) . '/bare.git update-ref refs/heads/main refs/heads/agent/KAN-1 2>/dev/null'
         );
@@ -65,6 +76,35 @@ final class GitClientTest extends TestCase
             'agent work',
             trim((string) shell_exec('git -C ' . escapeshellarg($this->base) . '/bare.git show agent/KAN-1:feature.md')),
         );
+    }
+
+    public function testSyncsTheWorkBranchWithBaseAndKeepsWorkOnConflicts(): void
+    {
+        $workdir = $this->base . '/work';
+        $url = 'file://' . $this->base . '/bare.git';
+        $branch = 'feat/KAN-1-ship-it';
+
+        self::assertTrue($this->git->ensureClone($url, 'main', $branch, $workdir)->ok);
+        $this->configureIdentity($workdir);
+        file_put_contents($workdir . '/README.md', 'work side');
+        self::assertTrue($this->git->commitAndPush($workdir, $branch)->ok);
+
+        $seed = $this->base . '/seed';
+        file_put_contents($seed . '/README.md', 'base side');
+        shell_exec(
+            'git -C ' . escapeshellarg($seed)
+            . ' add -A && git -C ' . escapeshellarg($seed)
+            . ' commit -q -m base && git -C ' . escapeshellarg($seed)
+            . ' push -q origin main 2>/dev/null'
+        );
+
+        $conflict = $this->git->syncWithBase($workdir, $branch, 'main', BranchSyncStrategy::Merge);
+        self::assertFalse($conflict->ok);
+        self::assertStringContainsString('git merge failed', $conflict->message);
+
+        $kept = $this->git->syncWithBase($workdir, $branch, 'main', BranchSyncStrategy::KeepWork);
+        self::assertTrue($kept->ok);
+        self::assertSame('work side', trim((string) file_get_contents($workdir . '/README.md')));
     }
 
     private function configureIdentity(string $path): void

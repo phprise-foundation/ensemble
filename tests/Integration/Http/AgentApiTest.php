@@ -42,6 +42,7 @@ final class AgentApiTest extends TestCase
             'fallbackModel' => 'opencode/glm-4.7',
             'interval' => 120,
             'active' => false,
+            'language' => 'en',
         ]);
 
         self::assertSame('Kaio', $agent['name']);
@@ -54,6 +55,7 @@ final class AgentApiTest extends TestCase
         self::assertSame('opencode/glm-4.7', $agent['fallbackModel']);
         self::assertSame(120, $agent['interval']);
         self::assertFalse($agent['active']);
+        self::assertSame('en', $agent['language']);
         self::assertSame('', $agent['portrait']);
 
         $listed = $this->app->json($this->app->handle($this->app->request(
@@ -75,7 +77,7 @@ final class AgentApiTest extends TestCase
         $updated = $this->app->json($this->app->handle($this->app->request(
             'PATCH',
             $this->agentPath($agent['id']),
-            ['name' => 'Builder', 'whoAmI' => 'A patient builder.', 'age' => null, 'maritalStatus' => 'Married', 'active' => true, 'interval' => 60],
+            ['name' => 'Builder', 'whoAmI' => 'A patient builder.', 'age' => null, 'maritalStatus' => 'Married', 'active' => true, 'interval' => 60, 'language' => 'pt-BR'],
             $this->adminToken,
         )))['agent'];
         self::assertSame('Builder', $updated['name']);
@@ -83,6 +85,7 @@ final class AgentApiTest extends TestCase
         self::assertSame('married', $updated['maritalStatus']);
         self::assertTrue($updated['active']);
         self::assertSame(60, $updated['interval']);
+        self::assertSame('pt-BR', $updated['language']);
     }
 
     public function testRejectsInvalidAgentPayloads(): void
@@ -116,6 +119,15 @@ final class AgentApiTest extends TestCase
         ));
         self::assertSame(422, $badPortrait->getStatusCode());
         self::assertSame('portrait', $this->app->json($badPortrait, 422)['field']);
+
+        $badLanguage = $this->app->handle($this->app->request(
+            'POST',
+            $this->teamAgentPath($team),
+            ['name' => 'Kaio', 'language' => 'klingon'],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $badLanguage->getStatusCode());
+        self::assertSame('language', $this->app->json($badLanguage, 422)['field']);
 
         $badInterval = $this->app->handle($this->app->request(
             'POST',

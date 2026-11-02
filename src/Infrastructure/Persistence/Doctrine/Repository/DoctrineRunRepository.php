@@ -122,6 +122,25 @@ final readonly class DoctrineRunRepository implements RunRepository
     }
 
     #[Override]
+    public function activeForWorkspace(WorkspaceId $workspaceId): array
+    {
+        /** @var list<RunRecord> $records */
+        $records = $this->entityManager
+            ->createQueryBuilder()
+            ->select('r')
+            ->from(RunRecord::class, 'r')
+            ->where('r.workspaceId = :workspaceId')
+            ->andWhere('r.state IN (:states)')
+            ->setParameter('workspaceId', $workspaceId->value())
+            ->setParameter('states', ['claimed', 'running'])
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return array_map(fn(RunRecord $record): Run => $this->mapper->toDomain($record), $records);
+    }
+
+    #[Override]
     public function forIssue(WorkspaceId $workspaceId, IssueId $issueId): array
     {
         /** @var list<RunRecord> $records */

@@ -1,4 +1,5 @@
 <script setup>
+import MarkdownTextarea from './MarkdownTextarea.vue'
 const props = defineProps({
   field: { type: Object, required: true },
   modelValue: { type: [String, Number, Boolean, Array], default: null },
@@ -42,12 +43,13 @@ function setNumber(value) {
       :checked="Boolean(modelValue)"
       @change="emit('update:modelValue', $event.target.checked)"
     />
-    <textarea
+    <MarkdownTextarea
       v-else-if="field.type === 'textarea'"
-      rows="3"
-      :value="modelValue"
-      @input="emit('update:modelValue', $event.target.value)"
-    ></textarea>
+      :model-value="String(modelValue ?? '')"
+      :rows="4"
+      :aria-label="field.label"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
     <select
       v-else-if="field.type === 'single_select'"
       :value="modelValue"

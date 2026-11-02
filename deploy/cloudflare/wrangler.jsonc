@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ensemble",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": {
+    "enabled": true
+  },
+  "containers": [
+    {
+      "class_name": "EnsembleContainer",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": {
+          "dockerfile": "../../Dockerfile",
+          "build_context": "../../"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ENSEMBLE",
+        "class_name": "EnsembleContainer"
+      }
+    ]
+  },
+  "exports": {
+    "EnsembleContainer": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "vars": {
+    "APP_ENV": "production",
+    "ENSEMBLE_WORKDIR_ROOT": "/var/lib/ensemble/workdirs"
+  }
+}

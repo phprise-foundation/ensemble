@@ -15,6 +15,12 @@ const emit = defineEmits(['dragstart', 'dragend', 'over', 'drop'])
 const status = computed(() => boardStore.status(props.issue.statusId))
 const agent = computed(() => boardStore.agent(props.issue.assigneeId))
 const overdue = computed(() => boardStore.isOverdue(props.issue))
+const running = computed(() => boardStore.activityRunFor?.(props.issue.id) ?? null)
+const runningAgent = computed(() =>
+  running.value
+    ? boardStore.activityAgent?.(running.value.agentId) ?? boardStore.agent(running.value.agentId)
+    : null,
+)
 
 function onDragStart(event) {
   event.dataTransfer.effectAllowed = 'move'
@@ -51,6 +57,10 @@ function onDragStart(event) {
     <div class="card-flags">
       <span class="flag" :style="{ background: status?.color }">{{ status?.name }}</span>
       <span v-if="overdue" class="flag overdue">aging</span>
+      <span v-if="running" class="card-running" :title="`${runningAgent?.name ?? 'agent'} está executando`">
+        <span class="card-running-dot" aria-hidden="true"></span>
+        {{ runningAgent?.name ?? 'agent' }}
+      </span>
     </div>
   </article>
 </template>

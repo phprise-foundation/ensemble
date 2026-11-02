@@ -21,7 +21,7 @@ function nameOf(issue) {
 
 function agentsText() {
   const names = boardStore.state.agents.map((agent) => agent.name)
-  return names.length > 0 ? names.join(', ') : 'nenhum agente registrado'
+  return names.length > 0 ? names.join(', ') : 'no agents registered'
 }
 
 function countText(status) {
@@ -31,8 +31,8 @@ function countText(status) {
 
 function statusText() {
   const counts = boardStore.state.statuses.map(countText)
-  const header = counts.length > 0 ? 'Itens por status:' : 'Nenhum status carregado.'
-  return [`Agentes: ${agentsText()}`, '', header, ...counts].join('\n')
+  const header = counts.length > 0 ? 'Items by status:' : 'No statuses loaded.'
+  return [`Agents: ${agentsText()}`, '', header, ...counts].join('\n')
 }
 
 function isActive(issue) {
@@ -45,16 +45,16 @@ function itemLine(issue) {
 
 function listText() {
   const lines = boardStore.state.issues.filter(isActive).map(itemLine)
-  return lines.length > 0 ? ['Itens ativos:', ...lines].join('\n') : 'Nenhum item ativo no momento.'
+  return lines.length > 0 ? ['Active items:', ...lines].join('\n') : 'No active items.'
 }
 
 function helpText() {
   return [
-    `Comandos disponíveis: ${CATALOG.join(', ')}`,
-    '/status — resume os agentes e os itens por status',
-    '/list — lista os itens ativos do board',
-    '/clear — limpa o console (ação local)',
-    '/help — mostra este catálogo',
+    `Available commands: ${CATALOG.join(', ')}`,
+    '/status — summarizes the agents and the items by status',
+    '/list — lists the active items on the board',
+    '/clear — clears the console (local action)',
+    '/help — shows this catalog',
   ].join('\n')
 }
 
@@ -69,7 +69,7 @@ function commandOf(input) {
 }
 
 function unknownText(command) {
-  return `Comando desconhecido: ${command}. Catálogo: ${CATALOG.join(', ')}. Use /help.`
+  return `Unknown command: ${command}. Catalog: ${CATALOG.join(', ')}. Use /help.`
 }
 
 function respond(text) {

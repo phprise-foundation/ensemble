@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { consoleStore } from './console.js'
 
 const state = reactive({
   toasts: [],
@@ -26,7 +27,12 @@ function pushToast(kind, text) {
     state.toasts.shift()
   }
 
-  const duration = kind === 'error' || kind === 'warning' ? LONG_DURATION_MS : SHORT_DURATION_MS
+  if (kind === 'error') {
+    consoleStore.recordError(text)
+    return
+  }
+
+  const duration = kind === 'warning' ? LONG_DURATION_MS : SHORT_DURATION_MS
   setTimeout(() => removeToast(id), duration)
 }
 

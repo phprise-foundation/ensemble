@@ -7,6 +7,7 @@ import IssuePanel from '../components/IssuePanel.vue'
 import AppIcon from '../components/AppIcon.vue'
 import FieldLimit from '../components/FieldLimit.vue'
 import FieldValueInput from '../components/FieldValueInput.vue'
+import MarkdownTextarea from '../components/MarkdownTextarea.vue'
 import { toast } from '../store/toast.js'
 import { DESCRIPTION_LIMIT, countCharacters, limitError, limitExceeded } from '../../shared/limits.js'
 
@@ -328,13 +329,14 @@ async function drop(columnId, beforeId) {
           </p>
           <div class="field">
             <label for="create-description">Description</label>
-            <textarea
+            <MarkdownTextarea
               id="create-description"
-              rows="4"
               v-model="draft.description"
-              aria-describedby="create-description-limit"
+              :rows="5"
+              aria-label="Description"
+              described-by="create-description-limit"
               :aria-invalid="descriptionOver || Boolean(descriptionError)"
-            ></textarea>
+            />
             <FieldLimit
               id="create-description-limit"
               field="description"

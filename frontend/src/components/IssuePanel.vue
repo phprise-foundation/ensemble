@@ -6,6 +6,8 @@ import Avatar from './Avatar.vue'
 import AssigneePicker from './AssigneePicker.vue'
 import FieldLimit from './FieldLimit.vue'
 import FieldValueInput from './FieldValueInput.vue'
+import MarkdownText from './MarkdownText.vue'
+import MarkdownTextarea from './MarkdownTextarea.vue'
 import IssueHistory from './IssueHistory.vue'
 import { formatCommentTimestamp, resolveAuthor } from '../lib/comment-author.js'
 import { session } from '../store/session.js'
@@ -54,7 +56,9 @@ const fieldsSaving = ref(false)
 const fieldsError = ref('')
 
 const commentRows = computed(() =>
-  issue.value.comments.map((entry) => ({
+  [...issue.value.comments]
+    .sort((left, right) => Date.parse(right.at ?? 0) - Date.parse(left.at ?? 0))
+    .map((entry) => ({
     id: entry.id,
     author: resolveAuthor({
       agents: boardStore.state.agents,
@@ -82,6 +86,10 @@ const typeFields = computed(
 const fieldsDirty = computed(
   () => Boolean(issue.value) && JSON.stringify(fieldsDraft.value) !== JSON.stringify(issue.value.fields ?? {}),
 )
+const pullRequestUrl = computed(() => {
+  const runs = issue.value?.runs ?? []
+  return [...runs].reverse().find((run) => run.pullRequestUrl)?.pullRequestUrl ?? null
+})
 const repositories = computed(() => boardStore.state.sources ?? [])
 const repository = computed(
   () => repositories.value.find((candidate) => candidate.id === issue.value?.repositoryId) ?? null,
@@ -93,6 +101,8 @@ const runs = computed(() =>
 const repositoryDraft = ref('')
 const attaching = ref(false)
 const resolving = ref('')
+const syncingConflict = ref('')
+const mergeConflict = ref(false)
 const requesting = ref(false)
 const merging = ref(false)
 let runPoll = null
@@ -161,6 +171,8 @@ watch(
     mentionSearch.value = ''
     repositoryDraft.value = ''
     resolving.value = ''
+    syncingConflict.value = ''
+    mergeConflict.value = false
   },
   { immediate: true },
 )
@@ -213,7 +225,7 @@ async function mergePullRequest() {
   }
   const confirmed = await dialog.confirm({
     title: 'Merge pull request?',
-    message: 'The pull request is merged on the provider and the issue moves to Done.',
+    message: 'The pull request is merged, the work branch is deleted and the issue moves to Done.',
     confirmLabel: 'Merge',
   })
   if (!confirmed) {
@@ -221,12 +233,31 @@ async function mergePullRequest() {
   }
   merging.value = true
   try {
-    await boardStore.mergeIssue(issue.value.id)
-    toast.success('Pull request merged.')
+    const result = await boardStore.mergeIssue(issue.value.id)
+    mergeConflict.value = false
+    toast.success(result?.merge?.branchDeleted ? 'Pull request merged and branch deleted.' : 'Pull request merged.')
   } catch (failure) {
-    toast.error(failure?.message ?? 'Could not merge the pull request.')
+    const message = failure?.message ?? 'Could not merge the pull request.'
+    mergeConflict.value = /405|conflict|not mergeable/i.test(message)
+    toast.error(message)
   } finally {
     merging.value = false
+  }
+}
+
+async function resolveMergeConflict(strategy) {
+  if (!issue.value || syncingConflict.value) {
+    return
+  }
+  syncingConflict.value = strategy
+  try {
+    await boardStore.syncWorkBranch(issue.value.id, strategy)
+    mergeConflict.value = false
+    toast.success('Work branch updated. Try merging again.')
+  } catch (failure) {
+    toast.error(failure?.message ?? 'Could not update the work branch.')
+  } finally {
+    syncingConflict.value = ''
   }
 }
 
@@ -348,7 +379,7 @@ function onCommentKeydown(event) {
 }
 
 function chooseMention(person) {
-  const input = commentInput.value
+  const input = commentInput.value?.textarea ?? commentInput.value
   const caret = input?.selectionStart ?? comment.value.length
   const before = comment.value.slice(0, caret).replace(/(?:^|\s)@[^\s@]*$/, (token) => {
     const prefix = token.startsWith('@') ? '' : token.charAt(0)
@@ -491,6 +522,44 @@ async function submitComment() {
       </button>
     </div>
 
+    <div v-if="issue.readyToMerge && mergeConflict" class="conflict-box merge-conflict-box">
+      <p class="error small">
+        The pull request has conflicts with the base branch. Update the work branch, then try the merge again.
+      </p>
+      <p class="muted small">
+        Keep branch or Keep base resolves only the conflicting hunks in favour of that side; non-conflicting base changes are still merged.
+      </p>
+      <div class="conflict-actions">
+        <button
+          type="button"
+          class="button"
+          :disabled="Boolean(syncingConflict)"
+          @click="resolveMergeConflict('merge')"
+        >
+          {{ syncingConflict === 'merge' ? 'Updating…' : 'Update branch' }}
+        </button>
+        <button
+          type="button"
+          class="button ghost"
+          :disabled="Boolean(syncingConflict)"
+          @click="resolveMergeConflict('keep_work')"
+        >
+          {{ syncingConflict === 'keep_work' ? 'Resolving…' : 'Keep branch' }}
+        </button>
+        <button
+          type="button"
+          class="button ghost"
+          :disabled="Boolean(syncingConflict)"
+          @click="resolveMergeConflict('keep_base')"
+        >
+          {{ syncingConflict === 'keep_base' ? 'Resolving…' : 'Keep base' }}
+        </button>
+        <a v-if="pullRequestUrl" class="button ghost" :href="pullRequestUrl" target="_blank" rel="noreferrer">
+          Open PR
+        </a>
+      </div>
+    </div>
+
     <div v-if="issue.blocked" class="panel-blocked">
       <AppIcon name="warning" size="16" />
       <div>
@@ -568,13 +637,14 @@ async function submitComment() {
       </div>
 
       <template v-if="editingDescription">
-        <textarea
+        <MarkdownTextarea
+          id="issue-description"
           v-model="descriptionDraft"
-          rows="4"
+          :rows="5"
           aria-label="Description"
-          aria-describedby="issue-description-limit"
+          described-by="issue-description-limit"
           :aria-invalid="descriptionOver || Boolean(descriptionError)"
-        ></textarea>
+        />
         <FieldLimit
           id="issue-description-limit"
           field="description"
@@ -588,9 +658,10 @@ async function submitComment() {
         </div>
       </template>
 
-      <p
+      <MarkdownText
         v-else
         class="body editable"
+        :text="issue.description || 'No description'"
         role="button"
         tabindex="0"
         title="Click to edit"
@@ -598,7 +669,7 @@ async function submitComment() {
         @click="startDescriptionEdit"
         @keydown.enter.prevent="startDescriptionEdit"
         @keydown.space.prevent="startDescriptionEdit"
-      >{{ issue.description || 'No description' }}</p>
+      />
     </section>
 
     <section v-if="typeFields.length" class="panel-section panel-fields">
@@ -727,21 +798,21 @@ async function submitComment() {
                 <span class="muted small">{{ row.at }}</span>
               </div>
             </div>
-            <p>{{ row.body }}</p>
+            <MarkdownText class="comment-body" :text="row.body" />
           </div>
           <p v-if="!issue.comments.length" class="muted small">No comments yet</p>
           <div class="comment-editor">
-            <textarea
+            <MarkdownTextarea
               ref="commentInput"
               v-model="comment"
-              rows="3"
+              :rows="4"
               placeholder="Write a comment... use @ to mention"
               aria-label="Comment"
-              aria-describedby="issue-comment-limit"
+              described-by="issue-comment-limit"
               :aria-invalid="commentOver || Boolean(commentError)"
               @input="onCommentInput"
               @keydown="onCommentKeydown"
-            ></textarea>
+            />
             <ul
               v-if="mentionOpen && mentionCandidates.length"
               class="mention-menu"

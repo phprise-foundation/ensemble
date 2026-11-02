@@ -26,6 +26,7 @@ final class AgentPresenter
             'model' => $agent->model(),
             'fallbackModel' => $agent->fallbackModel(),
             'interval' => $agent->interval()->value(),
+            'language' => $agent->language(),
             'active' => $agent->active(),
             'createdAt' => $agent->createdAt()->format(DATE_ATOM),
             'updatedAt' => $agent->updatedAt()->format(DATE_ATOM),

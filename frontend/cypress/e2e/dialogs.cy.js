@@ -82,14 +82,20 @@ describe('diálogos e toasts na interface em execução', () => {
   })
 
   it('agents: erro na exclusão anuncia toast com role="alert"', () => {
+    cy.viewport(1400, 900)
     cy.intercept('DELETE', '**/api/workspaces/*/agents/*', { statusCode: 500, body: { error: 'falha simulada' } }).as('falha')
     cy.visitAgents()
     abrirDialogDanger('.content')
     cy.get(card).find('button').last().click()
     cy.get(card).should('not.exist')
-    cy.get('.toast')
+    cy.get('.toast.error')
       .should('have.attr', 'role', 'alert')
       .and('contain', 'falha simulada')
+    cy.get('.toast.error .toast-action').should('have.text', 'Copy')
+    cy.get('.toast.error .toast-hint').should('contain', 'Saved to the console.')
+
+    cy.get('.console-toggle').click()
+    cy.get('#app-console').should('contain.text', 'falha simulada')
   })
 
   it('sidebar: exclusão de source cancelada via Cancelar mantém a source', () => {

@@ -53,6 +53,9 @@ final class AgentRecord
     #[ORM\Column(name: 'loop_interval', type: 'integer')]
     private int $loopInterval;
 
+    #[ORM\Column(type: 'string', length: 16, options: ['default' => 'pt-BR'])]
+    private string $language = 'pt-BR';
+
     #[ORM\Column(type: 'boolean')]
     private bool $active;
 
@@ -79,6 +82,7 @@ final class AgentRecord
         bool $active,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
+        string $language = 'pt-BR',
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -94,6 +98,7 @@ final class AgentRecord
         $this->fallbackModel = $fallbackModel;
         $this->loopInterval = $loopInterval;
         $this->active = $active;
+        $this->language = $language;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -178,6 +183,11 @@ final class AgentRecord
         return $this->updatedAt;
     }
 
+    public function language(): string
+    {
+        return $this->language;
+    }
+
     public function sync(
         string $teamId,
         string $name,
@@ -192,6 +202,7 @@ final class AgentRecord
         int $loopInterval,
         bool $active,
         DateTimeImmutable $updatedAt,
+        string $language,
     ): void {
         $this->teamId = $teamId;
         $this->name = $name;
@@ -205,6 +216,7 @@ final class AgentRecord
         $this->fallbackModel = $fallbackModel;
         $this->loopInterval = $loopInterval;
         $this->active = $active;
+        $this->language = $language;
         $this->updatedAt = $updatedAt;
     }
 }

@@ -17,6 +17,26 @@ foreach ($args as $index => $argument) {
     }
 }
 
+if ($command === 'description') {
+    $body = trim($body === '' ? $sub : $body);
+    if ($body === '') {
+        fwrite(STDERR, "usage: ens description --body \"...\"\n");
+        exit(1);
+    }
+    if (mb_strlen($body) > 4095) {
+        fwrite(STDERR, "the description must have at most 4095 characters\n");
+        exit(1);
+    }
+    $descriptionPath = getenv('ENS_DESCRIPTION_FILE');
+    if ($descriptionPath === false || $descriptionPath === '') {
+        fwrite(STDERR, "ENS_DESCRIPTION_FILE is not configured\n");
+        exit(1);
+    }
+    file_put_contents($descriptionPath, (string) json_encode(['body' => $body]));
+    echo "Description queued.\n";
+    exit(0);
+}
+
 if ($command === 'comment') {
     $body = trim($body === '' ? $sub : $body);
     if ($body === '') {

@@ -21,6 +21,7 @@ use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Vcs\GitRepositoryId;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\ActivityController;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\ColumnController;
 use App\Interface\Http\Kanban\FieldDefinitionController;
@@ -58,6 +59,7 @@ final readonly class TenancyRouter
         private TeamController $teams,
         private RoleController $roles,
         private ProfileController $profiles,
+        private ActivityController $activity,
         private AgentController $agents,
         private RunController $runHistory,
         private SnapshotController $snapshots,
@@ -147,7 +149,9 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isIssueEvents($segments) => $this->issues->events($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMerge($segments) => $this->issues->merge($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueMergeResolve($segments) => $this->runHistory->resolveMerge($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'GET' && $this->isActivity($segments) => $this->activity->show($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isIssueRuns($segments) => $this->runHistory->request($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isIssueRuns($segments) => $this->runHistory->list($request, $this->workspaceId($segments), $this->issueKey($segments)),
@@ -471,12 +475,32 @@ final readonly class TenancyRouter
     }
 
     /** @param list<string> $segments */
+    private function isActivity(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'activity';
+    }
+
+    /** @param list<string> $segments */
     private function isSnapshot(array $segments): bool
     {
         return count($segments) === 4
             && $segments[0] === 'api'
             && $segments[1] === 'workspaces'
             && $segments[3] === 'snapshot';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueMergeResolve(array $segments): bool
+    {
+        return count($segments) === 7
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'merge'
+            && $segments[6] === 'resolve';
     }
 
     /** @param list<string> $segments */

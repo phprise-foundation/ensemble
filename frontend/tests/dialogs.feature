@@ -70,13 +70,17 @@ Quando um quarto é criado
 Então o mais antigo sai
 E restam três
 
-## Cenário: toasts expiram
+## Cenário: toasts expiram, exceto erros
 Dado um toast de sucesso
 Quando passam 4 segundos
 Então ele desaparece
-Dado um toast de erro
+Dado um toast de aviso
 Quando passam 6 segundos
 Então ele desaparece
+Dado um toast de erro
+Quando passam 60 segundos
+Então ele continua visível até ser fechado
+E o mesmo texto fica registrado no histórico do console
 
 ## Cenário: guarda contra diálogos nativos
 Dado o código de src

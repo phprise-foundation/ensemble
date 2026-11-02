@@ -210,24 +210,24 @@ describe('App console grid', () => {
     wrapper.unmount()
   })
 
-  it('labels the log in pt-BR and pluralizes the unread pill', async () => {
+  it('labels the log in English and pluralizes the unread pill', async () => {
     const wrapper = mount(ConsoleOutput, { attachTo: document.body })
     await nextTick()
 
     expect(wrapper.find('form.console-input').exists()).toBe(false)
-    expect(wrapper.find('.console-empty').text()).toBe('Nenhuma mensagem')
-    expect(wrapper.find('.console-filter').attributes('aria-label')).toBe('Filtrar por ator')
-    expect(wrapper.find('.console-filter option').text()).toBe('Todas')
-    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('Ocioso')
+    expect(wrapper.find('.console-empty').text()).toBe('No messages')
+    expect(wrapper.find('.console-filter').attributes('aria-label')).toBe('Filter by actor')
+    expect(wrapper.find('.console-filter option').text()).toBe('All')
+    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('Idle')
 
     consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'uma' })
     await nextTick()
     await nextTick()
-    expect(wrapper.findAll('.console-filter option').map((node) => node.text())).toContain('Todas')
+    expect(wrapper.findAll('.console-filter option').map((node) => node.text())).toContain('All')
 
     consoleStore.append({ actor: 'Vivy', kind: 'agent', text: 'duas' })
     await nextTick()
-    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('Nova saída')
+    expect(wrapper.find('.console-activity').attributes('aria-label')).toBe('New output')
     wrapper.unmount()
   })
 })
@@ -321,7 +321,7 @@ describe('AppConsole resizing', () => {
     await app.find('.console-toggle').trigger('click')
     await nextTick()
 
-    await app.find('button[aria-label="Fechar console"]').trigger('click')
+    await app.find('button[aria-label="Close console"]').trigger('click')
     await nextTick()
 
     expect(app.find('#app-console').exists()).toBe(false)
@@ -358,6 +358,21 @@ describe('AppConsole resizing', () => {
 })
 
 describe('console reopen', () => {
+  it('uses createdAt from the API and renders it in the client local timezone', async () => {
+    const at = '2026-10-19T12:00:00.000Z'
+    setIssues([
+      { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c-time', author: 'Vivy', body: 'timestamp', createdAt: at }] },
+    ])
+
+    await consoleStore.pollOnce()
+
+    expect(consoleStore.state.messages.at(-1).at).to.equal(at)
+    const wrapper = mount(ConsoleOutput, { attachTo: document.body })
+    await nextTick()
+    expect(wrapper.find('.console-line .console-time').text()).to.equal(new Date(at).toLocaleTimeString())
+    wrapper.unmount()
+  })
+
   it('an immediate poll after reopening fills the log with the agent comments', async () => {
     setIssues([
       { id: 'KANB-1', summary: 'item', statusId: 'coding', comments: [{ id: 'c1', author: 'Vivy', body: 'revisão pronta', at: '2026-10-19T10:00:00.000Z' }] },
@@ -490,7 +505,7 @@ describe('ConsoleOutput', () => {
 
     const jump = wrapper.find('.console-jump')
     expect(jump.exists()).toBe(true)
-    expect(jump.text()).toBe('3 novas')
+    expect(jump.text()).toBe('3 new')
     expect(consoleStore.state.unread).toBe(3)
 
     await jump.trigger('click')
@@ -503,13 +518,13 @@ describe('ConsoleOutput', () => {
 })
 
 describe('ConsoleInput', () => {
-  it('labels the command bar in pt-BR', async () => {
+  it('labels the command bar in English', async () => {
     const wrapper = mount(ConsoleInput)
     await nextTick()
 
-    expect(wrapper.find('form.console-input').attributes('aria-label')).toBe('Entrada do console')
-    expect(wrapper.find('.console-input-field').attributes('placeholder')).toBe('Digite um comando… (/help)')
-    expect(wrapper.find('.console-input-send').text()).toBe('Enviar')
+    expect(wrapper.find('form.console-input').attributes('aria-label')).toBe('Console input')
+    expect(wrapper.find('.console-input-field').attributes('placeholder')).toBe('Type a command… (/help)')
+    expect(wrapper.find('.console-input-send').text()).toBe('Send')
     wrapper.unmount()
   })
 })

@@ -70,6 +70,7 @@ use App\Application\Vcs\UpdateRepository;
 use App\Application\Team\CreateProfile;
 use App\Application\Runner\ExecuteSweep;
 use App\Application\Runner\ResolveWorkdirConflict;
+use App\Application\Runner\SyncWorkBranch;
 use App\Application\Runner\PromptComposer;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
@@ -158,6 +159,7 @@ use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Infrastructure\Vcs\GitHubPullRequests;
 use App\Infrastructure\Vcs\StreamGitHubHttp;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\Kanban\ActivityController;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
 use App\Interface\Http\Kanban\ColumnController;
@@ -252,7 +254,10 @@ final readonly class TenancyBootstrap
         $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
         $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
         $workdirRoot = getenv('ENSEMBLE_WORKDIR_ROOT');
-        $workdirRoot = $workdirRoot === false || $workdirRoot === '' ? 'var/workdirs' : $workdirRoot;
+        $home = getenv('HOME');
+        $workdirRoot = $workdirRoot === false || $workdirRoot === ''
+            ? ($home === false || $home === '' ? '.' : $home) . '/.local/share/ensemble/workdirs'
+            : $workdirRoot;
         $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
         $teamPresenter = new TeamPresenter();
@@ -386,7 +391,7 @@ final readonly class TenancyBootstrap
                 new CommentIssue($issueRepository, $issueComments, $issueEvents, $guard),
                 new ListIssueComments($issueRepository, $issueComments, $guard),
                 new ListIssueEvents($issueRepository, $issueEvents, $guard),
-                new AttachRepository($issueRepository, $workdirs, $gitRepositories, $guard),
+                new AttachRepository($issueRepository, $workdirs, $gitRepositories, $issueTypes, $guard),
                 new ResolveWorkdirs($workdirs, $guard),
                 $issuePresenter,
                 $workdirPresenter,
@@ -406,6 +411,7 @@ final readonly class TenancyBootstrap
                         new StreamGitHubHttp(),
                         $githubApiUrl,
                     ),
+                    $agents,
                     $guard,
                 ),
                 $this->responder,
@@ -440,6 +446,14 @@ final readonly class TenancyBootstrap
                 $profilePresenter,
                 $this->responder,
             ),
+            new ActivityController(
+                $currentUser,
+                $guard,
+                $issueRepository,
+                $agents,
+                $runs,
+                $this->responder,
+            ),
             new AgentController(
                 $currentUser,
                 new ListAgents($agents, $guard),
@@ -457,6 +471,18 @@ final readonly class TenancyBootstrap
                 $runHistoryPresenter,
                 $this->responder,
                 new ResolveWorkdirConflict(
+                    $issueRepository,
+                    $workdirs,
+                    new VarWorkdirPaths($workdirRoot),
+                    new GitWorkdirVcs(
+                        new GitClient(),
+                        $gitRepositories,
+                        $workspaceSecrets,
+                        $secretCipher,
+                    ),
+                    $guard,
+                ),
+                new SyncWorkBranch(
                     $issueRepository,
                     $workdirs,
                     new VarWorkdirPaths($workdirRoot),

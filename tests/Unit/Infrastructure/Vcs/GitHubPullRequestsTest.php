@@ -24,6 +24,7 @@ use App\Domain\Vcs\GitHubSlug;
 use App\Domain\Vcs\GitRepository;
 use App\Domain\Vcs\GitRepositoryId;
 use App\Domain\Vcs\Provider;
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Vcs\RepositoryUrl;
 use App\Infrastructure\Vcs\GitHubHttp;
 use App\Infrastructure\Vcs\GitHubPullRequests;
@@ -75,7 +76,7 @@ final class GitHubPullRequestsTest extends TestCase
             new GitHubResponse(201, '{"html_url":"https://github.com/acme/app/pull/7"}'),
         ];
 
-        $result = $this->client()->open($this->workdir, $this->issue);
+        $result = $this->client()->open($this->workdir, $this->issue, $this->message());
 
         self::assertFalse($result->isFailed());
         self::assertSame('https://github.com/acme/app/pull/7', $result->url());
@@ -86,8 +87,9 @@ final class GitHubPullRequestsTest extends TestCase
         self::assertSame('POST', $this->http->requests[1]['method']);
         self::assertSame('agent/APP-1', $this->http->requests[1]['payload']['head']);
         self::assertSame('main', $this->http->requests[1]['payload']['base']);
-        self::assertSame('APP-1: Ship the runner', $this->http->requests[1]['payload']['title']);
-        self::assertSame('Wire the automatic pull request.', $this->http->requests[1]['payload']['body']);
+        self::assertSame('feat(Kaio/APP-1): Ship the runner', $this->http->requests[1]['payload']['title']);
+        self::assertStringContainsString('Wire the automatic pull request.', $this->http->requests[1]['payload']['body']);
+        self::assertStringContainsString('Agent: Kaio', $this->http->requests[1]['payload']['body']);
     }
 
     public function testReusesAnExistingPullRequest(): void
@@ -97,7 +99,7 @@ final class GitHubPullRequestsTest extends TestCase
             new GitHubResponse(200, '[{"html_url":"https://github.com/acme/app/pull/3"}]'),
         ];
 
-        $result = $this->client()->open($this->workdir, $this->issue);
+        $result = $this->client()->open($this->workdir, $this->issue, $this->message());
 
         self::assertSame('https://github.com/acme/app/pull/3', $result->url());
         self::assertCount(1, $this->http->requests);
@@ -107,7 +109,7 @@ final class GitHubPullRequestsTest extends TestCase
     {
         $this->repositories->repository = $this->repository(Provider::GitLab);
 
-        $result = $this->client()->open($this->workdir, $this->issue);
+        $result = $this->client()->open($this->workdir, $this->issue, $this->message());
 
         self::assertFalse($result->isFailed());
         self::assertNull($result->url());
@@ -146,6 +148,31 @@ final class GitHubPullRequestsTest extends TestCase
         self::assertStringContainsString('not mergeable', $result->message());
     }
 
+    public function testDeletesTheWorkBranchAfterMerge(): void
+    {
+        $this->repositories->repository = $this->repository();
+        $this->http->responses = [new GitHubResponse(204, '')];
+
+        $result = $this->client()->deleteBranch($this->workdir, 'feat/APP-1-ship-the-runner');
+
+        self::assertTrue($result->ok);
+        self::assertSame('DELETE', $this->http->requests[0]['method']);
+        self::assertStringContainsString('/git/refs/heads/feat/APP-1-ship-the-runner', $this->http->requests[0]['url']);
+    }
+
+    public function testPostsAPullRequestComment(): void
+    {
+        $this->repositories->repository = $this->repository();
+        $this->http->responses = [new GitHubResponse(201, '{"html_url":"https://github.com/acme/app/pull/7#issuecomment-1"}')];
+
+        $result = $this->client()->comment($this->workdir, 7, '**Kaio (Coder):** done');
+
+        self::assertTrue($result->ok);
+        self::assertSame('POST', $this->http->requests[0]['method']);
+        self::assertStringContainsString('/issues/7/comments', $this->http->requests[0]['url']);
+        self::assertSame('**Kaio (Coder):** done', $this->http->requests[0]['payload']['body']);
+    }
+
     public function testFailsWhenGitHubRejectsThePullRequest(): void
     {
         $this->repositories->repository = $this->repository();
@@ -154,7 +181,7 @@ final class GitHubPullRequestsTest extends TestCase
             new GitHubResponse(422, '{"message":"Validation Failed"}'),
         ];
 
-        $result = $this->client()->open($this->workdir, $this->issue);
+        $result = $this->client()->open($this->workdir, $this->issue, $this->message());
 
         self::assertTrue($result->isFailed());
         self::assertStringContainsString('Validation Failed', $result->message());
@@ -164,6 +191,16 @@ final class GitHubPullRequestsTest extends TestCase
     {
         self::assertSame('acme/app', GitHubSlug::fromUrl(new RepositoryUrl('https://github.com/acme/app.git'))->path());
         self::assertSame('acme/app', GitHubSlug::fromUrl(new RepositoryUrl('https://github.com/acme/app'))->path());
+    }
+
+    private function message(): CommitMessage
+    {
+        return new CommitMessage(
+            'feat(Kaio/APP-1): Ship the runner',
+            "Agent: Kaio\nRole: Coder\nStage: In Development\nIssue: APP-1",
+            'Kaio',
+            'kaio@ensemble.local',
+        );
     }
 
     private function client(): GitHubPullRequests

@@ -19,6 +19,8 @@ final class Agent
 
     private StringObject $fallbackModel;
 
+    private Language $language;
+
     private ?int $age;
 
     private ?DateTimeImmutable $updatedAt;
@@ -41,11 +43,13 @@ final class Agent
         private bool $active = true,
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
+        string $language = 'pt-BR',
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->whoAmI = new StringObject($this->validWhoAmI($whoAmI));
         $this->model = new StringObject($this->validModel($model));
         $this->fallbackModel = new StringObject($this->validModel($fallbackModel));
+        $this->language = new Language($language);
         $this->age = $this->validAge($age);
         $this->updatedAt = $updatedAt;
     }
@@ -110,6 +114,11 @@ final class Agent
         return $this->model->getValue();
     }
 
+    public function language(): string
+    {
+        return $this->language->value();
+    }
+
     public function fallbackModel(): string
     {
         return $this->fallbackModel->getValue();
@@ -166,6 +175,11 @@ final class Agent
     public function wear(Portrait $portrait): void
     {
         $this->portrait = $portrait;
+    }
+
+    public function changeLanguage(string $language): void
+    {
+        $this->language = new Language($language);
     }
 
     public function configure(string $model, string $fallbackModel, LoopInterval $interval): void

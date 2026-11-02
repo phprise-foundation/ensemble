@@ -169,7 +169,7 @@ describe('ConsoleInput com o catálogo real', () => {
     await post(wrapper, '/help')
     expect(consoleStore.state.messages.map((message) => message.kind)).toEqual(['command', 'system'])
     const help = consoleStore.state.messages[1].text
-    expect(help.startsWith('Comandos disponíveis:')).toBe(true)
+    expect(help.startsWith('Available commands:')).toBe(true)
     for (const command of ['/status', '/list', '/clear', '/help']) {
       expect(help).toContain(`\n${command} —`)
     }
@@ -180,8 +180,8 @@ describe('ConsoleInput com o catálogo real', () => {
     await post(wrapper, '/status')
     await post(wrapper, '/list')
     const texts = consoleStore.state.messages.map((message) => message.text).join('\n')
-    expect(texts).toContain('Agentes: Vivy')
-    expect(texts).toContain('Itens por status:')
+    expect(texts).toContain('Agents: Vivy')
+    expect(texts).toContain('Items by status:')
     expect(texts).toContain('A fazer: 1')
     expect(texts).toContain('Feito: 1')
     expect(texts).toContain('KAN-1 · Item ativo · A fazer')
@@ -192,7 +192,7 @@ describe('ConsoleInput com o catálogo real', () => {
     const wrapper = await mountHost()
     await post(wrapper, '/invoke rm -rf')
     expect(consoleStore.state.messages.map((message) => message.kind)).toEqual(['command', 'error'])
-    expect(consoleStore.state.messages[1].text).toContain('Comando desconhecido: /invoke')
+    expect(consoleStore.state.messages[1].text).toContain('Unknown command: /invoke')
     expect(wrapper.text()).not.toContain('desconhecido')
   })
 

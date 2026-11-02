@@ -51,6 +51,33 @@ final class RunApiTest extends TestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    public function testActivityListsIssuesAgentsAndActiveRuns(): void
+    {
+        $agent = $this->createAgent($this->createTeam('Runner'), ['name' => 'Kaio']);
+        $issue = $this->createIssue($agent['id']);
+        $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            $this->runsPath($issue['key']),
+            [],
+            $this->adminToken,
+        )), 201);
+
+        $activity = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/activity',
+            [],
+            $this->adminToken,
+        )));
+
+        self::assertCount(1, $activity['runs']);
+        self::assertSame($agent['id'], $activity['runs'][0]['agentId']);
+        self::assertSame($issue['key'], $activity['runs'][0]['issueKey']);
+        self::assertSame('claimed', $activity['runs'][0]['state']);
+        self::assertSame($issue['key'], $activity['issues'][0]['key']);
+        self::assertSame('Kaio', $activity['agents'][0]['name']);
+        self::assertSame('pt-BR', $activity['agents'][0]['language']);
+    }
+
     public function testRunHistoryRequiresAuthentication(): void
     {
         $issue = $this->createIssue();
@@ -102,6 +129,21 @@ final class RunApiTest extends TestCase
             'POST',
             '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue['key'] . '/merge',
             [],
+            $this->adminToken,
+        ));
+
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame('readyToMerge', $this->app->json($response, 422)['field']);
+    }
+
+    public function testResolveMergeRequiresAReadyIssue(): void
+    {
+        $issue = $this->createIssue();
+
+        $response = $this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $issue['key'] . '/merge/resolve',
+            ['strategy' => 'merge'],
             $this->adminToken,
         ));
 

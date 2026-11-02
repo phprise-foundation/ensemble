@@ -92,11 +92,73 @@ Order and exit criteria:
    copilot untouched; i18n later. **Done and merged into `main`** (P4-1,
    P4-2, P4-3/PR #196).
 6. **P5 — Cloudflare single image** — image roles (`web`/`runner`/`all`),
-   external PostgreSQL, R2 for artifacts, cron/queue-triggered runner with
-   resumable leases, secrets, health, no compose in production.
+   external PostgreSQL, secrets, health, no compose in production. **In
+   progress on `feat/v1-production-launch`** — see the v1 plan below. R2 for
+   artifacts is post-v1.
 7. **P6 — migration and dogfooding** — import the 161 local issues and agent
    configuration, run the project on the real board, archive `kanban.local`,
    clean historical `phrise` references.
+
+## Active plan — v1 production launch (Cloudflare Containers)
+
+Goal: a functional v1 on the public web, served by Cloudflare Containers, and
+then the project drives its own development from there. Production always
+runs the **latest release tag** — never `main` — so merge commits on `main`
+only reach production after regressions pass and a tag is cut.
+
+Order (all on `feat/v1-production-launch`):
+
+1. **Agent execution via open-warden** — `OpenWardenExecutor` replaces
+   `OpenCodeExecutor`: `open-warden run --model <model> --workdir <path>
+   --prompt-file <file>` with the same `AgentExecutor` contract, the same
+   two-attempt model/fallback loop and the `ENS_*` outcome channels.
+   `opencode` stays in the image as the embedded warden engine (never exposed
+   to users). **Done in this branch.**
+2. **Production image** — multi-stage `Dockerfile`: composer vendor, Vite
+   frontend build into `public/app/`, `go install open-warden`, pinned
+   `opencode` engine, `php:8.4-apache` + `git` + `pdo_pgsql` + `mod_rewrite`
+   (SPA + API routing in `apache.conf`). The legacy `Dockerfile.standalone`
+   (SQLite era) is gone. **Done in this branch.**
+3. **Entrypoint roles** — `ENSEMBLE_ROLE` = `web` | `runner` | `all` (default
+   `all`): `bin/install` applies the schema and bootstrap, Apache serves the
+   app, `bin/runner-loop` drives the agents; the container fails fast without
+   `DATABASE_URL`. **Done in this branch.**
+4. **Cloudflare deployment** — `deploy/cloudflare`: a Worker plus the
+   `EnsembleContainer` Durable Object (`scheduling_policy: durable_object`)
+   starting the image with the secret allowlist (`DATABASE_URL`,
+   `APP_ENCRYPTION_KEY`, bootstrap admin, provider keys) and proxying every
+   request; a `"* * * * *"` cron pings `/api/health` to keep the runner
+   alive. **Done in this branch (needs the account-level setup in
+   `deploy/cloudflare/README.md`).**
+5. **Release pipeline** — `.github/workflows/release.yml` on `v*` tags:
+   build + push `esdrasschonevald/ensemble:<tag>` (`:latest`) to Docker Hub,
+   create the GitHub release, then `wrangler deploy` (builds/pushes to the
+   Cloudflare managed registry). Rollback = redeploy the previous tag.
+   **Done in this branch (needs `DOCKERHUB_*` and `CLOUDFLARE_*` secrets and
+   the `production` environment).**
+6. **First release `v1.0.0`** — merge, run the regressions, cut the tag and
+   verify the public URL end to end (sign-in, board, a real agent run with
+   merge from the panel).
+
+Exit criteria for the launch: one `docker run` (or the Cloudflare URL) with
+only external PostgreSQL + env vars taking an empty database to a working
+v1; the release pipeline proves tag → production.
+
+Post-v1 backlog (fine-tuning; also the target of the "dogfood" development
+once v1 is live):
+
+- RFC-2026-0001 communication (channels/messages/notifications) — the board
+  drives its own development through it.
+- RFC-2026-0002 event-driven orchestration (trigger queue, scheduler,
+  LISTEN/NOTIFY wake) — removes the one-runner-per-database limit and enables
+  multiple container sizes/roles.
+- RFC-2026-0003 delivery slices still open: deploy policy (+ post-merge
+  smoke), inbound PR comment mirroring, PAT → GitHub App.
+- GitHub `Environment` manual approval on the release deploy + image
+  annotations (`org.opencontainers.*` version provenance).
+- R2 artifacts for workdirs, multi-writer sessions and snapshots.
+- Onboarding/registration, rate limiting, i18n, metrics read model.
+- GitLab/Bitbucket providers; import of the 161 local issues (P6).
 
 ## Active plan — agent autonomy (RFC-driven)
 
@@ -121,6 +183,14 @@ Gates:
 4. **Delivery — [RFC-2026-0003](RFC-2026-0003-delivery.md)** (draft): PR open/
    review/merge and deploy (staging/production) under role flags and repository/
    environment policy; board↔PR mirror with the same Markdown; GitHub first.
+   Delivered slice (2026-11-01): agent comments mirrored to the PR through the
+   provider API (no `gh`), agent identity in commits/PRs/merges, branch cleanup
+   after merge, scoped description edits with history, and the live activity
+   read model behind the real-time board and console agent monitor. UI slice
+   (2026-11-02): Ensemble brand/logo, safe Markdown renderer and full-width
+   Markdown editor across every multi-line field, and merge-conflict branch
+   sync (Update/Keep branch/Keep base) from the issue panel. Open: inbound PR
+   comment mirroring, deploy/post-merge smoke, PAT vs GitHub App.
 5. **Use gate** — on a private GitHub repository, a configured agent delivers,
    reviews, merges and deploys with no manual API/terminal step; failures are
    visible and retryable.

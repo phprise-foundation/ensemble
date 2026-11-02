@@ -42,13 +42,13 @@ before P5.
 
 ### Current bar
 
-- Backend: **181 PHPUnit tests / 1144 assertions**, Psalm level 1, **0 errors**.
+- Backend: **193 PHPUnit tests / 1208 assertions**, Psalm level 1, **0 errors**.
 - CI creates `phprise_test` and sets `TEST_DATABASE_URL`, so the PostgreSQL
   integration suite runs instead of skipping; `GitClientTest` configures the
   git identity in its own clones.
-- Frontend unit: **248/248** (vitest).
+- Frontend unit: **257/257** (vitest).
 - Contracts: **97/97** (`node --test frontend/tests/*.test.mjs`).
-- Real E2E: **129/129 across 21 specs**, green.
+- Real E2E: **132/132 across 22 specs**, green.
 - Build: `/app/` lands in `public/app/`.
 
 ### How the remaining E2E failures were closed
@@ -240,14 +240,14 @@ parked. The guardrails now in place:
 - **Merge action:** a manager can merge a ready issue from the panel. The
   backend uses the repository secret, calls the GitHub merge API (respecting
   branch protection), moves the issue to the final Done status, clears the
-  ready flag and comments with the merge SHA. Agents still cannot merge:
-  `bin/agent/gh` denies `pr merge`, `api` and other mutations; deploy remains
-  the next policy slice.
+  ready flag and comments with the merge SHA, then deletes the work branch.
+  Agents never use `gh`: `bin/agent/gh` denies every call and provider actions
+  run through the runner/board. Deploy remains the next policy slice.
 - **Agent identity on comments:** agents use `ens comment --body "..."`; the
   runner records the comment with the agent name (Vivy, Alan, Mai) instead of
   `admin`. The prompt tells agents not to use the board API or admin
-  credentials. Issue-description edits and PR comment mirroring still need a
-  scoped identity.
+  credentials. Description edits and PR comment mirroring now use the same
+  scoped identity (see 2026-11-01 below).
 - **Workdir isolation:** agent workdirs now default to
   `~/.local/share/ensemble/workdirs`, outside the Ensemble checkout. Nested
   `var/workdirs` made the agent project resolve to the Ensemble repo itself:
@@ -276,6 +276,97 @@ earlier rerun bug.
   board action into `test-repo`; both issues reached Done with the ready flag
   cleared. `KAN-14`/`KAN-15`/`KAN-16` remain ready with their PRs #2/#3/#4.
 
+### Live board, agent monitor and delivery identity (2026-11-01)
+
+- **Real-time board:** `GET /api/workspaces/{ws}/activity` returns the volatile
+  issue fields, the agents and the active runs. `App.vue` polls it every three
+  seconds; cards move with the status, and a pulsing badge names the agent
+  running the issue. The panel's own five-second run poll is unchanged.
+- **Console agent monitor:** a second tab next to the existing console (left
+  untouched), showing **Running** (active run, issue, stage), **Sleeping**
+  (active agents with no run) and **Inactive** agents; no runner internals.
+- **Branch and commit convention:** agent branches are
+  `<type>/<KEY>-<slug>` (e.g. `feat/KAN-19-novo-teste-de-integracao-4`), with
+  the type derived from the issue type. Commits are Conventional Commits,
+  multi-line, scoped to the agent and issue:
+  `feat(Kaio/KAN-19): …` plus `Agent`, `Role`, `Stage` and `Issue` in the body;
+  the git author is the agent. PR titles use the same subject and the PR body
+  carries the issue description plus the agent metadata. SemVer stays reserved
+  for tags/releases. The rule is documented in `docs/GITFLOW.md`.
+- **Merge identity and cleanup:** the merge commit title is
+  `<type>(<Agent>/<KEY>): <summary> (#PR)`, the body records the implementer
+  and the merging manager, the board comment says `from <Agent>`, and the work
+  branch is deleted after a successful merge (the panel warns about it).
+- **Agent comments on the PR, no `gh`:** `ens comment` writes the board comment
+  and the runner mirrors the same `**Agent (Role):** …` Markdown to the PR
+  through the GitHub API/token. `bin/agent/gh` now denies every call, so a
+  container without `gh` loses nothing.
+- **Description edits with history:** interactive roles (today the PO) use
+  `ens description --body "…"`. The runner updates the issue and records a
+  `description` event with the agent as actor; non-interactive roles are
+  ignored. No path writes agent work as `admin`.
+- **Agent language:** agents carry `language` (`pt-BR` default, `en`, `es`),
+  editable on **Agents**. The prompt tells the model to write user-facing
+  comments/notes in that language; user translation remains a separate track.
+- **Comment order:** the issue panel lists comments newest first, matching the
+  "last activity on top" expectation.
+- **Tests:** new activity API coverage, RunnerSweep checks for the formatted
+  comment, PR mirror, description identity and non-interactive rejection,
+  commit author/message assertions, branch-name/PR/merge/deletion coverage,
+  and an `activity-monitor.cy.js` spec for board movement and the monitor.
+- **Error visibility:** error toasts are sticky, larger, `role="alert"`, have a
+  **Copy** button and a “Saved to the console.” hint. `toast.error` appends the
+  same text to the console history, so the message survives closing the toast.
+  Provider 405 merge failures now explain the likely conflict and include the
+  PR URL (for example, KAN-14/PR #2 was `CONFLICTING`). The console chrome
+  (filter, empty state, input, jump pill) is English; only persisted board data
+  and agent-authored messages stay in Portuguese until the translation layer.
+- **Console wording:** the filter default is **All**, the input is **Console
+  input**/“Type a command…”, and the command responses (`/status`, `/list`,
+  `/help`, unknown command) are English. The BDD remains the test contract.
+- **Merge hotfix (2026-11-01):** the first live merges answered 500 because
+  `MergePullRequest` called `CommitMessage::typeForBranch` without importing
+  `App\Domain\Runner\CommitMessage`; PHP looked for the class in the
+  Application namespace before reaching GitHub. The import is fixed and
+  `MergePullRequestTest` now exercises the merge-title builder, which would
+  fail on the missing class. The three failed attempts happened before any
+  provider call, so the PRs and ready flags were untouched.
+
+### Brand, Markdown and merge-conflict UI (2026-11-02)
+
+- **Brand:** the app title is **Ensemble** (document title, topbar fallback,
+  session gate) and the supplied vector mark is in `EnsembleLogo.vue` with
+  `mark`/`full` crops, a `currentColor` path that follows the theme, a brand
+  icon in the sidebar and the SVG favicon in the document head (the browser tab).
+  The sidebar wordmark and logo are the Ensemble brand, not the retired
+  Multi-Agent name.
+- **Markdown:** a dependency-free, allowlist renderer (`lib/markdown.js`)
+  handles headings, paragraphs/line breaks, lists, blockquotes, fenced code,
+  emphasis, inline code and safe `http(s)`/`mailto` links; raw HTML is escaped
+  and unsafe URLs are rejected. `MarkdownText` renders it and
+  `MarkdownTextarea` provides a full-width Write/Preview editor with Markdown
+  hint. It replaced every multi-line textarea (issue description and comments,
+  agent whoAmI, role description, profile style, custom textarea fields and
+  the new-task description); the same text is rendered through `MarkdownText`
+  in the issue panel, comments, agent cards and CRUD tables.
+- **Textarea space:** the shared component owns `width: 100%`, a useful
+  minimum height and resize/preview, so modal fields no longer collapse to a
+  small native textarea. Existing `FieldLimit` counters and mention handling
+  stay attached to the real textarea (the component exposes it).
+- **Console time:** the poll now reads `createdAt` from the issue-comment API
+  as well as the legacy `at`/`created_at`, so agent messages no longer use the
+  poll instant; every line is rendered through `toLocaleTimeString()` in the
+  client's local timezone, alongside command and error lines that already used
+  an explicit instant.
+- **Merge conflict UI:** a merge failure containing GitHub 405/conflict shows
+  a persistent panel under Ready to merge with **Update branch**, **Keep
+  branch**, **Keep base** and **Open PR**. The backend
+  `POST /issues/{key}/merge/resolve` runs `BranchSyncStrategy`
+  (`merge`/`keep_work`/`keep_base`), fetch/merges the repository base into the
+  work branch with `-X ours|theirs` when requested, aborts cleanly on an
+  unresolvable conflict, pushes the branch and returns the binding. The PR can
+  then be merged normally; the runner does not bypass branch protection.
+
 
 
 The dev database has the role flags set (Coder implement, Tech Lead review +
@@ -289,15 +380,52 @@ RFC-2026-0003 → **use gate** (private repo, agent delivers + reviews + merges 
 deploys) → P5 → P6. Console, copilot, design polish, i18n and metrics are out of
 the critical path.
 
+### v1 production launch (2026-11-02, `feat/v1-production-launch`)
+
+The target is a functional v1 on the public web (Cloudflare Containers), with
+production running the **latest release tag** and the project itself driving
+everything else afterwards. Delivered on the branch:
+
+- **`OpenWardenExecutor`** replaces `OpenCodeExecutor` (the user-facing
+  execution front is `open-warden run`; `opencode` is now only the embedded
+  warden engine, installed statically into the image). Same `AgentExecutor`
+  contract, same model/fallback two-attempt loop, `ENS_*` channels intact.
+- **Production `Dockerfile`**: composer vendor, Vite build into
+  `public/app/`, `go install github.com/esdras-schonevald/open-warden@v0.7.0`,
+  pinned `opencode` engine, `php:8.4-apache` + `git` + `pdo_pgsql` +
+  `mod_rewrite`. `apache.conf` routes the SPA (`/`, `/app/*`) and the API.
+  `Dockerfile.standalone` (SQLite era) was removed.
+- **`bin/entrypoint`** now honors `ENSEMBLE_ROLE` (`web`/`runner`/`all`),
+  requires `DATABASE_URL`, runs `bin/install` at boot and starts Apache and
+  `bin/runner-loop` accordingly.
+- **`deploy/cloudflare`**: Worker + `EnsembleContainer` Durable Object
+  (`scheduling_policy: durable_object`) that starts the image with the secret
+  allowlist (`DATABASE_URL`, `APP_ENCRYPTION_KEY`, bootstrap admin, provider
+  keys) and proxies every request; a 1-minute cron pings `/api/health` to keep
+  the runner alive. Account setup lives in `deploy/cloudflare/README.md`.
+- **`.github/workflows/release.yml`**: on `v*` tags → Docker Hub
+  (`esdrasschonevald/ensemble:<tag>` + `:latest`) → GitHub release →
+  `wrangler deploy` to Cloudflare. Rollback = redeploy the previous tag.
+  Requires the `DOCKERHUB_*` and `CLOUDFLARE_*` secrets plus the `production`
+  environment; repository setup steps are in `docs/ROADMAP.md` (v1 plan) and
+  `deploy/cloudflare/README.md`.
+- Runner docs updated: README (new Components/Run/Production sections),
+  `docs/ARCHITECTURE.md` (executor section), `docs/GITFLOW.md` (release),
+  `docs/ROADMAP.md` (v1 plan + post-v1 backlog), `.env.example` (runner role,
+  workdir root, provider keys).
+
+Everything explicitly postponed after v1 (`deploy` policy, RFC-0001/0002
+implementation, R2, PAT→GitHub App, onboarding, i18n, P6 import) is listed in
+the ROADMAP "Post-v1 backlog" section.
+
 ### Next moves
 
 1. Keep the post-merge smoke for the deployment phase and implement deploy
    policy (RFC-2026-0003).
-2. Mirror agent comments to the PR and use a scoped identity for issue
-   description edits (the current `ens comment` already fixes comment
-   authorship).
+2. Run the real `test-repo` flow again with the new branch/commit/PR identity,
+   PR comment mirroring, description edits and branch cleanup.
 3. Implement RFC-2026-0001 → 0002 → 0003 with the use gate at the end.
-3. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
+4. Then **P5 — Cloudflare single image** (roles `web`/`runner`/`all`, external
    PostgreSQL, R2, queue/cron runner, secrets, health) and **P6** (import the
    161 local issues and dogfood).
 

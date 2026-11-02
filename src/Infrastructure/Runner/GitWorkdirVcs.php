@@ -7,6 +7,8 @@ namespace App\Infrastructure\Runner;
 use App\Domain\Contract\Security\WorkspaceSecretRepository;
 use App\Domain\Contract\Vcs\GitRepositories;
 use App\Domain\Kanban\Workdir;
+use App\Domain\Runner\BranchSyncStrategy;
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\ResolutionStrategy;
 use App\Domain\Runner\WorkdirVcs;
@@ -45,7 +47,7 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
     }
 
     #[Override]
-    public function publish(Workdir $workdir, string $path): Outcome
+    public function publish(Workdir $workdir, string $path, CommitMessage $message): Outcome
     {
         $repository = $this->bound($workdir);
         if ($repository === null) {
@@ -57,6 +59,7 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
             $this->branchOr($workdir),
             $this->token($repository->workspaceId(), $repository->secretId()),
             $repository->provider(),
+            $message,
         );
     }
 
@@ -75,6 +78,24 @@ final readonly class GitWorkdirVcs implements WorkdirVcs
         }
 
         return $this->git->reconcile(
+            $path,
+            $this->branchOr($workdir),
+            $repository->baseBranch()->value(),
+            $strategy,
+            $this->token($repository->workspaceId(), $repository->secretId()),
+            $repository->provider(),
+        );
+    }
+
+    #[Override]
+    public function sync(Workdir $workdir, string $path, BranchSyncStrategy $strategy): Outcome
+    {
+        $repository = $this->bound($workdir);
+        if ($repository === null) {
+            return Outcome::failed(self::unready($workdir));
+        }
+
+        return $this->git->syncWithBase(
             $path,
             $this->branchOr($workdir),
             $repository->baseBranch()->value(),

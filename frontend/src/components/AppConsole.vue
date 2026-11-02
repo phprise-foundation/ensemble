@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import ConsoleInput from './ConsoleInput.vue'
 import ConsoleOutput from './ConsoleOutput.vue'
+import AgentMonitor from './AgentMonitor.vue'
 import { consoleStore } from '../store/console.js'
 
 const props = defineProps({
@@ -10,6 +11,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'resize', 'adjust', 'reset'])
+const activeTab = ref('console')
 
 function onKeydown(event) {
   const directions = { ArrowUp: 1, ArrowDown: -1 }
@@ -55,18 +57,42 @@ onUnmounted(() => {
       role="separator"
       tabindex="0"
       aria-orientation="horizontal"
-      aria-label="Redimensionar console"
+      aria-label="Resize console"
       @keydown="onKeydown"
       @pointerdown="onPointerDown"
       @dblclick="emit('reset')"
     ></div>
     <div class="console-header">
-      <span class="console-title">Console</span>
-      <button class="icon-btn" type="button" title="Fechar console" aria-label="Fechar console" @click="emit('close')">
+      <div class="console-tabs" role="tablist" aria-label="Console">
+        <button
+          type="button"
+          class="console-tab"
+          role="tab"
+          :aria-selected="activeTab === 'console'"
+          :class="{ active: activeTab === 'console' }"
+          @click="activeTab = 'console'"
+        >
+          Console
+        </button>
+        <button
+          type="button"
+          class="console-tab"
+          role="tab"
+          :aria-selected="activeTab === 'agents'"
+          :class="{ active: activeTab === 'agents' }"
+          @click="activeTab = 'agents'"
+        >
+          Agents
+        </button>
+      </div>
+      <button class="icon-btn" type="button" title="Close console" aria-label="Close console" @click="emit('close')">
         ×
       </button>
     </div>
-    <ConsoleOutput />
-    <ConsoleInput />
+    <template v-if="activeTab === 'console'">
+      <ConsoleOutput />
+      <ConsoleInput />
+    </template>
+    <AgentMonitor v-else />
   </section>
 </template>

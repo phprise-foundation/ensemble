@@ -50,6 +50,34 @@ Naming rules:
 - `feat/<description>` — new feature
 - `fix/<description>` — bug fix
 - Use `kebab-case`, descriptive and short.
+- When the work belongs to a tracked issue, include the key:
+  `<type>/<KEY>-<slug>` (for example `feat/BOARD-123-close-endpoint`).
+
+### 2.2.1 Automated agent work (Ensemble runner)
+
+Agent worktrees follow the same convention without a human choosing names:
+
+- **Branch:** `<type>/<KEY>-<slug>`, where `<type>` comes from the issue type
+  (`Task`/`Feat`/`Story`/`Epic` → `feat`; `Bug`/`Fix` → `fix`; `Docs`,
+  `Refactor`, `Test`, `Chore` when the type is named so). The slug is the
+  normalised issue summary, capped so the branch stays readable. Example:
+  `feat/KAN-19-novo-teste-de-integracao-4`.
+- **Commit subject:** `<type>(<Agent>/<KEY>): <summary>`, for example
+  `feat(Kaio/KAN-19): Adicionar teste de integração`.
+- **Commit body:** one line each for `Agent`, `Role`, `Stage` and `Issue`, so
+  the history identifies who acted and where.
+- **Commit author:** the agent name and `<agent>@ensemble.local`; no commit is
+  authored as the shared admin.
+- **PR title:** the commit subject. **PR body:** the issue description followed
+  by the same agent metadata.
+- **Merge commit:** `<type>(<Agent>/<KEY>): <summary> (#PR)` with
+  `Implemented by`/`Merged by` in the body. The board merge deletes the work
+  branch after success.
+- **SemVer is not used in branches or commits.** SemVer belongs to tags and
+  releases (§3); branches and commits use Conventional Commits.
+- **No `gh` in the runner container.** `bin/agent/gh` fails for every command;
+  the runner performs PR/comment/merge/branch operations through the provider
+  API with the repository secret.
 
 ### 2.3 Implement and stage
 
@@ -66,6 +94,7 @@ Format:
 
 ```
 <type>(<ID>): <imperative description>
+<type>(<Agent>/<ID>): <imperative description>   # automated agent work
 ```
 
 Examples:
@@ -79,7 +108,11 @@ docs(BOARD-125): document the REST API
 Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
 
 - `<ID>` is the task identifier (e.g. `BOARD-123`); omit it when there is none.
+- `<Agent>` is required when a runner agent authored the change; it makes the
+  commit scannable and attributable.
 - The description is short, imperative, lowercased.
+- Multi-line bodies carry context (agent, role, stage, issue) instead of
+  stuffing everything into the subject.
 
 ### 2.5 Push and PR
 
@@ -168,20 +201,26 @@ git push origin v0.1.1
 
 ---
 
-## 4. Publication (GitHub + Docker Hub)
+## 4. Publication (GitHub + Docker Hub + Cloudflare)
 
-The Docker image is published **locally** via `docker build` / `docker push`
-(the repository has no GitHub Actions workflow as of `v0.10.1` — this was
-verified; the tag only feeds the semver release below).
+Releases are driven by the `v*` tag through `.github/workflows/release.yml`
+(since the v1 production plan — `docs/ROADMAP.md`):
 
-```bash
-# local image
-docker build -t esdrasschonevald/ensemble:latest .
+1. **`docker-hub` job** — builds the image (`Dockerfile`), pushes
+   `esdrasschonevald/ensemble:<tag>` and `:latest`, and creates the GitHub
+   release notes (`gh release create --generate-notes`).
+2. **`cloudflare` job** (needs the first; gated by the `production`
+   environment) — `wrangler deploy` in `deploy/cloudflare` builds the image
+   from the same `Dockerfile`, pushes it to the Cloudflare managed registry
+   and updates the Worker + Container.
 
-# tag + release
-git tag v0.1.1 && git push origin v0.1.1
-gh release create v0.1.1 --generate-notes
-```
+Production therefore always runs the **latest published release tag**, never
+`main`; rollback is a redeploy of the previous tag. Required repository
+secrets: `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` and
+`CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` (with the runtime secrets —
+`DATABASE_URL`, `APP_ENCRYPTION_KEY` and friends — configured once with
+`wrangler secret put`, see `deploy/cloudflare/README.md`).
+
 
 ---
 

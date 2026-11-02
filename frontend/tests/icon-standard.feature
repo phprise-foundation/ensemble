@@ -2,7 +2,7 @@
 Funcionalidade: Semântica de ícones padronizada com Lucide
   A SPA usa o wrapper AppIcon como única fonte de ícones de interface,
   com Lucide atrás, escala fixa 14/16/18/20 e nome acessível em todo
-  botão só de ícone. A marca smartboard é a única exceção do wrapper.
+  botão só de ícone. A marca (smartboard/Ensemble logo) é a exceção do wrapper.
 
   Cenário: Editar sempre com lápis
     Dado um botão de edição na árvore de componentes
@@ -31,8 +31,8 @@ Funcionalidade: Semântica de ícones padronizada com Lucide
     E a ausência de size só acontece nos controles do topbar e dos grupos
 
   Cenário: Logo custom como exceção
-    Dado o componente AppIcon
-    Então o glifo "smartboard" é desenhado com paths manualmente
+    Dado o componente AppIcon e o EnsembleLogo
+    Então o glifo "smartboard" e a marca Ensemble são desenhados manualmente
     E nenhum outro nome vira Lucide importado
 
   Cenário: Nome acessível em botão só de ícone
@@ -40,9 +40,9 @@ Funcionalidade: Semântica de ícones padronizada com Lucide
     Então ele tem aria-label
     E o aria-label acompanha o title do tooltip
 
-  Cenário: Único svg de UI
+  Cenário: SVG de UI
     Dado todos os arquivos .vue de frontend/src
-    Então só AppIcon.vue contém "<svg"
+    Então só AppIcon.vue e EnsembleLogo.vue contêm "<svg"
     E nenhum outro componente desenha ícone manualmente
 
   Cenário: Guarda do tema

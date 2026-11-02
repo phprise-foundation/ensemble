@@ -47,6 +47,39 @@ describe('role capabilities and blocked issues', () => {
     cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: false })
   })
 
+  it('offers work-branch sync when the merge reports a conflict', () => {
+    cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: true }).its('status').should('eq', 200)
+
+    cy.intercept('POST', '**/issues/KANB-1/merge', {
+      statusCode: 409,
+      body: {
+        error: 'GitHub rejected the merge (405): Pull Request has merge conflicts. Pull request: https://github.com/example/repo/pull/2',
+      },
+    }).as('mergeConflict')
+    cy.intercept('POST', '**/issues/KANB-1/merge/resolve', {
+      statusCode: 200,
+      body: { binding: { state: 'bound', branch: 'feat/KANB-1-framed-work' } },
+    }).as('syncBranch')
+
+    cy.visitApp('/')
+    cy.contains('.card', 'Frame the onboarding intent').click()
+    cy.contains('.panel-ready button', 'Merge PR').click()
+    cy.get('.dialog-confirm').click()
+    cy.wait('@mergeConflict')
+
+    cy.get('.merge-conflict-box')
+      .should('contain', 'conflicts with the base branch')
+      .and('contain', 'Update branch')
+    cy.get('.toast.error').should('contain', '405')
+
+    cy.contains('.merge-conflict-box button', 'Keep branch').click()
+    cy.wait('@syncBranch').its('request.body.strategy').should('eq', 'keep_work')
+    cy.get('.merge-conflict-box').should('not.exist')
+    cy.get('.toast.success').should('contain', 'Work branch updated')
+
+    cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: false })
+  })
+
   it('merges a ready issue from the panel', () => {
     cy.wsRequest('PATCH', '/issues/KANB-1', { readyToMerge: true }).its('status').should('eq', 200)
 

@@ -5,6 +5,7 @@
 /var/
 /workspace/
 .DS_Store
+node_modules/
 
 # Vite build of the Vue app (npm run build in frontend/)
 public/app/

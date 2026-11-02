@@ -13,8 +13,11 @@ use App\Application\Runner\ReportStage;
 use App\Application\Runner\ResolveProfile;
 use App\Domain\Runner\AgentExecutor;
 use App\Domain\Runner\AgentRunContext;
+use App\Domain\Runner\BranchSyncStrategy;
+use App\Domain\Runner\CommitMessage;
 use App\Domain\Kanban\FieldValues;
 use App\Domain\Kanban\Issue;
+use App\Domain\Kanban\IssueEventType;
 use App\Domain\Kanban\IssueId;
 use App\Domain\Kanban\IssueTypeRepository;
 use App\Domain\Kanban\IssueType;
@@ -577,6 +580,11 @@ final class RunnerSweepTest extends TestCase
         self::assertSame([$this->paths->path($this->workspaceId, $this->workdirId)], $this->executor->executions);
         self::assertSame('https://github.com/acme/app/pull/1', $runs[0]->pullRequestUrl());
         self::assertSame(['KAN-1'], $this->pullRequests->opened);
+        $message = $this->vcs->messages[0] ?? self::fail('commit message was not built');
+        self::assertSame('feat(Kaio/KAN-1): Ship the runner', $message->subject());
+        self::assertSame('Kaio', $message->authorName());
+        self::assertStringContainsString('Agent: Kaio', $message->body());
+        self::assertStringContainsString('Role: Coder', $message->body());
     }
 
     public function testPullRequestFailureFailsTheRun(): void
@@ -653,6 +661,7 @@ final class RunnerSweepTest extends TestCase
         self::assertStringContainsString('Role: Coder', $prompt);
         self::assertStringContainsString('ens block --reason', $prompt);
         self::assertStringContainsString('ens comment --body', $prompt);
+        self::assertStringContainsString('in pt-BR', $prompt);
         self::assertStringContainsString('Definition of done', $prompt);
     }
 
@@ -666,7 +675,43 @@ final class RunnerSweepTest extends TestCase
         $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
         self::assertCount(1, $comments);
         self::assertSame('Kaio', $comments[0]->author());
-        self::assertSame('A refinement from the coder', $comments[0]->body());
+        self::assertSame('**Kaio (Coder):** A refinement from the coder', $comments[0]->body());
+        self::assertSame(['**Kaio (Coder):** A refinement from the coder'], $this->pullRequests->commented);
+    }
+
+    public function testPoDescriptionIsStoredWithTheAgentIdentityAndHistory(): void
+    {
+        [$statusId] = $this->addStage('Product Owner', ['interactive' => true]);
+        $this->seedTransition($statusId, $this->inboxId, TransitionActor::Agent);
+        $this->moveIssueTo($statusId);
+        $this->attachPending();
+        $this->executor->description = 'Refined scope from the Product Owner.';
+
+        $this->sweep();
+
+        $stored = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertSame('Refined scope from the Product Owner.', $stored->description());
+
+        $events = new DoctrineIssueEventRepository($this->entityManager, new IssueEventRecordMapper());
+        $history = $events->forIssue($this->workspaceId, $this->issue->id());
+        $description = array_values(array_filter($history, static fn($event): bool => $event->type() === IssueEventType::Description));
+        self::assertCount(1, $description);
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        $agent = $this->agents->find($this->workspaceId, $runs[0]->agentId()) ?? self::fail('agent vanished');
+        self::assertSame($agent->name(), $description[0]->actor());
+        self::assertNotSame('admin', $description[0]->actor());
+    }
+
+    public function testNonInteractiveAgentCannotRewriteTheDescription(): void
+    {
+        $this->attachPending();
+        $before = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        $this->executor->description = 'Coder should not change the scope.';
+
+        $this->sweep();
+
+        $stored = $this->issues->find($this->workspaceId, $this->issue->key()) ?? self::fail('issue vanished');
+        self::assertSame($before->description(), $stored->description());
     }
 
     public function testPoStageDoesNotPublishAndDiscardsLocalEdits(): void
@@ -778,7 +823,7 @@ final class RunnerSweepTest extends TestCase
     {
         $this->addUnblocker('Lead');
         $this->attachPending();
-        $this->executor->failure = 'opencode failed: model unavailable';
+        $this->executor->failure = 'open-warden failed: model unavailable';
 
         $this->sweep();
         $this->sweep();
@@ -873,6 +918,9 @@ final class RecordedVcs implements WorkdirVcs
     /** @var list<string> */
     public array $published = [];
 
+    /** @var list<CommitMessage> */
+    public array $messages = [];
+
     /** @var list<string> */
     public array $resolved = [];
 
@@ -899,13 +947,14 @@ final class RecordedVcs implements WorkdirVcs
     }
 
     #[Override]
-    public function publish(Workdir $workdir, string $path): Outcome
+    public function publish(Workdir $workdir, string $path, CommitMessage $message): Outcome
     {
         if ($this->publishFailure !== null) {
             return Outcome::failed($this->publishFailure);
         }
 
         $this->published[] = $path;
+        $this->messages[] = $message;
 
         return Outcome::succeeded('pushed ' . $workdir->branch()->value());
     }
@@ -917,6 +966,17 @@ final class RecordedVcs implements WorkdirVcs
 
         return Outcome::succeeded('local changes discarded');
     }
+
+    #[Override]
+    public function sync(Workdir $workdir, string $path, BranchSyncStrategy $strategy): Outcome
+    {
+        $this->synced[] = $strategy->value;
+
+        return Outcome::succeeded('work branch synced');
+    }
+
+    /** @var list<string> */
+    public array $synced = [];
 
     #[Override]
     public function resolve(Workdir $workdir, string $path, ResolutionStrategy $strategy): Outcome
@@ -934,8 +994,11 @@ final class RecordedPullRequests implements PullRequests
 
     public ?string $failure = null;
 
+    /** @var list<string> */
+    public array $commented = [];
+
     #[Override]
-    public function open(Workdir $workdir, Issue $issue): PullRequestResult
+    public function open(Workdir $workdir, Issue $issue, CommitMessage $message): PullRequestResult
     {
         $this->opened[] = $issue->key()->value();
 
@@ -945,9 +1008,29 @@ final class RecordedPullRequests implements PullRequests
     }
 
     #[Override]
-    public function merge(Workdir $workdir, int $number, string $method): MergeResult
+    public function merge(
+        Workdir $workdir,
+        int $number,
+        string $method,
+        ?string $commitTitle = null,
+        ?string $commitMessage = null,
+    ): MergeResult
     {
         return MergeResult::merged('merged');
+    }
+
+    #[Override]
+    public function deleteBranch(Workdir $workdir, string $branch): Outcome
+    {
+        return Outcome::succeeded('work branch deleted');
+    }
+
+    #[Override]
+    public function comment(Workdir $workdir, int $number, string $body): Outcome
+    {
+        $this->commented[] = $body;
+
+        return Outcome::succeeded('comment posted');
     }
 }
 
@@ -970,6 +1053,8 @@ final class RecordedExecutor implements AgentExecutor
     /** @var list<string> */
     public array $comments = [];
 
+    public ?string $description = null;
+
     #[Override]
     public function execute(Agent $agent, string $workdirPath, string $prompt, AgentRunContext $context): Outcome
     {
@@ -986,6 +1071,9 @@ final class RecordedExecutor implements AgentExecutor
         }
         foreach ($this->comments as $body) {
             file_put_contents($context->commentPath(), (string) json_encode(['body' => $body]) . "\n", FILE_APPEND);
+        }
+        if ($this->description !== null) {
+            file_put_contents($context->descriptionPath(), (string) json_encode(['body' => $this->description]));
         }
 
         return Outcome::succeeded('changes pushed');
