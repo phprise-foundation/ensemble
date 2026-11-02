@@ -337,8 +337,9 @@ earlier rerun bug.
 - **Brand:** the app title is **Ensemble** (document title, topbar fallback,
   session gate) and the supplied vector mark is in `EnsembleLogo.vue` with
   `mark`/`full` crops, a `currentColor` path that follows the theme, a brand
-  icon in the sidebar, the mark in the page header and a favicon. The sidebar
-  wordmark and logo are the Ensemble brand, not the retired Multi-Agent name.
+  icon in the sidebar and the SVG favicon in the document head (the browser tab).
+  The sidebar wordmark and logo are the Ensemble brand, not the retired
+  Multi-Agent name.
 - **Markdown:** a dependency-free, allowlist renderer (`lib/markdown.js`)
   handles headings, paragraphs/line breaks, lists, blockquotes, fenced code,
   emphasis, inline code and safe `http(s)`/`mailto` links; raw HTML is escaped

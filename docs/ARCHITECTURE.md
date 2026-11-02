@@ -394,8 +394,8 @@ sync; the https-only `RepositoryUrl` rule is unchanged.
 `public/favicon.svg`; the inline `EnsembleLogo.vue` carries the supplied
 vector mark (crop `20 10 262 190`) and the full lockup (mark + wordmark +
 tagline) for the session gate, using `currentColor` so the dark/light themes
-work. The sidebar brand is the mark plus **Ensemble**, and the same mark sits
-in the page header; the retired Multi-Agent name is gone. Console timestamps
+work. The sidebar brand is the mark plus **Ensemble**; the mark also serves as the
+`favicon.svg` for the browser tab. The retired Multi-Agent name is gone. Console timestamps
 are normalized from `createdAt`/`at` and rendered with the browser locale,
 so every line uses the client timezone.
 
