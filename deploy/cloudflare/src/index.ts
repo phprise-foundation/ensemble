@@ -51,11 +51,34 @@ export class EnsembleContainer extends DurableObject<Env> {
       if (port === undefined) {
         throw new Error(`the container exposes no TCP port ${CONTAINER_PORT}`);
       }
-      return port.fetch(forwarded);
+      const response = await port.fetch(forwarded);
+      return this.publicLocation(response, request);
     } catch (error) {
       console.error("ensemble request failed", error);
       return this.failureResponse(request, error);
     }
+  }
+
+  private publicLocation(response: Response, request: Request): Response {
+    const location = response.headers.get("location");
+    if (location === null) {
+      return response;
+    }
+    let target: URL;
+    try {
+      target = new URL(location, request.url);
+    } catch {
+      return response;
+    }
+    if (target.hostname !== "container") {
+      return response;
+    }
+    const publicUrl = new URL(request.url);
+    target.protocol = publicUrl.protocol;
+    target.host = publicUrl.host;
+    const headers = new Headers(response.headers);
+    headers.set("location", target.toString());
+    return new Response(response.body, { status: response.status, headers });
   }
 
   private failureResponse(request: Request, error: unknown): Response {
