@@ -3,9 +3,13 @@ import { DurableObject } from "cloudflare:workers";
 const HEALTH_PATH = "/api/health";
 const CONTAINER_PORT = 80;
 const INSTANCE_TYPE = "standard-2";
+const READY_ATTEMPTS = 240;
+const READY_DELAY_MS = 500;
 const CONTAINER_ENV_KEYS = [
   "DATABASE_URL",
   "APP_ENCRYPTION_KEY",
+  "APP_ENV",
+  "ENSEMBLE_WORKDIR_ROOT",
   "BOOTSTRAP_ADMIN_LOGIN",
   "BOOTSTRAP_ADMIN_PASSWORD",
   "DEEPSEEK_API_KEY",
@@ -19,6 +23,8 @@ interface Env {
   ENSEMBLE: DurableObjectNamespace<EnsembleContainer>;
   DATABASE_URL?: string;
   APP_ENCRYPTION_KEY?: string;
+  APP_ENV?: string;
+  ENSEMBLE_WORKDIR_ROOT?: string;
   BOOTSTRAP_ADMIN_LOGIN?: string;
   BOOTSTRAP_ADMIN_PASSWORD?: string;
   DEEPSEEK_API_KEY?: string;
@@ -30,21 +36,52 @@ interface Env {
 
 export class EnsembleContainer extends DurableObject<Env> {
   override async fetch(request: Request): Promise<Response> {
-    await this.ensureRunning();
-    const container = this.ctx.container;
-    if (container === undefined) {
-      throw new Error("no container is bound to this durable object");
+    try {
+      await this.ensureRunning();
+      const container = this.ctx.container;
+      if (container === undefined) {
+        throw new Error("no container is bound to this durable object");
+      }
+      const url = new URL(request.url);
+      url.protocol = "http:";
+      url.host = "container";
+      const forwarded = new Request(url, request);
+      forwarded.headers.delete("host");
+      const port = container.getTcpPort(CONTAINER_PORT);
+      if (port === undefined) {
+        throw new Error(`the container exposes no TCP port ${CONTAINER_PORT}`);
+      }
+      return port.fetch(forwarded);
+    } catch (error) {
+      console.error("ensemble request failed", error);
+      return this.failureResponse(request, error);
     }
-    const url = new URL(request.url);
-    url.protocol = "http:";
-    url.host = "container";
-    const forwarded = new Request(url, request);
-    forwarded.headers.delete("host");
-    const port = container.getTcpPort(CONTAINER_PORT);
-    if (port === undefined) {
-      throw new Error(`the container exposes no TCP port ${CONTAINER_PORT}`);
+  }
+
+  private failureResponse(request: Request, error: unknown): Response {
+    const path = new URL(request.url).pathname;
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: "the Ensemble container is not available",
+        detail: this.describe(error),
+        container: this.ctx.container?.running === true ? "running" : "stopped",
+        path,
+        forwardedEnv: Object.keys(this.containerEnv()),
+      }),
+      {
+        status: 503,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      },
+    );
+  }
+
+  private describe(error: unknown): string {
+    if (error instanceof Error) {
+      const cause = error.cause instanceof Error ? `: ${error.cause.message}` : "";
+      return `${error.message}${cause}`;
     }
-    return port.fetch(forwarded);
+    return String(error);
   }
 
   private async ensureRunning(): Promise<void> {
@@ -53,12 +90,16 @@ export class EnsembleContainer extends DurableObject<Env> {
       throw new Error("no container is bound to this durable object");
     }
     if (!container.running) {
-      container.start({
-        image: container.images.base,
-        instance: INSTANCE_TYPE,
-        enableInternet: true,
-        env: this.containerEnv(),
-      });
+      try {
+        container.start({
+          image: container.images.base,
+          instance: INSTANCE_TYPE,
+          enableInternet: true,
+          env: this.containerEnv(),
+        });
+      } catch (error) {
+        throw new Error(`the container failed to start: ${this.describe(error)}`);
+      }
     }
 
     const port = container.getTcpPort(CONTAINER_PORT);
@@ -66,7 +107,11 @@ export class EnsembleContainer extends DurableObject<Env> {
       throw new Error(`the container exposes no TCP port ${CONTAINER_PORT}`);
     }
     let lastError: unknown;
-    for (let attempt = 0; attempt < 100; attempt++) {
+    for (let attempt = 0; attempt < READY_ATTEMPTS; attempt++) {
+      if (!container.running) {
+        lastError = new Error("the container stopped while starting");
+        break;
+      }
       try {
         const response = await port.fetch(`http://container${HEALTH_PATH}`, {
           signal: AbortSignal.timeout(1000),
@@ -78,12 +123,13 @@ export class EnsembleContainer extends DurableObject<Env> {
         return;
       } catch (error) {
         lastError = error;
-        await scheduler.wait(500);
+        await scheduler.wait(READY_DELAY_MS);
       }
     }
-    throw new Error("the Ensemble container did not become ready on port 80", {
-      cause: lastError,
-    });
+    throw new Error(
+      `the Ensemble container did not become ready on port ${CONTAINER_PORT}`,
+      { cause: lastError },
+    );
   }
 
   private containerEnv(): Record<string, string> {
@@ -100,11 +146,30 @@ export class EnsembleContainer extends DurableObject<Env> {
 }
 
 export default {
-  fetch(request, env) {
-    return env.ENSEMBLE.getByName("ensemble").fetch(request);
+  async fetch(request, env) {
+    try {
+      return await env.ENSEMBLE.getByName("ensemble").fetch(request);
+    } catch (error) {
+      console.error("ensemble worker failed", error);
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: "the Ensemble worker failed before reaching the container",
+          detail: error instanceof Error ? error.message : String(error),
+        }),
+        {
+          status: 503,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        },
+      );
+    }
   },
 
   async scheduled(_event, env) {
-    await env.ENSEMBLE.getByName("ensemble").fetch(`https://container${HEALTH_PATH}`);
+    try {
+      await env.ENSEMBLE.getByName("ensemble").fetch(`https://container${HEALTH_PATH}`);
+    } catch (error) {
+      console.error("ensemble keep-alive failed", error);
+    }
   },
 } satisfies ExportedHandler<Env>;

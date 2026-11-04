@@ -28,7 +28,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
     && docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql \
-    && a2enmod rewrite
+    && a2enmod rewrite \
+    && rm -f /var/log/apache2/*.log \
+    && touch /var/log/apache2/error.log /var/log/apache2/access.log /var/log/apache2/other_vhosts_access.log \
+    && chown -R www-data:www-data /var/log/apache2 \
+    && printf 'ServerName localhost\nErrorLog /var/log/apache2/error.log\n' > /etc/apache2/conf-enabled/zz-ensemble.conf
 
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
 WORKDIR /var/www/html
