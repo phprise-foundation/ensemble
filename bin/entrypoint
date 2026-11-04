@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 cd /var/www/html
 
@@ -14,17 +14,44 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-pids=()
+logs=/var/log/apache2
+mkdir -p "$logs"
+touch "$logs/error.log" "$logs/access.log"
+chown -R www-data:www-data "$logs" 2>/dev/null || true
+
+tail -n +1 -F "$logs/error.log" "$logs/access.log" >&2 &
+tail_pid=$!
+pids=("$tail_pid")
+
+supervise_runner() {
+  while true; do
+    bin/runner-loop
+    echo "runner-loop exited (code $?), restarting in 5s" >&2
+    sleep 5
+  done
+}
+
+runner_pid=""
+web_pid=""
 
 if [ "$role" != runner ]; then
-  php bin/install
-  apache2-foreground &
-  pids+=("$!")
+  if ! php bin/install; then
+    echo "bin/install failed; refusing to start the web server" >&2
+    kill "$tail_pid" 2>/dev/null
+    exit 1
+  fi
 fi
 
 if [ "$role" != web ]; then
-  bin/runner-loop &
-  pids+=("$!")
+  supervise_runner &
+  runner_pid=$!
+  pids+=("$runner_pid")
+fi
+
+if [ "$role" != runner ]; then
+  apache2-foreground &
+  web_pid=$!
+  pids+=("$web_pid")
 fi
 
 terminate() {
@@ -34,7 +61,11 @@ terminate() {
 }
 trap terminate TERM INT
 
-wait -n
+if [ "$role" = runner ]; then
+  wait "$runner_pid"
+else
+  wait "$web_pid"
+fi
 status=$?
 terminate
 exit "$status"
