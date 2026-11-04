@@ -3,7 +3,7 @@ import { DurableObject } from "cloudflare:workers";
 const HEALTH_PATH = "/api/health";
 const CONTAINER_PORT = 80;
 const INSTANCE_TYPE = "standard-2";
-const READY_ATTEMPTS = 240;
+const READY_ATTEMPTS = 30;
 const READY_DELAY_MS = 500;
 const CONTAINER_ENV_KEYS = [
   "DATABASE_URL",
@@ -89,17 +89,18 @@ export class EnsembleContainer extends DurableObject<Env> {
     if (container === undefined) {
       throw new Error("no container is bound to this durable object");
     }
-    if (!container.running) {
-      try {
-        container.start({
-          image: container.images.base,
-          instance: INSTANCE_TYPE,
-          enableInternet: true,
-          env: this.containerEnv(),
-        });
-      } catch (error) {
-        throw new Error(`the container failed to start: ${this.describe(error)}`);
-      }
+    if (container.running) {
+      return;
+    }
+    try {
+      container.start({
+        image: container.images.base,
+        instance: INSTANCE_TYPE,
+        enableInternet: true,
+        env: this.containerEnv(),
+      });
+    } catch (error) {
+      console.error("container start failed", error);
     }
 
     const port = container.getTcpPort(CONTAINER_PORT);
@@ -109,26 +110,27 @@ export class EnsembleContainer extends DurableObject<Env> {
     let lastError: unknown;
     for (let attempt = 0; attempt < READY_ATTEMPTS; attempt++) {
       if (!container.running) {
-        lastError = new Error("the container stopped while starting");
-        break;
+        throw new Error("the container stopped while starting", {
+          cause: lastError instanceof Error ? lastError : undefined,
+        });
       }
       try {
         const response = await port.fetch(`http://container${HEALTH_PATH}`, {
           signal: AbortSignal.timeout(1000),
         });
         await response.body?.cancel();
-        if (!response.ok) {
-          throw new Error(`health check returned ${response.status}`);
+        if (response.ok) {
+          return;
         }
-        return;
+        lastError = new Error(`health check returned ${response.status}`);
       } catch (error) {
         lastError = error;
-        await scheduler.wait(READY_DELAY_MS);
       }
+      await scheduler.wait(READY_DELAY_MS);
     }
     throw new Error(
-      `the Ensemble container did not become ready on port ${CONTAINER_PORT}`,
-      { cause: lastError },
+      `the Ensemble container is still starting on port ${CONTAINER_PORT}`,
+      { cause: lastError instanceof Error ? lastError : undefined },
     );
   }
 
