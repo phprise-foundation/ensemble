@@ -11,18 +11,20 @@ import DialogHost from './components/DialogHost.vue'
 import ToastHost from './components/ToastHost.vue'
 import { boardStore } from './store/board.js'
 import { CONSOLE_HEIGHT_STEP, DEFAULT_CONSOLE_HEIGHT, clampHeight } from './store/consoleHeight.js'
+import { DEFAULT_PANELS, loadPanels, savePanels } from './store/uiPanels.js'
 import { session } from './store/session.js'
 import { theme, toggleTheme } from './theme.js'
 
 const route = useRoute()
+const initialPanels = loadPanels()
 const sidebarOpen = ref(false)
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(initialPanels.sidebarCollapsed)
 const menuToggle = ref(null)
 const isMobile = ref(false)
 const isNarrow = ref(false)
-const copilotOpen = ref(true)
-const consoleOpen = ref(false)
-const consoleHeight = ref(DEFAULT_CONSOLE_HEIGHT)
+const copilotOpen = ref(initialPanels.copilotOpen)
+const consoleOpen = ref(initialPanels.consoleOpen)
+const consoleHeight = ref(initialPanels.consoleHeight)
 const consoleHeightStyle = computed(() => ({ '--console-height': `${consoleHeight.value}px` }))
 let sidebarQuery = null
 let narrowQuery = null
@@ -130,6 +132,15 @@ watch(sidebarOpen, (isOpen, wasOpen) => {
       menuToggle.value?.focus()
     })
   }
+})
+
+watch([sidebarCollapsed, copilotOpen, consoleOpen, consoleHeight], ([collapsed, copilot, console, height]) => {
+  savePanels({
+    sidebarCollapsed: collapsed,
+    copilotOpen: copilot,
+    consoleOpen: console,
+    consoleHeight: height,
+  })
 })
 
 

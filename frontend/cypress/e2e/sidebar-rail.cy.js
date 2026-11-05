@@ -126,8 +126,7 @@ describe('rail do sidebar colapsado', () => {
     cy.get('nav.rail a.rail-leaf[aria-current="page"]').should('have.class', 'router-link-active')
 
     cy.reload()
-    cy.get('#app-sidebar').should('not.have.class', 'collapsed')
-    collapse()
+    cy.get('#app-sidebar').should('have.class', 'collapsed')
     expectOneCurrent('Standard · Transitions')
 
     cy.get('nav.rail a.rail-leaf[title="Kanban · Columns"]').click()

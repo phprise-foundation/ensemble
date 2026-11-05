@@ -4,8 +4,9 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
-import MarkdownText from './MarkdownText.vue'
+import ToggleSwitch from './ToggleSwitch.vue'
 import MarkdownTextarea from './MarkdownTextarea.vue'
+import { plainText } from '../lib/plain-text.js'
 
 const props = defineProps({ schema: { type: Object, required: true } })
 
@@ -44,6 +45,39 @@ function cellValue(row, column) {
 function isMarkdownColumn(column) {
   return column.type === 'markdown'
     || (props.schema.fields ?? []).some((field) => field.key === column.key && field.type === 'textarea')
+}
+
+function fieldFor(column) {
+  return (props.schema.fields ?? []).find((field) => field.key === column.key)
+}
+
+function isBooleanColumn(column) {
+  return column.type === 'boolean' || fieldFor(column)?.type === 'checkbox'
+}
+
+function titleKey() {
+  return props.schema.titleKey ?? 'name'
+}
+
+function cardTitle(row) {
+  return row[titleKey()] ?? row.id
+}
+
+function descriptionText(row) {
+  const column = props.schema.columns.find((item) => isMarkdownColumn(item))
+  return column ? plainText(cellValue(row, column)) : ''
+}
+
+function metaColumns() {
+  return props.schema.columns.filter((column) => (
+    column.key !== titleKey() && !isMarkdownColumn(column) && !isBooleanColumn(column)
+  ))
+}
+
+function trueFlags(row) {
+  return props.schema.columns
+    .filter((column) => isBooleanColumn(column) && Boolean(row[column.key]))
+    .map((column) => ({ key: column.key, label: column.label }))
 }
 
 function isChecked(field, value) {
@@ -136,15 +170,11 @@ async function remove(row) {
       <button class="button" @click="openCreate"><AppIcon name="plus" size="16" /> New {{ schema.singular }}</button>
     </header>
 
-    <div class="table">
-      <div class="table-row head">
-        <span v-for="column in schema.columns" :key="column.key">{{ column.label }}</span>
-        <span class="actions">Actions</span>
-      </div>
-      <div
+    <div class="crud-cards">
+      <article
         v-for="row in items"
         :key="row.id"
-        class="table-row"
+        class="crud-card table-row"
         :class="{ dragging: dragRowId === row.id, 'drop-target': dropRowId === row.id }"
         :draggable="canReorder"
         :title="canReorder ? 'Drag to reorder' : undefined"
@@ -153,20 +183,30 @@ async function remove(row) {
         @dragend="onRowDragEnd"
         @drop.prevent="onRowDrop(row)"
       >
-        <span v-for="column in schema.columns" :key="column.key">
-          <span v-if="column.type === 'color'" class="swatch" :style="{ background: row[column.key] }"></span>
-          <MarkdownText
-            v-else-if="isMarkdownColumn(column)"
-            class="cell-markdown"
-            :text="String(cellValue(row, column) ?? '')"
-          />
-          <template v-else>{{ cellValue(row, column) }}</template>
-        </span>
-        <span class="actions">
-          <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(row)"><AppIcon name="edit" size="14" /></button>
-          <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(row)"><AppIcon name="delete" size="14" /></button>
-        </span>
-      </div>
+        <header class="crud-card-head">
+          <h3 class="crud-card-title">{{ cardTitle(row) }}</h3>
+          <span class="actions">
+            <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(row)"><AppIcon name="edit" size="14" /></button>
+            <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(row)"><AppIcon name="delete" size="14" /></button>
+          </span>
+        </header>
+
+        <p v-if="descriptionText(row)" class="crud-card-desc">{{ descriptionText(row) }}</p>
+
+        <dl v-if="metaColumns().length" class="crud-card-meta">
+          <template v-for="column in metaColumns()" :key="column.key">
+            <dt>{{ column.label }}</dt>
+            <dd>
+              <span v-if="column.type === 'color'" class="swatch" :style="{ background: row[column.key] }"></span>
+              <template v-else>{{ cellValue(row, column) }}</template>
+            </dd>
+          </template>
+        </dl>
+
+        <div v-if="trueFlags(row).length" class="crud-card-flags">
+          <span v-for="flag in trueFlags(row)" :key="flag.key" class="chip">{{ flag.label }}</span>
+        </div>
+      </article>
       <p v-if="!items.length" class="muted pad">Nothing here yet.</p>
     </div>
 
@@ -190,9 +230,13 @@ async function remove(row) {
               <option v-for="option in optionsFor(field)" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>
 
-            <label v-else-if="field.type === 'checkbox'" class="inline">
-              <input type="checkbox" v-model="draft[field.key]" /> {{ field.hint || 'Enabled' }}
-            </label>
+            <div v-else-if="field.type === 'checkbox'" class="toggle-field">
+              <span class="toggle-text">
+                <span>{{ field.label }}</span>
+                <small v-if="field.hint" class="muted">{{ field.hint }}</small>
+              </span>
+              <ToggleSwitch v-model="draft[field.key]" :label="field.label" />
+            </div>
 
             <div v-else-if="field.type === 'multiselect'" class="checks">
               <label v-for="option in optionsFor(field)" :key="option.value" class="inline">
