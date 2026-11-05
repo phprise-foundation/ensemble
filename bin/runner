@@ -30,12 +30,15 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueEventReposit
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RunUsageRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunUsageRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
+use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\OpenWardenExecutor;
@@ -51,6 +54,7 @@ $workdirs = new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMappe
 $issues = new DoctrineIssueRepository($entityManager, new IssueRecordMapper());
 $statuses = new DoctrineStatusRepository($entityManager, new StatusRecordMapper());
 $runs = new DoctrineRunRepository($entityManager, new RunRecordMapper());
+$usageLedger = new DoctrineRunUsageRepository($entityManager, new RunUsageRecordMapper());
 $agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
 $roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
 $events = new DoctrineIssueEventRepository($entityManager, new IssueEventRecordMapper());
@@ -74,6 +78,10 @@ $pullRequests = new GitHubPullRequests(
     (string) (getenv('GITHUB_API_URL') ?: 'https://api.github.com'),
 );
 
+$modelsPath = getenv('ENSEMBLE_MODELS_FILE');
+$modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__) . '/config/models.yaml' : $modelsPath;
+$catalog = (new YamlModelCatalog($modelsPath))->load();
+
 (new BackfillIssueWorkdirs($issues, $workdirs))->execute();
 
 (new ExecuteSweep(
@@ -85,7 +93,7 @@ $pullRequests = new GitHubPullRequests(
     $vcs,
     $runs,
     new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: (getenv('HOME') . '/.local/share/ensemble/workdirs'))),
-    new OpenWardenExecutor(),
+    new OpenWardenExecutor($catalog),
     new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
     new AdvanceIssue(
         $issues,
@@ -97,6 +105,8 @@ $pullRequests = new GitHubPullRequests(
     $roles,
     $report,
     $outcomes,
+    $catalog,
+    $usageLedger,
 ))->execute();
 
 echo "sweep ok\n";

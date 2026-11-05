@@ -11,6 +11,8 @@ use App\Application\Team\ListAgents;
 use App\Application\Team\ReadAgent;
 use App\Application\Team\UpdateAgent;
 use App\Domain\Exception\ValidationException;
+use App\Domain\Model\ModelCatalog;
+use App\Domain\Model\ModelId;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\ProfileId;
 use App\Domain\Team\RoleIds;
@@ -32,6 +34,7 @@ final readonly class AgentController
         private ReadAgent $readAgent,
         private UpdateAgent $updateAgent,
         private DeleteAgent $deleteAgent,
+        private ModelCatalog $models,
         private AgentPresenter $presenter,
         private JsonResponder $responder,
     ) {
@@ -70,8 +73,8 @@ final readonly class AgentController
             $this->profileIdFrom($body),
             JsonBody::string($body, 'avatarColor'),
             JsonBody::string($body, 'portrait'),
-            JsonBody::string($body, 'model') ?? '',
-            JsonBody::string($body, 'fallbackModel') ?? '',
+            $this->modelId($body, true) ?? '',
+            '',
             $interval,
             JsonBody::boolean($body, 'active') ?? true,
             JsonBody::string($body, 'language'),
@@ -117,8 +120,8 @@ final readonly class AgentController
             $this->profileIdFrom($body),
             JsonBody::string($body, 'avatarColor'),
             JsonBody::string($body, 'portrait'),
-            JsonBody::string($body, 'model'),
-            JsonBody::string($body, 'fallbackModel'),
+            $this->modelId($body, false),
+            null,
             $interval,
             JsonBody::boolean($body, 'active'),
             JsonBody::string($body, 'language'),
@@ -157,6 +160,23 @@ final readonly class AgentController
         } catch (InvalidArgumentException) {
             throw new ValidationException('roleIds', 'Every role id must be a 32-character hexadecimal string.');
         }
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
+     */
+    private function modelId(array $body, bool $required): ?string
+    {
+        $value = JsonBody::string($body, 'modelId') ?? JsonBody::string($body, 'model');
+        if ($value === null || $value === '') {
+            return $required ? $this->models->defaultId()->value() : null;
+        }
+        $id = new ModelId($value);
+        if ($this->models->find($id) === null) {
+            throw new ValidationException('modelId', sprintf('Unknown model "%s".', $id->value()));
+        }
+
+        return $id->value();
     }
 
     /**

@@ -21,6 +21,7 @@ use App\Domain\Tenancy\UserId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Domain\Vcs\GitRepositoryId;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\ModelController;
 use App\Interface\Http\Kanban\ActivityController;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\ColumnController;
@@ -63,6 +64,7 @@ final readonly class TenancyRouter
         private AgentController $agents,
         private RunController $runHistory,
         private SnapshotController $snapshots,
+        private ModelController $models,
         private SecretController $secrets,
         private RepositoryController $repositories,
         private TenancyErrorResponder $errors,
@@ -90,6 +92,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $path === '/api/auth/logout' => $this->sessions->logout($request),
             $method === 'GET' && $path === '/api/me' => $this->sessions->me($request),
             $method === 'PATCH' && $path === '/api/me' => $this->sessions->patch($request),
+            $method === 'GET' && $this->isModels($segments) => $this->models->list($request),
             $method === 'GET' && $this->isUsersRoot($segments) => $this->users->list($request),
             $method === 'POST' && $this->isUsersRoot($segments) => $this->users->create($request),
             $method === 'GET' && $this->isWorkspacesRoot($segments) => $this->workspaces->list($request),
@@ -481,6 +484,14 @@ final readonly class TenancyRouter
             && $segments[0] === 'api'
             && $segments[1] === 'workspaces'
             && $segments[3] === 'activity';
+    }
+
+    /** @param list<string> $segments */
+    private function isModels(array $segments): bool
+    {
+        return count($segments) === 2
+            && $segments[0] === 'api'
+            && $segments[1] === 'models';
     }
 
     /** @param list<string> $segments */

@@ -472,3 +472,32 @@ analysis.
 
 A single shared secret (`BOARD_PASSWORD`). The board accepts it as a Bearer
 token. `PasswordAuthenticator` implements the `Authenticator` contract.
+
+## Model catalog, runner and usage ledger
+
+`config/models.yaml` is the single source of truth for the public Ensemble
+models. Each entry carries a display name, three prices in USD per million
+tokens (cached input, input, output) and an `internal` block with the
+open-warden references for the main model, its fallback and the subagents. The
+`internal` block is never serialized to the API.
+
+At boot, `Infrastructure/Model/YamlModelCatalog` parses and validates the file
+into a `Domain/Model/ModelCatalog`. Agents persist only a public `modelId`; the
+catalog resolves it (unknown or legacy values fall back to the default,
+`ens26.1-flash`). `GET /api/models` and the board snapshot expose the public
+catalog; the agents form uses it to pick a model and show its prices.
+
+The runner resolves the selected model to the internal references and calls
+`open-warden run` with `--model`, `--fallback`, `--subagents-model`,
+`--subagents-fallback`, `--economy balanced` and `--report-file`. The warden
+report is parsed by `Infrastructure/Runner/UsageReportParser` into one
+`Domain/Runner/ModelUsage` per provider model (public alias, free/paid plan,
+tokens and actual cost). `ExecuteSweep` writes a `run_usage` row per provider
+model, adding the charged cost computed from the catalog price (reasoning as
+output, cache write as input, cache read at the cache price).
+
+`bin/report-user` and `bin/report-admin` read the ledger directly: the user
+report filters by workspace/agent/model/period (and by user membership) and
+groups by workspace, agent, model and plan; the admin report totals actual
+cost, charged cost and margin overall, per plan, per workspace and per model.
+

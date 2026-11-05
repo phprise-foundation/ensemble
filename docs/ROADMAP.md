@@ -147,6 +147,15 @@ v1; the release pipeline proves tag → production.
 Post-v1 backlog (fine-tuning; also the target of the "dogfood" development
 once v1 is live):
 
+- **Fase B — catálogo de modelos e cobrança (branch `feat/fase-b-models`):**
+  `config/models.yaml` com preços e refs internas, `modelId` no agente, runner
+  com refs `free-tier`/fallback/economy, ledger `run_usage` e relatórios CLI
+  (`bin/report-user`, `bin/report-admin`).
+- **Fase C — limites por agente:** orçamento diário pelo custo cobrado
+  (skip ao atingir, `-b` com o restante), RPM/TPM por agente em janela de 1
+  minuto e campos no formulário do agente.
+- **Fase D — identidade visual:** logos `bluesmoke` como padrão nos dois temas,
+  login white no escuro e black no claro, favicon `bluesmoke`.
 - RFC-2026-0001 communication (channels/messages/notifications) — the board
   drives its own development through it.
 - RFC-2026-0002 event-driven orchestration (trigger queue, scheduler,

@@ -7,10 +7,12 @@ namespace App\Interface\Http\Kanban;
 use App\Application\Kanban\ReadSnapshot;
 use App\Application\Kanban\Snapshot;
 use App\Application\Security\ReadCurrentUser;
+use App\Domain\Model\ModelCatalog;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Interface\Http\Kanban\FieldDefinitionPresenter;
 use App\Interface\Http\BearerToken;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\ModelPresenter;
 use App\Interface\Http\Team\AgentPresenter;
 use App\Interface\Http\Team\ProfilePresenter;
 use App\Interface\Http\Team\RolePresenter;
@@ -31,6 +33,7 @@ final readonly class SnapshotController
         private TeamPresenter $teams,
         private WorkspacePresenter $workspaces,
         private RepositoryPresenter $repositories,
+        private ModelCatalog $models,
         private JsonResponder $responder,
     ) {
     }
@@ -68,6 +71,8 @@ final readonly class SnapshotController
             'profiles' => $this->profiles->presentMany($snapshot->profiles),
             'agents' => $this->agents->presentMany($snapshot->agents),
             'sources' => $this->repositories->presentMany($snapshot->repositories),
+            'defaultModel' => $this->models->defaultId()->value(),
+            'models' => (new ModelPresenter())->presentMany($this->models->all()),
         ]);
     }
 }

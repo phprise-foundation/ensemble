@@ -1,0 +1,91 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$options = getopt('', ['user:', 'workspace:', 'agent:', 'model:', 'from:', 'to:']);
+$filters = [];
+$parameters = [];
+foreach (['user', 'workspace', 'agent', 'model'] as $name) {
+    $value = $options[$name] ?? null;
+    if (is_string($value) && $value !== '') {
+        $filters[$name] = $value;
+    }
+}
+if (isset($filters['user'])) {
+    $filters['user'] = 'EXISTS (SELECT 1 FROM workspace_members m WHERE m.workspace_id = u.workspace_id AND m.user_id = :user)';
+    $parameters['user'] = $options['user'];
+}
+if (isset($filters['workspace'])) {
+    $parameters['workspace'] = $filters['workspace'];
+    $filters['workspace'] = 'u.workspace_id = :workspace';
+}
+if (isset($filters['agent'])) {
+    $parameters['agent'] = $filters['agent'];
+    $filters['agent'] = 'u.agent_id = :agent';
+}
+if (isset($filters['model'])) {
+    $parameters['model'] = $filters['model'];
+    $filters['model'] = 'u.model_id = :model';
+}
+$from = $options['from'] ?? null;
+if (is_string($from) && $from !== '') {
+    $parameters['from'] = $from . ' 00:00:00';
+    $filters['from'] = 'u.created_at >= :from';
+}
+$to = $options['to'] ?? null;
+if (is_string($to) && $to !== '') {
+    $parameters['to'] = (new DateTimeImmutable($to))->modify('+1 day')->format('Y-m-d 00:00:00');
+    $filters['to'] = 'u.created_at < :to';
+}
+$where = $filters === [] ? '' : 'WHERE ' . implode(' AND ', $filters);
+
+$connection = DoctrineEntityManagerFactory::fromEnvironment()->create()->getConnection();
+$rows = $connection->fetchAllAssociative(
+    'SELECT w.name AS workspace, a.name AS agent, u.model_id AS model, u.plan AS plan,
+            SUM(u.requests) AS requests, SUM(u.input_tokens) AS input_tokens,
+            SUM(u.output_tokens) AS output_tokens, SUM(u.reasoning_tokens) AS reasoning_tokens,
+            SUM(u.cache_read_tokens) AS cache_read_tokens, SUM(u.cache_write_tokens) AS cache_write_tokens,
+            SUM(u.charged_cost_micros) AS charged_cost_micros
+     FROM run_usage u
+     JOIN workspaces w ON w.id = u.workspace_id
+     JOIN agents a ON a.id = u.agent_id
+     ' . $where . '
+     GROUP BY w.name, a.name, u.model_id, u.plan
+     ORDER BY w.name, a.name, u.model_id, u.plan',
+    $parameters,
+);
+
+$usd = static fn (int|string $micros): string => number_format(((int) $micros) / 1_000_000, 6, '.', '');
+$total = 0;
+printf(
+    "%-22s %-22s %-14s %-5s %9s %12s %12s %12s %12s %12s %12s\n",
+    'workspace', 'agent', 'model', 'plan', 'requests', 'input', 'output', 'reasoning', 'cache_read', 'cache_write', 'charged',
+);
+foreach ($rows as $row) {
+    $total += (int) $row['charged_cost_micros'];
+    printf(
+        "%-22s %-22s %-14s %-5s %9d %12d %12d %12d %12d %12d %12s\n",
+        mb_substr((string) $row['workspace'], 0, 22),
+        mb_substr((string) $row['agent'], 0, 22),
+        mb_substr((string) $row['model'], 0, 14),
+        (string) $row['plan'],
+        (int) $row['requests'],
+        (int) $row['input_tokens'],
+        (int) $row['output_tokens'],
+        (int) $row['reasoning_tokens'],
+        (int) $row['cache_read_tokens'],
+        (int) $row['cache_write_tokens'],
+        $usd($row['charged_cost_micros']),
+    );
+}
+if ($rows === []) {
+    echo "No usage recorded.\n";
+
+    exit(0);
+}
+printf("\nTOTAL charged: $%s\n", $usd($total));

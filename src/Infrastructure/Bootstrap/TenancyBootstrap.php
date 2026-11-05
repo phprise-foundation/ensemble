@@ -109,6 +109,7 @@ use App\Application\Tenancy\UpdateWorkspace;
 use App\Application\Tenancy\WorkspaceGuard;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Authentication\RandomTokenGenerator;
+use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
@@ -159,6 +160,8 @@ use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Infrastructure\Vcs\GitHubPullRequests;
 use App\Infrastructure\Vcs\StreamGitHubHttp;
 use App\Interface\Http\JsonResponder;
+use App\Interface\Http\ModelController;
+use App\Interface\Http\ModelPresenter;
 use App\Interface\Http\Kanban\ActivityController;
 use App\Interface\Http\Kanban\BoardController;
 use App\Interface\Http\Kanban\BoardPresenter;
@@ -215,6 +218,9 @@ final readonly class TenancyBootstrap
     public function router(): TenancyRouter
     {
         $entityManager = $this->entityManagers->create();
+        $modelsPath = getenv('ENSEMBLE_MODELS_FILE');
+        $modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__, 3) . '/config/models.yaml' : $modelsPath;
+        $catalog = (new YamlModelCatalog($modelsPath))->load();
         $users = new DoctrineUserRepository($entityManager, new UserRecordMapper());
         $workspaces = new DoctrineWorkspaceRepository($entityManager, new WorkspaceRecordMapper());
         $memberships = new DoctrineMembershipRepository($entityManager, new MembershipRecordMapper());
@@ -461,6 +467,7 @@ final readonly class TenancyBootstrap
                 new ReadAgent($agents, $guard),
                 new UpdateAgent($agents, $teams, $roles, $profiles, $guard),
                 new DeleteAgent($agents, $guard),
+                $catalog,
                 $agentPresenter,
                 $this->responder,
             ),
@@ -526,6 +533,13 @@ final readonly class TenancyBootstrap
                 new TeamPresenter(),
                 new WorkspacePresenter(),
                 new RepositoryPresenter(),
+                $catalog,
+                $this->responder,
+            ),
+            new ModelController(
+                $currentUser,
+                $catalog,
+                new ModelPresenter(),
                 $this->responder,
             ),
             new SecretController(

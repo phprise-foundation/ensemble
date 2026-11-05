@@ -38,8 +38,7 @@ final class AgentApiTest extends TestCase
             'roleIds' => [$role],
             'profileId' => $profile,
             'avatarColor' => '#FF991F',
-            'model' => 'opencode/glm-5.3-flash-free',
-            'fallbackModel' => 'opencode/glm-4.7',
+            'modelId' => 'ens26.1-flash',
             'interval' => 120,
             'active' => false,
             'language' => 'en',
@@ -51,8 +50,7 @@ final class AgentApiTest extends TestCase
         self::assertSame([$role], $agent['roleIds']);
         self::assertSame($profile, $agent['profileId']);
         self::assertSame('#ff991f', $agent['avatarColor']);
-        self::assertSame('opencode/glm-5.3-flash-free', $agent['model']);
-        self::assertSame('opencode/glm-4.7', $agent['fallbackModel']);
+        self::assertSame('ens26.1-flash', $agent['modelId']);
         self::assertSame(120, $agent['interval']);
         self::assertFalse($agent['active']);
         self::assertSame('en', $agent['language']);
@@ -128,6 +126,15 @@ final class AgentApiTest extends TestCase
         ));
         self::assertSame(422, $badLanguage->getStatusCode());
         self::assertSame('language', $this->app->json($badLanguage, 422)['field']);
+
+        $badModel = $this->app->handle($this->app->request(
+            'POST',
+            $this->teamAgentPath($team),
+            ['name' => 'Kaio', 'modelId' => 'unknown-model'],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $badModel->getStatusCode());
+        self::assertSame('modelId', $this->app->json($badModel, 422)['field']);
 
         $badInterval = $this->app->handle($this->app->request(
             'POST',

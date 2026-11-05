@@ -1,0 +1,114 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+
+require __DIR__ . '/../vendor/autoload.php';
+
+$options = getopt('', ['from:', 'to:']);
+$filters = [];
+$parameters = [];
+$from = $options['from'] ?? null;
+if (is_string($from) && $from !== '') {
+    $parameters['from'] = $from . ' 00:00:00';
+    $filters[] = 'u.created_at >= :from';
+}
+$to = $options['to'] ?? null;
+if (is_string($to) && $to !== '') {
+    $parameters['to'] = (new DateTimeImmutable($to))->modify('+1 day')->format('Y-m-d 00:00:00');
+    $filters[] = 'u.created_at < :to';
+}
+$where = $filters === [] ? '' : 'WHERE ' . implode(' AND ', $filters);
+
+$connection = DoctrineEntityManagerFactory::fromEnvironment()->create()->getConnection();
+$usd = static fn (int|string $micros): string => number_format(((int) $micros) / 1_000_000, 6, '.', '');
+
+$byPlan = $connection->fetchAllAssociative(
+    'SELECT u.plan AS plan,
+            SUM(u.requests) AS requests, SUM(u.input_tokens) AS input_tokens,
+            SUM(u.output_tokens) AS output_tokens, SUM(u.reasoning_tokens) AS reasoning_tokens,
+            SUM(u.cache_read_tokens) AS cache_read_tokens, SUM(u.cache_write_tokens) AS cache_write_tokens,
+            SUM(u.actual_cost_micros) AS actual_cost_micros, SUM(u.charged_cost_micros) AS charged_cost_micros
+     FROM run_usage u ' . $where . '
+     GROUP BY u.plan
+     ORDER BY u.plan',
+    $parameters,
+);
+$byWorkspace = $connection->fetchAllAssociative(
+    'SELECT w.name AS workspace,
+            SUM(u.requests) AS requests, SUM(u.actual_cost_micros) AS actual_cost_micros,
+            SUM(u.charged_cost_micros) AS charged_cost_micros
+     FROM run_usage u
+     JOIN workspaces w ON w.id = u.workspace_id ' . $where . '
+     GROUP BY w.name
+     ORDER BY w.name',
+    $parameters,
+);
+$byModel = $connection->fetchAllAssociative(
+    'SELECT u.model_id AS model,
+            SUM(u.requests) AS requests, SUM(u.actual_cost_micros) AS actual_cost_micros,
+            SUM(u.charged_cost_micros) AS charged_cost_micros
+     FROM run_usage u ' . $where . '
+     GROUP BY u.model_id
+     ORDER BY u.model_id',
+    $parameters,
+);
+
+$actual = 0;
+$charged = 0;
+printf(
+    "%-6s %9s %12s %12s %12s %12s %12s %12s %12s %12s\n",
+    'plan', 'requests', 'input', 'output', 'reasoning', 'cache_read', 'cache_write', 'actual', 'charged', 'margin',
+);
+echo "By plan\n";
+foreach ($byPlan as $row) {
+    $actual += (int) $row['actual_cost_micros'];
+    $charged += (int) $row['charged_cost_micros'];
+    printf(
+        "%-6s %9d %12d %12d %12d %12d %12d %12s %12s %12s\n",
+        (string) $row['plan'],
+        (int) $row['requests'],
+        (int) $row['input_tokens'],
+        (int) $row['output_tokens'],
+        (int) $row['reasoning_tokens'],
+        (int) $row['cache_read_tokens'],
+        (int) $row['cache_write_tokens'],
+        $usd($row['actual_cost_micros']),
+        $usd($row['charged_cost_micros']),
+        $usd((int) $row['charged_cost_micros'] - (int) $row['actual_cost_micros']),
+    );
+}
+if ($byPlan === []) {
+    echo "No usage recorded.\n";
+
+    exit(0);
+}
+printf("\nTOTAL actual: $%s  charged: $%s  margin: $%s\n\n", $usd($actual), $usd($charged), $usd($charged - $actual));
+
+echo "By workspace\n";
+printf("%-24s %9s %12s %12s %12s\n", 'workspace', 'requests', 'actual', 'charged', 'margin');
+foreach ($byWorkspace as $row) {
+    printf(
+        "%-24s %9d %12s %12s %12s\n",
+        mb_substr((string) $row['workspace'], 0, 24),
+        (int) $row['requests'],
+        $usd($row['actual_cost_micros']),
+        $usd($row['charged_cost_micros']),
+        $usd((int) $row['charged_cost_micros'] - (int) $row['actual_cost_micros']),
+    );
+}
+
+echo "\nBy model\n";
+printf("%-24s %9s %12s %12s %12s\n", 'model', 'requests', 'actual', 'charged', 'margin');
+foreach ($byModel as $row) {
+    printf(
+        "%-24s %9d %12s %12s %12s\n",
+        (string) $row['model'],
+        (int) $row['requests'],
+        $usd($row['actual_cost_micros']),
+        $usd($row['charged_cost_micros']),
+        $usd((int) $row['charged_cost_micros'] - (int) $row['actual_cost_micros']),
+    );
+}

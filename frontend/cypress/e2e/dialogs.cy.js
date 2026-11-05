@@ -71,7 +71,7 @@ describe('diálogos e toasts na interface em execução', () => {
       const teamId = snapshot.teams[0].id
       const profile = snapshot.profiles[0]
       const role = snapshot.roles[0]
-      cy.wsRequest('POST', `/teams/${teamId}/agents`, { name: 'E2E Temp', whoAmI: 'throwaway', age: null, maritalStatus: 'Single', roleIds: [role.id], profileId: profile.id, avatarColor: '#4c9aff', model: 'test-model', fallbackModel: '', active: true })
+      cy.wsRequest('POST', `/teams/${teamId}/agents`, { name: 'E2E Temp', whoAmI: 'throwaway', age: null, maritalStatus: 'Single', roleIds: [role.id], profileId: profile.id, avatarColor: '#4c9aff', modelId: 'ens26.1-flash', active: true })
     })
     cy.reload()
     cy.contains('.agent-card', 'E2E Temp').find('[aria-label="Delete"]').first().click({ force: true })

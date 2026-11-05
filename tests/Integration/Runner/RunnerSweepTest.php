@@ -35,10 +35,13 @@ use App\Domain\Kanban\Workdir;
 use App\Domain\Kanban\WorkdirId;
 use App\Domain\Kanban\WorkdirKind;
 use App\Domain\Kanban\WorkdirState;
+use App\Domain\Runner\ModelUsage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
+use App\Domain\Runner\UsagePlan;
+use App\Domain\Runner\UsageReport;
 use App\Domain\Runner\WorkdirPaths;
 use App\Domain\Runner\WorkdirVcs;
 use App\Domain\Runner\ResolutionStrategy;
@@ -77,6 +80,7 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\RunRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RunUsageRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\WorkdirRecordMapper;
@@ -90,6 +94,8 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeReposito
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
+use App\Infrastructure\Model\YamlModelCatalog;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunUsageRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
@@ -304,6 +310,32 @@ final class RunnerSweepTest extends TestCase
         self::assertSame('claimed', $runs[0]->state()->value);
     }
 
+    public function testRecordsUsageInTheLedger(): void
+    {
+        $this->executor->usage = new UsageReport([
+            new ModelUsage('free-deepseek', UsagePlan::Free, 1, 1_000_000, 0, 0, 0, 0, 0),
+            new ModelUsage('glm-5.3-flash', UsagePlan::Paid, 1, 0, 1_000_000, 500_000, 0, 0, 1_500_000),
+        ]);
+        $this->attachPending();
+        $this->sweep();
+
+        $rows = $this->entityManager->getConnection()->fetchAllAssociative(
+            'SELECT model_id, plan, provider_model, input_tokens, output_tokens, reasoning_tokens,
+                    actual_cost_micros, charged_cost_micros
+             FROM run_usage
+             ORDER BY provider_model',
+        );
+        self::assertCount(2, $rows);
+        self::assertSame('ens26.1-flash', $rows[0]['model_id']);
+        self::assertSame('free', $rows[0]['plan']);
+        self::assertSame('free-deepseek', $rows[0]['provider_model']);
+        self::assertSame(1_000_000, $rows[0]['input_tokens']);
+        self::assertSame(300_000, $rows[0]['charged_cost_micros']);
+        self::assertSame('paid', $rows[1]['plan']);
+        self::assertSame(1_500_000, $rows[1]['output_tokens'] + $rows[1]['reasoning_tokens']);
+        self::assertSame(1_500_000, $rows[1]['charged_cost_micros']);
+    }
+
     public function testSucceededRunAdvancesTheIssueThroughTheAgentTransition(): void
     {
         $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
@@ -464,6 +496,8 @@ final class RunnerSweepTest extends TestCase
                 $this->roleRepository,
             ),
             new ReadAgentOutcome(),
+            (new YamlModelCatalog(dirname(__DIR__, 3) . '/config/models.yaml'))->load(),
+            new DoctrineRunUsageRepository($this->entityManager, new RunUsageRecordMapper()),
         ))->execute();
     }
 
@@ -1050,6 +1084,8 @@ final class RecordedExecutor implements AgentExecutor
 
     public ?string $failure = null;
 
+    public ?UsageReport $usage = null;
+
     /** @var list<string> */
     public array $comments = [];
 
@@ -1076,7 +1112,7 @@ final class RecordedExecutor implements AgentExecutor
             file_put_contents($context->descriptionPath(), (string) json_encode(['body' => $this->description]));
         }
 
-        return Outcome::succeeded('changes pushed');
+        return Outcome::succeeded('changes pushed', $this->usage);
     }
 }
 
