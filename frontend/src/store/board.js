@@ -192,6 +192,8 @@ const state = reactive({
   roles: [],
   profiles: [],
   agents: [],
+  models: [],
+  defaultModel: '',
   experiences: [],
   sources: [],
   secrets: [],

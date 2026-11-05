@@ -36,6 +36,7 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionReposit
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceSecretRepository;
+use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\OpenWardenExecutor;
@@ -74,6 +75,10 @@ $pullRequests = new GitHubPullRequests(
     (string) (getenv('GITHUB_API_URL') ?: 'https://api.github.com'),
 );
 
+$modelsPath = getenv('ENSEMBLE_MODELS_FILE');
+$modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__) . '/config/models.yaml' : $modelsPath;
+$catalog = (new YamlModelCatalog($modelsPath))->load();
+
 (new BackfillIssueWorkdirs($issues, $workdirs))->execute();
 
 (new ExecuteSweep(
@@ -85,7 +90,7 @@ $pullRequests = new GitHubPullRequests(
     $vcs,
     $runs,
     new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: (getenv('HOME') . '/.local/share/ensemble/workdirs'))),
-    new OpenWardenExecutor(),
+    new OpenWardenExecutor($catalog),
     new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
     new AdvanceIssue(
         $issues,

@@ -9,6 +9,7 @@ use App\Domain\Security\PlainPassword;
 use App\Domain\Tenancy\Login;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
+use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
@@ -20,10 +21,14 @@ use App\Infrastructure\Persistence\Doctrine\Mapper\WorkspaceRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineMembershipRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUserRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkspaceRepository;
+use Doctrine\DBAL\ArrayParameterType;
 
 require __DIR__ . '/../vendor/autoload.php';
 
 $entityManager = DoctrineEntityManagerFactory::fromEnvironment()->createWithSchema();
+$modelsPath = getenv('ENSEMBLE_MODELS_FILE');
+$modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__) . '/config/models.yaml' : $modelsPath;
+$catalog = (new YamlModelCatalog($modelsPath))->load();
 $login = getenv('BOOTSTRAP_ADMIN_LOGIN') ?: 'admin';
 $password = getenv('BOOTSTRAP_ADMIN_PASSWORD') ?: 'admin1234';
 $workspaceName = getenv('BOOTSTRAP_WORKSPACE_NAME') ?: 'Default';
@@ -47,7 +52,16 @@ $backfilled = (new BackfillIssueWorkdirs(
     new DoctrineWorkdirRepository($entityManager, new WorkdirRecordMapper()),
 ))->execute();
 
+$modelsBackfilled = $entityManager->getConnection()->executeStatement(
+    'UPDATE agents SET model = :default WHERE model = :empty OR model NOT IN (:ids)',
+    ['default' => $catalog->defaultId()->value(), 'empty' => '', 'ids' => $catalog->ids()],
+    ['ids' => ArrayParameterType::STRING],
+);
+
 echo "install ok\n";
 if ($backfilled > 0) {
     echo "workdirs backfilled: $backfilled\n";
+}
+if ($modelsBackfilled > 0) {
+    echo "agent models backfilled: $modelsBackfilled\n";
 }

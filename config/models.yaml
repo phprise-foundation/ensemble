@@ -1,0 +1,62 @@
+default: ens26.1-flash
+
+models:
+  ens26.1-lite:
+    name: Ensemble 26.1 Lite
+    price_per_million:
+      cached_input_tokens: 0.01
+      input_tokens: 0.15
+      output_tokens: 0.50
+    internal:
+      model: siliconflow/Qwen/Qwen3-Coder-30B-A3B-Instruct
+      fallback_model: deepseek/deepseek-flash#none
+      subagent: free-tier/deepseek-flash#none
+      fallback_subagent: deepseek/deepseek-flash#none
+
+  ens26.1-flash:
+    name: Ensemble 26.1 Flash
+    price_per_million:
+      cached_input_tokens: 0.02
+      input_tokens: 0.30
+      output_tokens: 1.00
+    internal:
+      model: siliconflow/zai-org/GLM-5.3-Flash#low
+      fallback_model: deepseek/deepseek-flash#none
+      subagent: free-tier/deepseek-flash#none
+      fallback_subagent: deepseek/deepseek-flash#none
+
+  ens26.1-plus:
+    name: Ensemble 26.1 Plus
+    price_per_million:
+      cached_input_tokens: 0.03
+      input_tokens: 0.45
+      output_tokens: 1.50
+    internal:
+      model: siliconflow/zai-org/GLM-5.3-Flash
+      fallback_model: deepseek/deepseek-flash
+      subagent: free-tier/deepseek-flash#none
+      fallback_subagent: deepseek/deepseek-flash#none
+
+  ens26.1-pro:
+    name: Ensemble 26.1 Pro
+    price_per_million:
+      cached_input_tokens: 0.04
+      input_tokens: 0.60
+      output_tokens: 2.00
+    internal:
+      model: siliconflow/zai-org/GLM-5.3-Flash#high
+      fallback_model: deepseek/deepseek-flash#high
+      subagent: free-tier/deepseek-flash#none
+      fallback_subagent: deepseek/deepseek-flash#none
+
+  ens26.1-max:
+    name: Ensemble 26.1 Max
+    price_per_million:
+      cached_input_tokens: 0.05
+      input_tokens: 0.75
+      output_tokens: 2.50
+    internal:
+      model: siliconflow/zai-org/GLM-5.3-Flash#max
+      fallback_model: deepseek/deepseek-flash#max
+      subagent: free-tier/deepseek-flash#none
+      fallback_subagent: deepseek/deepseek-flash#none

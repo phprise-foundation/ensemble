@@ -14,13 +14,15 @@ const route = useRoute()
 const agents = computed(() => boardStore.agentsOf(route.params.teamId))
 const roles = computed(() => boardStore.rolesOf(route.params.teamId))
 const profiles = computed(() => boardStore.profilesOf(route.params.teamId))
+const models = computed(() => boardStore.state.models || [])
+const defaultModel = computed(() => boardStore.state.defaultModel || '')
 
 const editing = ref(false)
 const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR' }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value }
   error.value = ''
   editing.value = true
 }
@@ -35,6 +37,11 @@ function openEdit(agent) {
 function toggleRole(roleId) {
   const current = draft.value.roleIds || []
   draft.value.roleIds = current.includes(roleId) ? current.filter((id) => id !== roleId) : [...current, roleId]
+}
+
+function modelName(agent) {
+  const model = models.value.find((item) => item.id === agent.modelId)
+  return model?.name || agent.modelId || 'Default model'
 }
 
 function roleNames(agent) {
@@ -120,6 +127,7 @@ onMounted(() => {
           <strong>{{ agent.name }}</strong>
           <div class="muted small">{{ roleNames(agent) }}</div>
           <div class="muted small">{{ boardStore.profile(agent.profileId)?.name || 'No profile' }}</div>
+          <div class="muted small">{{ modelName(agent) }}</div>
           <MarkdownText class="muted small" :text="agent.whoAmI" />
           <div class="agent-actions">
             <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(agent)"><AppIcon name="edit" size="14" /></button>
@@ -169,6 +177,15 @@ onMounted(() => {
             <select v-model="draft.profileId">
               <option v-for="profile in profiles" :key="profile.id" :value="profile.id">{{ profile.name }}</option>
             </select>
+          </label>
+          <label class="field">
+            <span>Model</span>
+            <select v-model="draft.modelId">
+              <option v-for="model in models" :key="model.id" :value="model.id">
+                {{ model.name }} (input ${{ model.pricePerMillion.inputTokens }}/M · output ${{ model.pricePerMillion.outputTokens }}/M)
+              </option>
+            </select>
+            <small class="muted">USD per million tokens; reasoning is billed as output. The provider model is internal.</small>
           </label>
           <label class="field">
             <span>Language</span>
