@@ -214,6 +214,13 @@ final readonly class ExecuteSweep
             return;
         }
 
+        $limit = $this->limitReason($agent, $now);
+        if ($limit !== null) {
+            $this->finishRequested($run, $limit, $now);
+
+            return;
+        }
+
         $workdir = $this->workdirFor($issue);
         if ($workdir === null) {
             $this->finishRequested($run, 'the issue has no workdir', $now);
@@ -272,6 +279,13 @@ final readonly class ExecuteSweep
                 }
                 $attempt = $latest->attempt() + 1;
             }
+        }
+
+        $limit = $this->limitReason($agent, $now);
+        if ($limit !== null) {
+            $this->skip($workspaceId, $agent, $issue, $limit, $latest, $now);
+
+            return;
         }
 
         $workdir = $this->workdirFor($issue);
@@ -388,6 +402,7 @@ final readonly class ExecuteSweep
             $this->allowedOutcomes($capabilities),
             $commentPath,
             $descriptionPath,
+            $this->remainingBudget($agent, $now),
         );
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt, $context);
         $this->recordUsage($run, $agent, $outcome);
@@ -469,6 +484,55 @@ final readonly class ExecuteSweep
         if (! $outcome->ok && $attempt >= self::MAX_ATTEMPTS) {
             $this->report->failed($issue, 'run failed after ' . $attempt . ' attempts', $outcome->message);
         }
+    }
+
+    private function limitReason(Agent $agent, DateTimeImmutable $now): ?string
+    {
+        if ($agent->dailyBudgetMicros() > 0) {
+            $spent = $this->usageLedger->chargedSince($agent->id(), $now->setTime(0, 0));
+            if ($spent >= $agent->dailyBudgetMicros()) {
+                return sprintf(
+                    'daily budget reached ($%s of $%s)',
+                    $this->usd($spent),
+                    $this->usd($agent->dailyBudgetMicros()),
+                );
+            }
+        }
+        if ($agent->requestsPerMinute() <= 0 && $agent->tokensPerMinute() <= 0) {
+            return null;
+        }
+        $usage = $this->usageLedger->usageSince($agent->id(), $now->modify('-1 minute'));
+        if ($agent->requestsPerMinute() > 0 && $usage->requests() >= $agent->requestsPerMinute()) {
+            return sprintf(
+                'request rate reached (%d requests in the last minute, limit %d)',
+                $usage->requests(),
+                $agent->requestsPerMinute(),
+            );
+        }
+        if ($agent->tokensPerMinute() > 0 && $usage->tokens() >= $agent->tokensPerMinute()) {
+            return sprintf(
+                'token rate reached (%d tokens in the last minute, limit %d)',
+                $usage->tokens(),
+                $agent->tokensPerMinute(),
+            );
+        }
+
+        return null;
+    }
+
+    private function remainingBudget(Agent $agent, DateTimeImmutable $now): ?int
+    {
+        if ($agent->dailyBudgetMicros() <= 0) {
+            return null;
+        }
+        $spent = $this->usageLedger->chargedSince($agent->id(), $now->setTime(0, 0));
+
+        return max(0, $agent->dailyBudgetMicros() - $spent);
+    }
+
+    private function usd(int $micros): string
+    {
+        return number_format($micros / 1_000_000, 6, '.', '');
     }
 
     private function recordUsage(Run $run, Agent $agent, Outcome $outcome): void

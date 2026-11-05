@@ -22,7 +22,7 @@ const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value, dailyBudgetUsd: 0, requestsPerMinute: 0, tokensPerMinute: 0 }
   error.value = ''
   editing.value = true
 }
@@ -42,6 +42,14 @@ function toggleRole(roleId) {
 function modelName(agent) {
   const model = models.value.find((item) => item.id === agent.modelId)
   return model?.name || agent.modelId || 'Default model'
+}
+
+function limitsLabel(agent) {
+  const parts = []
+  if (Number(agent.dailyBudgetUsd) > 0) parts.push(`$${Number(agent.dailyBudgetUsd).toFixed(2)}/day`)
+  if (Number(agent.requestsPerMinute) > 0) parts.push(`${agent.requestsPerMinute} RPM`)
+  if (Number(agent.tokensPerMinute) > 0) parts.push(`${agent.tokensPerMinute} TPM`)
+  return parts.join(' · ')
 }
 
 function roleNames(agent) {
@@ -128,6 +136,7 @@ onMounted(() => {
           <div class="muted small">{{ roleNames(agent) }}</div>
           <div class="muted small">{{ boardStore.profile(agent.profileId)?.name || 'No profile' }}</div>
           <div class="muted small">{{ modelName(agent) }}</div>
+          <div v-if="limitsLabel(agent)" class="muted small">{{ limitsLabel(agent) }}</div>
           <MarkdownText class="muted small" :text="agent.whoAmI" />
           <div class="agent-actions">
             <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(agent)"><AppIcon name="edit" size="14" /></button>
@@ -186,6 +195,19 @@ onMounted(() => {
               </option>
             </select>
             <small class="muted">USD per million tokens; reasoning is billed as output. The provider model is internal.</small>
+          </label>
+          <label class="field">
+            <span>Daily budget (USD)</span>
+            <input v-model.number="draft.dailyBudgetUsd" type="number" min="0" step="0.01" placeholder="0 = unlimited" />
+            <small class="muted">Charged cost per day; the agent is skipped at the limit and the run gets the remaining budget.</small>
+          </label>
+          <label class="field">
+            <span>Requests per minute</span>
+            <input v-model.number="draft.requestsPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" />
+          </label>
+          <label class="field">
+            <span>Tokens per minute</span>
+            <input v-model.number="draft.tokensPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" />
           </label>
           <label class="field">
             <span>Language</span>

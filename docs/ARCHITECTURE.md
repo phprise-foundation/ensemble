@@ -501,3 +501,11 @@ report filters by workspace/agent/model/period (and by user membership) and
 groups by workspace, agent, model and plan; the admin report totals actual
 cost, charged cost and margin overall, per plan, per workspace and per model.
 
+Agents also carry `dailyBudgetMicros`, `requestsPerMinute` and
+`tokensPerMinute` (0 = unlimited). Before each run, `ExecuteSweep` sums the
+charged cost since midnight and the requests/tokens of the last minute from
+`run_usage`; reaching the daily budget or a rate creates a visible `skipped`
+run (the same reason is deduplicated). Below the budget, the remaining USD is
+sent to open-warden as `--budget`, so a single run cannot overshoot the daily
+limit.
+

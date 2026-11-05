@@ -28,11 +28,18 @@
   por usuário via membresia) e `bin/report-admin` (geral, por plano, workspace e
   modelo, com real × cobrado × margem).
 - Dockerfile: `OPEN_WARDEN_VERSION=v0.7.2` e `config/` copiado para a imagem.
-- Bar: **203 PHPUnit / 1266 assertions**, Psalm level 1; frontend unit
-  **270/270**, build verde. Contratos/E2E não foram reexecutados nesta branch.
+- **Fase C (branch `feat/fase-c-limits`):** o agente ganhou `dailyBudgetUsd`,
+  `requestsPerMinute` e `tokensPerMinute` (0 = ilimitado), com validação na API
+  e campos no formulário. O sweep consulta o `run_usage` antes de cada run:
+  orçamento diário pelo **custo cobrado** (skip visível ao atingir; abaixo
+  disso o run recebe `--budget` com o restante), RPM/TPM pela janela de 1
+  minuto (skip com motivo). O seed E2E passou a usar `modelId`.
+- Bar: **208 PHPUnit / 1291 assertions**, Psalm level 1; frontend unit
+  **270/270**, build verde. Contratos/E2E não foram reexecutados localmente
+  nesta branch; o CI roda a suíte completa.
 
-**Pendente da Fase B:** validar os preços da tabela contra o custo real em
-produção e acompanhar o backfill dos agentes legados no deploy.
+**Pendente:** validar os preços da tabela contra o custo real em produção e
+acompanhar o backfill dos agentes legados no deploy.
 
 ## P4 status — last updated 2026-10-25
 

@@ -51,6 +51,9 @@ final readonly class CreateAgent
         ?int $interval,
         bool $active,
         ?string $language = null,
+        int $dailyBudgetMicros = 0,
+        int $requestsPerMinute = 0,
+        int $tokensPerMinute = 0,
     ): Agent {
         $this->guard->assertManager($actor, $workspaceId);
         $this->teams->find($workspaceId, $teamId) ?? throw NotFoundException::team();
@@ -74,6 +77,9 @@ final readonly class CreateAgent
             $interval === null ? new LoopInterval(300) : new LoopInterval($interval),
             $active,
             language: $language ?? 'pt-BR',
+            dailyBudgetMicros: $dailyBudgetMicros,
+            requestsPerMinute: $requestsPerMinute,
+            tokensPerMinute: $tokensPerMinute,
         );
         $this->agents->add($agent);
 

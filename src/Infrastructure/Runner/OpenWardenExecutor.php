@@ -60,7 +60,7 @@ final readonly class OpenWardenExecutor implements AgentExecutor
         $root = dirname(__DIR__, 3);
         $path = $root . '/bin/agent:' . $root . '/bin:' . (string) getenv('PATH');
         $pipe = proc_open(
-            $this->command($internal, $workdirPath, $promptFile, $reportFile),
+            $this->command($internal, $workdirPath, $promptFile, $reportFile, $context->remainingBudgetMicros()),
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
             $workdirPath,
@@ -97,8 +97,13 @@ final readonly class OpenWardenExecutor implements AgentExecutor
     /**
      * @return list<string>
      */
-    private function command(InternalModel $internal, string $workdirPath, string $promptFile, string $reportFile): array
-    {
+    private function command(
+        InternalModel $internal,
+        string $workdirPath,
+        string $promptFile,
+        string $reportFile,
+        ?int $remainingBudgetMicros,
+    ): array {
         $command = [
             'open-warden',
             'run',
@@ -113,6 +118,10 @@ final readonly class OpenWardenExecutor implements AgentExecutor
             '--report-file',
             $reportFile,
         ];
+        if ($remainingBudgetMicros !== null && $remainingBudgetMicros > 0) {
+            $command[] = '--budget';
+            $command[] = number_format($remainingBudgetMicros / 1_000_000, 6, '.', '');
+        }
         foreach ([
             '--fallback' => $internal->fallback(),
             '--subagents-model' => $internal->subagent(),

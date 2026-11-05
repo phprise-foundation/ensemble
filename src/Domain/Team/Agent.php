@@ -25,6 +25,12 @@ final class Agent
 
     private ?DateTimeImmutable $updatedAt;
 
+    private int $dailyBudgetMicros;
+
+    private int $requestsPerMinute;
+
+    private int $tokensPerMinute;
+
     public function __construct(
         private readonly AgentId $id,
         private readonly WorkspaceId $workspaceId,
@@ -44,6 +50,9 @@ final class Agent
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
         string $language = 'pt-BR',
+        int $dailyBudgetMicros = 0,
+        int $requestsPerMinute = 0,
+        int $tokensPerMinute = 0,
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->whoAmI = new StringObject($this->validWhoAmI($whoAmI));
@@ -52,6 +61,9 @@ final class Agent
         $this->language = new Language($language);
         $this->age = $this->validAge($age);
         $this->updatedAt = $updatedAt;
+        $this->dailyBudgetMicros = $this->validLimit($dailyBudgetMicros, 'dailyBudgetUsd', 1_000_000_000_000);
+        $this->requestsPerMinute = $this->validLimit($requestsPerMinute, 'requestsPerMinute', 1_000_000_000);
+        $this->tokensPerMinute = $this->validLimit($tokensPerMinute, 'tokensPerMinute', 1_000_000_000);
     }
 
     public function id(): AgentId
@@ -134,6 +146,21 @@ final class Agent
         return $this->active;
     }
 
+    public function dailyBudgetMicros(): int
+    {
+        return $this->dailyBudgetMicros;
+    }
+
+    public function requestsPerMinute(): int
+    {
+        return $this->requestsPerMinute;
+    }
+
+    public function tokensPerMinute(): int
+    {
+        return $this->tokensPerMinute;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt ?? new DateTimeImmutable();
@@ -194,6 +221,13 @@ final class Agent
         $this->active = $active;
     }
 
+    public function changeLimits(int $dailyBudgetMicros, int $requestsPerMinute, int $tokensPerMinute): void
+    {
+        $this->dailyBudgetMicros = $this->validLimit($dailyBudgetMicros, 'dailyBudgetUsd', 1_000_000_000_000);
+        $this->requestsPerMinute = $this->validLimit($requestsPerMinute, 'requestsPerMinute', 1_000_000_000);
+        $this->tokensPerMinute = $this->validLimit($tokensPerMinute, 'tokensPerMinute', 1_000_000_000);
+    }
+
     public function touch(DateTimeImmutable $at): void
     {
         $this->updatedAt = $at;
@@ -225,6 +259,15 @@ final class Agent
         }
 
         return $model;
+    }
+
+    private function validLimit(int $value, string $field, int $maximum): int
+    {
+        if ($value < 0 || $value > $maximum) {
+            throw new ValidationException($field, sprintf('%s must be between 0 and %d.', $field, $maximum));
+        }
+
+        return $value;
     }
 
     private function validAge(?int $age): ?int

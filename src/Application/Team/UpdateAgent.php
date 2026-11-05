@@ -55,6 +55,9 @@ final readonly class UpdateAgent
         ?int $interval,
         ?bool $active,
         ?string $language = null,
+        ?int $dailyBudgetMicros = null,
+        ?int $requestsPerMinute = null,
+        ?int $tokensPerMinute = null,
     ): Agent {
         $this->guard->assertManager($actor, $workspaceId);
         $agent = $this->agents->find($workspaceId, $id) ?? throw NotFoundException::agent();
@@ -98,6 +101,13 @@ final readonly class UpdateAgent
         }
         if ($language !== null) {
             $agent->changeLanguage($language);
+        }
+        if ($dailyBudgetMicros !== null || $requestsPerMinute !== null || $tokensPerMinute !== null) {
+            $agent->changeLimits(
+                $dailyBudgetMicros ?? $agent->dailyBudgetMicros(),
+                $requestsPerMinute ?? $agent->requestsPerMinute(),
+                $tokensPerMinute ?? $agent->tokensPerMinute(),
+            );
         }
 
         $agent->touch(new DateTimeImmutable());
