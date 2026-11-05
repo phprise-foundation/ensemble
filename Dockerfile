@@ -11,7 +11,7 @@ COPY frontend/ ./
 RUN npm run build
 
 FROM golang:1.27 AS warden
-ARG OPEN_WARDEN_VERSION=v0.7.0
+ARG OPEN_WARDEN_VERSION=v0.7.2
 RUN CGO_ENABLED=0 go install -trimpath \
     github.com/esdras-schonevald/open-warden/cmd/open-warden@${OPEN_WARDEN_VERSION}
 
@@ -38,6 +38,7 @@ COPY apache.conf /etc/apache2/sites-available/000-default.conf
 WORKDIR /var/www/html
 COPY --from=vendor /app/vendor/ vendor/
 COPY src/ src/
+COPY config/ config/
 COPY public/ public/
 COPY --from=frontend /public/app/ public/app/
 COPY bin/ bin/

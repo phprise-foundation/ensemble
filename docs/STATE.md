@@ -1,5 +1,39 @@
 # STATE
 
+## Fase B — catálogo de modelos, `modelId` e ledger de consumo (2026-11-05)
+
+**Branch `feat/fase-b-models` (ainda não mesclada).**
+
+- `config/models.yaml`: cinco modelos `ens26.1-lite|flash|plus|pro|max` com
+  preço em USD por milhão (`cached_input_tokens`, `input_tokens`,
+  `output_tokens`) e bloco `internal` (modelo principal, fallback, subagent e
+  fallback do subagent). O default é `ens26.1-flash`; o bloco `internal` nunca
+  sai na API.
+- `ModelCatalog` em `Domain/Model` + `YamlModelCatalog` em
+  `Infrastructure/Model` (`symfony/yaml`): carregado no boot, valida default,
+  preços e refs. `GET /api/models` e o snapshot do board expõem `default` e
+  `models` (id, nome, preços).
+- O agente guarda apenas `modelId`, validado contra o catálogo (default
+  `ens26.1-flash`); `bin/install` faz backfill de vazios/legados. A tela de
+  agentes tem select com preço por milhão e mostra o modelo no card.
+- Runner: resolve `modelId` → `internal` e envia `-m`, `--fallback`,
+  `--subagents-model`, `--subagents-fallback`, `--economy balanced` e
+  `--report-file`. O subagent usa `free-tier/deepseek-flash#none`; o fallback
+  pago usa `deepseek/deepseek-flash#none` (ou a variante do modelo).
+- Ledger `run_usage`: uma linha por run × modelo provedor com plano free/paid,
+  tokens (input/output/reasoning/cache read/cache write), custo real (report do
+  warden) e custo cobrado pela nossa tabela. Reasoning é cobrado como output,
+  cache write como input e cache read pelo preço de cache.
+- Relatórios CLI: `bin/report-user` (workspace/agente/modelo/período e filtro
+  por usuário via membresia) e `bin/report-admin` (geral, por plano, workspace e
+  modelo, com real × cobrado × margem).
+- Dockerfile: `OPEN_WARDEN_VERSION=v0.7.2` e `config/` copiado para a imagem.
+- Bar: **203 PHPUnit / 1266 assertions**, Psalm level 1; frontend unit
+  **270/270**, build verde. Contratos/E2E não foram reexecutados nesta branch.
+
+**Pendente da Fase B:** validar os preços da tabela contra o custo real em
+produção e acompanhar o backfill dos agentes legados no deploy.
+
 ## P4 status — last updated 2026-10-25
 
 **Merged into `main`:** P4-1 (#192, #194), P4-2 (#195), P4-3 (#196).

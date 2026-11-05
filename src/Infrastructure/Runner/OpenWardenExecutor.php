@@ -9,6 +9,7 @@ use App\Domain\Model\ModelCatalog;
 use App\Domain\Runner\AgentExecutor;
 use App\Domain\Runner\AgentRunContext;
 use App\Domain\Runner\Outcome;
+use App\Domain\Runner\UsageReport;
 use App\Domain\Team\Agent;
 use Override;
 
@@ -43,22 +44,23 @@ final readonly class OpenWardenExecutor implements AgentExecutor
         $internal = $this->catalog->resolve($agent->model())->internal();
         $result = $this->run($internal, $workdirPath, $prompt, $context);
         if ($result['exit'] === 0) {
-            return Outcome::succeeded($this->trim($result['output']));
+            return Outcome::succeeded($this->trim($result['output']), $result['usage']);
         }
 
-        return Outcome::failed('open-warden failed: ' . $this->trim($result['output']));
+        return Outcome::failed('open-warden failed: ' . $this->trim($result['output']), $result['usage']);
     }
 
     /**
-     * @return array{exit: int, output: string}
+     * @return array{exit: int, output: string, usage: ?UsageReport}
      */
     private function run(InternalModel $internal, string $workdirPath, string $prompt, AgentRunContext $context): array
     {
         $promptFile = $this->writePrompt($workdirPath, $prompt);
+        $reportFile = (string) tempnam(sys_get_temp_dir(), 'ensemble-report-');
         $root = dirname(__DIR__, 3);
         $path = $root . '/bin/agent:' . $root . '/bin:' . (string) getenv('PATH');
         $pipe = proc_open(
-            $this->command($internal, $workdirPath, $promptFile),
+            $this->command($internal, $workdirPath, $promptFile, $reportFile),
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
             $pipes,
             $workdirPath,
@@ -67,7 +69,7 @@ final readonly class OpenWardenExecutor implements AgentExecutor
         if ($pipe === false) {
             unlink($promptFile);
 
-            return ['exit' => 127, 'output' => 'proc_open failed'];
+            return ['exit' => 127, 'output' => 'proc_open failed', 'usage' => null];
         }
 
         $stdout = stream_get_contents($pipes[1]);
@@ -86,14 +88,16 @@ final readonly class OpenWardenExecutor implements AgentExecutor
         $exit = proc_get_status($pipe)['exitcode'] ?? 1;
         proc_close($pipe);
         unlink($promptFile);
+        $usage = (new UsageReportParser())->parse($reportFile);
+        @unlink($reportFile);
 
-        return ['exit' => $exit, 'output' => $output];
+        return ['exit' => $exit, 'output' => $output, 'usage' => $usage];
     }
 
     /**
      * @return list<string>
      */
-    private function command(InternalModel $internal, string $workdirPath, string $promptFile): array
+    private function command(InternalModel $internal, string $workdirPath, string $promptFile, string $reportFile): array
     {
         $command = [
             'open-warden',
@@ -106,6 +110,8 @@ final readonly class OpenWardenExecutor implements AgentExecutor
             $workdirPath,
             '--prompt-file',
             $promptFile,
+            '--report-file',
+            $reportFile,
         ];
         foreach ([
             '--fallback' => $internal->fallback(),

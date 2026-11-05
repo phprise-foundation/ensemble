@@ -8,6 +8,7 @@ use App\Domain\Contract\Kanban\IssueRepository;
 use App\Domain\Contract\Kanban\StatusRepository;
 use App\Domain\Contract\Kanban\WorkdirRepository;
 use App\Domain\Contract\Runner\RunRepository;
+use App\Domain\Contract\Runner\RunUsageRepository;
 use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Contract\Team\RoleRepository;
 use App\Domain\Contract\Tenancy\WorkspaceRepository;
@@ -23,10 +24,13 @@ use App\Domain\Runner\AgentOutcome;
 use App\Domain\Runner\AgentOutcomeType;
 use App\Domain\Runner\AgentRunContext;
 use App\Domain\Runner\CommitMessage;
+use App\Domain\Model\ModelCatalog;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
+use App\Domain\Runner\RunUsage;
+use App\Domain\Runner\RunUsageId;
 use App\Domain\Runner\WorkdirPaths;
 use App\Domain\Runner\WorkdirVcs;
 use App\Domain\Team\Agent;
@@ -60,6 +64,8 @@ final readonly class ExecuteSweep
         private RoleRepository $roles,
         private ReportStage $report,
         private ReadAgentOutcome $outcomes,
+        private ModelCatalog $catalog,
+        private RunUsageRepository $usageLedger,
     ) {
     }
 
@@ -384,6 +390,7 @@ final readonly class ExecuteSweep
             $descriptionPath,
         );
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt, $context);
+        $this->recordUsage($run, $agent, $outcome);
 
         $description = (new ReadAgentDescription())->execute($descriptionPath);
         if ($description !== null && $capabilities->interactive()) {
@@ -461,6 +468,34 @@ final readonly class ExecuteSweep
 
         if (! $outcome->ok && $attempt >= self::MAX_ATTEMPTS) {
             $this->report->failed($issue, 'run failed after ' . $attempt . ' attempts', $outcome->message);
+        }
+    }
+
+    private function recordUsage(Run $run, Agent $agent, Outcome $outcome): void
+    {
+        $report = $outcome->usage;
+        if ($report === null) {
+            return;
+        }
+        $definition = $this->catalog->resolve($agent->model());
+        foreach ($report->entries() as $entry) {
+            $charged = $definition->price()->costMicros(
+                $entry->inputTokens() + $entry->cacheWriteTokens(),
+                $entry->outputTokens(),
+                $entry->cacheReadTokens(),
+                $entry->reasoningTokens(),
+            );
+            $this->usageLedger->record(new RunUsage(
+                RunUsageId::generate(),
+                $run->id(),
+                $run->workspaceId(),
+                $run->agentId(),
+                $run->issueId(),
+                $definition->id(),
+                $entry,
+                $charged,
+                new DateTimeImmutable(),
+            ));
         }
     }
 
