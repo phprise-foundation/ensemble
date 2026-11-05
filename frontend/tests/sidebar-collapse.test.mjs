@@ -8,6 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const css = readFileSync(join(here, '..', 'src', 'styles', 'main.scss'), 'utf8')
 const appVue = readFileSync(join(here, '..', 'src', 'App.vue'), 'utf8')
 const sidebarVue = readFileSync(join(here, '..', 'src', 'components', 'AppSidebar.vue'), 'utf8')
+const panelsStore = readFileSync(join(here, '..', 'src', 'store', 'uiPanels.js'), 'utf8')
 
 test('sidebar collapse CSS and classes', () => {
   assert.match(css, /\.sidebar\.collapsed/, 'a classe .sidebar.collapsed deve estar definida')
@@ -42,9 +43,10 @@ test('collapsed state hides leaf labels, leaving only icons', () => {
   assert.match(css, /\.sidebar\.collapsed\s+\.leaf\s+span/, 'os rotulos das folhas devem ser ocultados no estado colapsado')
 })
 
-test('collapse state is deterministic and not persisted in Fase 1', () => {
-  assert.match(appVue, /const\s+sidebarCollapsed\s*=\s*ref\s*\(\s*false\s*\)/, 'estado padrao ao carregar eh expandido')
-  assert.doesNotMatch(appVue, /localStorage/, 'Fase 1 nao persiste preferencia no localStorage')
+test('collapse state comes from the persisted panel preferences', () => {
+  assert.match(panelsStore, /sidebarCollapsed: true/, 'o padrao de fabrica e o rail colapsado')
+  assert.match(appVue, /const\s+sidebarCollapsed\s*=\s*ref\(\s*initialPanels\.sidebarCollapsed\s*\)/, 'o estado inicial vem da preferencia persistida')
+  assert.match(appVue, /savePanels/, 'a escolha do usuario e persistida')
   assert.match(appVue, /sidebarCollapsed\s*=\s*!sidebarCollapsed/, 'clique do toggle alterna o estado')
   assert.match(appVue, /sidebarCollapsed\.value\s*=\s*!sidebarCollapsed\.value/, 'atalho de teclado alterna o mesmo estado')
 })

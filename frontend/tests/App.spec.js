@@ -85,6 +85,7 @@ function isInert(element) {
 }
 
 async function mountApp(mobile = true) {
+  localStorage.clear()
   setupMatchMedia(mobile)
   const wrapper = mount(App, {
     global: {
@@ -145,6 +146,7 @@ const CopilotStub = {
 }
 
 function mountAppWithSidebarStub() {
+  localStorage.clear()
   setupMatchMedia(false)
   return mount(App, {
     global: {
@@ -178,15 +180,15 @@ describe('App sidebar collapse toggle', () => {
     const toggle = wrapper.find('.sidebar-toggle')
     expect(toggle.exists()).toBe(true)
     expect(toggle.attributes('aria-label')).toBe('Toggle sidebar')
-    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
-
-    await toggle.trigger('click')
     expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
-    expect(toggle.attributes('aria-expanded')).toBe('false')
 
     await toggle.trigger('click')
     expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
     expect(toggle.attributes('aria-expanded')).toBe('true')
+
+    await toggle.trigger('click')
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
     wrapper.unmount()
   })
 
@@ -197,11 +199,11 @@ describe('App sidebar collapse toggle', () => {
     const control = pressShortcut({ ctrlKey: true })
     await nextTick()
     expect(control.defaultPrevented).toBe(true)
-    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
 
     pressShortcut({ metaKey: true })
     await nextTick()
-    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
     wrapper.unmount()
   })
 
@@ -222,7 +224,7 @@ describe('App copilot panel toggle', () => {
     document.documentElement.style.setProperty('--breakpoint-sidebar', '100px')
   })
 
-  it('renders the panel open on desktop and toggles it from the top button', async () => {
+  it('renders the panel closed on desktop and toggles it from the top button', async () => {
     const wrapper = mountAppWithSidebarStub()
     await nextTick()
 
@@ -230,15 +232,15 @@ describe('App copilot panel toggle', () => {
     expect(toggle.exists()).toBe(true)
     expect(toggle.attributes('aria-label')).toBe('Toggle copilot')
     expect(toggle.attributes('aria-controls')).toBe('app-copilot')
-    expect(toggle.attributes('aria-expanded')).toBe('true')
-    expect(wrapper.find('#app-copilot').exists()).toBe(true)
-
-    await toggle.trigger('click')
     expect(toggle.attributes('aria-expanded')).toBe('false')
     expect(wrapper.find('#app-copilot').exists()).toBe(false)
 
     await toggle.trigger('click')
+    expect(toggle.attributes('aria-expanded')).toBe('true')
     expect(wrapper.find('#app-copilot').exists()).toBe(true)
+
+    await toggle.trigger('click')
+    expect(wrapper.find('#app-copilot').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -249,12 +251,12 @@ describe('App copilot panel toggle', () => {
     const control = pressShortcut({ ctrlKey: true, altKey: true })
     await nextTick()
     expect(control.defaultPrevented).toBe(true)
-    expect(wrapper.find('#app-copilot').exists()).toBe(false)
-    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+    expect(wrapper.find('#app-copilot').exists()).toBe(true)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
 
     pressShortcut({ metaKey: true, altKey: true })
     await nextTick()
-    expect(wrapper.find('#app-copilot').exists()).toBe(true)
+    expect(wrapper.find('#app-copilot').exists()).toBe(false)
     wrapper.unmount()
   })
 
@@ -264,8 +266,8 @@ describe('App copilot panel toggle', () => {
 
     pressShortcut({ ctrlKey: true })
     await nextTick()
-    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(true)
-    expect(wrapper.find('#app-copilot').exists()).toBe(true)
+    expect(wrapper.findComponent(SidebarStub).props('collapsed')).toBe(false)
+    expect(wrapper.find('#app-copilot').exists()).toBe(false)
     wrapper.unmount()
   })
 

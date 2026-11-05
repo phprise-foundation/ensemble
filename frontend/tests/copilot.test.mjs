@@ -9,6 +9,7 @@ const copilotVue = readFileSync(join(here, '..', 'src', 'components', 'AppCopilo
 const appVue = readFileSync(join(here, '..', 'src', 'App.vue'), 'utf8')
 const css = readFileSync(join(here, '..', 'src', 'styles', 'main.scss'), 'utf8')
 const iconsVue = readFileSync(join(here, '..', 'src', 'components', 'AppIcon.vue'), 'utf8')
+const panelsStore = readFileSync(join(here, '..', 'src', 'store', 'uiPanels.js'), 'utf8')
 
 const shortcutHandler = () => {
   const match = appVue.match(/function\s+handleKeyboardShortcut\s*\(event\)\s*\{([\s\S]*?)\n\}/)
@@ -22,10 +23,14 @@ test('AppCopilot.vue nao acopla rede, armazenamento nem icone', () => {
   assert.doesNotMatch(copilotVue, /AppIcon/)
 })
 
-test('App.vue nasce expandido e sem persistencia', () => {
-  assert.match(appVue, /const copilotOpen = ref\(true\)/)
-  assert.doesNotMatch(appVue, /localStorage/)
+test('App.vue nasce com os paineis fechados e persiste a escolha', () => {
+  assert.match(appVue, /loadPanels/)
+  assert.match(appVue, /ref\(initialPanels\.copilotOpen\)/)
+  assert.match(appVue, /savePanels/)
   assert.match(appVue, /<AppCopilot v-if="!isMobile && copilotOpen" \/>/)
+  assert.match(panelsStore, /sidebarCollapsed: true/)
+  assert.match(panelsStore, /copilotOpen: false/)
+  assert.match(panelsStore, /consoleOpen: false/)
 })
 
 test('App.vue monta o painel como irmao de .content', () => {

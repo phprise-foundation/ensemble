@@ -82,6 +82,7 @@ function setupMatchMedia(matches) {
 }
 
 async function mountApp(isMobile = false) {
+  localStorage.clear()
   setupMatchMedia(isMobile)
   document.documentElement.style.setProperty('--breakpoint-sidebar', '100px')
   const wrapper = mount(App, {
@@ -116,6 +117,7 @@ function heightOf(wrapper) {
 }
 
 function mountConsoleInApp() {
+  localStorage.clear()
   setupMatchMedia(false)
   return mount(App, {
     global: {

@@ -109,6 +109,7 @@ const SidebarStub = {
 }
 
 async function mountApp(mobile) {
+  localStorage.clear()
   setupMatchMedia(mobile)
   const wrapper = mount(App, {
     global: {
@@ -165,9 +166,9 @@ describe('Ordem dos controles do topbar', () => {
     const wrapper = await mountApp(false)
 
     const sidebar = wrapper.find('[data-topbar-slot="grid-left"]')
-    expect(sidebar.attributes('aria-expanded')).toBe('true')
-    await sidebar.trigger('click')
     expect(sidebar.attributes('aria-expanded')).toBe('false')
+    await sidebar.trigger('click')
+    expect(sidebar.attributes('aria-expanded')).toBe('true')
 
     const consoleToggle = wrapper.find('[data-topbar-slot="grid-bottom"]')
     expect(consoleToggle.attributes('aria-expanded')).toBe('false')
@@ -176,6 +177,10 @@ describe('Ordem dos controles do topbar', () => {
     expect(consoleToggle.attributes('aria-expanded')).toBe('true')
 
     const copilot = wrapper.find('[data-topbar-slot="grid-right"]')
+    expect(copilot.attributes('aria-expanded')).toBe('false')
+    await copilot.trigger('click')
+    expect(wrapper.find('#app-copilot').exists()).toBe(true)
+    expect(copilot.attributes('aria-expanded')).toBe('true')
     await copilot.trigger('click')
     expect(wrapper.find('#app-copilot').exists()).toBe(false)
     expect(copilot.attributes('aria-expanded')).toBe('false')

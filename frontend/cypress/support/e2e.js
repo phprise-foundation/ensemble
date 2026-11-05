@@ -54,7 +54,19 @@ Cypress.Commands.add('meRequest', (method, body) => {
 // redirect leaves Cypress waiting for a load event that never arrives, so
 // every page visit goes straight to the base path.
 Cypress.Commands.add('visitApp', (path = '') => {
-  return cy.visit(`/app/${String(path).replace(/^\/+/, '')}`)
+  return cy.visit(`/app/${String(path).replace(/^\/+/, '')}`, {
+    onBeforeLoad(win) {
+      // The shell remembers the user's panel choices; the navigation specs
+      // rely on the expanded sidebar leaf labels. The product default (every
+      // panel closed) is covered by the unit tests.
+      win.localStorage.setItem('ensemble.ui.panels', JSON.stringify({
+        sidebarCollapsed: false,
+        copilotOpen: false,
+        consoleOpen: false,
+        consoleHeight: 240,
+      }))
+    },
+  })
 })
 
 Cypress.Commands.add('visitRoles', function () {

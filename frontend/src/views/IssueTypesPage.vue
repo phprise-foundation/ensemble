@@ -5,6 +5,7 @@ import { boardStore } from '../store/board.js'
 import { dialog } from '../store/dialog.js'
 import { toast } from '../store/toast.js'
 import AppIcon from './../components/AppIcon.vue'
+import ToggleSwitch from './../components/ToggleSwitch.vue'
 
 const route = useRoute()
 const types = computed(() => boardStore.issueTypesOf(route.params.workflowId))
@@ -162,17 +163,22 @@ async function remove(type) {
       <button class="button" @click="openCreate"><AppIcon name="plus" size="16" /> New type</button>
     </header>
 
-    <div class="table">
-      <div class="table-row head"><span>Name</span><span>Level</span><span>Fields</span><span class="actions">Actions</span></div>
-      <div class="table-row" v-for="type in types" :key="type.id">
-        <span>{{ type.name }}</span>
-        <span>{{ type.level }}</span>
-        <span>{{ (type.fields ?? []).length }}</span>
-        <span class="actions">
-          <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(type)"><AppIcon name="edit" size="14" /></button>
-          <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(type)"><AppIcon name="delete" size="14" /></button>
-        </span>
-      </div>
+    <div class="crud-cards">
+      <article v-for="type in types" :key="type.id" class="crud-card table-row">
+        <header class="crud-card-head">
+          <h3 class="crud-card-title">{{ type.name }}</h3>
+          <span class="actions">
+            <button class="icon-btn" title="Edit" aria-label="Edit" @click="openEdit(type)"><AppIcon name="edit" size="14" /></button>
+            <button class="icon-btn" title="Delete" aria-label="Delete" @click="remove(type)"><AppIcon name="delete" size="14" /></button>
+          </span>
+        </header>
+        <dl class="crud-card-meta">
+          <dt>Level</dt>
+          <dd>{{ type.level }}</dd>
+          <dt>Fields</dt>
+          <dd>{{ (type.fields ?? []).length }}</dd>
+        </dl>
+      </article>
     </div>
 
     <div v-if="editing" class="modal" @click.self="editing = false">
@@ -196,7 +202,10 @@ async function remove(type) {
               <option v-for="type in FIELD_TYPES" :key="type.value" :value="type.value">{{ type.label }}</option>
             </select>
             <input v-if="hasOptions(field.type)" type="text" placeholder="a, b, c" v-model="field.options" />
-            <label class="inline"><input type="checkbox" v-model="field.required" /> required</label>
+            <span class="toggle-field">
+              <span>required</span>
+              <ToggleSwitch v-model="field.required" label="required" />
+            </span>
             <button class="icon-btn" title="Remove" :disabled="field.system" aria-label="Remove" @click="removeField(index)">
               <AppIcon name="delete" size="14" />
             </button>
