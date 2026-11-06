@@ -35,11 +35,14 @@ use App\Domain\Kanban\Workdir;
 use App\Domain\Kanban\WorkdirId;
 use App\Domain\Kanban\WorkdirKind;
 use App\Domain\Kanban\WorkdirState;
+use App\Domain\Model\ModelId;
 use App\Domain\Runner\ModelUsage;
 use App\Domain\Runner\Outcome;
 use App\Domain\Runner\Run;
 use App\Domain\Runner\RunId;
 use App\Domain\Runner\RunState;
+use App\Domain\Runner\RunUsage;
+use App\Domain\Runner\RunUsageId;
 use App\Domain\Runner\UsagePlan;
 use App\Domain\Runner\UsageReport;
 use App\Domain\Runner\WorkdirPaths;
@@ -336,6 +339,72 @@ final class RunnerSweepTest extends TestCase
         self::assertSame(1_500_000, $rows[1]['charged_cost_micros']);
     }
 
+    public function testSkipsWhenTheDailyBudgetIsReached(): void
+    {
+        $this->agent->changeLimits(1_000_000, 0, 0);
+        $this->agents->update($this->agent);
+        $this->recordUsage(1_000_000);
+        $this->attachPending();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('skipped', $runs[0]->state()->value);
+        self::assertSame('daily budget reached ($1.000000 of $1.000000)', $runs[0]->reason());
+        self::assertSame([], $this->executor->executions);
+    }
+
+    public function testTheDailyBudgetResetsEveryDay(): void
+    {
+        $this->agent->changeLimits(1_000_000, 0, 0);
+        $this->agents->update($this->agent);
+        $this->recordUsage(1_000_000, 1, 0, new DateTimeImmutable('-1 day'));
+        $this->attachPending();
+        $this->sweep();
+
+        self::assertCount(1, $this->executor->executions);
+        self::assertSame(1_000_000, $this->executor->contexts[0]->remainingBudgetMicros());
+    }
+
+    public function testPassesTheRemainingBudgetToTheExecutor(): void
+    {
+        $this->agent->changeLimits(1_000_000, 0, 0);
+        $this->agents->update($this->agent);
+        $this->recordUsage(250_000);
+        $this->attachPending();
+        $this->sweep();
+
+        self::assertCount(1, $this->executor->contexts);
+        self::assertSame(750_000, $this->executor->contexts[0]->remainingBudgetMicros());
+    }
+
+    public function testSkipsWhenTheRequestRateIsReached(): void
+    {
+        $this->agent->changeLimits(0, 5, 0);
+        $this->agents->update($this->agent);
+        $this->recordUsage(0, 5);
+        $this->attachPending();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('skipped', $runs[0]->state()->value);
+        self::assertSame('request rate reached (5 requests in the last minute, limit 5)', $runs[0]->reason());
+        self::assertSame([], $this->executor->executions);
+    }
+
+    public function testSkipsWhenTheTokenRateIsReached(): void
+    {
+        $this->agent->changeLimits(0, 0, 1_000);
+        $this->agents->update($this->agent);
+        $this->recordUsage(0, 1, 1_000);
+        $this->attachPending();
+        $this->sweep();
+
+        $runs = $this->runs->forIssue($this->workspaceId, $this->issue->id());
+        self::assertSame('skipped', $runs[0]->state()->value);
+        self::assertSame('token rate reached (1000 tokens in the last minute, limit 1000)', $runs[0]->reason());
+        self::assertSame([], $this->executor->executions);
+    }
+
     public function testSucceededRunAdvancesTheIssueThroughTheAgentTransition(): void
     {
         $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
@@ -465,6 +534,25 @@ final class RunnerSweepTest extends TestCase
         self::assertCount(1, $runs);
         self::assertSame('failed', $runs[0]->state()->value);
         self::assertSame('the run lost its lease too many times', $runs[0]->reason());
+    }
+
+    private function recordUsage(
+        int $chargedMicros,
+        int $requests = 1,
+        int $inputTokens = 0,
+        ?DateTimeImmutable $at = null,
+    ): void {
+        (new DoctrineRunUsageRepository($this->entityManager, new RunUsageRecordMapper()))->record(new RunUsage(
+            RunUsageId::generate(),
+            RunId::generate(),
+            $this->workspaceId,
+            $this->agent->id(),
+            $this->issue->id(),
+            new ModelId('ens26.1-flash'),
+            new ModelUsage('glm-5.3-flash', UsagePlan::Paid, $requests, $inputTokens, 0, 0, 0, 0, 0),
+            $chargedMicros,
+            $at ?? new DateTimeImmutable(),
+        ));
     }
 
     private function sweep(): void

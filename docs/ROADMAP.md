@@ -151,9 +151,9 @@ once v1 is live):
   `config/models.yaml` com preços e refs internas, `modelId` no agente, runner
   com refs `free-tier`/fallback/economy, ledger `run_usage` e relatórios CLI
   (`bin/report-user`, `bin/report-admin`).
-- **Fase C — limites por agente:** orçamento diário pelo custo cobrado
-  (skip ao atingir, `-b` com o restante), RPM/TPM por agente em janela de 1
-  minuto e campos no formulário do agente.
+- **Fase C — limites por agente (branch `feat/fase-c-limits`):** orçamento
+  diário pelo custo cobrado (skip ao atingir, `--budget` com o restante),
+  RPM/TPM por agente em janela de 1 minuto e campos no formulário do agente.
 - **Fase D — identidade visual:** logos `bluesmoke` como padrão nos dois temas,
   login white no escuro e black no claro, favicon `bluesmoke`.
 - RFC-2026-0001 communication (channels/messages/notifications) — the board

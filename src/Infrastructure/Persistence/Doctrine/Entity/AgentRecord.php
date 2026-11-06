@@ -53,6 +53,15 @@ final class AgentRecord
     #[ORM\Column(name: 'loop_interval', type: 'integer')]
     private int $loopInterval;
 
+    #[ORM\Column(name: 'daily_budget_micros', type: 'integer', options: ['default' => 0])]
+    private int $dailyBudgetMicros = 0;
+
+    #[ORM\Column(name: 'requests_per_minute', type: 'integer', options: ['default' => 0])]
+    private int $requestsPerMinute = 0;
+
+    #[ORM\Column(name: 'tokens_per_minute', type: 'integer', options: ['default' => 0])]
+    private int $tokensPerMinute = 0;
+
     #[ORM\Column(type: 'string', length: 16, options: ['default' => 'pt-BR'])]
     private string $language = 'pt-BR';
 
@@ -83,6 +92,9 @@ final class AgentRecord
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
         string $language = 'pt-BR',
+        int $dailyBudgetMicros = 0,
+        int $requestsPerMinute = 0,
+        int $tokensPerMinute = 0,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -99,6 +111,9 @@ final class AgentRecord
         $this->loopInterval = $loopInterval;
         $this->active = $active;
         $this->language = $language;
+        $this->dailyBudgetMicros = $dailyBudgetMicros;
+        $this->requestsPerMinute = $requestsPerMinute;
+        $this->tokensPerMinute = $tokensPerMinute;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -188,6 +203,21 @@ final class AgentRecord
         return $this->language;
     }
 
+    public function dailyBudgetMicros(): int
+    {
+        return $this->dailyBudgetMicros;
+    }
+
+    public function requestsPerMinute(): int
+    {
+        return $this->requestsPerMinute;
+    }
+
+    public function tokensPerMinute(): int
+    {
+        return $this->tokensPerMinute;
+    }
+
     public function sync(
         string $teamId,
         string $name,
@@ -203,6 +233,9 @@ final class AgentRecord
         bool $active,
         DateTimeImmutable $updatedAt,
         string $language,
+        int $dailyBudgetMicros = 0,
+        int $requestsPerMinute = 0,
+        int $tokensPerMinute = 0,
     ): void {
         $this->teamId = $teamId;
         $this->name = $name;
@@ -217,6 +250,9 @@ final class AgentRecord
         $this->loopInterval = $loopInterval;
         $this->active = $active;
         $this->language = $language;
+        $this->dailyBudgetMicros = $dailyBudgetMicros;
+        $this->requestsPerMinute = $requestsPerMinute;
+        $this->tokensPerMinute = $tokensPerMinute;
         $this->updatedAt = $updatedAt;
     }
 }

@@ -46,6 +46,9 @@ final class AgentRecordMapper
             $record->createdAt(),
             $record->updatedAt(),
             $record->language(),
+            $record->dailyBudgetMicros(),
+            $record->requestsPerMinute(),
+            $record->tokensPerMinute(),
         );
 
         $agent->touch($record->updatedAt());
@@ -73,6 +76,9 @@ final class AgentRecordMapper
             $agent->createdAt(),
             $agent->updatedAt(),
             $agent->language(),
+            $agent->dailyBudgetMicros(),
+            $agent->requestsPerMinute(),
+            $agent->tokensPerMinute(),
         );
     }
 
@@ -93,6 +99,9 @@ final class AgentRecordMapper
             $agent->active(),
             $agent->updatedAt(),
             $agent->language(),
+            $agent->dailyBudgetMicros(),
+            $agent->requestsPerMinute(),
+            $agent->tokensPerMinute(),
         );
     }
 }

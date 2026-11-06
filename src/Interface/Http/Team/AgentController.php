@@ -78,6 +78,9 @@ final readonly class AgentController
             $interval,
             JsonBody::boolean($body, 'active') ?? true,
             JsonBody::string($body, 'language'),
+            $this->budgetMicros($body) ?? 0,
+            JsonBody::integer($body, 'requestsPerMinute') ?? 0,
+            JsonBody::integer($body, 'tokensPerMinute') ?? 0,
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)], 201);
@@ -125,6 +128,9 @@ final readonly class AgentController
             $interval,
             JsonBody::boolean($body, 'active'),
             JsonBody::string($body, 'language'),
+            $this->budgetMicros($body, null),
+            JsonBody::integer($body, 'requestsPerMinute'),
+            JsonBody::integer($body, 'tokensPerMinute'),
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)]);
@@ -160,6 +166,22 @@ final readonly class AgentController
         } catch (InvalidArgumentException) {
             throw new ValidationException('roleIds', 'Every role id must be a 32-character hexadecimal string.');
         }
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
+     */
+    private function budgetMicros(array $body, ?int $fallback = 0): ?int
+    {
+        if (! array_key_exists('dailyBudgetUsd', $body)) {
+            return $fallback;
+        }
+        $value = $body['dailyBudgetUsd'];
+        if (! is_numeric($value) || (float) $value < 0.0) {
+            throw new ValidationException('dailyBudgetUsd', 'Daily budget must be a non-negative number of USD.');
+        }
+
+        return (int) round((float) $value * 1_000_000.0);
     }
 
     /**
