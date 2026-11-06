@@ -28,6 +28,7 @@ use App\Application\UpdateColumn;
 use App\Application\UpdateItem;
 use App\Infrastructure\Authentication\PasswordAuthenticator;
 use App\Infrastructure\Bootstrap\TenancyBootstrap;
+use App\Interface\Http\Tenancy\TenancyPaths;
 use App\Infrastructure\Chat\CurlHttpTransport;
 use App\Infrastructure\Chat\EchoChatAgent;
 use App\Infrastructure\Chat\HttpChatAgent;
@@ -87,10 +88,7 @@ if ($path === '/api/health') {
     return;
 }
 
-$isTenancy = str_starts_with($path, '/api/auth/')
-    || $path === '/api/me'
-    || str_starts_with($path, '/api/users')
-    || str_starts_with($path, '/api/workspaces');
+$isTenancy = TenancyPaths::matches($path);
 
 if ($isTenancy) {
     $router = (new TenancyBootstrap(DoctrineEntityManagerFactory::fromEnvironment(), $responder))->router();

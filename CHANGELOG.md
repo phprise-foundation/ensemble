@@ -16,6 +16,16 @@ https://github.com/phprise-foundation/ensemble/releases
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
 
+## v0.36.1 — 2026-11-06
+
+### Fixed
+
+- `GET /api/models` respondia `404` em produção porque o `public/index.php`
+  montava o router multi-tenant apenas para `/api/auth/*`, `/api/me`,
+  `/api/users*` e `/api/workspaces*`; a rota caía no router legado. O
+  entrypoint agora usa `TenancyPaths`, coberto por `TenancyPathsTest` e por um
+  E2E que chama o endpoint pelo entrypoint real.
+
 ## v0.36.0 — 2026-11-06
 
 ### Added
