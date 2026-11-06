@@ -16,6 +16,16 @@ https://github.com/phprise-foundation/ensemble/releases
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
 
+## v0.36.3 — 2026-11-06
+
+### Fixed
+
+- O container em produção não reiniciava após o deploy: o `wrangler deploy`
+  atualizava a imagem, mas a instância já em execução continuava servindo o
+  build anterior (por isso o favicon do `v0.36.2` ainda caía em 404). O Worker
+  agora guarda a release no Durable Object e destrói/reinicia o container
+  quando ela muda; o workflow passa o nome da tag como `ENSEMBLE_RELEASE`.
+
 ## v0.36.2 — 2026-11-06
 
 ### Fixed

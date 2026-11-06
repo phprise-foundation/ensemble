@@ -21,6 +21,7 @@ const CONTAINER_ENV_KEYS = [
 
 interface Env {
   ENSEMBLE: DurableObjectNamespace<EnsembleContainer>;
+  ENSEMBLE_RELEASE?: string;
   DATABASE_URL?: string;
   APP_ENCRYPTION_KEY?: string;
   APP_ENV?: string;
@@ -111,6 +112,20 @@ export class EnsembleContainer extends DurableObject<Env> {
     const container = this.ctx.container;
     if (container === undefined) {
       throw new Error("no container is bound to this durable object");
+    }
+    const release = this.env.ENSEMBLE_RELEASE ?? container.images.base ?? "dev";
+    const active = await this.ctx.storage.get<string>("release");
+    if (active !== release) {
+      if (container.running) {
+        await container.destroy();
+        for (let attempt = 0; attempt < 50 && container.running; attempt += 1) {
+          await scheduler.wait(100);
+        }
+        if (container.running) {
+          throw new Error("the previous container did not stop");
+        }
+      }
+      await this.ctx.storage.put("release", release);
     }
     if (container.running) {
       return;
