@@ -154,8 +154,9 @@ once v1 is live):
 - **Fase C — limites por agente (branch `feat/fase-c-limits`):** orçamento
   diário pelo custo cobrado (skip ao atingir, `--budget` com o restante),
   RPM/TPM por agente em janela de 1 minuto e campos no formulário do agente.
-- **Fase D — identidade visual:** logos `bluesmoke` como padrão nos dois temas,
-  login white no escuro e black no claro, favicon `bluesmoke`.
+- **Fase D — identidade visual (branch `feat/fase-d-branding`):** símbolo
+  `bluesmoke` como padrão nos dois temas, login white no escuro e black no
+  claro, favicon `bluesmoke`.
 - RFC-2026-0001 communication (channels/messages/notifications) — the board
   drives its own development through it.
 - RFC-2026-0002 event-driven orchestration (trigger queue, scheduler,

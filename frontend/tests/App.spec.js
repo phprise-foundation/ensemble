@@ -303,6 +303,7 @@ describe('App session gate', () => {
     expect(wrapper.find('.content').exists()).toBe(false)
     expect(wrapper.find('.session-ended').exists()).toBe(true)
     expect(wrapper.text()).toContain('Sign in to your workspace')
+    expect(wrapper.find('.session-ended-logo').attributes('src')).toContain('ens-logo-white')
     wrapper.unmount()
   })
 
