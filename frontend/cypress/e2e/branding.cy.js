@@ -31,7 +31,10 @@ describe('branding', () => {
     cy.get('.brand-icon .ensemble-logo')
       .should('have.attr', 'src')
       .and('include', 'ens-logo-bluesmoke')
-    cy.get('link[rel="icon"]').should('have.attr', 'href').and('include', 'favicon.svg')
+    cy.get('link[rel="icon"]')
+      .should('have.attr', 'href')
+      .and('match', /\/app\/favicon\.svg$/)
+    cy.request('/app/favicon.svg').its('status').should('eq', 200)
   })
 
   it('uses the white mark on the dark sign-in gate', () => {

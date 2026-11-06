@@ -16,6 +16,17 @@ https://github.com/phprise-foundation/ensemble/releases
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
 
+## v0.36.2 — 2026-11-06
+
+### Fixed
+
+- O favicon era referenciado como `./favicon.svg`; quando o SPA é servido na
+  raiz (`/`), o navegador pedia `/favicon.svg`, que não existia e caía no
+  router legado (`404`). O `index.html` agora usa `%BASE_URL%favicon.svg`
+  (absoluto para `/app/favicon.svg` em produção) e `public/favicon.svg` cobre
+  também a URL raiz, inclusive para HTML em cache. Contrato e E2E cobrem o
+  link.
+
 ## v0.36.1 — 2026-11-06
 
 ### Fixed
