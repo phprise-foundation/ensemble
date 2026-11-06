@@ -16,6 +16,45 @@ https://github.com/phprise-foundation/ensemble/releases
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
 
+## v0.36.0 — 2026-11-06
+
+### Added
+
+- **Catálogo de modelos:** `config/models.yaml` define os cinco modelos
+  `ens26.1-lite|flash|plus|pro|max`, com preços em USD por milhão (cache, input,
+  output) e referências internas de modelo/fallback/subagent. O catálogo é
+  validado no boot, exposto em `GET /api/models` e no snapshot do board sem o
+  bloco `internal`; o agente escolhe um `modelId` (default `ens26.1-flash`).
+- **Cobrança por uso:** o runner envia `--report-file` ao open-warden e grava
+  uma linha por run × modelo provedor em `run_usage` (plano free/paid, tokens,
+  custo real e custo cobrado pela tabela Ensemble). Reasoning é cobrado como
+  output, cache write como input e cache read pelo preço de cache.
+- **Relatórios CLI:** `bin/report-user` (workspace/agente/modelo/período e
+  filtro por usuário) e `bin/report-admin` (real × cobrado × margem, por plano,
+  workspace e modelo).
+- **Limites por agente:** orçamento diário em USD pelo custo cobrado (skip
+  visível ao atingir e `--budget` com o restante) e RPM/TPM em janela de 1
+  minuto; campos no formulário do agente e resumo no card.
+- **Identidade visual:** novo símbolo da marca em `bluesmoke` (padrão nos dois
+  temas), login `white` no tema escuro e `black` no claro, e favicon
+  `bluesmoke`.
+
+### Changed
+
+- O agente passa a expor `modelId` no lugar de `model`/`fallbackModel` livres;
+  `bin/install` faz o backfill de valores vazios ou legados para o modelo
+  padrão.
+- O runner usa as referências internas do catálogo, com subagent
+  `free-tier/deepseek-flash#none`, fallback pago
+  `deepseek/deepseek-flash#none` e `--economy balanced`.
+- `open-warden` pinado em `v0.7.2` na imagem; `config/` passa a ser copiado
+  para o container.
+
+### Testing
+
+- 208 PHPUnit / 1291 assertions, Psalm nível 1, 273 testes de frontend, 97
+  contratos e 135 E2E em 23 specs; CI verde nos PRs #214, #215 e #216.
+
 ## v0.34.5 — 2026-10-22
 
 ### Testing
