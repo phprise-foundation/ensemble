@@ -45,6 +45,7 @@ describe('branding', () => {
   })
 
   it('uses the black mark on the light sign-in gate', () => {
+    cy.viewport(1280, 800)
     cy.visitApp('/')
     cy.get('[data-topbar-slot="theme"]').click()
     cy.get('.profile-trigger').click()
