@@ -238,7 +238,7 @@ watch([sidebarCollapsed, copilotOpen, consoleOpen, consoleHeight], ([collapsed, 
   </div>
   <div class="session-ended" v-else>
     <form class="session-ended-box" @submit.prevent="submitSignIn">
-      <EnsembleLogo variant="full" class="session-ended-logo" />
+      <EnsembleLogo variant="full" :tone="theme.mode === 'dark' ? 'white' : 'black'" class="session-ended-logo" />
       <p class="session-ended-message">Sign in to your workspace</p>
       <input v-model="signInLogin" class="input session-ended-field" aria-label="Login" autocomplete="username" />
       <input v-model="signInPassword" class="input session-ended-field" type="password" aria-label="Password" autocomplete="current-password" />

@@ -32,7 +32,7 @@ Funcionalidade: Semântica de ícones padronizada com Lucide
 
   Cenário: Logo custom como exceção
     Dado o componente AppIcon e o EnsembleLogo
-    Então o glifo "smartboard" e a marca Ensemble são desenhados manualmente
+    Então o glifo "smartboard" é desenhado no AppIcon e a marca vem dos assets "ens-logo-*"
     E nenhum outro nome vira Lucide importado
 
   Cenário: Nome acessível em botão só de ícone
@@ -42,7 +42,7 @@ Funcionalidade: Semântica de ícones padronizada com Lucide
 
   Cenário: SVG de UI
     Dado todos os arquivos .vue de frontend/src
-    Então só AppIcon.vue e EnsembleLogo.vue contêm "<svg"
+    Então só AppIcon.vue e EnsembleLogo.vue desenham o glifo da marca (svg inline ou asset)
     E nenhum outro componente desenha ícone manualmente
 
   Cenário: Guarda do tema

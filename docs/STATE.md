@@ -1,6 +1,6 @@
 # STATE
 
-## Fase B — catálogo de modelos, `modelId` e ledger de consumo (2026-11-05)
+## Fases B, C e D — catálogo, limites e identidade (2026-11-06)
 
 **Branch `feat/fase-b-models` (ainda não mesclada).**
 
@@ -34,8 +34,14 @@
   orçamento diário pelo **custo cobrado** (skip visível ao atingir; abaixo
   disso o run recebe `--budget` com o restante), RPM/TPM pela janela de 1
   minuto (skip com motivo). O seed E2E passou a usar `modelId`.
+- **Fase D (branch `feat/fase-d-branding`):** novo símbolo da marca em
+  `frontend/src/assets/brand` — `bluesmoke` como padrão no app, `white` no tema
+  escuro e `black` no claro na tela de login. `EnsembleLogo` aceita `tone`
+  (`bluesmoke` por padrão, fallback para ele), o favicon passa a ser o
+  `bluesmoke` e o build copia os três SVGs para `public/app/assets`. O menu
+  mantém o nome "Ensemble" ao lado do símbolo.
 - Bar: **208 PHPUnit / 1291 assertions**, Psalm level 1; frontend unit
-  **270/270**, build verde. Contratos/E2E não foram reexecutados localmente
+  **273/273**, build verde. Contratos/E2E não foram reexecutados localmente
   nesta branch; o CI roda a suíte completa.
 
 **Pendente:** validar os preços da tabela contra o custo real em produção e
