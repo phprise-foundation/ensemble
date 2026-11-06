@@ -16,6 +16,16 @@ https://github.com/phprise-foundation/ensemble/releases
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
 
+## v0.36.4 — 2026-11-06
+
+### Fixed
+
+- O Durable Object que mantém o container não é recriado quando só o corpo do
+  Worker muda; a instância antiga continuava servindo a imagem anterior. O
+  Worker agora resolve o DO por release (`ensemble-<tag>`), então cada deploy
+  cria uma instância nova com o código e a imagem atuais, e a anterior é
+  evictada. O workflow continua passando `ENSEMBLE_RELEASE`.
+
 ## v0.36.3 — 2026-11-06
 
 ### Fixed
