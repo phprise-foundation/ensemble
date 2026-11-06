@@ -39,11 +39,15 @@ const iconOnlyButtons = (source) =>
   buttonBodies(source).filter((body) =>
     /^(?:\s*<AppIcon[^>]*\/>\s*)+$/.test(body.slice(body.indexOf('>') + 1)))
 
-test('só AppIcon.vue e o logo da marca contêm svg de UI em frontend/src', () => {
+test('só AppIcon.vue e o logo da marca desenham o glifo da marca', () => {
   const brandLogos = new Set(['components/AppIcon.vue', 'components/EnsembleLogo.vue'])
   for (const file of vueFiles()) {
     if (brandLogos.has(file)) {
-      assert.match(sourceOf(file), /<svg/, `${file} deve desenhar o glifo da marca`)
+      const source = sourceOf(file)
+      assert.ok(
+        /<svg/.test(source) || /assets\/brand\/ens-logo-(?:black|white|bluesmoke)\.svg/.test(source),
+        `${file} deve desenhar ou importar o glifo da marca`,
+      )
       continue
     }
     assert.doesNotMatch(sourceOf(file), /<svg/, `${file} desenha svg manual`)
