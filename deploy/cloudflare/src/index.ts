@@ -185,10 +185,12 @@ export class EnsembleContainer extends DurableObject<Env> {
   }
 }
 
+const instanceName = (env: Env): string => `ensemble-${env.ENSEMBLE_RELEASE ?? "dev"}`;
+
 export default {
   async fetch(request, env) {
     try {
-      return await env.ENSEMBLE.getByName("ensemble").fetch(request);
+      return await env.ENSEMBLE.getByName(instanceName(env)).fetch(request);
     } catch (error) {
       console.error("ensemble worker failed", error);
       return new Response(
@@ -207,7 +209,7 @@ export default {
 
   async scheduled(_event, env) {
     try {
-      await env.ENSEMBLE.getByName("ensemble").fetch(`https://container${HEALTH_PATH}`);
+      await env.ENSEMBLE.getByName(instanceName(env)).fetch(`https://container${HEALTH_PATH}`);
     } catch (error) {
       console.error("ensemble keep-alive failed", error);
     }
