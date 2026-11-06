@@ -45,8 +45,15 @@ describe('branding', () => {
   })
 
   it('uses the black mark on the light sign-in gate', () => {
-    cy.viewport(1280, 800)
-    cy.visitApp('/')
+    cy.request('POST', '/api/auth/login', { login: 'admin', password: 'admin1234' })
+      .its('body.token')
+      .then((token) => {
+        cy.visit('/app/', {
+          onBeforeLoad(win) {
+            win.localStorage.setItem('ensemble.token', token)
+          },
+        })
+      })
     cy.get('[data-topbar-slot="theme"]').click()
     cy.get('.profile-trigger').click()
     cy.contains('.profile-dropdown [role="menuitem"]', 'logout').click()
