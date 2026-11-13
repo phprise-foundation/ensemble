@@ -7,6 +7,7 @@ namespace App\Domain\Contract\Kanban;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\Transition;
+use App\Domain\Kanban\TransitionEndpoint;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
@@ -27,7 +28,7 @@ interface TransitionRepository
 
     public function findExisting(
         WorkflowId $workflowId,
-        StatusId $fromStatusId,
+        TransitionEndpoint $fromStatusId,
         StatusId $toStatusId,
         TransitionActor $actor,
         ?Slug $outcome,

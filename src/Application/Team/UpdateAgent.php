@@ -14,6 +14,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Team\Agent;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\AvatarColor;
+use App\Domain\Team\Gender;
 use App\Domain\Team\LoopInterval;
 use App\Domain\Team\MaritalStatus;
 use App\Domain\Team\Portrait;
@@ -58,6 +59,7 @@ final readonly class UpdateAgent
         ?int $dailyBudgetMicros = null,
         ?int $requestsPerMinute = null,
         ?int $tokensPerMinute = null,
+        ?Gender $gender = null,
     ): Agent {
         $this->guard->assertManager($actor, $workspaceId);
         $agent = $this->agents->find($workspaceId, $id) ?? throw NotFoundException::agent();
@@ -101,6 +103,9 @@ final readonly class UpdateAgent
         }
         if ($language !== null) {
             $agent->changeLanguage($language);
+        }
+        if ($gender !== null) {
+            $agent->changeGender($gender);
         }
         if ($dailyBudgetMicros !== null || $requestsPerMinute !== null || $tokensPerMinute !== null) {
             $agent->changeLimits(

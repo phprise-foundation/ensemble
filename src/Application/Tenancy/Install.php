@@ -34,7 +34,7 @@ final readonly class Install
         PlainPassword $password,
         string $workspaceName,
         WorkspacePrefix $prefix,
-    ): void {
+    ): ?Workspace {
         if (!$this->users->existsAny()) {
             $this->users->add(new User(
                 UserId::generate(),
@@ -48,12 +48,14 @@ final readonly class Install
         }
 
         if ($this->workspaces->existsAny()) {
-            return;
+            return null;
         }
 
         $owner = $this->users->findByLogin($login) ?? ($this->users->all()[0] ?? throw new RuntimeException('No user available to own the workspace.'));
         $workspace = new Workspace(WorkspaceId::generate(), $workspaceName, $prefix);
         $this->workspaces->add($workspace);
         $this->memberships->add(new Membership($workspace->id(), $owner->id(), MembershipRole::Owner));
+
+        return $workspace;
     }
 }

@@ -13,6 +13,7 @@ final class Board
 {
     private StringObject $name;
     private BoardFilters $filters;
+    private StatusIds $backlogStatusIds;
     private ?DateTimeImmutable $updatedAt;
 
     public function __construct(
@@ -24,9 +25,11 @@ final class Board
         BoardFilters $filters = new BoardFilters(),
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
+        StatusIds $backlogStatusIds = new StatusIds(),
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->filters = $filters;
+        $this->backlogStatusIds = $backlogStatusIds;
         $this->updatedAt = $updatedAt;
     }
 
@@ -60,6 +63,11 @@ final class Board
         return $this->filters;
     }
 
+    public function backlogStatusIds(): StatusIds
+    {
+        return $this->backlogStatusIds;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt ?? new DateTimeImmutable();
@@ -78,6 +86,11 @@ final class Board
     public function changeFilters(BoardFilters $filters): void
     {
         $this->filters = $filters;
+    }
+
+    public function changeBacklog(StatusIds $backlogStatusIds): void
+    {
+        $this->backlogStatusIds = $backlogStatusIds;
     }
 
     public function touch(DateTimeImmutable $at): void

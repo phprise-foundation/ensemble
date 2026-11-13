@@ -82,7 +82,12 @@ final readonly class AdvanceIssue
 
         $targets = [];
         foreach ($this->transitions->forWorkflow($issue->workspaceId(), $current->workflowId()) as $transition) {
-            if ($transition->fromStatusId()->value() !== $issue->statusId()->value()) {
+            $from = $transition->fromStatusId();
+            if ($from->isAny()) {
+                if ($current->type() === StatusType::Final) {
+                    continue;
+                }
+            } elseif ($from->value() !== $issue->statusId()->value()) {
                 continue;
             }
 

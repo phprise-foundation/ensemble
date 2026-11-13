@@ -79,11 +79,11 @@ final class SnapshotApiTest extends TestCase
         )));
 
         self::assertSame($this->workspaceId, $snapshot['workspaces'][0]['id']);
-        self::assertSame([$workflowId], array_column($snapshot['workflows'], 'id'));
-        self::assertSame([$issueType['issueType']['id']], array_column($snapshot['issueTypes'], 'id'));
-        self::assertSame([$status['status']['id']], array_column($snapshot['statuses'], 'id'));
-        self::assertSame([$board['board']['id']], array_column($snapshot['boards'], 'id'));
-        self::assertSame([$column['column']['id']], array_column($snapshot['columns'], 'id'));
+        self::assertContains($workflowId, array_column($snapshot['workflows'], 'id'));
+        self::assertContains($issueType['issueType']['id'], array_column($snapshot['issueTypes'], 'id'));
+        self::assertContains($status['status']['id'], array_column($snapshot['statuses'], 'id'));
+        self::assertContains($board['board']['id'], array_column($snapshot['boards'], 'id'));
+        self::assertContains($column['column']['id'], array_column($snapshot['columns'], 'id'));
         self::assertSame([$issue['issue']['key']], array_column($snapshot['issues'], 'key'));
     }
 

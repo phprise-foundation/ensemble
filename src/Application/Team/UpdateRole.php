@@ -34,6 +34,7 @@ final readonly class UpdateRole
         ?bool $test = null,
         ?bool $merge = null,
         ?bool $deploy = null,
+        ?string $instructions = null,
     ): Role {
         $this->guard->assertManager($actor, $workspaceId);
         $role = $this->roles->find($workspaceId, $id) ?? throw NotFoundException::role();
@@ -63,6 +64,9 @@ final readonly class UpdateRole
         }
         if ($deploy !== null) {
             $role->allowDeploy($deploy);
+        }
+        if ($instructions !== null) {
+            $role->instruct($instructions);
         }
         $role->touch(new DateTimeImmutable());
         $this->roles->update($role);

@@ -19,6 +19,7 @@ final class AgentPresenter
             'whoAmI' => $agent->whoAmI(),
             'age' => $agent->age(),
             'maritalStatus' => $agent->maritalStatus()->value,
+            'gender' => $agent->gender()->value,
             'roleIds' => $agent->roleIds()->values(),
             'profileId' => $agent->profileId()?->value(),
             'avatarColor' => $agent->avatarColor()->value(),

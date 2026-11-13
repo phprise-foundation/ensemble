@@ -13,6 +13,7 @@ use App\Application\Team\UpdateAgent;
 use App\Domain\Exception\ValidationException;
 use App\Domain\Model\ModelCatalog;
 use App\Domain\Model\ModelId;
+use App\Domain\Team\Gender;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\ProfileId;
 use App\Domain\Team\RoleIds;
@@ -81,6 +82,7 @@ final readonly class AgentController
             $this->budgetMicros($body) ?? 0,
             JsonBody::integer($body, 'requestsPerMinute') ?? 0,
             JsonBody::integer($body, 'tokensPerMinute') ?? 0,
+            $this->gender($body) ?? Gender::NotInformed,
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)], 201);
@@ -131,6 +133,7 @@ final readonly class AgentController
             $this->budgetMicros($body, null),
             JsonBody::integer($body, 'requestsPerMinute'),
             JsonBody::integer($body, 'tokensPerMinute'),
+            $this->gender($body),
         );
 
         return $this->responder->respond(['agent' => $this->presenter->present($agent)]);
@@ -166,6 +169,19 @@ final readonly class AgentController
         } catch (InvalidArgumentException) {
             throw new ValidationException('roleIds', 'Every role id must be a 32-character hexadecimal string.');
         }
+    }
+
+    /**
+     * @param array<array-key, mixed> $body
+     */
+    private function gender(array $body): ?Gender
+    {
+        $value = JsonBody::string($body, 'gender');
+        if ($value === null) {
+            return null;
+        }
+
+        return Gender::fromString($value);
     }
 
     /**

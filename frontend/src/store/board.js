@@ -263,13 +263,19 @@ export const boardStore = {
     if (fromStatusId === toStatusId) {
       return true
     }
-    return boardTransitions.value.some(
-      (transition) =>
+    const current = boardStore.status(fromStatusId)
+    if (current?.type === 'final') {
+      return false
+    }
+    return boardTransitions.value.some((transition) => {
+      const from = transition.from ?? transition.fromStatusId
+      return (
         (transition.to ?? transition.toStatusId) === toStatusId &&
-        (transition.from ?? transition.fromStatusId ?? '*') === fromStatusId &&
+        (from === '*' || from === fromStatusId) &&
         transition.type !== 'agent' &&
-        transition.actor !== 'agent',
-    )
+        transition.actor !== 'agent'
+      )
+    })
   },
 
   canEnterColumn(fromStatusId, columnId) {

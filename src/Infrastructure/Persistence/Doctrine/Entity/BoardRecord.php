@@ -38,6 +38,10 @@ final class BoardRecord
     #[ORM\Column(name: 'filter_status_ids', type: 'json')]
     private array $filterStatusIds;
 
+    /** @var list<string> */
+    #[ORM\Column(name: 'backlog_status_ids', type: 'json', options: ['default' => '[]'])]
+    private array $backlogStatusIds = [];
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -47,6 +51,7 @@ final class BoardRecord
     /**
      * @param list<string> $filterIssueTypeIds
      * @param list<string> $filterStatusIds
+     * @param list<string> $backlogStatusIds
      */
     public function __construct(
         string $id,
@@ -58,6 +63,7 @@ final class BoardRecord
         array $filterStatusIds,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
+        array $backlogStatusIds = [],
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -66,6 +72,7 @@ final class BoardRecord
         $this->name = $name;
         $this->filterIssueTypeIds = $filterIssueTypeIds;
         $this->filterStatusIds = $filterStatusIds;
+        $this->backlogStatusIds = $backlogStatusIds;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -77,18 +84,27 @@ final class BoardRecord
     public function name(): string { return $this->name; }
     public function filterIssueTypeIds(): array { return $this->filterIssueTypeIds; }
     public function filterStatusIds(): array { return $this->filterStatusIds; }
+    public function backlogStatusIds(): array { return $this->backlogStatusIds; }
     public function createdAt(): DateTimeImmutable { return $this->createdAt; }
     public function updatedAt(): DateTimeImmutable { return $this->updatedAt; }
 
     /**
      * @param list<string> $filterIssueTypeIds
      * @param list<string> $filterStatusIds
+     * @param list<string> $backlogStatusIds
      */
-    public function sync(string $name, array $filterIssueTypeIds, array $filterStatusIds, DateTimeImmutable $updatedAt): void
+    public function sync(
+        string $name,
+        array $filterIssueTypeIds,
+        array $filterStatusIds,
+        DateTimeImmutable $updatedAt,
+        array $backlogStatusIds = [],
+    ): void
     {
         $this->name = $name;
         $this->filterIssueTypeIds = $filterIssueTypeIds;
         $this->filterStatusIds = $filterStatusIds;
+        $this->backlogStatusIds = $backlogStatusIds;
         $this->updatedAt = $updatedAt;
     }
 }

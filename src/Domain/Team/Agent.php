@@ -31,6 +31,8 @@ final class Agent
 
     private int $tokensPerMinute;
 
+    private Gender $gender;
+
     public function __construct(
         private readonly AgentId $id,
         private readonly WorkspaceId $workspaceId,
@@ -53,6 +55,7 @@ final class Agent
         int $dailyBudgetMicros = 0,
         int $requestsPerMinute = 0,
         int $tokensPerMinute = 0,
+        Gender $gender = Gender::NotInformed,
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->whoAmI = new StringObject($this->validWhoAmI($whoAmI));
@@ -64,6 +67,7 @@ final class Agent
         $this->dailyBudgetMicros = $this->validLimit($dailyBudgetMicros, 'dailyBudgetUsd', 1_000_000_000_000);
         $this->requestsPerMinute = $this->validLimit($requestsPerMinute, 'requestsPerMinute', 1_000_000_000);
         $this->tokensPerMinute = $this->validLimit($tokensPerMinute, 'tokensPerMinute', 1_000_000_000);
+        $this->gender = $gender;
     }
 
     public function id(): AgentId
@@ -146,6 +150,11 @@ final class Agent
         return $this->active;
     }
 
+    public function gender(): Gender
+    {
+        return $this->gender;
+    }
+
     public function dailyBudgetMicros(): int
     {
         return $this->dailyBudgetMicros;
@@ -219,6 +228,11 @@ final class Agent
     public function activate(bool $active): void
     {
         $this->active = $active;
+    }
+
+    public function changeGender(Gender $gender): void
+    {
+        $this->gender = $gender;
     }
 
     public function changeLimits(int $dailyBudgetMicros, int $requestsPerMinute, int $tokensPerMinute): void

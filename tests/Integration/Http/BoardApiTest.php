@@ -252,6 +252,23 @@ final class BoardApiTest extends TestCase
         return $data['workflow']['id'];
     }
 
+    public function testStoresBacklogStatusesOnTheBoard(): void
+    {
+        $issueType = $this->createIssueType('Task', 'task');
+        $this->createStatus($issueType, 'Todo', 'initial');
+        $status = $this->createStatus($issueType, 'Backlog', 'transitional');
+        $boardId = $this->createBoard('Main', 'main', [], [], [$status]);
+
+        $detail = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/boards/' . $boardId,
+            [],
+            $this->adminToken,
+        )));
+
+        self::assertSame([$status], $detail['board']['backlogStatusIds']);
+    }
+
     private function createIssueType(string $name, string $key): string
     {
         return $this->createIssueTypeIn($this->workflowId, $name, $key);
@@ -287,7 +304,7 @@ final class BoardApiTest extends TestCase
     }
 
     /** @param list<string> $issueTypeIds @param list<string> $statusIds */
-    private function createBoard(string $name, string $key, array $issueTypeIds = [], array $statusIds = []): string
+    private function createBoard(string $name, string $key, array $issueTypeIds = [], array $statusIds = [], array $backlogStatusIds = []): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
@@ -298,6 +315,7 @@ final class BoardApiTest extends TestCase
                 'key' => $key,
                 'filterIssueTypeIds' => $issueTypeIds,
                 'filterStatusIds' => $statusIds,
+                'backlogStatusIds' => $backlogStatusIds,
             ],
             $this->adminToken,
         )), 201);

@@ -42,6 +42,7 @@ final class AgentApiTest extends TestCase
             'interval' => 120,
             'active' => false,
             'language' => 'en',
+            'gender' => 'female',
             'dailyBudgetUsd' => 5.5,
             'requestsPerMinute' => 30,
             'tokensPerMinute' => 50_000,
@@ -57,6 +58,7 @@ final class AgentApiTest extends TestCase
         self::assertSame(120, $agent['interval']);
         self::assertFalse($agent['active']);
         self::assertSame('en', $agent['language']);
+        self::assertSame('female', $agent['gender']);
         self::assertSame('', $agent['portrait']);
         self::assertSame(5.5, $agent['dailyBudgetUsd']);
         self::assertSame(30, $agent['requestsPerMinute']);
@@ -144,6 +146,15 @@ final class AgentApiTest extends TestCase
         ));
         self::assertSame(422, $badModel->getStatusCode());
         self::assertSame('modelId', $this->app->json($badModel, 422)['field']);
+
+        $badGender = $this->app->handle($this->app->request(
+            'POST',
+            $this->teamAgentPath($team),
+            ['name' => 'Kaio', 'gender' => 'other'],
+            $this->adminToken,
+        ));
+        self::assertSame(422, $badGender->getStatusCode());
+        self::assertSame('gender', $this->app->json($badGender, 422)['field']);
 
         $badBudget = $this->app->handle($this->app->request(
             'POST',

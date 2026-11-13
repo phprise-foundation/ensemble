@@ -9,12 +9,39 @@ https://github.com/phprise-foundation/ensemble/releases
 
 ## Unreleased
 
+### Added
+
+- **Default workspace provisioning:** `config/workspace-defaults.yaml` and
+  `config/portraits/` seed a new workspace with the Shonen Squad team, 7 roles,
+  9 profiles, 9 agents, 3 workflows, 6 issue types, 45 statuses, 45 transitions
+  and 2 boards (Upstream/Downstream) with backlog statuses. A fresh database
+  gets the defaults from `bin/install`; every `POST /api/workspaces` also seeds
+  them. The seed is transactional, existing workspaces are untouched and the
+  E2E harness opts out with `ENSEMBLE_SKIP_WORKSPACE_DEFAULTS=1`.
+- **Role instructions:** optional `Role.instructions` (text) for the full role
+  specification, editable in the UI and included in the agent prompt; the
+  default roles ship with the complete instructions.
+- **Agent gender:** `female`, `male` and `not_informed` (default), exposed by
+  the API and editable in the agents form.
+- **Any transition:** `fromStatusId` accepts `"*"` (or `"any"`) to mean any
+  non-final status, used by `any -> canceled`; the transitions editor offers
+  "Any status".
+- **Board backlog:** `backlogStatusIds` is persisted and exposed by the board
+  API/snapshot (the backlog tab and search arrive in the next phase).
+
 ### Changed
 
+- New workspaces are no longer empty; the bootstrap install seeds the defaults
+  only when it creates the workspace, and the E2E seed skips them.
 - The project is now **Ensemble** (formerly `multi-agent`): the product is a
   team of agents, each with a role, a profile and a stage to own. Repository,
   Composer package, frontend package, Docker image and documentation follow the
   new name; the old GitHub URLs redirect.
+
+### Testing
+
+- 215 PHPUnit / 1353 assertions, Psalm level 1, 273 frontend unit tests and 99
+  contracts; `bin/install` verified against an empty PostgreSQL database.
 
 ## v0.36.4 — 2026-11-06
 

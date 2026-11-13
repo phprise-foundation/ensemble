@@ -13,6 +13,7 @@ use App\Application\Security\ReadCurrentUser;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\TransitionActor;
+use App\Domain\Kanban\TransitionEndpoint;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\WorkspaceId;
@@ -60,7 +61,7 @@ final readonly class TransitionController
             $user,
             $workspaceId,
             $workflowId,
-            new StatusId(JsonBody::string($body, 'fromStatusId') ?? ''),
+            TransitionEndpoint::fromString(JsonBody::string($body, 'fromStatusId') ?? ''),
             new StatusId(JsonBody::string($body, 'toStatusId') ?? ''),
             TransitionActor::fromString(JsonBody::string($body, 'actor') ?? TransitionActor::Both->value),
             $outcome === null || $outcome === '' ? null : new Slug($outcome),

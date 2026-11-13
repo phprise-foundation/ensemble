@@ -1,5 +1,35 @@
 # STATE
 
+## Fase E — defaults de workspace (2026-11-13)
+
+**Branch `feat/workspace-defaults` (ainda não mesclada).**
+
+- `config/workspace-defaults.yaml` define o time **Shonen Squad**, 7 roles com
+  `instructions` completas, 9 profiles (conteúdo em `advanced.instructions`),
+  9 agentes (gênero, idade, estado civil, `whoAmI`, modelo e retrato), 3
+  workflows (epic/story/subtask), 6 issue types, 45 statuses, 45 transições e
+  2 boards (Upstream/Downstream) com `backlog-statuses`.
+- `config/portraits/` guarda os 9 retratos (320×320) e o seeder os converte em
+  data URL no campo `portrait`.
+- Status/transições são definidos por workflow no YAML e **clonados por issue
+  type** pelo seeder; `system` vira `TransitionActor::Agent`.
+- Schema/domínio: `Role.instructions` (text), `Agent.gender`
+  (`female`/`male`/`not_informed`, default `not_informed`),
+  `Board.backlogStatusIds` e `TransitionEndpoint` com `*`/`any` (status não
+  final, exceto o destino; usado por `any -> canceled`).
+- O prompt inclui `Role.instructions` e o conteúdo de `Profile.advanced`.
+- Aplicação: `CreateWorkspace` executa o seed dentro de uma transação;
+  `bin/install` faz o mesmo apenas quando cria o workspace em banco novo.
+  Workspaces existentes não são alterados. O harness E2E passa
+  `ENSEMBLE_SKIP_WORKSPACE_DEFAULTS=1` para manter o seed controlado dos specs.
+- Bar: **215 PHPUnit / 1353 assertions**, Psalm nível 1, frontend **273/273**,
+  contratos **99/99**, build verde. `bin/install` validado em banco vazio:
+  1 team, 7 roles, 9 profiles, 9 agents, 3 workflows, 6 issue types, 45
+  statuses, 45 transitions (6 `any`), 2 boards, 7 columns e 9 retratos.
+- Próximas fases: **E2** — aba de backlog por board + busca workspace-wide
+  ignorando o filtro; **E3** — arquivamento de issues. Nomes de transições
+  (`discover`, `design`, …) ficam no roadmap.
+
 ## Fases B, C e D — catálogo, limites e identidade (2026-11-06)
 
 **Branch `feat/fase-b-models` (ainda não mesclada).**

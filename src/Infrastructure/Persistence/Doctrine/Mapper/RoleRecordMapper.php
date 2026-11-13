@@ -29,6 +29,7 @@ final class RoleRecordMapper
             $record->test(),
             $record->merge(),
             $record->deploy(),
+            $record->instructions(),
         );
     }
 
@@ -49,6 +50,7 @@ final class RoleRecordMapper
             $role->test(),
             $role->merge(),
             $role->deploy(),
+            $role->instructions(),
         );
     }
 
@@ -65,6 +67,7 @@ final class RoleRecordMapper
             $role->test(),
             $role->merge(),
             $role->deploy(),
+            $role->instructions(),
         );
     }
 }

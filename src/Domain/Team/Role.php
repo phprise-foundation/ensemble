@@ -20,6 +20,8 @@ final class Role
     private bool $test;
     private bool $merge;
     private bool $deploy;
+
+    private StringObject $instructions;
     private ?DateTimeImmutable $updatedAt;
 
     public function __construct(
@@ -37,6 +39,7 @@ final class Role
         bool $test = false,
         bool $merge = false,
         bool $deploy = false,
+        string $instructions = '',
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->description = new StringObject($this->validDescription($description));
@@ -47,6 +50,7 @@ final class Role
         $this->test = $test;
         $this->merge = $merge;
         $this->deploy = $deploy;
+        $this->instructions = new StringObject($this->validInstructions($instructions));
         $this->updatedAt = $updatedAt;
     }
 
@@ -110,6 +114,11 @@ final class Role
         return $this->deploy;
     }
 
+    public function instructions(): string
+    {
+        return $this->instructions->getValue();
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt ?? new DateTimeImmutable();
@@ -128,6 +137,11 @@ final class Role
     public function describe(string $description): void
     {
         $this->description = new StringObject($this->validDescription($description));
+    }
+
+    public function instruct(string $instructions): void
+    {
+        $this->instructions = new StringObject($this->validInstructions($instructions));
     }
 
     public function allowUnblock(bool $unblock): void
@@ -175,6 +189,16 @@ final class Role
         $normalized = trim($name);
         if ($normalized === '' || mb_strlen($normalized) > 80) {
             throw new ValidationException('name', 'Role name must have 1 to 80 characters.');
+        }
+
+        return $normalized;
+    }
+
+    private function validInstructions(string $instructions): string
+    {
+        $normalized = trim($instructions);
+        if (mb_strlen($normalized) > 50_000) {
+            throw new ValidationException('instructions', 'Role instructions must have at most 50000 characters.');
         }
 
         return $normalized;

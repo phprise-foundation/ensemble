@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Doctrine\Mapper;
 
 use App\Domain\Team\Agent;
+use App\Domain\Team\Gender;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\AvatarColor;
 use App\Domain\Team\LoopInterval;
@@ -49,6 +50,7 @@ final class AgentRecordMapper
             $record->dailyBudgetMicros(),
             $record->requestsPerMinute(),
             $record->tokensPerMinute(),
+            Gender::fromString($record->gender()),
         );
 
         $agent->touch($record->updatedAt());
@@ -79,6 +81,7 @@ final class AgentRecordMapper
             $agent->dailyBudgetMicros(),
             $agent->requestsPerMinute(),
             $agent->tokensPerMinute(),
+            $agent->gender()->value,
         );
     }
 
@@ -102,6 +105,7 @@ final class AgentRecordMapper
             $agent->dailyBudgetMicros(),
             $agent->requestsPerMinute(),
             $agent->tokensPerMinute(),
+            $agent->gender()->value,
         );
     }
 }
