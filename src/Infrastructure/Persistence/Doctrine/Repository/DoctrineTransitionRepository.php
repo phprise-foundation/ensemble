@@ -8,6 +8,7 @@ use App\Domain\Contract\Kanban\TransitionRepository;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\Transition;
+use App\Domain\Kanban\TransitionEndpoint;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
@@ -96,7 +97,7 @@ final readonly class DoctrineTransitionRepository implements TransitionRepositor
     #[Override]
     public function findExisting(
         WorkflowId $workflowId,
-        StatusId $fromStatusId,
+        TransitionEndpoint $fromStatusId,
         StatusId $toStatusId,
         TransitionActor $actor,
         ?Slug $outcome,

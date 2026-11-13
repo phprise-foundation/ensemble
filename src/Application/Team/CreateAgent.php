@@ -14,6 +14,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Team\Agent;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\AvatarColor;
+use App\Domain\Team\Gender;
 use App\Domain\Team\LoopInterval;
 use App\Domain\Team\MaritalStatus;
 use App\Domain\Team\Portrait;
@@ -54,6 +55,7 @@ final readonly class CreateAgent
         int $dailyBudgetMicros = 0,
         int $requestsPerMinute = 0,
         int $tokensPerMinute = 0,
+        Gender $gender = Gender::NotInformed,
     ): Agent {
         $this->guard->assertManager($actor, $workspaceId);
         $this->teams->find($workspaceId, $teamId) ?? throw NotFoundException::team();
@@ -80,6 +82,7 @@ final readonly class CreateAgent
             dailyBudgetMicros: $dailyBudgetMicros,
             requestsPerMinute: $requestsPerMinute,
             tokensPerMinute: $tokensPerMinute,
+            gender: $gender,
         );
         $this->agents->add($agent);
 

@@ -13,6 +13,7 @@ use App\Domain\Kanban\Board;
 use App\Domain\Kanban\BoardFilters;
 use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\Slug;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\User;
 use App\Domain\Tenancy\WorkspaceId;
@@ -23,6 +24,7 @@ final readonly class CreateBoard
         private WorkflowRepository $workflows,
         private BoardRepository $boards,
         private ValidateBoardFilters $validateFilters,
+        private ValidateColumnStatuses $validateStatuses,
         private WorkspaceGuard $guard,
     ) {
     }
@@ -34,6 +36,7 @@ final readonly class CreateBoard
         Slug $key,
         string $name,
         BoardFilters $filters,
+        StatusIds $backlogStatusIds = new StatusIds(),
     ): Board {
         $this->guard->assertManager($actor, $workspaceId);
         $this->workflows->find($workspaceId, $workflowId) ?? throw NotFoundException::workflow();
@@ -41,8 +44,9 @@ final readonly class CreateBoard
             throw ConflictException::duplicateKey();
         }
         $this->validateFilters->execute($workspaceId, $workflowId, $filters);
+        $this->validateStatuses->execute($workspaceId, $workflowId, $backlogStatusIds);
 
-        $board = new Board(BoardId::generate(), $workspaceId, $workflowId, $key, $name, $filters);
+        $board = new Board(BoardId::generate(), $workspaceId, $workflowId, $key, $name, $filters, backlogStatusIds: $backlogStatusIds);
         $this->boards->add($board);
 
         return $board;

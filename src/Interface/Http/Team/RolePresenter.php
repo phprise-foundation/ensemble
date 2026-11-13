@@ -24,6 +24,7 @@ final class RolePresenter
             'test' => $role->test(),
             'merge' => $role->merge(),
             'deploy' => $role->deploy(),
+            'instructions' => $role->instructions(),
             'createdAt' => $role->createdAt()->format(DATE_ATOM),
             'updatedAt' => $role->updatedAt()->format(DATE_ATOM),
         ];

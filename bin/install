@@ -10,6 +10,28 @@ use App\Domain\Tenancy\Login;
 use App\Domain\Tenancy\WorkspacePrefix;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Model\YamlModelCatalog;
+use App\Infrastructure\Persistence\Doctrine\DoctrineUnitOfWork;
+use App\Infrastructure\Workspace\YamlWorkspaceDefaults;
+use App\Infrastructure\Persistence\Doctrine\Mapper\AgentRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\BoardRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\IssueTypeRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\ProfileRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RoleRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\StatusRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\TeamRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\TransitionRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Mapper\WorkflowRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineAgentRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardColumnRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineBoardRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueTypeRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineProfileRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkflowRepository;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineIssueRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineWorkdirRepository;
@@ -29,6 +51,33 @@ $entityManager = DoctrineEntityManagerFactory::fromEnvironment()->createWithSche
 $modelsPath = getenv('ENSEMBLE_MODELS_FILE');
 $modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__) . '/config/models.yaml' : $modelsPath;
 $catalog = (new YamlModelCatalog($modelsPath))->load();
+$defaultsPath = getenv('ENSEMBLE_DEFAULTS_FILE');
+$defaultsPath = $defaultsPath === false || $defaultsPath === '' ? dirname(__DIR__) . '/config/workspace-defaults.yaml' : $defaultsPath;
+$teams = new DoctrineTeamRepository($entityManager, new TeamRecordMapper());
+$roles = new DoctrineRoleRepository($entityManager, new RoleRecordMapper());
+$profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
+$agents = new DoctrineAgentRepository($entityManager, new AgentRecordMapper());
+$workflows = new DoctrineWorkflowRepository($entityManager, new WorkflowRecordMapper());
+$issueTypes = new DoctrineIssueTypeRepository($entityManager, new IssueTypeRecordMapper());
+$statuses = new DoctrineStatusRepository($entityManager, new StatusRecordMapper());
+$transitions = new DoctrineTransitionRepository($entityManager, new TransitionRecordMapper());
+$boards = new DoctrineBoardRepository($entityManager, new BoardRecordMapper());
+$boardColumns = new DoctrineBoardColumnRepository($entityManager, new BoardColumnRecordMapper());
+$workspaceDefaults = new YamlWorkspaceDefaults(
+    $defaultsPath,
+    $catalog,
+    $teams,
+    $roles,
+    $profiles,
+    $agents,
+    $workflows,
+    $issueTypes,
+    $statuses,
+    $transitions,
+    $boards,
+    $boardColumns,
+);
+$unitOfWork = new DoctrineUnitOfWork($entityManager);
 $login = getenv('BOOTSTRAP_ADMIN_LOGIN') ?: 'admin';
 $password = getenv('BOOTSTRAP_ADMIN_PASSWORD') ?: 'admin1234';
 $workspaceName = getenv('BOOTSTRAP_WORKSPACE_NAME') ?: 'Default';
@@ -40,12 +89,17 @@ $install = new Install(
     new DoctrineMembershipRepository($entityManager, new MembershipRecordMapper()),
     new ArgonPasswordHasher(),
 );
-$install->execute(
-    new Login($login),
-    new PlainPassword($password),
-    $workspaceName,
-    new WorkspacePrefix($prefix),
-);
+$unitOfWork->run(function () use ($install, $workspaceDefaults, $login, $password, $workspaceName, $prefix): void {
+    $workspace = $install->execute(
+        new Login($login),
+        new PlainPassword($password),
+        $workspaceName,
+        new WorkspacePrefix($prefix),
+    );
+    if ($workspace !== null && getenv('ENSEMBLE_SKIP_WORKSPACE_DEFAULTS') !== '1') {
+        $workspaceDefaults->seed($workspace->id());
+    }
+});
 
 $backfilled = (new BackfillIssueWorkdirs(
     new DoctrineIssueRepository($entityManager, new IssueRecordMapper()),

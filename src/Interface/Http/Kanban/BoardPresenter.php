@@ -23,6 +23,7 @@ final class BoardPresenter
                 'issueTypeIds' => array_map(static fn(IssueTypeId $id): string => $id->value(), $board->filters()->issueTypeIds()),
                 'statusIds' => array_map(static fn(StatusId $id): string => $id->value(), $board->filters()->statusIds()),
             ],
+            'backlogStatusIds' => array_map(static fn(StatusId $id): string => $id->value(), $board->backlogStatusIds()->all()),
             'createdAt' => $board->createdAt()->format(DATE_ATOM),
             'updatedAt' => $board->updatedAt()->format(DATE_ATOM),
         ];

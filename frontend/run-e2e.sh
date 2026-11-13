@@ -61,7 +61,7 @@ elif command -v psql >/dev/null 2>&1; then
   psql "$ROOT_URL" -c "CREATE DATABASE $DB_NAME" >/dev/null 2>&1 || true
 fi
 
-if ! (cd "$ROOT" && TEST_DATABASE_URL="$E2E_DATABASE_URL" php bin/e2e-reset >/dev/null && DATABASE_URL="$E2E_DATABASE_URL" BOOTSTRAP_WORKSPACE_NAME=Default BOOTSTRAP_WORKSPACE_PREFIX=KANB php bin/install >/dev/null); then
+if ! (cd "$ROOT" && TEST_DATABASE_URL="$E2E_DATABASE_URL" php bin/e2e-reset >/dev/null && DATABASE_URL="$E2E_DATABASE_URL" BOOTSTRAP_WORKSPACE_NAME=Default BOOTSTRAP_WORKSPACE_PREFIX=KANB ENSEMBLE_SKIP_WORKSPACE_DEFAULTS=1 php bin/install >/dev/null); then
   echo "could not bootstrap the ephemeral database: $E2E_DATABASE_URL" >&2
   exit 1
 fi

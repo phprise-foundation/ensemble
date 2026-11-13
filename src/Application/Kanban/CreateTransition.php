@@ -14,6 +14,7 @@ use App\Domain\Exception\ValidationException;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\Transition;
+use App\Domain\Kanban\TransitionEndpoint;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\TransitionId;
 use App\Domain\Kanban\WorkflowId;
@@ -34,23 +35,29 @@ final readonly class CreateTransition
         User $actor,
         WorkspaceId $workspaceId,
         WorkflowId $workflowId,
-        StatusId $fromStatusId,
+        TransitionEndpoint $fromStatusId,
         StatusId $toStatusId,
         TransitionActor $transitionActor,
         ?Slug $outcome,
     ): Transition {
         $this->guard->assertManager($actor, $workspaceId);
         $this->workflows->find($workspaceId, $workflowId) ?? throw NotFoundException::workflow();
-        $from = $this->statuses->find($workspaceId, $fromStatusId) ?? throw NotFoundException::status();
         $to = $this->statuses->find($workspaceId, $toStatusId) ?? throw NotFoundException::status();
-        if ($from->workflowId()->value() !== $workflowId->value() || $to->workflowId()->value() !== $workflowId->value()) {
+        if ($to->workflowId()->value() !== $workflowId->value()) {
             throw NotFoundException::status();
         }
-        if ($from->issueTypeId()->value() !== $to->issueTypeId()->value()) {
-            throw new ValidationException('toStatusId', 'A transition cannot change the issue type.');
-        }
-        if ($from->id()->value() === $to->id()->value()) {
-            throw new ValidationException('toStatusId', 'A transition must target another status.');
+        if (! $fromStatusId->isAny()) {
+            $from = $this->statuses->find($workspaceId, $fromStatusId->statusId() ?? throw NotFoundException::status())
+                ?? throw NotFoundException::status();
+            if ($from->workflowId()->value() !== $workflowId->value()) {
+                throw NotFoundException::status();
+            }
+            if ($from->issueTypeId()->value() !== $to->issueTypeId()->value()) {
+                throw new ValidationException('toStatusId', 'A transition cannot change the issue type.');
+            }
+            if ($from->id()->value() === $to->id()->value()) {
+                throw new ValidationException('toStatusId', 'A transition must target another status.');
+            }
         }
         if ($this->transitions->findExisting($workflowId, $fromStatusId, $toStatusId, $transitionActor, $outcome) !== null) {
             throw ConflictException::transitionExists();

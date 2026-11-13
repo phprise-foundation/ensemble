@@ -509,3 +509,25 @@ run (the same reason is deduplicated). Below the budget, the remaining USD is
 sent to open-warden as `--budget`, so a single run cannot overshoot the daily
 limit.
 
+## Workspace defaults
+
+`config/workspace-defaults.yaml` describes the team, roles, profiles, agents,
+workflows, issue types, statuses, transitions and boards that every new
+workspace receives. `config/portraits/` holds the default agent portraits; the
+seeder converts them to data URLs at seed time. The defaults are defined per
+workflow, while the domain stores statuses per issue type: the seeder clones
+each status (and each transition) for every issue type of the workflow.
+
+`Infrastructure/Workspace/YamlWorkspaceDefaults` implements the
+`Domain/Contract/Tenancy/WorkspaceDefaults` contract. `CreateWorkspace` and the
+`bin/install` bootstrap run the seed inside a `DoctrineUnitOfWork` transaction,
+so a failure leaves no partial workspace. Existing workspaces are never
+re-seeded; the E2E harness passes `ENSEMBLE_SKIP_WORKSPACE_DEFAULTS=1` for its
+controlled fixture.
+
+The same release adds `Role.instructions` (optional long text, included in the
+prompt), `Agent.gender` (`female`, `male` or `not_informed`) and
+`Board.backlogStatusIds`. A transition source can be `*`/`any`, represented by
+`TransitionEndpoint`; it matches any non-final status of the target issue type
+(except the target itself), which keeps `any -> canceled` as a single rule.
+

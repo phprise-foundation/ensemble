@@ -62,6 +62,9 @@ final class AgentRecord
     #[ORM\Column(name: 'tokens_per_minute', type: 'integer', options: ['default' => 0])]
     private int $tokensPerMinute = 0;
 
+    #[ORM\Column(type: 'string', length: 16, options: ['default' => 'not_informed'])]
+    private string $gender = 'not_informed';
+
     #[ORM\Column(type: 'string', length: 16, options: ['default' => 'pt-BR'])]
     private string $language = 'pt-BR';
 
@@ -95,6 +98,7 @@ final class AgentRecord
         int $dailyBudgetMicros = 0,
         int $requestsPerMinute = 0,
         int $tokensPerMinute = 0,
+        string $gender = 'not_informed',
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -114,6 +118,7 @@ final class AgentRecord
         $this->dailyBudgetMicros = $dailyBudgetMicros;
         $this->requestsPerMinute = $requestsPerMinute;
         $this->tokensPerMinute = $tokensPerMinute;
+        $this->gender = $gender;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -203,6 +208,11 @@ final class AgentRecord
         return $this->language;
     }
 
+    public function gender(): string
+    {
+        return $this->gender;
+    }
+
     public function dailyBudgetMicros(): int
     {
         return $this->dailyBudgetMicros;
@@ -236,6 +246,7 @@ final class AgentRecord
         int $dailyBudgetMicros = 0,
         int $requestsPerMinute = 0,
         int $tokensPerMinute = 0,
+        string $gender = 'not_informed',
     ): void {
         $this->teamId = $teamId;
         $this->name = $name;
@@ -253,6 +264,7 @@ final class AgentRecord
         $this->dailyBudgetMicros = $dailyBudgetMicros;
         $this->requestsPerMinute = $requestsPerMinute;
         $this->tokensPerMinute = $tokensPerMinute;
+        $this->gender = $gender;
         $this->updatedAt = $updatedAt;
     }
 }

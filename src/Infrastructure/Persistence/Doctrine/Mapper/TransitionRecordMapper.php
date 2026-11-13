@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence\Doctrine\Mapper;
 
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\TransitionEndpoint;
 use App\Domain\Kanban\Transition;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\TransitionId;
@@ -23,7 +24,7 @@ final class TransitionRecordMapper
             new TransitionId($record->id()),
             new WorkspaceId($record->workspaceId()),
             new WorkflowId($record->workflowId()),
-            new StatusId($record->fromStatusId()),
+            TransitionEndpoint::fromString($record->fromStatusId()),
             new StatusId($record->toStatusId()),
             TransitionActor::fromString($record->actor()),
             $outcome === null ? null : new Slug($outcome),

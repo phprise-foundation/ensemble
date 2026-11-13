@@ -20,6 +20,7 @@ use App\Domain\Kanban\IssueKey;
 use App\Domain\Kanban\Status;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\StatusIds;
+use App\Domain\Kanban\StatusType;
 use App\Domain\Kanban\TransitionActor;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\User;
@@ -115,8 +116,15 @@ final readonly class MoveIssue
     private function guardTransition(Issue $issue, WorkflowId $workflowId, Status $target): void
     {
         foreach ($this->transitions->forWorkflow($issue->workspaceId(), $workflowId) as $transition) {
-            if ($transition->fromStatusId()->value() !== $issue->statusId()->value()) {
+            $from = $transition->fromStatusId();
+            if (! $from->isAny() && $from->value() !== $issue->statusId()->value()) {
                 continue;
+            }
+            if ($from->isAny()) {
+                $current = $this->statuses->find($issue->workspaceId(), $issue->statusId());
+                if ($current === null || $current->type() === StatusType::Final) {
+                    continue;
+                }
             }
             if ($transition->toStatusId()->value() !== $target->id()->value()) {
                 continue;

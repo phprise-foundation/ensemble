@@ -32,7 +32,7 @@ final class TeamApiTest extends TestCase
     public function testCreatesTeamWithRolesAndProfiles(): void
     {
         $team = $this->createTeam('Delivery');
-        $role = $this->createRole($team, 'Coder', 'Implements the planned work.', true, false);
+        $role = $this->createRole($team, 'Coder', 'Implements the planned work.', true, false, instructions: 'Full role instructions.');
         $profile = $this->createProfile($team, 'Skeptic', 'Constant doubt.', 'Cautious', 'Never', ['risk' => 'high']);
 
         $teams = $this->app->json($this->app->handle($this->app->request(
@@ -41,7 +41,7 @@ final class TeamApiTest extends TestCase
             [],
             $this->adminToken,
         )));
-        self::assertSame([$team], array_column($teams['teams'], 'id'));
+        self::assertContains($team, array_column($teams['teams'], 'id'));
 
         $roles = $this->app->json($this->app->handle($this->app->request(
             'GET',
@@ -53,6 +53,7 @@ final class TeamApiTest extends TestCase
         self::assertTrue($roles['roles'][0]['unblock']);
         self::assertFalse($roles['roles'][0]['interactive']);
         self::assertFalse($roles['roles'][0]['implement']);
+        self::assertSame('Full role instructions.', $roles['roles'][0]['instructions']);
         self::assertFalse($roles['roles'][0]['review']);
         self::assertFalse($roles['roles'][0]['test']);
         self::assertFalse($roles['roles'][0]['merge']);
@@ -265,6 +266,7 @@ final class TeamApiTest extends TestCase
         bool $test = false,
         bool $merge = false,
         bool $deploy = false,
+        ?string $instructions = null,
     ): string {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
@@ -279,6 +281,7 @@ final class TeamApiTest extends TestCase
                 'test' => $test,
                 'merge' => $merge,
                 'deploy' => $deploy,
+                'instructions' => $instructions ?? '',
             ],
             $this->adminToken,
         )), 201);

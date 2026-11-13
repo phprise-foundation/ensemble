@@ -15,6 +15,7 @@ use App\Domain\Kanban\BoardFilters;
 use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Slug;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\StatusId;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\WorkspaceId;
@@ -62,6 +63,7 @@ final readonly class BoardController
             $key === null || $key === '' ? Slug::fromName($name) : new Slug($key),
             $name,
             $this->filters($body),
+            $this->backlogStatuses($body),
         );
 
         return $this->responder->respond(['board' => $this->presenter->present($board)], 201);
@@ -89,6 +91,7 @@ final readonly class BoardController
         $user = $this->currentUser->execute(BearerToken::fromRequest($request));
         $body = JsonBody::from($request);
         $filtersProvided = array_key_exists('filterIssueTypeIds', $body) || array_key_exists('filterStatusIds', $body);
+        $backlogProvided = array_key_exists('backlogStatusIds', $body);
 
         return $this->responder->respond([
             'board' => $this->presenter->present($this->updateBoard->execute(
@@ -98,6 +101,8 @@ final readonly class BoardController
                 JsonBody::string($body, 'name'),
                 $filtersProvided,
                 $this->filters($body),
+                $backlogProvided,
+                $this->backlogStatuses($body),
             )),
         ]);
     }
@@ -111,6 +116,15 @@ final readonly class BoardController
         $this->deleteBoard->execute($user, $workspaceId, $id);
 
         return $this->responder->respond(['deleted' => true]);
+    }
+
+    /** @param array<array-key, mixed> $body */
+    private function backlogStatuses(array $body): StatusIds
+    {
+        return new StatusIds(array_map(
+            static fn(string $id): StatusId => new StatusId($id),
+            JsonBody::stringList($body, 'backlogStatusIds') ?? [],
+        ));
     }
 
     /** @param array<array-key, mixed> $body */

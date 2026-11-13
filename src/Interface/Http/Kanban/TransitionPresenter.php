@@ -15,6 +15,7 @@ final class TransitionPresenter
             'id' => $transition->id()->value(),
             'workflowId' => $transition->workflowId()->value(),
             'fromStatusId' => $transition->fromStatusId()->value(),
+            'fromAny' => $transition->fromStatusId()->isAny(),
             'toStatusId' => $transition->toStatusId()->value(),
             'actor' => $transition->actor()->value,
             'outcome' => $transition->outcome()?->value(),

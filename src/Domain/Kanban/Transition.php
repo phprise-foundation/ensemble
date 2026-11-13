@@ -9,6 +9,8 @@ use DateTimeImmutable;
 
 final class Transition
 {
+    private TransitionEndpoint $fromStatusId;
+
     private TransitionActor $actor;
     private ?Slug $outcome;
     private ?DateTimeImmutable $updatedAt;
@@ -17,13 +19,16 @@ final class Transition
         private readonly TransitionId $id,
         private readonly WorkspaceId $workspaceId,
         private readonly WorkflowId $workflowId,
-        private readonly StatusId $fromStatusId,
+        StatusId|TransitionEndpoint $fromStatusId,
         private readonly StatusId $toStatusId,
         TransitionActor $actor,
         ?Slug $outcome = null,
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
     ) {
+        $this->fromStatusId = $fromStatusId instanceof StatusId
+            ? TransitionEndpoint::status($fromStatusId)
+            : $fromStatusId;
         $this->actor = $actor;
         $this->outcome = $outcome;
         $this->updatedAt = $updatedAt;
@@ -44,7 +49,7 @@ final class Transition
         return $this->workflowId;
     }
 
-    public function fromStatusId(): StatusId
+    public function fromStatusId(): TransitionEndpoint
     {
         return $this->fromStatusId;
     }

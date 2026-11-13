@@ -48,6 +48,9 @@ final readonly class PromptComposer
         if ($role->description() !== '') {
             $lines[] = $role->description();
         }
+        if ($role->instructions() !== '') {
+            $lines[] = $role->instructions();
+        }
 
         if ($capabilities->implement()) {
             $lines[] = 'You may edit repository files and run commands. The runner commits, pushes and opens the pull request; do not merge, deploy or create a PR yourself.';
@@ -90,10 +93,58 @@ final readonly class PromptComposer
             return 'The referenced profile no longer exists; behave as a pragmatic colleague.';
         }
 
-        return rtrim(implode("\n", array_filter([
+        $parts = [
             'Your profile is "' . $profile->name() . '".',
             $profile->style(),
             'Tone: ' . $profile->tone() . '. Emoji usage: ' . $profile->emojiUsage()->value . '.',
-        ])));
+        ];
+        $advanced = $this->advancedBlock($profile->advanced());
+        if ($advanced !== '') {
+            $parts[] = $advanced;
+        }
+
+        return rtrim(implode("\n", array_filter($parts)));
+    }
+
+    /** @param array<string, mixed> $advanced */
+    private function advancedBlock(array $advanced): string
+    {
+        if (isset($advanced['instructions']) && is_string($advanced['instructions']) && trim($advanced['instructions']) !== '') {
+            return trim($advanced['instructions']);
+        }
+
+        return mb_substr($this->renderAdvanced($advanced), 0, 8000);
+    }
+
+    private function renderAdvanced(mixed $value, int $depth = 0): string
+    {
+        if (is_string($value) || is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        if (is_bool($value)) {
+            return $value ? 'yes' : 'no';
+        }
+        if (! is_array($value)) {
+            return '';
+        }
+        $indent = str_repeat('  ', $depth);
+        $lines = [];
+        foreach (array_keys($value) as $key) {
+            if (is_array($value[$key])) {
+                $lines[] = $indent . (is_int($key) ? '-' : $key . ':');
+                $nested = $this->renderAdvanced($value[$key], $depth + 1);
+                if ($nested !== '') {
+                    $lines[] = $nested;
+                }
+                continue;
+            }
+            $rendered = $this->renderAdvanced($value[$key], 0);
+            if ($rendered === '') {
+                continue;
+            }
+            $lines[] = $indent . (is_int($key) ? '- ' . $rendered : $key . ': ' . $rendered);
+        }
+
+        return implode("\n", $lines);
     }
 }

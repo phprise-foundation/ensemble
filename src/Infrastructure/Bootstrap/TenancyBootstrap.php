@@ -110,7 +110,9 @@ use App\Application\Tenancy\WorkspaceGuard;
 use App\Infrastructure\Authentication\ArgonPasswordHasher;
 use App\Infrastructure\Authentication\RandomTokenGenerator;
 use App\Infrastructure\Model\YamlModelCatalog;
+use App\Infrastructure\Workspace\YamlWorkspaceDefaults;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
+use App\Infrastructure\Persistence\Doctrine\DoctrineUnitOfWork;
 use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardRecordMapper;
@@ -266,6 +268,23 @@ final readonly class TenancyBootstrap
             : $workdirRoot;
         $runHistoryPresenter = new RunPresenter();
         $profiles = new DoctrineProfileRepository($entityManager, new ProfileRecordMapper());
+        $defaultsPath = getenv('ENSEMBLE_DEFAULTS_FILE');
+        $defaultsPath = $defaultsPath === false || $defaultsPath === '' ? dirname(__DIR__, 3) . '/config/workspace-defaults.yaml' : $defaultsPath;
+        $workspaceDefaults = new YamlWorkspaceDefaults(
+            $defaultsPath,
+            $catalog,
+            $teams,
+            $roles,
+            $profiles,
+            $agents,
+            $workflows,
+            $issueTypes,
+            $statuses,
+            $transitions,
+            $boards,
+            $boardColumns,
+        );
+        $unitOfWork = new DoctrineUnitOfWork($entityManager);
         $teamPresenter = new TeamPresenter();
         $rolePresenter = new RolePresenter();
         $agentPresenter = new AgentPresenter();
@@ -303,7 +322,7 @@ final readonly class TenancyBootstrap
                 $currentUser,
                 $guard,
                 new ListWorkspaces($workspaces, $memberships),
-                new CreateWorkspace($workspaces, $memberships),
+                new CreateWorkspace($workspaces, $memberships, $workspaceDefaults, $unitOfWork),
                 new ReadWorkspace($guard),
                 new UpdateWorkspace($workspaces, $guard),
                 new ListWorkspaceMembers($guard, $memberships, $users),
@@ -366,9 +385,9 @@ final readonly class TenancyBootstrap
             new BoardController(
                 $currentUser,
                 new ListBoards($boards, $guard),
-                new CreateBoard($workflows, $boards, $validateBoardFilters, $guard),
+                new CreateBoard($workflows, $boards, $validateBoardFilters, $validateColumnStatuses, $guard),
                 new ReadBoard($boards, $guard),
-                new UpdateBoard($boards, $validateBoardFilters, $guard),
+                new UpdateBoard($boards, $validateBoardFilters, $validateColumnStatuses, $guard),
                 new DeleteBoard($boards, $boardColumns, $guard),
                 new ListColumns($boards, $boardColumns, $guard),
                 $boardPresenter,

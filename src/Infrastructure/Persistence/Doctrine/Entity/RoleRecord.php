@@ -50,6 +50,9 @@ final class RoleRecord
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
     private bool $deploy;
 
+    #[ORM\Column(type: 'text', options: ['default' => ''])]
+    private string $instructions = '';
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -71,6 +74,7 @@ final class RoleRecord
         bool $test = false,
         bool $merge = false,
         bool $deploy = false,
+        string $instructions = '',
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -84,6 +88,7 @@ final class RoleRecord
         $this->test = $test;
         $this->merge = $merge;
         $this->deploy = $deploy;
+        $this->instructions = $instructions;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
     }
@@ -148,6 +153,11 @@ final class RoleRecord
         return $this->deploy;
     }
 
+    public function instructions(): string
+    {
+        return $this->instructions;
+    }
+
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
@@ -169,6 +179,7 @@ final class RoleRecord
         bool $test,
         bool $merge,
         bool $deploy,
+        string $instructions = '',
     ): void {
         $this->name = $name;
         $this->description = $description;
@@ -180,5 +191,6 @@ final class RoleRecord
         $this->test = $test;
         $this->merge = $merge;
         $this->deploy = $deploy;
+        $this->instructions = $instructions;
     }
 }

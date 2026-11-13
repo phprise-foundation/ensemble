@@ -26,6 +26,7 @@ const schema = {
   fields: [
     { key: 'name', label: 'Name', type: 'text', required: true },
     { key: 'description', label: 'Description', type: 'textarea' },
+    { key: 'instructions', label: 'Instructions', type: 'textarea' },
     { key: 'unblock', label: 'Handles blocked items', type: 'checkbox', hint: 'Unblocks impediments' },
     { key: 'interactive', label: 'Acts on new comments', type: 'checkbox', hint: 'Interactive mode' },
     { key: 'implement', label: 'Writes code', type: 'checkbox', hint: 'May edit the repository; the runner publishes the branch and PR' },
@@ -37,6 +38,7 @@ const schema = {
   defaults: () => ({
     name: '',
     description: '',
+    instructions: '',
     unblock: false,
     interactive: false,
     implement: false,

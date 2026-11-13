@@ -157,6 +157,17 @@ once v1 is live):
 - **Fase D — identidade visual (branch `feat/fase-d-branding`):** símbolo
   `bluesmoke` como padrão nos dois temas, login white no escuro e black no
   claro, favicon `bluesmoke`.
+- **Fase E1 — defaults de workspace (branch `feat/workspace-defaults`):**
+  `config/workspace-defaults.yaml` + retratos; time/roles/profiles/agentes,
+  workflows/status/transições/boards; `Role.instructions`, `Agent.gender`,
+  transição `any` e `Board.backlogStatusIds`; seed transacional em banco novo
+  e em novos workspaces.
+- **Fase E2 — backlog e busca:** aba de backlog por board, busca
+  workspace-wide por chave/resumo/descrição ignorando o filtro do board.
+- **Fase E3 — arquivamento:** `Issue.archivedAt`, archive/restore, exclusão de
+  board/backlog/busca e skip no runner.
+- Roadmap de transições: nomes (`discover`, `design`, `assess` etc.) para
+  exibição e edição, mantendo `from`/`to`/`actor` como contrato.
 - RFC-2026-0001 communication (channels/messages/notifications) — the board
   drives its own development through it.
 - RFC-2026-0002 event-driven orchestration (trigger queue, scheduler,

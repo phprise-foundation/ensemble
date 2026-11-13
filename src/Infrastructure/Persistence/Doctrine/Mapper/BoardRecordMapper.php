@@ -10,6 +10,7 @@ use App\Domain\Kanban\BoardId;
 use App\Domain\Kanban\IssueTypeId;
 use App\Domain\Kanban\Slug;
 use App\Domain\Kanban\StatusId;
+use App\Domain\Kanban\StatusIds;
 use App\Domain\Kanban\WorkflowId;
 use App\Domain\Tenancy\WorkspaceId;
 use App\Infrastructure\Persistence\Doctrine\Entity\BoardRecord;
@@ -30,6 +31,7 @@ final class BoardRecordMapper
             ),
             $record->createdAt(),
             $record->updatedAt(),
+            new StatusIds(array_values(array_map(static fn(string $id): StatusId => new StatusId($id), $record->backlogStatusIds()))),
         );
     }
 
@@ -45,6 +47,7 @@ final class BoardRecordMapper
             array_map(static fn(StatusId $id): string => $id->value(), $board->filters()->statusIds()),
             $board->createdAt(),
             $board->updatedAt(),
+            array_map(static fn(StatusId $id): string => $id->value(), $board->backlogStatusIds()->all()),
         );
     }
 
@@ -55,6 +58,7 @@ final class BoardRecordMapper
             array_map(static fn(IssueTypeId $id): string => $id->value(), $board->filters()->issueTypeIds()),
             array_map(static fn(StatusId $id): string => $id->value(), $board->filters()->statusIds()),
             $board->updatedAt(),
+            array_map(static fn(StatusId $id): string => $id->value(), $board->backlogStatusIds()->all()),
         );
     }
 }

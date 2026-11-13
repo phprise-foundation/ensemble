@@ -22,7 +22,7 @@ const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value, dailyBudgetUsd: 0, requestsPerMinute: 0, tokensPerMinute: 0 }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value, dailyBudgetUsd: 0, requestsPerMinute: 0, tokensPerMinute: 0, gender: 'not_informed' }
   error.value = ''
   editing.value = true
 }
@@ -170,6 +170,14 @@ onMounted(() => {
             <span>Marital status</span>
             <select v-model="draft.maritalStatus">
               <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option><option>Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Gender</span>
+            <select v-model="draft.gender">
+              <option value="not_informed">Not informed</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
             </select>
           </label>
           <label class="field">
