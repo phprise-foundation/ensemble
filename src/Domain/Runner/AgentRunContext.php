@@ -15,6 +15,7 @@ final readonly class AgentRunContext
         private string $commentPath,
         private string $descriptionPath,
         private ?int $remainingBudgetMicros = null,
+        private string $profilePath = '',
     ) {
     }
 
@@ -52,5 +53,10 @@ final readonly class AgentRunContext
     public function remainingBudgetMicros(): ?int
     {
         return $this->remainingBudgetMicros;
+    }
+
+    public function profilePath(): string
+    {
+        return $this->profilePath;
     }
 }

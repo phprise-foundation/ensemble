@@ -42,6 +42,7 @@ use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Runner\GitClient;
 use App\Infrastructure\Runner\GitWorkdirVcs;
 use App\Infrastructure\Runner\OpenWardenExecutor;
+use App\Infrastructure\Runner\SiliconFlowTextStyler;
 use App\Infrastructure\Runner\VarWorkdirPaths;
 use App\Infrastructure\Security\SodiumSecretCipher;
 use App\Infrastructure\Vcs\GitHubPullRequests;
@@ -82,6 +83,8 @@ $modelsPath = getenv('ENSEMBLE_MODELS_FILE');
 $modelsPath = $modelsPath === false || $modelsPath === '' ? dirname(__DIR__) . '/config/models.yaml' : $modelsPath;
 $catalog = (new YamlModelCatalog($modelsPath))->load();
 
+$resolveProfile = new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()));
+
 (new BackfillIssueWorkdirs($issues, $workdirs))->execute();
 
 (new ExecuteSweep(
@@ -94,7 +97,7 @@ $catalog = (new YamlModelCatalog($modelsPath))->load();
     $runs,
     new VarWorkdirPaths((string) (getenv('ENSEMBLE_WORKDIR_ROOT') ?: (getenv('HOME') . '/.local/share/ensemble/workdirs'))),
     new OpenWardenExecutor($catalog),
-    new PromptComposer(new ResolveProfile(new DoctrineProfileRepository($entityManager, new ProfileRecordMapper()))),
+    new PromptComposer(),
     new AdvanceIssue(
         $issues,
         $statuses,
@@ -107,6 +110,8 @@ $catalog = (new YamlModelCatalog($modelsPath))->load();
     $outcomes,
     $catalog,
     $usageLedger,
+    $resolveProfile,
+    new SiliconFlowTextStyler($catalog, (string) (getenv('ENSEMBLE_STYLER_MODEL') ?: 'ens26.1-lite')),
 ))->execute();
 
 echo "sweep ok\n";

@@ -163,6 +163,24 @@ textarea {
   height: auto;
 }
 
+.profile-advanced details {
+  margin: 8px 0;
+  border-top: 1px solid var(--border);
+  padding-top: 6px;
+}
+
+.profile-advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.profile-advanced .advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
 .nav {
   flex: 1;
   overflow-y: auto;

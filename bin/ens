@@ -17,6 +17,32 @@ foreach ($args as $index => $argument) {
     }
 }
 
+if ($command === 'profile') {
+    $profilePath = getenv('ENS_PROFILE_FILE');
+    if ($profilePath === false || $profilePath === '' || ! is_file($profilePath)) {
+        fwrite(STDERR, "ENS_PROFILE_FILE is not configured\n");
+        exit(1);
+    }
+    $raw = file_get_contents($profilePath);
+    $data = is_string($raw) ? json_decode($raw, true) : null;
+    if (! is_array($data)) {
+        fwrite(STDERR, "the profile file is not valid JSON\n");
+        exit(1);
+    }
+    $section = trim($sub);
+    if ($section === '' || $section === 'all') {
+        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+        exit(0);
+    }
+    $value = $data['advanced'][$section] ?? $data[$section] ?? null;
+    if ($value === null) {
+        fwrite(STDERR, "unknown profile section: $section (use physical, communication, personality, interests, background or all)\n");
+        exit(1);
+    }
+    echo json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n";
+    exit(0);
+}
+
 if ($command === 'description') {
     $body = trim($body === '' ? $sub : $body);
     if ($body === '') {
@@ -66,7 +92,7 @@ $outcome = match ($command . ' ' . $sub) {
     default => null,
 };
 if ($outcome === null) {
-    fwrite(STDERR, "usage: ens test pass|fail, ens review approve|request-changes, ens block --reason \"...\"\n");
+    fwrite(STDERR, "usage: ens profile [physical|communication|personality|interests|background|all], ens comment --body \"...\", ens description --body \"...\", ens test pass|fail, ens review approve|request-changes, ens block --reason \"...\"\n");
     exit(1);
 }
 

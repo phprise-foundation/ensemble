@@ -53,6 +53,13 @@ final class WorkspaceDefaultsApiTest extends TestCase
         self::assertArrayHasKey('Quality Assurance', $roles);
         self::assertArrayHasKey('Tech Lead', $roles);
 
+        $profiles = array_column($snapshot['profiles'], null, 'name');
+        $goth = $profiles['Goth'];
+        self::assertSame(['orelhas', 'nariz', 'língua', 'lábio inferior', 'umbigo', 'clitóris'], $goth['advanced']['physical']['piercings']);
+        self::assertSame('157', (string) $goth['advanced']['physical']['height_cm']);
+        self::assertSame('47', (string) $goth['advanced']['physical']['weight_kg']);
+        self::assertSame('heterochromia', $goth['advanced']['physical']['eyes']);
+
         $vivy = $this->agent($snapshot, 'Vivy');
         self::assertSame('female', $vivy['gender']);
         self::assertSame(20, $vivy['age']);

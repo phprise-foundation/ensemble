@@ -22,6 +22,7 @@ const schema = {
     { key: 'name', label: 'Name', type: 'text', required: true },
     { key: 'style', label: 'Style description', type: 'textarea' },
     { key: 'tone', label: 'Tone of voice', type: 'text' },
+    { key: 'advanced', label: 'Advanced attributes', type: 'profile-advanced' },
     {
       key: 'emojiUsage',
       label: 'Emoji usage',
@@ -33,7 +34,7 @@ const schema = {
       ],
     },
   ],
-  defaults: () => ({ name: '', style: '', tone: '', emojiUsage: 'Never' }),
+  defaults: () => ({ name: '', style: '', tone: '', emojiUsage: 'Never', advanced: {} }),
 }
 </script>
 
