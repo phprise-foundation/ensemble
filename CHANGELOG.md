@@ -7,7 +7,7 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/ensemble/releases
 
-## Unreleased
+## v0.37.0 — 2026-11-14
 
 ### Added
 
