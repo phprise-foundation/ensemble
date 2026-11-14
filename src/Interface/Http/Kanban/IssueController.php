@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Interface\Http\Kanban;
 
+use App\Application\Kanban\ArchiveIssue;
 use App\Application\Kanban\AttachRepository;
 use App\Application\Kanban\CommentIssue;
 use App\Application\Kanban\CreateIssue;
@@ -52,6 +53,7 @@ final readonly class IssueController
         private IssueCommentPresenter $commentPresenter,
         private IssueEventPresenter $eventPresenter,
         private MergePullRequest $mergePullRequest,
+        private ArchiveIssue $archiveIssue,
         private JsonResponder $responder,
     ) {
     }
@@ -63,7 +65,11 @@ final readonly class IssueController
         $boardId = is_string($query['boardId'] ?? null)
             ? new BoardId((string) ($query['boardId'] ?? ''))
             : null;
-        $issues = $this->listIssues->execute($user, $workspaceId, $boardId);
+        $text = is_string($query['q'] ?? null) ? (string) $query['q'] : null;
+        $backlog = ($query['scope'] ?? null) === 'backlog';
+        $includeArchived = filter_var($query['includeArchived'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $issues = $this->listIssues->execute($user, $workspaceId, $boardId, $text, $backlog, $includeArchived);
+        $issues = array_slice($issues, 0, 100);
 
         return $this->responder->respond([
             'issues' => $this->presenter->presentMany(
@@ -156,6 +162,36 @@ final readonly class IssueController
             new StatusId(JsonBody::string($body, 'statusId') ?? ''),
             $position,
         );
+
+        return $this->responder->respond([
+            'issue' => $this->presenter->present($issue, $this->binding($user, $workspaceId, $issue)),
+        ]);
+    }
+
+    public function archive(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        return $this->setArchived($request, $workspaceId, $key, true);
+    }
+
+    public function restore(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+    ): ResponseInterface {
+        return $this->setArchived($request, $workspaceId, $key, false);
+    }
+
+    private function setArchived(
+        ServerRequestInterface $request,
+        WorkspaceId $workspaceId,
+        IssueKey $key,
+        bool $archived,
+    ): ResponseInterface {
+        $user = $this->currentUser->execute(BearerToken::fromRequest($request));
+        $issue = $this->archiveIssue->execute($user, $workspaceId, $key, $archived);
 
         return $this->responder->respond([
             'issue' => $this->presenter->present($issue, $this->binding($user, $workspaceId, $issue)),

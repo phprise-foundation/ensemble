@@ -62,7 +62,10 @@ final readonly class ReadSnapshot
         $this->guard->assertMember($actor, $workspaceId);
         $workspace = $this->workspaces->find($workspaceId) ?? throw NotFoundException::workspace();
         $teams = $this->teams->all($workspaceId);
-        $issues = $this->issues->forWorkspace($workspaceId);
+        $issues = array_values(array_filter(
+            $this->issues->forWorkspace($workspaceId),
+            static fn(Issue $issue): bool => ! $issue->archived(),
+        ));
 
         return new Snapshot(
             workspace: $workspace,

@@ -56,6 +56,7 @@ function normalizeEntity(collection, entity) {
       repositoryId: entity.repositoryId ?? null,
       workdirState: entity.workdirState ?? null,
       readyToMerge: entity.readyToMerge ?? false,
+      archived: Boolean(entity.archivedAt),
     }
   }
   const map = LEGACY_TO_REAL_KEYS[collection]
@@ -255,7 +256,7 @@ export const boardStore = {
       return []
     }
     return state.issues
-      .filter((issue) => column.statusIds.includes(issue.statusId))
+      .filter((issue) => !issue.archived && column.statusIds.includes(issue.statusId))
       .sort((a, b) => orderKeyOf(a) - orderKeyOf(b))
   },
 
@@ -325,6 +326,40 @@ export const boardStore = {
   select(id) {
     state.selectedIssueId = id
     void hydrateIssue(issueOf(id))
+  },
+
+  async selectFound(issue) {
+    const index = state.issues.findIndex((candidate) => candidate.id === issue.id)
+    if (index >= 0) {
+      state.issues.splice(index, 1, { ...state.issues[index], ...issue })
+    } else {
+      state.issues.push(issue)
+    }
+    state.selectedIssueId = issue.id
+    await hydrateIssue(issueOf(issue.id))
+  },
+
+  async loadBacklog(boardId) {
+    const payload = await request('GET', scoped(`/issues?boardId=${boardId}&scope=backlog`))
+    return (payload.issues ?? []).map((issue) => normalizeEntity('issues', issue))
+  },
+
+  async searchIssues(query, includeArchived = false) {
+    const payload = await request('GET', scoped(`/issues?q=${encodeURIComponent(query)}&includeArchived=${includeArchived ? 1 : 0}`))
+    return (payload.issues ?? []).map((issue) => normalizeEntity('issues', issue))
+  },
+
+  async setArchived(issueId, archived) {
+    const issue = issueOf(issueId)
+    if (!issue) {
+      throw new Error('Unknown issue')
+    }
+    const updated = presented(await request('POST', scoped(`/issues/${issue.key}/${archived ? 'archive' : 'restore'}`)))
+    const index = state.issues.findIndex((candidate) => candidate.id === issueId)
+    if (index >= 0) {
+      state.issues.splice(index, 1, updated)
+    }
+    return updated
   },
 
   clearSelection() {

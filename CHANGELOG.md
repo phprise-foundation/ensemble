@@ -11,6 +11,14 @@ https://github.com/phprise-foundation/ensemble/releases
 
 ### Added
 
+- **Board backlog and search:** each board has a Backlog tab with its
+  `backlogStatusIds`; `GET /issues?boardId=…&scope=backlog` returns them.
+  Workspace-wide search (`GET /issues?q=…`) ignores the board filter and
+  matches key/summary/description, with an option to include archived issues.
+- **Issue archive/restore:** `archived_at` on issues, `POST
+  /issues/{key}/archive` and `/restore`; archived issues leave the board,
+  backlog and snapshot, are skipped by the runner, and can be restored from the
+  issue panel.
 - **Structured profile attributes:** `Profile.advanced` now stores identity,
   psychology, physical, communication, personality, interests and background
   as small fields. Physical attributes use predefined options for skin tone,

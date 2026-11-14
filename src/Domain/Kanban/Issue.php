@@ -24,6 +24,7 @@ final class Issue
     private ?WorkdirId $workdirId;
     private DateTimeImmutable $updatedAt;
     private DateTimeImmutable $enteredAt;
+    private ?DateTimeImmutable $archivedAt;
 
     public function __construct(
         private readonly IssueId $id,
@@ -40,6 +41,7 @@ final class Issue
         ?WorkdirId $workdirId = null,
         private readonly ?IssueKey $parentKey = null,
         int $position = 0,
+        ?DateTimeImmutable $archivedAt = null,
     ) {
         $this->summary = new StringObject($this->validSummary($summary));
         $this->description = new StringObject($this->validDescription($description));
@@ -54,6 +56,7 @@ final class Issue
         $this->workdirId = $workdirId;
         $this->updatedAt = $this->createdAt();
         $this->enteredAt = $this->createdAt();
+        $this->archivedAt = $archivedAt;
     }
 
     public function id(): IssueId
@@ -84,6 +87,33 @@ final class Issue
     public function position(): int
     {
         return $this->position;
+    }
+
+    public function archivedAt(): ?DateTimeImmutable
+    {
+        return $this->archivedAt;
+    }
+
+    public function archived(): bool
+    {
+        return $this->archivedAt !== null;
+    }
+
+    public function archive(DateTimeImmutable $at): void
+    {
+        $this->archivedAt = $at;
+        $this->updatedAt = $at;
+    }
+
+    public function restoreArchive(DateTimeImmutable $at): void
+    {
+        $this->archivedAt = null;
+        $this->updatedAt = $at;
+    }
+
+    public function restoreArchived(?DateTimeImmutable $at): void
+    {
+        $this->archivedAt = $at;
     }
 
     public function reposition(int $position): void

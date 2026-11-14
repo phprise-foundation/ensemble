@@ -6,6 +6,7 @@ namespace App\Infrastructure\Bootstrap;
 
 use App\Application\Kanban\CreateBoard;
 use App\Application\Kanban\CreateColumn;
+use App\Application\Kanban\ArchiveIssue;
 use App\Application\Kanban\AttachRepository;
 use App\Application\Kanban\CommentIssue;
 use App\Application\Kanban\CreateFieldDefinition;
@@ -439,6 +440,7 @@ final readonly class TenancyBootstrap
                     $agents,
                     $guard,
                 ),
+                new ArchiveIssue($issueRepository, $guard),
                 $this->responder,
             ),
             new TeamController(

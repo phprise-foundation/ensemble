@@ -89,7 +89,7 @@ final readonly class ExecuteSweep
     private function sweepWorkspace(WorkspaceId $workspaceId, DateTimeImmutable $now, array $requestedIssues): void
     {
         foreach ($this->issues->forWorkspace($workspaceId) as $issue) {
-            if ($issue->blocked() || $issue->readyToMerge() || in_array($issue->id()->value(), $requestedIssues, true)) {
+            if ($issue->archived() || $issue->blocked() || $issue->readyToMerge() || in_array($issue->id()->value(), $requestedIssues, true)) {
                 continue;
             }
 
@@ -188,6 +188,12 @@ final readonly class ExecuteSweep
         $issue = $this->issues->findById($run->workspaceId(), $run->issueId());
         if ($agent === null || $issue === null || ! $agent->active()) {
             $this->finishRequested($run, 'the requested run is no longer available', $now);
+
+            return;
+        }
+
+        if ($issue->archived()) {
+            $this->finishRequested($run, 'the issue is archived', $now);
 
             return;
         }
