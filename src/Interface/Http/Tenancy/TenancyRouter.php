@@ -152,6 +152,8 @@ final readonly class TenancyRouter
             $method === 'GET' && $this->isIssueEvents($segments) => $this->issues->events($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueRepository($segments) => $this->issues->attach($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMerge($segments) => $this->issues->merge($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueArchive($segments) => $this->issues->archive($request, $this->workspaceId($segments), $this->issueKey($segments)),
+            $method === 'POST' && $this->isIssueRestore($segments) => $this->issues->restore($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueMergeResolve($segments) => $this->runHistory->resolveMerge($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isActivity($segments) => $this->activity->show($request, $this->workspaceId($segments)),
@@ -455,6 +457,26 @@ final readonly class TenancyRouter
             && $segments[1] === 'workspaces'
             && $segments[3] === 'teams'
             && $segments[5] === 'roles';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueArchive(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'archive';
+    }
+
+    /** @param list<string> $segments */
+    private function isIssueRestore(array $segments): bool
+    {
+        return count($segments) === 6
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'issues'
+            && $segments[5] === 'restore';
     }
 
     /** @param list<string> $segments */

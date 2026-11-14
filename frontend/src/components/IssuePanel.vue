@@ -105,6 +105,7 @@ const syncingConflict = ref('')
 const mergeConflict = ref(false)
 const requesting = ref(false)
 const merging = ref(false)
+const archiving = ref(false)
 let runPoll = null
 
 watch(
@@ -216,6 +217,21 @@ async function resolveWorkdir(strategy) {
 async function refreshRuns() {
   if (issue.value) {
     await boardStore.refreshIssue(issue.value.id)
+  }
+}
+
+async function toggleArchive() {
+  if (!issue.value || archiving.value) {
+    return
+  }
+  archiving.value = true
+  try {
+    const updated = await boardStore.setArchived(issue.value.id, !issue.value.archived)
+    toast.success(updated.archived ? 'Issue archived.' : 'Issue restored.')
+  } catch (error) {
+    toast.error(error.message)
+  } finally {
+    archiving.value = false
   }
 }
 
@@ -483,6 +499,14 @@ async function submitComment() {
       </button>
     </header>
 
+    <div v-if="issue.archived" class="panel-archived">
+      <AppIcon name="warning" size="16" />
+      <div>
+        <strong>Archived</strong>
+        <p class="muted small">Hidden from boards and the runner. Restore it to continue.</p>
+      </div>
+    </div>
+
     <div class="panel-title-row" v-if="!editingSummary">
       <h2
         class="panel-title editable"
@@ -584,6 +608,12 @@ async function submitComment() {
         <option v-for="option in targets" :key="option.id" :value="option.id">{{ option.name }}</option>
       </select>
     </label>
+
+    <div class="panel-archive">
+      <button class="button ghost" :disabled="archiving" @click="toggleArchive">
+        {{ issue.archived ? 'Restore issue' : 'Archive issue' }}
+      </button>
+    </div>
 
     <section class="panel-section panel-repository">
       <div class="section-heading"><h3>Repository</h3></div>

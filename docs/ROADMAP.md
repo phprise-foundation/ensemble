@@ -166,10 +166,11 @@ once v1 is live):
   atributos físicos/comunicação/personalidade/interesses em `advanced`, editor
   por seções, `ens profile` sob demanda e `TextStyler` para comentários e
   descrições; profile fora do prompt de execução.
-- **Fase E2 — backlog e busca:** aba de backlog por board, busca
-  workspace-wide por chave/resumo/descrição ignorando o filtro do board.
-- **Fase E3 — arquivamento:** `Issue.archivedAt`, archive/restore, exclusão de
-  board/backlog/busca e skip no runner.
+- **Fase E2 — backlog e busca (branch `feat/backlog-archive`):** aba de backlog
+  por board e busca workspace-wide por chave/resumo/descrição, ignorando o
+  filtro do board.
+- **Fase E3 — arquivamento (branch `feat/backlog-archive`):** `Issue.archivedAt`,
+  archive/restore, exclusão de board/backlog/snapshot e skip no runner.
 - Roadmap de transições: nomes (`discover`, `design`, `assess` etc.) para
   exibição e edição, mantendo `from`/`to`/`actor` como contrato.
 - RFC-2026-0001 communication (channels/messages/notifications) — the board

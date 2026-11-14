@@ -25,6 +25,13 @@ const statusError = ref('')
 const descriptionError = ref('')
 const fieldErrors = ref({})
 const descriptionOver = computed(() => limitExceeded(countCharacters(draft.value.description), DESCRIPTION_LIMIT))
+const activeTab = ref('board')
+const backlogIssues = ref([])
+const backlogLoading = ref(false)
+const searchQuery = ref('')
+const searchResults = ref([])
+const searchLoading = ref(false)
+const includeArchived = ref(false)
 
 const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
@@ -47,15 +54,64 @@ const typeFields = computed(
 const dragIssue = computed(
   () => boardStore.state.issues.find((issue) => issue.id === dragIssueId.value) || null,
 )
+const backlogGroups = computed(() => {
+  const ids = board.value?.backlogStatusIds ?? []
+  return boardStore.boardStatuses.value
+    .filter((status) => ids.includes(status.id))
+    .map((status) => ({
+      status,
+      issues: backlogIssues.value.filter((issue) => issue.statusId === status.id),
+    }))
+    .filter((group) => group.issues.length)
+})
 
 watch(
   () => [route.params.boardId, boardStore.state.boards.length],
   () => {
     const id = typeof route.params.boardId === 'string' ? route.params.boardId : null
+    activeTab.value = 'board'
+    backlogIssues.value = []
     boardStore.setBoard(id)
   },
   { immediate: true },
 )
+
+async function openBacklog() {
+  activeTab.value = 'backlog'
+  if (!board.value) {
+    return
+  }
+  backlogLoading.value = true
+  try {
+    backlogIssues.value = await boardStore.loadBacklog(board.value.id)
+  } catch (error) {
+    toast.error(error.message)
+  } finally {
+    backlogLoading.value = false
+  }
+}
+
+async function runSearch() {
+  const query = searchQuery.value.trim()
+  if (query.length < 2) {
+    searchResults.value = []
+    return
+  }
+  searchLoading.value = true
+  try {
+    searchResults.value = await boardStore.searchIssues(query, includeArchived.value)
+  } catch (error) {
+    toast.error(error.message)
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+async function openFound(issue) {
+  await boardStore.selectFound(issue)
+  searchResults.value = []
+  searchQuery.value = ''
+}
 
 async function openCreate() {
   draft.value = {
@@ -267,14 +323,46 @@ async function drop(columnId, beforeId) {
     <div class="board-main">
       <div class="board-toolbar">
         <strong>{{ board?.name || 'Board' }}</strong>
+        <div class="board-tabs">
+          <button class="board-tab" :class="{ active: activeTab === 'board' }" @click="activeTab = 'board'">Board</button>
+          <button class="board-tab" :class="{ active: activeTab === 'backlog' }" @click="openBacklog">Backlog</button>
+        </div>
         <span class="spacer"></span>
+        <div class="board-search">
+          <input v-model="searchQuery" type="search" placeholder="Search all issues…" @keyup.enter="runSearch" />
+          <label class="inline muted small"><input v-model="includeArchived" type="checkbox" @change="runSearch" /> archived</label>
+          <button class="button ghost" :disabled="searchLoading" @click="runSearch">Search</button>
+        </div>
         <button class="button" @click="openCreate">
           <AppIcon name="plus" size="16" /> New task
         </button>
       </div>
 
+      <div v-if="searchLoading || searchResults.length" class="board-search-results">
+        <p v-if="searchLoading" class="muted small">Searching…</p>
+        <button v-for="issue in searchResults" :key="issue.id" class="search-result" @click="openFound(issue)">
+          <strong>{{ issue.key }}</strong>
+          <span>{{ issue.summary }}</span>
+          <span class="muted small">{{ boardStore.status(issue.statusId)?.name || issue.statusId }}</span>
+          <span v-if="issue.archived" class="badge">archived</span>
+        </button>
+      </div>
+
       <p v-if="boardStore.state.loading" class="muted pad">Loading board…</p>
       <p v-else-if="boardStore.state.error" class="error pad">{{ boardStore.state.error }}</p>
+
+      <div v-else-if="activeTab === 'backlog'" class="backlog">
+        <p v-if="backlogLoading" class="muted pad">Loading backlog…</p>
+        <p v-else-if="!backlogGroups.length" class="muted pad">No issues in the backlog.</p>
+        <div v-for="group in backlogGroups" :key="group.status.id" class="backlog-group">
+          <h3>{{ group.status.name }} <span class="muted small">{{ group.issues.length }}</span></h3>
+          <button v-for="issue in group.issues" :key="issue.id" class="backlog-card" @click="openFound(issue)">
+            <strong>{{ issue.key }}</strong>
+            <span>{{ issue.summary }}</span>
+            <span v-if="issue.archived" class="badge">archived</span>
+          </button>
+        </div>
+      </div>
 
       <div v-else class="columns">
         <BoardColumn

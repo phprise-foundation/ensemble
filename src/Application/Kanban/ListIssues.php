@@ -28,15 +28,36 @@ final readonly class ListIssues
     }
 
     /** @return list<Issue> */
-    public function execute(User $actor, WorkspaceId $workspaceId, ?BoardId $boardId): array
-    {
+    public function execute(
+        User $actor,
+        WorkspaceId $workspaceId,
+        ?BoardId $boardId,
+        ?string $query = null,
+        bool $backlog = false,
+        bool $includeArchived = false,
+    ): array {
         $this->guard->assertMember($actor, $workspaceId);
-        $issues = $this->issues->forWorkspace($workspaceId);
+        $issues = array_values(array_filter(
+            $this->issues->forWorkspace($workspaceId),
+            fn(Issue $issue): bool => ($includeArchived || ! $issue->archived()) && $this->matches($issue, $query),
+        ));
         if ($boardId === null) {
             return $issues;
         }
 
         $board = $this->boards->find($workspaceId, $boardId) ?? throw NotFoundException::board();
+        if ($backlog) {
+            $statuses = [];
+            foreach ($board->backlogStatusIds()->all() as $statusId) {
+                $statuses[$statusId->value()] = true;
+            }
+
+            return array_values(array_filter(
+                $issues,
+                fn(Issue $issue): bool => $this->belongsToBacklog($issue, $board, $statuses),
+            ));
+        }
+
         $statuses = [];
         foreach ($this->columns->forBoard($workspaceId, $boardId) as $column) {
             foreach ($column->statusIds()->all() as $statusId) {
@@ -48,6 +69,31 @@ final readonly class ListIssues
             $issues,
             fn(Issue $issue): bool => $this->belongsToBoard($issue, $board, $statuses),
         ));
+    }
+
+    private function matches(Issue $issue, ?string $query): bool
+    {
+        $needle = $query === null ? '' : trim($query);
+        if ($needle === '') {
+            return true;
+        }
+        $haystack = $issue->key()->value() . "\n" . $issue->summary() . "\n" . $issue->description();
+
+        return mb_stripos($haystack, $needle) !== false;
+    }
+
+    /** @param array<string, true> $statuses */
+    private function belongsToBacklog(Issue $issue, Board $board, array $statuses): bool
+    {
+        if (! isset($statuses[$issue->statusId()->value()])) {
+            return false;
+        }
+        $filterTypes = array_map(static fn(IssueTypeId $id): string => $id->value(), $board->filters()->issueTypeIds());
+        if ($filterTypes !== [] && ! in_array($issue->issueTypeId()->value(), $filterTypes, true)) {
+            return false;
+        }
+
+        return true;
     }
 
     /** @param array<string, true> $statuses */

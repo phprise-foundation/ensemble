@@ -25,6 +25,7 @@ final class IssuePresenter
             'worker' => $issue->worker(),
             'blocked' => $issue->blocked(),
             'readyToMerge' => $issue->readyToMerge(),
+            'archivedAt' => $issue->archivedAt()?->format(DATE_ATOM),
             'fields' => $issue->fieldValues()->all(),
             'parentKey' => $issue->parentKey()?->value(),
             'repositoryId' => $workdir?->repositoryId()?->value(),

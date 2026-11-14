@@ -1,5 +1,22 @@
 # STATE
 
+## Fases E2/E3 — backlog, busca e arquivamento (2026-11-14)
+
+**Branch `feat/backlog-archive` (ainda não mesclada).**
+
+- `Board.backlogStatusIds` ganhou a aba **Backlog** no board; a API
+  `GET /issues?boardId=…&scope=backlog` retorna os status de backlog.
+- Busca workspace-wide em `GET /issues?q=…` (chave/resumo/descrição), sem o
+  filtro do board, com `includeArchived`; o board mostra os resultados e abre a
+  issue no painel.
+- Issues ganharam `archived_at`, `POST /issues/{key}/archive` e `/restore`;
+  arquivadas saem do board/backlog/snapshot, são ignoradas pelo runner e podem
+  ser restauradas no painel. O painel mostra um aviso de arquivada.
+- Bar: **217 PHPUnit / 1384 assertions**, Psalm nível 1, frontend **273/273**,
+  contratos **99/99**, build verde.
+- Próximo: release `v0.37.0`, deploy, workspace novo e membership do usuário
+  de teste `qa2`.
+
 ## Fase F — profiles estruturados e texto (2026-11-14)
 
 **Branch `feat/profile-attributes` (ainda não mesclada).**

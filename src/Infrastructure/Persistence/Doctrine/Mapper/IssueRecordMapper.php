@@ -39,6 +39,7 @@ final class IssueRecordMapper
         $issue->restoreTimestamps($record->updatedAt(), $record->enteredAt());
         $issue->restoreBlocked($record->blocked());
         $issue->restoreReadyToMerge($record->readyToMerge());
+        $issue->restoreArchived($record->archivedAt());
 
         return $issue;
     }
@@ -65,6 +66,7 @@ final class IssueRecordMapper
             $issue->enteredAt(),
             $issue->position(),
             $issue->readyToMerge(),
+            $issue->archivedAt(),
         );
     }
 
@@ -83,6 +85,7 @@ final class IssueRecordMapper
             $issue->enteredAt(),
             $issue->position(),
             $issue->readyToMerge(),
+            $issue->archivedAt(),
         );
     }
 }

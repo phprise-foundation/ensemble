@@ -552,3 +552,19 @@ execution while preserving the agent's voice in text. The default styler uses
 SiliconFlow's `ens26.1-lite` (`ENSEMBLE_STYLER_MODEL`) and falls back to the raw
 text when the model/key is unavailable.
 
+## Backlog, search and archive
+
+A board stores `backlogStatusIds` separately from its columns. The backlog tab
+fetches issues with `GET /issues?boardId=…&scope=backlog`, filtered by the
+board's issue types; the columns continue to use the column statuses.
+
+Workspace-wide search uses `GET /issues?q=…` without a board id. It matches the
+issue key, summary and description and ignores the board filter, which lets a
+user find an issue that is not visible on the current board. The optional
+`includeArchived` flag includes archived results.
+
+Issues carry a nullable `archived_at`. Archive/restore endpoints update it; the
+board, backlog, snapshot and runner ignore archived issues, while the issue
+panel keeps them accessible for restore. The next release will expose the
+archive action in the UI for all users with workspace membership.
+

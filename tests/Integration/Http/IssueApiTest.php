@@ -37,6 +37,65 @@ final class IssueApiTest extends TestCase
         $this->createTransition($this->refinedId, $this->doneId);
     }
 
+    public function testSearchesBacklogAndArchivesIssues(): void
+    {
+        $first = $this->createIssue(['summary' => 'Unique needle in the haystack']);
+        $second = $this->createIssue(['summary' => 'Ordinary backlog item']);
+        $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $second . '/move',
+            ['statusId' => $this->refinedId],
+            $this->adminToken,
+        )));
+        $board = $this->createBoard([], [], [$this->refinedId]);
+
+        $backlog = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/issues?boardId=' . $board . '&scope=backlog',
+            [],
+            $this->adminToken,
+        )));
+        self::assertSame([$second], array_column($backlog['issues'], 'key'));
+
+        $search = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/issues?q=needle',
+            [],
+            $this->adminToken,
+        )));
+        self::assertSame([$first], array_column($search['issues'], 'key'));
+
+        $archived = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $first . '/archive',
+            [],
+            $this->adminToken,
+        )));
+        self::assertNotNull($archived['issue']['archivedAt']);
+        $withoutArchived = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/issues',
+            [],
+            $this->adminToken,
+        )));
+        self::assertNotContains($first, array_column($withoutArchived['issues'], 'key'));
+        $withArchived = $this->app->json($this->app->handle($this->app->request(
+            'GET',
+            '/api/workspaces/' . $this->workspaceId . '/issues?includeArchived=1',
+            [],
+            $this->adminToken,
+        )));
+        self::assertContains($first, array_column($withArchived['issues'], 'key'));
+
+        $restored = $this->app->json($this->app->handle($this->app->request(
+            'POST',
+            '/api/workspaces/' . $this->workspaceId . '/issues/' . $first . '/restore',
+            [],
+            $this->adminToken,
+        )));
+        self::assertNull($restored['issue']['archivedAt']);
+    }
+
     public function testCreatesListsUpdatesCommentsAndMovesIssue(): void
     {
         $priority = $this->createField($this->taskTypeId, [
@@ -385,7 +444,7 @@ final class IssueApiTest extends TestCase
     }
 
     /** @param list<string> $issueTypes @param list<string> $statuses */
-    private function createBoard(array $issueTypes, array $statuses): string
+    private function createBoard(array $issueTypes, array $statuses, array $backlogStatusIds = []): string
     {
         $data = $this->app->json($this->app->handle($this->app->request(
             'POST',
@@ -395,6 +454,7 @@ final class IssueApiTest extends TestCase
                 'name' => 'Kanban',
                 'filterIssueTypeIds' => $issueTypes,
                 'filterStatusIds' => $statuses,
+                'backlogStatusIds' => $backlogStatusIds,
             ],
             $this->adminToken,
         )), 201);
