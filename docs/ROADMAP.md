@@ -162,6 +162,10 @@ once v1 is live):
   workflows/status/transições/boards; `Role.instructions`, `Agent.gender`,
   transição `any` e `Board.backlogStatusIds`; seed transacional em banco novo
   e em novos workspaces.
+- **Fase F — profiles estruturados e texto (branch `feat/profile-attributes`):**
+  atributos físicos/comunicação/personalidade/interesses em `advanced`, editor
+  por seções, `ens profile` sob demanda e `TextStyler` para comentários e
+  descrições; profile fora do prompt de execução.
 - **Fase E2 — backlog e busca:** aba de backlog por board, busca
   workspace-wide por chave/resumo/descrição ignorando o filtro do board.
 - **Fase E3 — arquivamento:** `Issue.archivedAt`, archive/restore, exclusão de

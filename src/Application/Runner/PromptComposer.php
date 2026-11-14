@@ -7,21 +7,14 @@ namespace App\Application\Runner;
 use App\Domain\Kanban\Issue;
 use App\Domain\Kanban\Status;
 use App\Domain\Team\Agent;
-use App\Domain\Team\ProfileId;
-use App\Domain\Team\Profile;
 use App\Domain\Team\Role;
 use App\Domain\Team\RoleCapabilities;
 use App\Domain\Tenancy\WorkspaceId;
 
 final readonly class PromptComposer
 {
-    public function __construct(
-        private ResolveProfile $resolveProfile,
-    ) {
-    }
-
     public function compose(
-        WorkspaceId $workspaceId,
+        WorkspaceId $_workspaceId,
         Agent $agent,
         Issue $issue,
         Status $status,
@@ -32,8 +25,9 @@ final readonly class PromptComposer
             '# ' . $issue->key()->value() . ' — ' . $issue->summary(),
             $issue->description(),
             $agent->whoAmI(),
-            $this->whoBlock($agent, $this->resolveProfile->execute($workspaceId, $agent->profileId())),
+            $this->whoBlock($agent),
             'Always write user-facing comments, notes and messages in ' . $agent->language() . '.',
+            'For questions about your appearance or personal details, run `ens profile physical` (or `communication`, `personality`, `interests`). Do not load your profile for technical work; user-facing comments and descriptions are stylized by the platform.',
             $this->stageBlock($status, $role, $capabilities),
         ])));
     }
@@ -77,74 +71,12 @@ final readonly class PromptComposer
         return implode("\n", $lines);
     }
 
-    private function whoBlock(Agent $agent, ?Profile $profile): string
+    private function whoBlock(Agent $agent): string
     {
         $topic = 'You are ' . $agent->name();
         $topic .= $agent->age() === null ? '' : ', ' . $agent->age() . ' years old';
         $topic .= ', working as an autonomous agent.';
-        $topic .= $agent->profileId() instanceof ProfileId ? "\n" . $this->profileBlock($profile) : '';
 
         return $topic;
-    }
-
-    private function profileBlock(?Profile $profile): string
-    {
-        if ($profile === null) {
-            return 'The referenced profile no longer exists; behave as a pragmatic colleague.';
-        }
-
-        $parts = [
-            'Your profile is "' . $profile->name() . '".',
-            $profile->style(),
-            'Tone: ' . $profile->tone() . '. Emoji usage: ' . $profile->emojiUsage()->value . '.',
-        ];
-        $advanced = $this->advancedBlock($profile->advanced());
-        if ($advanced !== '') {
-            $parts[] = $advanced;
-        }
-
-        return rtrim(implode("\n", array_filter($parts)));
-    }
-
-    /** @param array<string, mixed> $advanced */
-    private function advancedBlock(array $advanced): string
-    {
-        if (isset($advanced['instructions']) && is_string($advanced['instructions']) && trim($advanced['instructions']) !== '') {
-            return trim($advanced['instructions']);
-        }
-
-        return mb_substr($this->renderAdvanced($advanced), 0, 8000);
-    }
-
-    private function renderAdvanced(mixed $value, int $depth = 0): string
-    {
-        if (is_string($value) || is_int($value) || is_float($value)) {
-            return (string) $value;
-        }
-        if (is_bool($value)) {
-            return $value ? 'yes' : 'no';
-        }
-        if (! is_array($value)) {
-            return '';
-        }
-        $indent = str_repeat('  ', $depth);
-        $lines = [];
-        foreach (array_keys($value) as $key) {
-            if (is_array($value[$key])) {
-                $lines[] = $indent . (is_int($key) ? '-' : $key . ':');
-                $nested = $this->renderAdvanced($value[$key], $depth + 1);
-                if ($nested !== '') {
-                    $lines[] = $nested;
-                }
-                continue;
-            }
-            $rendered = $this->renderAdvanced($value[$key], 0);
-            if ($rendered === '') {
-                continue;
-            }
-            $lines[] = $indent . (is_int($key) ? '- ' . $rendered : $key . ': ' . $rendered);
-        }
-
-        return implode("\n", $lines);
     }
 }

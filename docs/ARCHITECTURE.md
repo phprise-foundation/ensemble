@@ -531,3 +531,24 @@ prompt), `Agent.gender` (`female`, `male` or `not_informed`) and
 `TransitionEndpoint`; it matches any non-final status of the target issue type
 (except the target itself), which keeps `any -> canceled` as a single rule.
 
+## Profile attributes and text styling
+
+`Profile.advanced` is a structured JSON object with `identity`, `psychology`,
+`physical`, `communication`, `personality`, `interests` and `background`.
+Physical fields use closed options for skin tone, hair, eyes, voice and body
+type, plus height, weight, tattoos and piercings. The default profiles use the
+source characters' canon for those fields.
+
+The task prompt contains no profile tokens. When an agent needs to answer a
+question about its appearance or personal details it runs
+`ens profile <section>`; the runner writes the profile JSON to
+`ENS_PROFILE_FILE`, and the CLI prints only the requested section. Physical
+attributes are therefore loaded only for that answer.
+
+User-facing comments and descriptions are rewritten by a `TextStyler` after the
+run, in one batch, using the profile's communication, personality and interests
+(physical attributes are excluded). This keeps profile tokens out of technical
+execution while preserving the agent's voice in text. The default styler uses
+SiliconFlow's `ens26.1-lite` (`ENSEMBLE_STYLER_MODEL`) and falls back to the raw
+text when the model/key is unavailable.
+

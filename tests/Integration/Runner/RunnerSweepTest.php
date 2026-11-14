@@ -11,6 +11,7 @@ use App\Application\Runner\PromptComposer;
 use App\Application\Runner\ReadAgentOutcome;
 use App\Application\Runner\ReportStage;
 use App\Application\Runner\ResolveProfile;
+use App\Domain\Contract\Runner\TextStyler;
 use App\Domain\Runner\AgentExecutor;
 use App\Domain\Runner\AgentRunContext;
 use App\Domain\Runner\BranchSyncStrategy;
@@ -99,6 +100,7 @@ use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRoleRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunRepository;
 use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunUsageRepository;
+use App\Infrastructure\Runner\NullTextStyler;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineStatusRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTeamRepository;
 use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineTransitionRepository;
@@ -126,6 +128,8 @@ final class RunnerSweepTest extends TestCase
     private RecordedPullRequests $pullRequests;
     private DoctrineRoleRepository $roleRepository;
     private DoctrineIssueCommentRepository $comments;
+
+    private TextStyler $styler;
     private string $teamId;
     private RoleId $coderRoleId;
     private WorkdirPathsForTest $paths;
@@ -168,6 +172,7 @@ final class RunnerSweepTest extends TestCase
         $this->workspaces = new DoctrineWorkspaceRepository($this->entityManager, new WorkspaceRecordMapper());
         $this->roleRepository = new DoctrineRoleRepository($this->entityManager, new RoleRecordMapper());
         $this->comments = new DoctrineIssueCommentRepository($this->entityManager, new IssueCommentRecordMapper());
+        $this->styler = new NullTextStyler();
 
         $this->workspaces->add(new Workspace($this->workspaceId, 'Dev', new WorkspacePrefix('KAN')));
         $workflow = new Workflow(WorkflowId::generate(), $this->workspaceId, Slug::fromName('Delivery'), 'Delivery');
@@ -405,6 +410,18 @@ final class RunnerSweepTest extends TestCase
         self::assertSame([], $this->executor->executions);
     }
 
+    public function testStylesAgentCommentsWithTheProfile(): void
+    {
+        $this->styler = new PrefixTextStyler();
+        $this->executor->comments = ['raw comment'];
+        $this->attachPending();
+        $this->sweep();
+
+        $comments = $this->comments->forIssue($this->workspaceId, $this->issue->id());
+        self::assertNotEmpty($comments);
+        self::assertStringContainsString('STYLED: raw comment', $comments[0]->body());
+    }
+
     public function testSucceededRunAdvancesTheIssueThroughTheAgentTransition(): void
     {
         $this->seedTransition($this->inboxId, $this->refinedId, TransitionActor::Agent);
@@ -567,7 +584,7 @@ final class RunnerSweepTest extends TestCase
             $this->runs,
             $this->paths,
             $this->executor,
-            new PromptComposer(new ResolveProfile($this->profiles)),
+            new PromptComposer(),
             new AdvanceIssue(
                 $this->issues,
                 $this->statuses,
@@ -586,6 +603,8 @@ final class RunnerSweepTest extends TestCase
             new ReadAgentOutcome(),
             (new YamlModelCatalog(dirname(__DIR__, 3) . '/config/models.yaml'))->load(),
             new DoctrineRunUsageRepository($this->entityManager, new RunUsageRecordMapper()),
+            new ResolveProfile($this->profiles),
+            $this->styler,
         ))->execute();
     }
 
@@ -1216,5 +1235,14 @@ final class WorkdirPathsForTest implements WorkdirPaths
     public function path(WorkspaceId $workspaceId, WorkdirId $workdirId): string
     {
         return 'var/workdirs/' . $workspaceId->value() . '/' . $workdirId->value();
+    }
+}
+
+final class PrefixTextStyler implements TextStyler
+{
+    #[Override]
+    public function styleMany(array $texts, \App\Domain\Team\Agent $agent, ?\App\Domain\Team\Profile $profile): array
+    {
+        return array_map(static fn(string $text): string => 'STYLED: ' . $text, $texts);
     }
 }

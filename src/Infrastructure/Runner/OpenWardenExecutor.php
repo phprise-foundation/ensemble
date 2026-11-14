@@ -158,6 +158,7 @@ final readonly class OpenWardenExecutor implements AgentExecutor
             'ENS_ALLOWED_OUTCOMES' => implode(',', $context->allowedOutcomes()),
             'ENS_COMMENT_FILE' => $context->commentPath(),
             'ENS_DESCRIPTION_FILE' => $context->descriptionPath(),
+            'ENS_PROFILE_FILE' => $context->profilePath(),
         ];
         foreach (self::CREDENTIAL_KEYS as $key) {
             $value = getenv($key);

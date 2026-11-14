@@ -25,9 +25,9 @@ RUN apt-get update \
 
 FROM php:8.4-apache
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git libpq-dev \
+    && apt-get install -y --no-install-recommends git libpq-dev libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql \
+    && docker-php-ext-install -j"$(nproc)" pdo_pgsql pgsql curl \
     && a2enmod rewrite \
     && rm -f /var/log/apache2/*.log \
     && touch /var/log/apache2/error.log /var/log/apache2/access.log /var/log/apache2/other_vhosts_access.log \

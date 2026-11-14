@@ -11,6 +11,20 @@ https://github.com/phprise-foundation/ensemble/releases
 
 ### Added
 
+- **Structured profile attributes:** `Profile.advanced` now stores identity,
+  psychology, physical, communication, personality, interests and background
+  as small fields. Physical attributes use predefined options for skin tone,
+  hair, eyes, voice and body type, with exact tattoos/piercings and canon data
+  for the default characters. The profiles editor exposes the sections with
+  selects and list fields.
+- **Profile on demand:** agents can run `ens profile physical`, `communication`,
+  `personality`, `interests`, `background` or `all`; physical information is
+  only loaded when the user asks about appearance.
+- **Text-only styling:** profile/advanced is no longer included in the task
+  prompt. Comments and descriptions are rewritten by a `TextStyler` using the
+  profile's communication/personality/interests, in one batch per run; the
+  model is configurable with `ENSEMBLE_STYLER_MODEL` (default
+  `ens26.1-lite`). The image now includes the PHP curl extension.
 - **Default workspace provisioning:** `config/workspace-defaults.yaml` and
   `config/portraits/` seed a new workspace with the Shonen Squad team, 7 roles,
   9 profiles, 9 agents, 3 workflows, 6 issue types, 45 statuses, 45 transitions
@@ -31,6 +45,8 @@ https://github.com/phprise-foundation/ensemble/releases
 
 ### Changed
 
+- The agent task prompt no longer carries profile tokens; the profile is used
+  only for text production (and `ens profile` queries).
 - New workspaces are no longer empty; the bootstrap install seeds the defaults
   only when it creates the workspace, and the E2E seed skips them.
 - The project is now **Ensemble** (formerly `multi-agent`): the product is a

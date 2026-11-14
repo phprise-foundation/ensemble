@@ -9,6 +9,7 @@ use App\Domain\Contract\Kanban\StatusRepository;
 use App\Domain\Contract\Kanban\WorkdirRepository;
 use App\Domain\Contract\Runner\RunRepository;
 use App\Domain\Contract\Runner\RunUsageRepository;
+use App\Domain\Contract\Runner\TextStyler;
 use App\Domain\Contract\Team\AgentRepository;
 use App\Domain\Contract\Team\RoleRepository;
 use App\Domain\Contract\Tenancy\WorkspaceRepository;
@@ -34,6 +35,7 @@ use App\Domain\Runner\RunUsageId;
 use App\Domain\Runner\WorkdirPaths;
 use App\Domain\Runner\WorkdirVcs;
 use App\Domain\Team\Agent;
+use App\Domain\Team\Profile;
 use App\Domain\Team\AgentId;
 use App\Domain\Team\Role;
 use App\Domain\Team\RoleCapabilities;
@@ -66,6 +68,8 @@ final readonly class ExecuteSweep
         private ReadAgentOutcome $outcomes,
         private ModelCatalog $catalog,
         private RunUsageRepository $usageLedger,
+        private ResolveProfile $profiles,
+        private TextStyler $styler,
     ) {
     }
 
@@ -377,6 +381,8 @@ final readonly class ExecuteSweep
         $workdir = $this->workdirFor($issue) ?? throw new RuntimeException('The bound workdir vanished.');
         $role = $this->promptRole($agent, $roles);
         $prompt = $this->prompts->compose($workspaceId, $agent, $issue, $status, $role, $capabilities);
+        $profile = $this->profiles->execute($workspaceId, $agent->profileId());
+        $profilePath = $this->profileFile($agent, $profile);
         $run = $requested ?? new Run(
             RunId::generate(),
             $workspaceId,
@@ -403,20 +409,27 @@ final readonly class ExecuteSweep
             $commentPath,
             $descriptionPath,
             $this->remainingBudget($agent, $now),
+            $profilePath,
         );
         $outcome = $this->executor->execute($agent, $workdirPath, $prompt, $context);
         $this->recordUsage($run, $agent, $outcome);
 
         $description = (new ReadAgentDescription())->execute($descriptionPath);
         if ($description !== null && $capabilities->interactive()) {
-            $this->report->agentDescription($issue, $agent, $description);
+            $styledDescription = $this->styler->styleMany([$description], $agent, $profile)[0] ?? $description;
+            $this->report->agentDescription($issue, $agent, $styledDescription);
         }
 
+        $rawComments = (new ReadAgentComments())->execute($commentPath);
+        $comments = $this->styler->styleMany($rawComments, $agent, $profile);
         $prComments = [];
-        foreach ((new ReadAgentComments())->execute($commentPath) as $body) {
+        foreach ($comments as $body) {
             $text = mb_substr('**' . $agent->name() . ' (' . $role->name() . '):** ' . $body, 0, 1023);
             $this->report->agentComment($issue, $agent, $text);
             $prComments[] = $text;
+        }
+        if ($profilePath !== '') {
+            @unlink($profilePath);
         }
         @unlink($commentPath);
         @unlink($descriptionPath);
@@ -533,6 +546,23 @@ final readonly class ExecuteSweep
     private function usd(int $micros): string
     {
         return number_format($micros / 1_000_000, 6, '.', '');
+    }
+
+    private function profileFile(Agent $agent, ?Profile $profile): string
+    {
+        if ($profile === null) {
+            return '';
+        }
+        $path = (string) tempnam(sys_get_temp_dir(), 'ensemble-profile-');
+        file_put_contents($path, json_encode([
+            'name' => $profile->name(),
+            'style' => $profile->style(),
+            'tone' => $profile->tone(),
+            'emoji_usage' => $profile->emojiUsage()->value,
+            'advanced' => $profile->advanced(),
+        ], JSON_THROW_ON_ERROR));
+
+        return $path;
     }
 
     private function recordUsage(Run $run, Agent $agent, Outcome $outcome): void

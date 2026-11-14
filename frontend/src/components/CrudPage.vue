@@ -6,6 +6,7 @@ import { toast } from '../store/toast.js'
 import AppIcon from './AppIcon.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
 import MarkdownTextarea from './MarkdownTextarea.vue'
+import ProfileAdvancedEditor from './ProfileAdvancedEditor.vue'
 import { plainText } from '../lib/plain-text.js'
 
 const props = defineProps({ schema: { type: Object, required: true } })
@@ -226,6 +227,7 @@ async function remove(row) {
             <input v-else-if="field.type === 'text' || !field.type" type="text" v-model="draft[field.key]" />
             <MarkdownTextarea v-else-if="field.type === 'textarea'" v-model="draft[field.key]" :rows="5" :aria-label="field.label" />
 
+            <ProfileAdvancedEditor v-else-if="field.type === 'profile-advanced'" v-model="draft[field.key]" />
             <select v-else-if="field.type === 'select'" v-model="draft[field.key]">
               <option v-for="option in optionsFor(field)" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select>

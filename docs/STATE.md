@@ -1,5 +1,32 @@
 # STATE
 
+## Fase F — profiles estruturados e texto (2026-11-14)
+
+**Branch `feat/profile-attributes` (ainda não mesclada).**
+
+- `Profile.advanced` passou a ter atributos pequenos: `identity`, `psychology`,
+  `physical`, `communication`, `personality`, `interests` e `background`.
+  Físico usa opções fechadas para tom de pele, cabelo, olhos, voz e tipo físico,
+  com altura/peso, tatuagens e piercings exatos; os profiles default foram
+  reescritos com o canon dos personagens (Marin, Maki, Sanji, Kurumi, Ken, Yor,
+  Nanami, L, Vivy).
+- A UI de profiles ganhou um editor por seções (selects/listas), sem texto
+  corrido de `instructions`.
+- O prompt de execução **não** carrega mais profile/advanced. O agente consulta
+  `ens profile physical|communication|personality|interests|background|all`
+  sob demanda; o runner grava `ENS_PROFILE_FILE`.
+- Comentários e descrições passam por um `TextStyler` (SiliconFlow,
+  `ENSEMBLE_STYLER_MODEL`, default `ens26.1-lite`) que usa
+  comunicação/personalidade/interesses em lote; físico fica fora do styler.
+- Dockerfile instala `ext-curl`; o Worker passa `ENSEMBLE_STYLER_MODEL` ao
+  container.
+- Login de qualquer usuário confirmado em produção: `ensemble` (admin) e
+  `qa2` (não-admin, senha `Qa-Test-2026!`). `qa2` ainda não tem membership; o
+  workspace novo será criado após a release.
+- Bar: **216 PHPUnit / 1359 assertions**, Psalm nível 1, frontend **273/273**,
+  contratos **99/99**, build verde.
+- Próximo: E2 (backlog + busca), E3 (arquivamento), release e workspace novo.
+
 ## Fase E — defaults de workspace (2026-11-13)
 
 **Branch `feat/workspace-defaults` (ainda não mesclada).**
