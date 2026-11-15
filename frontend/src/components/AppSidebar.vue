@@ -429,9 +429,6 @@ async function removeEntity(kind, id, label) {
           <AppIcon :name="leaf.icon" :size="18" />
         </RouterLink>
       </template>
-      <RouterLink class="leaf rail-leaf" to="/models" title="Models" aria-label="Models">
-        <AppIcon name="layers" :size="18" />
-      </RouterLink>
     </nav>
 
     <nav v-else class="nav">
