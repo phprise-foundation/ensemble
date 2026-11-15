@@ -35,10 +35,11 @@ runner_pid=""
 web_pid=""
 
 if [ "$role" != runner ]; then
-  if ! php bin/install; then
-    echo "bin/install failed; refusing to start the web server" >&2
-    kill "$tail_pid" 2>/dev/null
-    exit 1
+  if ! php bin/install >/tmp/install.log 2>&1; then
+    echo "bin/install failed; starting Apache with diagnostics" >&2
+    cat /tmp/install.log >&2 || true
+    mkdir -p public
+    cp /tmp/install.log public/install-error.txt 2>/dev/null || true
   fi
 fi
 
