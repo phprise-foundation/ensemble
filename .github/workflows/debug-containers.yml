@@ -23,3 +23,9 @@ jobs:
       - name: List containers
         run: npx wrangler containers list
         working-directory: deploy/cloudflare
+      - name: Container info
+        run: npx wrangler containers info 3e687f9c2b1040f9b2fe70ba56f44b98
+        working-directory: deploy/cloudflare
+      - name: Container instances
+        run: npx wrangler containers instances 3e687f9c2b1040f9b2fe70ba56f44b98
+        working-directory: deploy/cloudflare
