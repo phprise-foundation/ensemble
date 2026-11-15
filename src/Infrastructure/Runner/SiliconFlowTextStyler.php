@@ -35,12 +35,17 @@ final readonly class SiliconFlowTextStyler implements TextStyler
         if ($key === '') {
             return $texts;
         }
+        $advanced = $profile->advanced();
+        $tone = $profile->tone();
+        if (isset($advanced['communication']) && is_array($advanced['communication']) && isset($advanced['communication']['tone_of_voice']) && is_string($advanced['communication']['tone_of_voice'])) {
+            $tone = $advanced['communication']['tone_of_voice'];
+        }
         $profileData = [
             'name' => $profile->name(),
             'style' => $profile->style(),
-            'tone' => $profile->tone(),
+            'tone' => $tone,
             'emoji_usage' => $profile->emojiUsage()->value,
-            'advanced' => $profile->advanced(),
+            'advanced' => $advanced,
         ];
         unset($profileData['advanced']['physical']);
         $system = sprintf(

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { boardStore } from '../store/board.js'
 import BoardColumn from '../components/BoardColumn.vue'
@@ -31,7 +31,6 @@ const backlogLoading = ref(false)
 const searchQuery = ref('')
 const searchResults = ref([])
 const searchLoading = ref(false)
-const includeArchived = ref(false)
 
 const board = computed(() => boardStore.board.value)
 const columns = computed(() => boardStore.boardColumns.value)
@@ -99,7 +98,7 @@ async function runSearch() {
   }
   searchLoading.value = true
   try {
-    searchResults.value = await boardStore.searchIssues(query, includeArchived.value)
+    searchResults.value = await boardStore.searchIssues(query)
   } catch (error) {
     toast.error(error.message)
   } finally {
@@ -112,6 +111,33 @@ async function openFound(issue) {
   searchResults.value = []
   searchQuery.value = ''
 }
+
+let refreshTimer = null
+
+async function refreshBoard() {
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+    return
+  }
+  if (dragIssueId.value || editing.value) {
+    return
+  }
+  try {
+    await boardStore.refresh()
+    if (activeTab.value === 'backlog' && board.value) {
+      backlogIssues.value = await boardStore.loadBacklog(board.value.id)
+    }
+  } catch {
+    // keep the last good snapshot
+  }
+}
+
+onMounted(() => {
+  refreshTimer = setInterval(refreshBoard, 5000)
+})
+
+onUnmounted(() => {
+  clearInterval(refreshTimer)
+})
 
 async function openCreate() {
   draft.value = {
@@ -330,7 +356,6 @@ async function drop(columnId, beforeId) {
         <span class="spacer"></span>
         <div class="board-search">
           <input v-model="searchQuery" type="search" placeholder="Search all issues…" @keyup.enter="runSearch" />
-          <label class="inline muted small"><input v-model="includeArchived" type="checkbox" @change="runSearch" /> archived</label>
           <button class="button ghost" :disabled="searchLoading" @click="runSearch">Search</button>
         </div>
         <button class="button" @click="openCreate">

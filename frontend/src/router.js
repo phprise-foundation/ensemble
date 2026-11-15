@@ -9,6 +9,7 @@ import RolesPage from './views/RolesPage.vue'
 import ProfilesPage from './views/ProfilesPage.vue'
 import ProfilePage from './views/ProfilePage.vue'
 import SecretsPage from './views/SecretsPage.vue'
+import ModelsPage from './views/ModelsPage.vue'
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -24,6 +25,7 @@ export const router = createRouter({
     { path: '/teams/:teamId/profiles', name: 'profiles', component: ProfilesPage, meta: { title: 'Profiles', feature: 'profiles' } },
     { path: '/profile', name: 'profile', component: ProfilePage, meta: { title: 'Profile', feature: 'profile' } },
     { path: '/secrets', name: 'secrets', component: SecretsPage, meta: { title: 'Secrets', feature: null } },
+    { path: '/models', name: 'models', component: ModelsPage, meta: { title: 'Models', feature: null } },
     { path: '/:pathMatch(.*)*', redirect: '/boards' },
   ],
 })

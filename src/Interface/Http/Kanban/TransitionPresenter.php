@@ -19,6 +19,7 @@ final class TransitionPresenter
             'toStatusId' => $transition->toStatusId()->value(),
             'actor' => $transition->actor()->value,
             'outcome' => $transition->outcome()?->value(),
+            'name' => $transition->name(),
             'createdAt' => $transition->createdAt()->format(DATE_ATOM),
             'updatedAt' => $transition->updatedAt()->format(DATE_ATOM),
         ];

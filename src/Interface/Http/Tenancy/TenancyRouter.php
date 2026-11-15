@@ -69,6 +69,7 @@ final readonly class TenancyRouter
         private RepositoryController $repositories,
         private TenancyErrorResponder $errors,
         private JsonResponder $responder,
+        private UsageController $usage,
     ) {
     }
 
@@ -158,6 +159,7 @@ final readonly class TenancyRouter
             $method === 'POST' && $this->isIssueWorkdirResolve($segments) => $this->runHistory->resolve($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isActivity($segments) => $this->activity->show($request, $this->workspaceId($segments)),
             $method === 'GET' && $this->isSnapshot($segments) => $this->snapshots->show($request, $this->workspaceId($segments)),
+            $method === 'GET' && $this->isUsage($segments) => $this->usage->show($request, $this->workspaceId($segments)),
             $method === 'POST' && $this->isIssueRuns($segments) => $this->runHistory->request($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isIssueRuns($segments) => $this->runHistory->list($request, $this->workspaceId($segments), $this->issueKey($segments)),
             $method === 'GET' && $this->isTeams($segments) => $this->teams->list($request, $this->workspaceId($segments)),
@@ -514,6 +516,15 @@ final readonly class TenancyRouter
         return count($segments) === 2
             && $segments[0] === 'api'
             && $segments[1] === 'models';
+    }
+
+    /** @param list<string> $segments */
+    private function isUsage(array $segments): bool
+    {
+        return count($segments) === 4
+            && $segments[0] === 'api'
+            && $segments[1] === 'workspaces'
+            && $segments[3] === 'usage';
     }
 
     /** @param list<string> $segments */

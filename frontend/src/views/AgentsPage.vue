@@ -22,7 +22,7 @@ const draft = ref({})
 const error = ref('')
 
 function openCreate() {
-  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'Single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'pt-BR', modelId: defaultModel.value, dailyBudgetUsd: 0, requestsPerMinute: 0, tokensPerMinute: 0, gender: 'not_informed' }
+  draft.value = { teamId: route.params.teamId, name: '', whoAmI: '', age: null, maritalStatus: 'single', roleIds: [], profileId: profiles.value[0]?.id || '', portrait: '', avatarColor: '#4c9aff', language: 'en', modelId: defaultModel.value, dailyBudgetUsd: 0, requestsPerMinute: 0, tokensPerMinute: 0, gender: 'not_informed' }
   error.value = ''
   editing.value = true
 }
@@ -169,7 +169,11 @@ onMounted(() => {
           <label class="field">
             <span>Marital status</span>
             <select v-model="draft.maritalStatus">
-              <option>Single</option><option>Married</option><option>Divorced</option><option>Widowed</option><option>Other</option>
+              <option value="single">Single</option>
+              <option value="married">Married</option>
+              <option value="divorced">Divorced</option>
+              <option value="widowed">Widowed</option>
+              <option value="other">Other</option>
             </select>
           </label>
           <label class="field">
@@ -199,23 +203,22 @@ onMounted(() => {
             <span>Model</span>
             <select v-model="draft.modelId">
               <option v-for="model in models" :key="model.id" :value="model.id">
-                {{ model.name }} (input ${{ model.pricePerMillion.inputTokens }}/M · output ${{ model.pricePerMillion.outputTokens }}/M)
+                {{ model.name }}
               </option>
             </select>
             <small class="muted">USD per million tokens; reasoning is billed as output. The provider model is internal.</small>
           </label>
           <label class="field">
-            <span>Daily budget (USD)</span>
-            <input v-model.number="draft.dailyBudgetUsd" type="number" min="0" step="0.01" placeholder="0 = unlimited" />
-            <small class="muted">Charged cost per day; the agent is skipped at the limit and the run gets the remaining budget.</small>
+            <span>Daily budget (USD; 0 = unlimited)</span>
+            <input v-model.number="draft.dailyBudgetUsd" type="number" min="0" step="0.01" placeholder="0 = unlimited" title="Charged cost per day. At the limit the agent is skipped; below it the run receives the remaining budget." />
           </label>
           <label class="field">
-            <span>Requests per minute</span>
-            <input v-model.number="draft.requestsPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" />
+            <span>Requests per minute (0 = unlimited)</span>
+            <input v-model.number="draft.requestsPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" title="0 means unlimited requests per minute." />
           </label>
           <label class="field">
-            <span>Tokens per minute</span>
-            <input v-model.number="draft.tokensPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" />
+            <span>Tokens per minute (0 = unlimited)</span>
+            <input v-model.number="draft.tokensPerMinute" type="number" min="0" step="1" placeholder="0 = unlimited" title="0 means unlimited tokens per minute." />
           </label>
           <label class="field">
             <span>Language</span>

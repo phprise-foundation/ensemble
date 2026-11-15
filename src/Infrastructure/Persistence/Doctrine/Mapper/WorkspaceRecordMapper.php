@@ -18,6 +18,7 @@ final class WorkspaceRecordMapper
             $record->name(),
             new WorkspacePrefix($record->prefix()),
             $record->createdAt(),
+            $record->creditMicros(),
         );
     }
 
@@ -28,6 +29,7 @@ final class WorkspaceRecordMapper
             $workspace->name(),
             $workspace->prefix()->value(),
             $workspace->createdAt(),
+            $workspace->creditMicros(),
         );
     }
 
@@ -35,5 +37,6 @@ final class WorkspaceRecordMapper
     {
         $record->rename($workspace->name());
         $record->changePrefix($workspace->prefix()->value());
+        $record->changeCredit($workspace->creditMicros());
     }
 }

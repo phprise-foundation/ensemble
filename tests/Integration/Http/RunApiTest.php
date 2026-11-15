@@ -75,7 +75,7 @@ final class RunApiTest extends TestCase
         self::assertSame('claimed', $activity['runs'][0]['state']);
         self::assertSame($issue['key'], $activity['issues'][0]['key']);
         self::assertSame('Kaio', $activity['agents'][0]['name']);
-        self::assertSame('pt-BR', $activity['agents'][0]['language']);
+        self::assertSame('en', $activity['agents'][0]['language']);
     }
 
     public function testRunHistoryRequiresAuthentication(): void

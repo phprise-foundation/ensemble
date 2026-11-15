@@ -18,6 +18,7 @@ final class WorkspacePresenter
             'name' => $workspace->name(),
             'prefix' => $workspace->prefix()->value(),
             'role' => $role?->value,
+            'creditMicros' => $workspace->creditMicros(),
             'createdAt' => $workspace->createdAt()->format(DATE_ATOM),
         ];
     }

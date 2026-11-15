@@ -67,8 +67,8 @@ watch(local, () => emit('update:modelValue', JSON.parse(JSON.stringify(local))),
           <select v-model="local.physical.eyes"><option value="">—</option><option v-for="option in EYES" :key="option" :value="option">{{ option }}</option></select>
         </label>
         <label class="field"><span>Eye details</span><input v-model="local.physical.eye_details" type="text" /></label>
-        <label class="field"><span>Voice</span>
-          <select v-model="local.physical.voice"><option value="">—</option><option v-for="option in VOICES" :key="option" :value="option">{{ option }}</option></select>
+        <label class="field"><span>Voice timbre</span>
+          <select v-model="local.physical.voice_timbre"><option value="">—</option><option v-for="option in VOICES" :key="option" :value="option">{{ option }}</option></select>
         </label>
         <label class="field"><span>Style</span><input v-model="local.physical.style" type="text" /></label>
       </div>

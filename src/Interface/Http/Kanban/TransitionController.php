@@ -65,6 +65,7 @@ final readonly class TransitionController
             new StatusId(JsonBody::string($body, 'toStatusId') ?? ''),
             TransitionActor::fromString(JsonBody::string($body, 'actor') ?? TransitionActor::Both->value),
             $outcome === null || $outcome === '' ? null : new Slug($outcome),
+            JsonBody::string($body, 'name'),
         );
 
         return $this->responder->respond(['transition' => $this->presenter->present($transition)], 201);

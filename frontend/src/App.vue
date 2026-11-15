@@ -5,7 +5,7 @@ import AppSidebar from './components/AppSidebar.vue'
 import ProfileMenu from './components/ProfileMenu.vue'
 import AppIcon from './components/AppIcon.vue'
 import EnsembleLogo from './components/EnsembleLogo.vue'
-import AppCopilot from './components/AppCopilot.vue'
+import UsagePanel from './components/UsagePanel.vue'
 import AppConsole from './components/AppConsole.vue'
 import DialogHost from './components/DialogHost.vue'
 import ToastHost from './components/ToastHost.vue'
@@ -231,7 +231,7 @@ watch([sidebarCollapsed, copilotOpen, consoleOpen, consoleHeight], ([collapsed, 
       />
     </div>
 
-    <AppCopilot v-if="!isMobile && copilotOpen" />
+    <UsagePanel v-if="!isMobile && copilotOpen" />
 
     <DialogHost />
     <ToastHost />

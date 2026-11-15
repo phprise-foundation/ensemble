@@ -37,6 +37,9 @@ final class TransitionRecord
     #[ORM\Column(type: 'string', length: 64, nullable: true)]
     private ?string $outcome;
 
+    #[ORM\Column(type: 'string', length: 80, nullable: true)]
+    private ?string $name;
+
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
@@ -53,6 +56,7 @@ final class TransitionRecord
         ?string $outcome,
         DateTimeImmutable $createdAt,
         DateTimeImmutable $updatedAt,
+        ?string $name = null,
     ) {
         $this->id = $id;
         $this->workspaceId = $workspaceId;
@@ -63,6 +67,7 @@ final class TransitionRecord
         $this->outcome = $outcome;
         $this->createdAt = $createdAt;
         $this->updatedAt = $updatedAt;
+        $this->name = $name;
     }
 
     public function id(): string { return $this->id; }
@@ -72,6 +77,7 @@ final class TransitionRecord
     public function toStatusId(): string { return $this->toStatusId; }
     public function actor(): string { return $this->actor; }
     public function outcome(): ?string { return $this->outcome; }
+    public function name(): ?string { return $this->name; }
     public function createdAt(): DateTimeImmutable { return $this->createdAt; }
     public function updatedAt(): DateTimeImmutable { return $this->updatedAt; }
 

@@ -7,6 +7,49 @@ release policy.
 History before this file existed lives in the GitHub releases:
 https://github.com/phprise-foundation/ensemble/releases
 
+## v0.38.0 — 2026-11-15
+
+### Added
+
+- **Workspace account balance:** new workspaces start with **US$ 1.00** of
+  account credit; the bootstrap admin workspace is unlimited. The runner does
+  not start agents when the remaining credit reaches zero (requested runs are
+  skipped too), while the container stays up for the web/health.
+- **Usage API and right-grid panel:** `GET /workspaces/{ws}/usage` returns
+  credit, remaining, total/today/month charged cost, tokens and requests. The
+  former copilot slot now shows this usage/balance panel; it refreshes every
+  30 seconds.
+- **Models page:** a read-only **Models** entry in the sidebar lists the public
+  catalog and prices. The agent form now shows only the model name.
+- **Transition names and actions:** transitions carry a human name; the issue
+  panel renders the allowed transitions as colored action buttons (with the
+  status color) and the transitions page shows the name and issue type.
+
+### Fixed / Changed
+
+- Defaults are now in **English**, including profiles, `whoAmI` (first-person
+  character canon), status text and agent language (`en` by default; the user
+  can switch to another language).
+- Marital status selects use the API's lowercase values, so seeded agents show
+  their canon status.
+- Profile tone/voice is consolidated: `communication.tone_of_voice` is the
+  single source; `physical.voice` became `voice_timbre`; the top-level tone is
+  no longer in the form.
+- Profile/agent modals are wider, textareas use the full width, cards use a
+  responsive full-width grid with equal heights, and the console no longer
+  hides content without scroll.
+- Search always includes archived issues (no checkbox); board status targets
+  and transition selects are filtered by issue type, removing duplicate status
+  entries.
+- The epic `conceptualizing → discovering` transition is a **user** transition.
+- The board refreshes every 5 seconds while visible (polling); SSE is on the
+  roadmap.
+
+### Testing
+
+- 219 PHPUnit / 1395 assertions, Psalm level 1, 273 frontend unit tests, 99
+  contracts; `bin/install`/usage/credit paths covered by integration tests.
+
 ## v0.37.0 — 2026-11-14
 
 ### Added

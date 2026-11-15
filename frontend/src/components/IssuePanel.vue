@@ -78,7 +78,10 @@ const commentRows = computed(() =>
 const status = computed(() => (issue.value ? boardStore.status(issue.value.statusId) : null))
 const agent = computed(() => (issue.value ? boardStore.agent(issue.value.assigneeId) : null))
 const role = computed(() => (agent.value ? agent.value.roleIds.map((id) => boardStore.role(id)?.name).filter(Boolean).join(', ') : ''))
-const targets = computed(() => (issue.value ? boardStore.userTargets(issue.value.statusId) : []))
+const targets = computed(() => (issue.value ? boardStore.userTargets(issue.value.statusId, issue.value.issueTypeId) : []))
+const transitions = computed(() => (issue.value && typeof boardStore.userTransitions === 'function' ? boardStore.userTransitions(issue.value.statusId, issue.value.issueTypeId) : []))
+const statusName = (id) => boardStore.status(id)?.name || id
+const statusColor = (id) => boardStore.status(id)?.color || 'var(--border)'
 const overdue = computed(() => (issue.value ? boardStore.isOverdue(issue.value) : false))
 const typeFields = computed(
   () => (issue.value ? boardStore.issueType(issue.value.issueTypeId)?.fields ?? [] : []),
@@ -347,6 +350,11 @@ function onTabKeydown(event) {
   }
 }
 
+async function applyTransition(transition) {
+  const statusId = transition.toStatusId ?? transition.to
+  await boardStore.moveIssue(issue.value.id, { statusId, columnId: boardStore.columnOf(statusId) })
+}
+
 async function changeStatus(event) {
   const statusId = event.target.value
   await boardStore.moveIssue(issue.value.id, { columnId: boardStore.columnOf(statusId), statusId })
@@ -600,6 +608,18 @@ async function submitComment() {
         @select="changeAssignee"
       />
       <span class="muted small">{{ role || 'No role' }}</span>
+    </div>
+
+    <div v-if="transitions.length" class="status-actions">
+      <button
+        v-for="transition in transitions"
+        :key="transition.id"
+        class="button ghost status-action"
+        :style="{ borderLeftColor: statusColor(transition.toStatusId ?? transition.to) }"
+        @click="applyTransition(transition)"
+      >
+        {{ transition.name || statusName(transition.toStatusId ?? transition.to) }}
+      </button>
     </div>
 
     <label class="field">
