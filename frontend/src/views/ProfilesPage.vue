@@ -15,13 +15,11 @@ const schema = {
   columns: [
     { key: 'name', label: 'Name' },
     { key: 'style', label: 'Style' },
-    { key: 'tone', label: 'Tone' },
     { key: 'emojiUsage', label: 'Emoji' },
   ],
   fields: [
     { key: 'name', label: 'Name', type: 'text', required: true },
     { key: 'style', label: 'Style description', type: 'textarea' },
-    { key: 'tone', label: 'Tone of voice', type: 'text' },
     { key: 'advanced', label: 'Advanced attributes', type: 'profile-advanced' },
     {
       key: 'emojiUsage',
@@ -34,7 +32,7 @@ const schema = {
       ],
     },
   ],
-  defaults: () => ({ name: '', style: '', tone: '', emojiUsage: 'Never', advanced: {} }),
+  defaults: () => ({ name: '', style: '', emojiUsage: 'Never', advanced: {} }),
 }
 </script>
 

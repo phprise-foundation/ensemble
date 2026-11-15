@@ -78,7 +78,7 @@ final readonly class CreateAgent
             $fallbackModel,
             $interval === null ? new LoopInterval(300) : new LoopInterval($interval),
             $active,
-            language: $language ?? 'pt-BR',
+            language: $language ?? 'en',
             dailyBudgetMicros: $dailyBudgetMicros,
             requestsPerMinute: $requestsPerMinute,
             tokensPerMinute: $tokensPerMinute,

@@ -114,6 +114,8 @@ use App\Infrastructure\Model\YamlModelCatalog;
 use App\Infrastructure\Workspace\YamlWorkspaceDefaults;
 use App\Infrastructure\Persistence\Doctrine\DoctrineEntityManagerFactory;
 use App\Infrastructure\Persistence\Doctrine\DoctrineUnitOfWork;
+use App\Infrastructure\Persistence\Doctrine\Mapper\RunUsageRecordMapper;
+use App\Infrastructure\Persistence\Doctrine\Repository\DoctrineRunUsageRepository;
 use App\Infrastructure\Persistence\Doctrine\DoctrineIssueKeyGenerator;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardColumnRecordMapper;
 use App\Infrastructure\Persistence\Doctrine\Mapper\BoardRecordMapper;
@@ -193,6 +195,7 @@ use App\Interface\Http\Tenancy\MemberPresenter;
 use App\Interface\Http\Tenancy\SessionController;
 use App\Interface\Http\Tenancy\TenancyErrorResponder;
 use App\Interface\Http\Tenancy\TenancyRouter;
+use App\Interface\Http\Tenancy\UsageController;
 use App\Interface\Http\Tenancy\UserController;
 use App\Interface\Http\Tenancy\UserPresenter;
 use App\Interface\Http\Tenancy\WorkspaceController;
@@ -286,6 +289,7 @@ final readonly class TenancyBootstrap
             $boardColumns,
         );
         $unitOfWork = new DoctrineUnitOfWork($entityManager);
+        $runUsage = new DoctrineRunUsageRepository($entityManager, new RunUsageRecordMapper());
         $teamPresenter = new TeamPresenter();
         $rolePresenter = new RolePresenter();
         $agentPresenter = new AgentPresenter();
@@ -586,6 +590,13 @@ final readonly class TenancyBootstrap
             ),
             new TenancyErrorResponder($this->responder),
             $this->responder,
+            new UsageController(
+                $currentUser,
+                $workspaces,
+                $guard,
+                $runUsage,
+                $this->responder,
+            ),
         );
     }
 }

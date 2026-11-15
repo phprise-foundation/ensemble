@@ -568,3 +568,22 @@ board, backlog, snapshot and runner ignore archived issues, while the issue
 panel keeps them accessible for restore. The next release will expose the
 archive action in the UI for all users with workspace membership.
 
+## Workspace balance, usage and live board
+
+`Workspace.creditMicros` is nullable: `null` means unlimited (the bootstrap
+admin workspace), while `CreateWorkspace` starts new workspaces with
+`1_000_000` micros (US$ 1). Remaining credit is `credit - SUM(charged_cost_micros)`
+from `run_usage`; the runner checks it before sweeping or executing a requested
+run, so exhausted workspaces make no agent/LLM calls. `GET
+/workspaces/{ws}/usage` returns the balance and total/today/month usage, and the
+right-grid panel polls it.
+
+The board polls the snapshot every five seconds while the document is visible
+and no drag/modal is active. SSE/LISTEN-NOTIFY is the next step for true
+server-push updates.
+
+Transitions carry an optional human `name`; the issue panel renders the allowed
+transitions as status-colored action buttons, and the transitions page filters
+statuses by issue type to avoid the cloned-status duplication. The Models page
+is a read-only view of the public catalog; provider refs remain internal.
+

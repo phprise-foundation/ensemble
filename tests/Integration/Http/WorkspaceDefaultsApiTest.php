@@ -55,7 +55,7 @@ final class WorkspaceDefaultsApiTest extends TestCase
 
         $profiles = array_column($snapshot['profiles'], null, 'name');
         $goth = $profiles['Goth'];
-        self::assertSame(['orelhas', 'nariz', 'língua', 'lábio inferior', 'umbigo', 'clitóris'], $goth['advanced']['physical']['piercings']);
+        self::assertSame(['ears', 'nose', 'tongue', 'lower lip', 'navel', 'clitoris'], $goth['advanced']['physical']['piercings']);
         self::assertSame('157', (string) $goth['advanced']['physical']['height_cm']);
         self::assertSame('47', (string) $goth['advanced']['physical']['weight_kg']);
         self::assertSame('heterochromia', $goth['advanced']['physical']['eyes']);
@@ -65,6 +65,8 @@ final class WorkspaceDefaultsApiTest extends TestCase
         self::assertSame(20, $vivy['age']);
         self::assertSame('single', $vivy['maritalStatus']);
         self::assertSame('ens26.1-flash', $vivy['modelId']);
+        self::assertSame('en', $vivy['language']);
+        self::assertContains('cancel', array_filter(array_column($snapshot['transitions'], 'name')));
         self::assertStringStartsWith('data:image/png;base64,', $vivy['portrait']);
 
         $canceled = array_filter($snapshot['statuses'], static fn(array $status): bool => $status['name'] === 'Canceled');

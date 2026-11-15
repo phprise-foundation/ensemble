@@ -30,6 +30,7 @@ final class TransitionRecordMapper
             $outcome === null ? null : new Slug($outcome),
             $record->createdAt(),
             $record->updatedAt(),
+            $record->name(),
         );
     }
 
@@ -45,6 +46,7 @@ final class TransitionRecordMapper
             $transition->outcome()?->value(),
             $transition->createdAt(),
             $transition->updatedAt(),
+            $transition->name(),
         );
     }
 

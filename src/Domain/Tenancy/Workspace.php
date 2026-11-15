@@ -12,15 +12,18 @@ final class Workspace
 {
     private StringObject $name;
     private WorkspacePrefix $prefix;
+    private ?int $creditMicros;
 
     public function __construct(
         private readonly WorkspaceId $id,
         string $name,
         WorkspacePrefix $prefix,
         private readonly ?DateTimeImmutable $createdAt = null,
+        ?int $creditMicros = null,
     ) {
         $this->name = new StringObject($this->validName($name));
         $this->prefix = $prefix;
+        $this->creditMicros = $this->validCredit($creditMicros);
     }
 
     public function id(): WorkspaceId
@@ -43,6 +46,16 @@ final class Workspace
         return $this->createdAt ?? new DateTimeImmutable();
     }
 
+    public function creditMicros(): ?int
+    {
+        return $this->creditMicros;
+    }
+
+    public function changeCredit(?int $creditMicros): void
+    {
+        $this->creditMicros = $this->validCredit($creditMicros);
+    }
+
     public function rename(string $name): void
     {
         $this->name = new StringObject($this->validName($name));
@@ -51,6 +64,15 @@ final class Workspace
     public function changePrefix(WorkspacePrefix $prefix): void
     {
         $this->prefix = $prefix;
+    }
+
+    private function validCredit(?int $creditMicros): ?int
+    {
+        if ($creditMicros !== null && $creditMicros < 0) {
+            throw new ValidationException('creditMicros', 'Workspace credit must not be negative.');
+        }
+
+        return $creditMicros;
     }
 
     private function validName(string $name): string

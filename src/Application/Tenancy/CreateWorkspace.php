@@ -29,7 +29,7 @@ final readonly class CreateWorkspace
     {
         /** @var Workspace $workspace */
         $workspace = $this->unitOfWork->run(function () use ($owner, $name, $prefix): Workspace {
-            $workspace = new Workspace(WorkspaceId::generate(), $name, $prefix);
+            $workspace = new Workspace(WorkspaceId::generate(), $name, $prefix, creditMicros: 1_000_000);
             $this->workspaces->add($workspace);
             $this->memberships->add(new Membership($workspace->id(), $owner->id(), MembershipRole::Owner));
             $this->defaults->seed($workspace->id());

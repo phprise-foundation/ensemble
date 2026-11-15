@@ -34,7 +34,7 @@ const REAL_BODY_DROPS = {
   sources: ['id', 'workspaceId'],
   workspaces: ['id', 'prefix', 'role', 'createdAt', 'updatedAt'],
   statuses: ['id', 'workflowId'],
-  transitions: ['id', 'workflowId'],
+  transitions: ['id', 'workflowId', 'typeId'],
   issueTypes: ['id', 'workflowId', 'fields'],
   fields: ['id', 'issueTypeId'],
   columns: ['id', 'boardId'],
@@ -284,8 +284,26 @@ export const boardStore = {
     return column ? column.statusIds.some((statusId) => boardStore.canUserMove(fromStatusId, statusId)) : false
   },
 
-  userTargets(fromStatusId) {
-    return boardStatuses.value.filter((status) => status.id === fromStatusId || boardStore.canUserMove(fromStatusId, status.id))
+  userTransitions(fromStatusId, issueTypeId) {
+    return boardTransitions.value.filter((transition) => {
+      const from = transition.fromStatusId ?? transition.from
+      const to = transition.toStatusId ?? transition.to
+      const toStatus = boardStore.status(to)
+      const source = from === '*' ? toStatus : boardStore.status(from)
+      if (!source || source.issueTypeId !== issueTypeId) {
+        return false
+      }
+      if (transition.type === 'agent' || transition.actor === 'agent') {
+        return false
+      }
+      return from === '*' || from === fromStatusId
+    })
+  },
+
+  userTargets(fromStatusId, issueTypeId) {
+    return boardStatuses.value.filter(
+      (status) => status.issueTypeId === issueTypeId && (status.id === fromStatusId || boardStore.canUserMove(fromStatusId, status.id)),
+    )
   },
 
   columnOf(statusId) {
@@ -300,6 +318,22 @@ export const boardStore = {
     return Date.now() - Date.parse(issue.updatedAt) > OVERDUE_MS
   },
 
+
+  async refresh() {
+    const snapshot = await request('GET', scoped('/snapshot'))
+    for (const [key, list] of Object.entries(snapshot)) {
+      if (Array.isArray(list)) {
+        snapshot[key] = list.map((item) => normalizeEntity(key, item))
+      }
+    }
+    snapshot.fields = (snapshot.issueTypes ?? []).flatMap((type) =>
+      (type.fields ?? []).map((field) => ({ ...field, issueTypeId: type.id })))
+    Object.assign(state, snapshot)
+    boardStore.setBoard(state.boardId)
+    if (state.selectedIssueId) {
+      void hydrateIssue(issueOf(state.selectedIssueId))
+    }
+  },
 
   async load() {
     state.loading = true
@@ -344,8 +378,8 @@ export const boardStore = {
     return (payload.issues ?? []).map((issue) => normalizeEntity('issues', issue))
   },
 
-  async searchIssues(query, includeArchived = false) {
-    const payload = await request('GET', scoped(`/issues?q=${encodeURIComponent(query)}&includeArchived=${includeArchived ? 1 : 0}`))
+  async searchIssues(query) {
+    const payload = await request('GET', scoped(`/issues?q=${encodeURIComponent(query)}&includeArchived=1`))
     return (payload.issues ?? []).map((issue) => normalizeEntity('issues', issue))
   },
 

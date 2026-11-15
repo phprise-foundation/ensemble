@@ -51,7 +51,7 @@ final class Agent
         private bool $active = true,
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
-        string $language = 'pt-BR',
+        string $language = 'en',
         int $dailyBudgetMicros = 0,
         int $requestsPerMinute = 0,
         int $tokensPerMinute = 0,

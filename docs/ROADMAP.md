@@ -162,6 +162,11 @@ once v1 is live):
   workflows/status/transições/boards; `Role.instructions`, `Agent.gender`,
   transição `any` e `Board.backlogStatusIds`; seed transacional em banco novo
   e em novos workspaces.
+- **v0.38.0 — correções, defaults em inglês, saldo/uso, Models e ações de
+  transição (branch `feat/v0.38.0`):** `Workspace.creditMicros`, painel de
+  saldo/consumo, runner bloqueado por saldo, página de Models, nomes/ações de
+  transição, busca com arquivadas, filtros por issue type, polling do board e a
+  rodada de UX/defaults.
 - **Fase F — profiles estruturados e texto (branch `feat/profile-attributes`):**
   atributos físicos/comunicação/personalidade/interesses em `advanced`, editor
   por seções, `ens profile` sob demanda e `TextStyler` para comentários e
@@ -394,3 +399,19 @@ triggers** (not agents). Design and decisions are **formalised** in
 4. ~~Normalise lineage / spawn~~ **Done** (multi-agent PR #32).
 5. Implement the triggers (spawn, voting, `subtasks-done`) — **next**.
 6. Semantic layer + metrics read model; update `var/kanban.local/bin/monitor`.
+
+## Roadmap pendente após v0.38.0
+
+- **Tempo real via SSE/LISTEN-NOTIFY:** substituir o polling de 5s do board.
+- **Repaginada visual completa:** design system, checkboxes/switch modernos,
+  tooltips, espaçamento, cores e harmonia dos cards/formulários.
+- **Modais → páginas dedicadas** em todo o CRUD (não só Agents).
+- **Crédito pré-pago/top-up:** recarga por cartão, valores mínimo/máximo,
+  histórico de recargas e gestão de saldo; só quando houver meio de pagamento.
+- **Painel de uso detalhado por agente/modelo** (a v0.38 mostra totais).
+- **Copiloto:** reposicionar/reimplementar quando a funcionalidade voltar.
+- **Projeções multimídia** a partir dos atributos físicos dos profiles (artes,
+  imagens, modo speech).
+- **Nomes/refinamentos de transições** que ainda não tenham nome humano nas
+  transições antigas (fallback atual mostra o status de destino).
+

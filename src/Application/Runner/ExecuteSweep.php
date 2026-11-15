@@ -88,6 +88,9 @@ final readonly class ExecuteSweep
     /** @param list<string> $requestedIssues */
     private function sweepWorkspace(WorkspaceId $workspaceId, DateTimeImmutable $now, array $requestedIssues): void
     {
+        if (! $this->hasBalance($workspaceId)) {
+            return;
+        }
         foreach ($this->issues->forWorkspace($workspaceId) as $issue) {
             if ($issue->archived() || $issue->blocked() || $issue->readyToMerge() || in_array($issue->id()->value(), $requestedIssues, true)) {
                 continue;
@@ -188,6 +191,11 @@ final readonly class ExecuteSweep
         $issue = $this->issues->findById($run->workspaceId(), $run->issueId());
         if ($agent === null || $issue === null || ! $agent->active()) {
             $this->finishRequested($run, 'the requested run is no longer available', $now);
+
+            return;
+        }
+        if (! $this->hasBalance($run->workspaceId())) {
+            $this->finishRequested($run, 'the workspace balance is exhausted', $now);
 
             return;
         }
@@ -541,12 +549,30 @@ final readonly class ExecuteSweep
 
     private function remainingBudget(Agent $agent, DateTimeImmutable $now): ?int
     {
-        if ($agent->dailyBudgetMicros() <= 0) {
-            return null;
+        $agentRemaining = null;
+        if ($agent->dailyBudgetMicros() > 0) {
+            $spent = $this->usageLedger->chargedSince($agent->id(), $now->setTime(0, 0));
+            $agentRemaining = max(0, $agent->dailyBudgetMicros() - $spent);
         }
-        $spent = $this->usageLedger->chargedSince($agent->id(), $now->setTime(0, 0));
+        $workspace = $this->workspaces->find($agent->workspaceId());
+        $credit = $workspace?->creditMicros();
+        if ($credit === null) {
+            return $agentRemaining;
+        }
+        $workspaceRemaining = max(0, $credit - $this->usageLedger->chargedForWorkspace($agent->workspaceId()));
 
-        return max(0, $agent->dailyBudgetMicros() - $spent);
+        return $agentRemaining === null ? $workspaceRemaining : min($agentRemaining, $workspaceRemaining);
+    }
+
+    private function hasBalance(WorkspaceId $workspaceId): bool
+    {
+        $workspace = $this->workspaces->find($workspaceId);
+        $credit = $workspace?->creditMicros();
+        if ($credit === null) {
+            return true;
+        }
+
+        return $this->usageLedger->chargedForWorkspace($workspaceId) < $credit;
     }
 
     private function usd(int $micros): string

@@ -370,6 +370,18 @@ final class RunnerSweepTest extends TestCase
         self::assertSame(1_000_000, $this->executor->contexts[0]->remainingBudgetMicros());
     }
 
+    public function testSkipsWhenTheWorkspaceBalanceIsExhausted(): void
+    {
+        $workspace = $this->workspaces->find($this->workspaceId) ?? self::fail('workspace vanished');
+        $workspace->changeCredit(1_000);
+        $this->workspaces->update($workspace);
+        $this->recordUsage(1_000);
+        $this->attachPending();
+        $this->sweep();
+
+        self::assertSame([], $this->executor->executions);
+    }
+
     public function testPassesTheRemainingBudgetToTheExecutor(): void
     {
         $this->agent->changeLimits(1_000_000, 0, 0);
@@ -802,7 +814,7 @@ final class RunnerSweepTest extends TestCase
         self::assertStringContainsString('Role: Coder', $prompt);
         self::assertStringContainsString('ens block --reason', $prompt);
         self::assertStringContainsString('ens comment --body', $prompt);
-        self::assertStringContainsString('in pt-BR', $prompt);
+        self::assertStringContainsString('in en', $prompt);
         self::assertStringContainsString('Definition of done', $prompt);
     }
 

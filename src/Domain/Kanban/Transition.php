@@ -13,6 +13,7 @@ final class Transition
 
     private TransitionActor $actor;
     private ?Slug $outcome;
+    private ?string $name;
     private ?DateTimeImmutable $updatedAt;
 
     public function __construct(
@@ -25,12 +26,14 @@ final class Transition
         ?Slug $outcome = null,
         private readonly ?DateTimeImmutable $createdAt = null,
         ?DateTimeImmutable $updatedAt = null,
+        ?string $name = null,
     ) {
         $this->fromStatusId = $fromStatusId instanceof StatusId
             ? TransitionEndpoint::status($fromStatusId)
             : $fromStatusId;
         $this->actor = $actor;
         $this->outcome = $outcome;
+        $this->name = $name === null || trim($name) === '' ? null : trim($name);
         $this->updatedAt = $updatedAt;
     }
 
@@ -67,6 +70,11 @@ final class Transition
     public function outcome(): ?Slug
     {
         return $this->outcome;
+    }
+
+    public function name(): ?string
+    {
+        return $this->name;
     }
 
     public function createdAt(): DateTimeImmutable

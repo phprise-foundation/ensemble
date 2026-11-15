@@ -39,6 +39,7 @@ final readonly class CreateTransition
         StatusId $toStatusId,
         TransitionActor $transitionActor,
         ?Slug $outcome,
+        ?string $name = null,
     ): Transition {
         $this->guard->assertManager($actor, $workspaceId);
         $this->workflows->find($workspaceId, $workflowId) ?? throw NotFoundException::workflow();
@@ -71,6 +72,7 @@ final readonly class CreateTransition
             $toStatusId,
             $transitionActor,
             $outcome,
+            name: $name,
         );
         $this->transitions->add($transition);
 

@@ -24,12 +24,16 @@ final class WorkspaceRecord
     #[ORM\Column(name: 'created_at', type: 'datetime_immutable')]
     private DateTimeImmutable $createdAt;
 
-    public function __construct(string $id, string $name, string $prefix, DateTimeImmutable $createdAt)
+    #[ORM\Column(name: 'credit_micros', type: 'integer', nullable: true)]
+    private ?int $creditMicros;
+
+    public function __construct(string $id, string $name, string $prefix, DateTimeImmutable $createdAt, ?int $creditMicros = null)
     {
         $this->id = $id;
         $this->name = $name;
         $this->prefix = $prefix;
         $this->createdAt = $createdAt;
+        $this->creditMicros = $creditMicros;
     }
 
     public function id(): string
@@ -50,6 +54,16 @@ final class WorkspaceRecord
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function creditMicros(): ?int
+    {
+        return $this->creditMicros;
+    }
+
+    public function changeCredit(?int $creditMicros): void
+    {
+        $this->creditMicros = $creditMicros;
     }
 
     public function rename(string $name): void

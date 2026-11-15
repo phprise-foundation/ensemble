@@ -322,6 +322,7 @@ final class YamlWorkspaceDefaults implements WorkspaceDefaults
                     $from,
                     $to->id(),
                     $this->actor($this->text($item, 'actor', 'workflows.transitions.actor')),
+                    name: $this->optionalText($item, 'name'),
                 ));
             }
         }

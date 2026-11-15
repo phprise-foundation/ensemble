@@ -27,18 +27,18 @@ test('App.vue nasce com os paineis fechados e persiste a escolha', () => {
   assert.match(appVue, /loadPanels/)
   assert.match(appVue, /ref\(initialPanels\.copilotOpen\)/)
   assert.match(appVue, /savePanels/)
-  assert.match(appVue, /<AppCopilot v-if="!isMobile && copilotOpen" \/>/)
+  assert.match(appVue, /<UsagePanel v-if="!isMobile && copilotOpen" \/>/)
   assert.match(panelsStore, /sidebarCollapsed: true/)
   assert.match(panelsStore, /copilotOpen: false/)
   assert.match(panelsStore, /consoleOpen: false/)
 })
 
 test('App.vue monta o painel como irmao de .content', () => {
-  assert.match(appVue, /<\/div>\s*<AppCopilot v-if="!isMobile && copilotOpen" \/>/)
+  assert.match(appVue, /<\/div>\s*<UsagePanel v-if="!isMobile && copilotOpen" \/>/)
   const main = appVue.indexOf('<main class="main">')
   const mainEnd = appVue.indexOf('</main>')
   assert.ok(main !== -1 && mainEnd !== -1)
-  assert.ok(appVue.indexOf('<AppCopilot', main) > mainEnd)
+  assert.ok(appVue.indexOf('<UsagePanel', main) > mainEnd)
 })
 
 test('botao .copilot-toggle tem ARIA e e desktop-only', () => {

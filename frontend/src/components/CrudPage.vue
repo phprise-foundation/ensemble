@@ -23,7 +23,7 @@ const dropRowId = ref(null)
 const canReorder = computed(() => typeof props.schema.reorder === 'function')
 
 function optionsFor(field) {
-  return typeof field.options === 'function' ? field.options() : field.options || []
+  return typeof field.options === 'function' ? field.options(draft.value) : field.options || []
 }
 
 function openCreate() {
@@ -34,6 +34,9 @@ function openCreate() {
 
 function openEdit(row) {
   draft.value = JSON.parse(JSON.stringify(row))
+  if (typeof props.schema.prepare === 'function') {
+    draft.value = props.schema.prepare(draft.value)
+  }
   draft.value.__existing = true
   error.value = ''
   editing.value = true

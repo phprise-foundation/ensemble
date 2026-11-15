@@ -429,6 +429,9 @@ async function removeEntity(kind, id, label) {
           <AppIcon :name="leaf.icon" :size="18" />
         </RouterLink>
       </template>
+      <RouterLink class="leaf rail-leaf" to="/models" title="Models" aria-label="Models">
+        <AppIcon name="layers" :size="18" />
+      </RouterLink>
     </nav>
 
     <nav v-else class="nav">
@@ -555,6 +558,10 @@ async function removeEntity(kind, id, label) {
                 <button class="icon-btn" title="Delete source" aria-label="Delete source" @click.stop="removeEntity('source', source.id, source.name)"><AppIcon name="delete" size="14" /></button>
               </span>
             </div>
+            <RouterLink class="nav-entry" to="/models" title="Models">
+              <AppIcon name="layers" size="14" />
+              <span class="label">Models</span>
+            </RouterLink>
             <RouterLink class="nav-entry secrets-entry" to="/secrets" title="Secrets">
               <AppIcon name="roles" size="14" />
               <span class="label">Secrets</span>

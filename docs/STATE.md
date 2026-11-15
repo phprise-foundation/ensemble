@@ -1,5 +1,28 @@
 # STATE
 
+## v0.38.0 — fixes, English defaults, balance/usage, models and transition actions (2026-11-15)
+
+**Branch `feat/v0.38.0` (ainda não mesclada).**
+
+- Correções: marital select minúsculo; profile `tone` duplicado removido e
+  `physical.voice` → `voice_timbre`; textareas/modais largos; cards em grid
+  responsivo; console com scroll; busca sempre inclui arquivadas; status de
+  board/transition filtrados por issue type; epic `discover` é do usuário.
+- Defaults em inglês: profiles, `whoAmI` em primeira pessoa/canon, texto de
+  status e `Agent.language = en` por padrão; seed marital canônico.
+- Board atualiza por polling de 5s (SSE no roadmap).
+- Saldo de conta do workspace: `creditMicros` nullable; novos workspaces US$
+  1,00, workspace bootstrap do admin ilimitado; o runner não inicia agentes com
+  saldo esgotado. `GET /workspaces/{ws}/usage` + painel na grade direita com
+  saldo, consumo total/hoje/mês, tokens e requests.
+- Página **Models** read-only no menu; select do agente só com nome.
+- Transições com `name` humano e botões de ação coloridos no painel; página de
+  transições com nome e issue type.
+- Bar: **219 PHPUnit / 1395 assertions**, Psalm nível 1, frontend **273/273**,
+  contratos **99/99**, build verde.
+- Pendente: release/deploy, recriar o workspace de teste com saldo de US$ 1 e
+  readicionar `qa2`.
+
 ## Fases E2/E3 — backlog, busca e arquivamento (2026-11-14)
 
 **Branch `feat/backlog-archive` (ainda não mesclada).**
