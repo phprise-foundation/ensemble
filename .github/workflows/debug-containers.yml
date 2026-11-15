@@ -29,3 +29,15 @@ jobs:
       - name: Container instances
         run: npx wrangler containers instances 3e687f9c2b1040f9b2fe70ba56f44b98
         working-directory: deploy/cloudflare
+      - name: Failed instance details
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/containers/applications/3e687f9c2b1040f9b2fe70ba56f44b98/instances/34fd3aa8670b9efc3955b041140ce16e44f0febc65d86fdd773a0291f2051be2" | jq .
+      - name: All instances
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/containers/applications/3e687f9c2b1040f9b2fe70ba56f44b98/instances" | jq '.result[] | {id,name,state,image,error,created_at}'
